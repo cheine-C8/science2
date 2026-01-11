@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Melting Point Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .progress-bar-inner {
+            transition: width 0.3s ease-in-out;
+        }
+        /* Custom slider styles */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d1d5db; /* gray-300 */
+            border-radius: 9999px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #4f46e5; /* indigo-600 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
+            transition: transform 0.1s ease-in-out;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.1);
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #4f46e5; /* indigo-600 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-8 lg:py-12">
+
+    <!-- Card container: max-w-md on mobile, max-w-4xl on large screens -->
+    <div class="w-full max-w-md lg:max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">Phase Change Simulator</h1>
+            <p class="text-gray-500 mt-1">Observe how substances change state with temperature.</p>
+        </div>
+
+        <!-- Main content grid: 1 col on mobile, 2 cols on large screens -->
+        <div class="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
+
+            <!-- Left Column (Controls & Info) -->
+            <div class="space-y-6">
+                <!-- Substance Selector -->
+                <div>
+                    <label for="substance-selector" class="block text-sm font-medium text-gray-700 mb-1">Select a Substance:</label>
+                    <select id="substance-selector" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option selected>Water</option>
+                        <option>Acetic Acid</option>
+                        <option>Gallium</option>
+                        <option>Phenol</option>
+                        <option>Menthol</option>
+                        <option>Lauric Acid</option>
+                        <option>Naphthalene</option>
+                        <option>Sulfur</option>
+                        <option>Benzoic Acid</option>
+                        <option>Urea</option>
+                        <option>DMSO</option>
+                    </select>
+                </div>
+
+                <!-- Guessing Game Section -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                    <h2 id="substance-name-guess" class="text-xl font-semibold text-indigo-600 text-center">Water</h2>
+                    
+                    <!-- Melting Point Guess -->
+                    <div class="space-y-1">
+                        <label for="melting-point-guess" class="block text-sm font-medium text-gray-700">What is the melting point?</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="melting-point-guess" placeholder="Temp in °C" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <p id="feedback-text" class="text-center text-sm font-medium h-5"></p> <!-- h-5 to prevent layout shift -->
+                    </div>
+
+                    <!-- Boiling Point Guess -->
+                    <div class="space-y-1">
+                        <label for="boiling-point-guess" class="block text-sm font-medium text-gray-700">What is the boiling point?</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="boiling-point-guess" placeholder="Temp in °C" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <p id="boiling-feedback-text" class="text-center text-sm font-medium h-5"></p> <!-- h-5 to prevent layout shift -->
+                    </div>
+                    
+                    <button id="check-guesses-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Check Guesses</button>
+
+                </div>
+
+                <!-- Substance Info (Answers) -->
+                <div id="answers-section" class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center hidden">
+                    <h2 id="substance-name-answer" class="text-xl font-semibold text-indigo-600">Water</h2>
+                    <div class="flex justify-around mt-2 text-sm text-gray-600">
+                        <p>Melting Point: <span id="melting-point" class="font-medium">0°C</span></p>
+                        <p>Boiling Point: <span id="boiling-point" class="font-medium">100°C</span></p>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="pt-4 space-y-3">
+                    <label for="heat-slider" class="block text-sm font-medium text-gray-700 text-center">Heating & Cooling Control</label>
+                    <input id="heat-slider" type="range" min="-10" max="10" value="0" step="1">
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>Max Cool</span>
+                        <span class="font-semibold">Neutral</span>
+                        <span>Max Heat</span>
+                    </div>
+                    <button id="pause-btn" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Pause</button>
+                </div>
+            </div>
+
+            <!-- Right Column (Visuals & Graph) -->
+            <div class="space-y-6">
+                <!-- Status Display -->
+                <div class="text-center space-y-4 py-8">
+                    <!-- Visual Display of Substance State -->
+                    <div id="visual-container" class="h-48 w-full relative border border-gray-300 rounded-lg bg-gray-50">
+                        <!-- Temperature Overlay -->
+                        <div class="absolute top-0 right-0 bg-white bg-opacity-75 rounded-bl-lg px-2 py-1 z-10">
+                            <p id="current-temp" class="text-lg font-bold text-gray-800">-20.0°C</p>
+                        </div>
+
+                        <!-- Molecule Canvas -->
+                        <canvas id="molecule-canvas" class="w-full h-full"></canvas>
+
+                    </div>
+
+                    <!-- State Display -->
+                    <div>
+                        <p class="text-sm text-gray-500 uppercase tracking-wider">Current State</p>
+                        <p id="current-state" class="text-2xl font-semibold text-indigo-700 capitalize">Solid</p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar for Phase Change -->
+                <div id="progress-container" class="h-8 w-full bg-gray-200 rounded-full hidden">
+                    <div id="progress-bar" class="progress-bar-inner h-full bg-indigo-500 rounded-full text-white text-xs font-medium flex items-center justify-center" style="width: 0%;">
+                        <span id="progress-text">Melting (0%)</span>
+                    </div>
+                </div>
+
+                <!-- Graph Section -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <canvas id="temp-chart"></canvas>
+                </div>
+            </div> <!-- End Right Column -->
+
+        </div> <!-- End Grid -->
+
+        <!-- Version Number -->
+        <div class="text-center text-xs text-gray-400 mt-4">
+            <p>Version 1.7.67</p>
+        </div>
+
+    </div> <!-- End Card -->
+
+
+    <script>
+        // --- Simulation Constants ---
+        const MAX_TEMP_STEP = 5.0;   // The temp change at max slider setting
+        const PROGRESS_STEP = 20;    // Percent to move through a phase change per tick at max speed
+        const SIMULATION_INTERVAL = 200; // Milliseconds per simulation tick
+        const MAX_GRAPH_POINTS = 150; // Max points to show on the graph
+        const NUM_MOLECULES = 30;
+        const MOLECULE_RADIUS = 5;
+
+        // --- Substance Database ---
+        const compounds = {
+            "Water": { name: "Water", meltPoint: 0.0, boilPoint: 100.0, startTemp: -20.0, startState: "Solid" },
+            "Acetic Acid": { name: "Acetic Acid", meltPoint: 16.6, boilPoint: 118.1, startTemp: 10.0, startState: "Solid" },
+            "Gallium": { name: "Gallium", meltPoint: 29.8, boilPoint: 2400.0, startTemp: 25.0, startState: "Solid" },
+            "Phenol": { name: "Phenol", meltPoint: 40.5, boilPoint: 181.7, startTemp: 25.0, startState: "Solid" },
+            "Menthol": { name: "Menthol", meltPoint: 42.0, boilPoint: 212.0, startTemp: 25.0, startState: "Solid" },
+            "Lauric Acid": { name: "Lauric Acid", meltPoint: 44.2, boilPoint: 298.9, startTemp: 25.0, startState: "Solid" },
+            "Naphthalene": { name: "Naphthalene", meltPoint: 80.2, boilPoint: 218.0, startTemp: 25.0, startState: "Solid" },
+            "Sulfur": { name: "Sulfur", meltPoint: 115.2, boilPoint: 444.6, startTemp: 25.0, startState: "Solid" },
+            "Benzoic Acid": { name: "Benzoic Acid", meltPoint: 122.4, boilPoint: 249.0, startTemp: 25.0, startState: "Solid" },
+            "Urea": { name: "Urea", meltPoint: 133.0, boilPoint: 135.0, startTemp: 25.0, startState: "Solid" }, // Decomposes at 135
+            "DMSO": { name: "DMSO", meltPoint: 18.5, boilPoint: 189.0, startTemp: 10.0, startState: "Solid" }
+        };
+
+        // --- State (Mutable) ---
+        let substance = { ...compounds["Water"] }; // Start with Water
+        let heatRate = 0; // -10 (max cool) to 10 (max heat)
+        let isPaused = false; // New
+        let tempChart;
+        let timeData = [];
+        let tempData = [];
+        let timeStep = 0;
+        let molecules = [];
+        let ctx; // Canvas context
+
+        // --- DOM Elements ---
+        const substanceSelector = document.getElementById('substance-selector');
+        const substanceNameGuess = document.getElementById('substance-name-guess');
+        const meltingPointGuessInput = document.getElementById('melting-point-guess');
+        const boilingPointGuessInput = document.getElementById('boiling-point-guess'); // New
+        const checkGuessesBtn = document.getElementById('check-guesses-btn'); // Renamed
+        const feedbackText = document.getElementById('feedback-text');
+        const boilingFeedbackText = document.getElementById('boiling-feedback-text'); // New
+        const answersSection = document.getElementById('answers-section');
+        const substanceNameAnswer = document.getElementById('substance-name-answer');
+        const meltingPointDisplay = document.getElementById('melting-point');
+        const boilingPointDisplay = document.getElementById('boiling-point');
+        const tempDisplay = document.getElementById('current-temp');
+        const stateDisplay = document.getElementById('current-state');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const heatSlider = document.getElementById('heat-slider');
+        const canvasEl = document.getElementById('molecule-canvas');
+        const pauseBtn = document.getElementById('pause-btn'); // New
+
+        // --- Molecule Class ---
+        class Molecule {
+            constructor(x, y, vx, vy) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.solidX = x; // Original lattice position
+                this.solidY = y;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, MOLECULE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = '#4f46e5'; // Indigo color
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        // --- Core Functions ---
+
+        function initializeMolecules() {
+            molecules = [];
+            if (!ctx) return; // Guard clause
+            
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+            
+            const gridSpacing = 30;
+            const rows = 5;
+            const cols = NUM_MOLECULES / rows;
+            const startX = (canvasWidth - (cols - 1) * gridSpacing) / 2;
+            const startY = (canvasHeight - (rows - 1) * gridSpacing) / 2 + 20; // Push them down a bit
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    let x = startX + j * gridSpacing;
+                    let y = startY + i * gridSpacing;
+                    molecules.push(new Molecule(x, y, 0, 0));
+                }
+            }
+        }
+        
+        function updateMolecules() {
+            if (!ctx) return;
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            const state = substance.state;
+            
+            let vibrationLimit = 0;
+            let speedLimit = 0;
+            let brownianMotion = 0;
+
+            switch (state) {
+                case "Solid":
+                case "Freezing":
+                    vibrationLimit = 1;
+                    break;
+                case "Melting":
+                    vibrationLimit = 2; // Vibrate more
+                    speedLimit = 0.5; // Start to drift
+                    brownianMotion = 0.1;
+                    break;
+                case "Liquid":
+                case "Condensing":
+                    vibrationLimit = 0; // No lattice
+                    speedLimit = 2;
+                    brownianMotion = 0.5;
+                    break;
+                case "Boiling":
+                    vibrationLimit = 0;
+                    speedLimit = 5;
+                    brownianMotion = 1.5;
+                    break;
+                case "Gas":
+                    vibrationLimit = 0;
+                    speedLimit = 8;
+                    brownianMotion = 2.0;
+                    break;
+            }
+
+            for (let m of molecules) {
+                if (vibrationLimit > 0) {
+                    // Vibrate around solid position
+                    m.vx = 0; m.vy = 0; // Reset drift
+                    m.x = m.solidX + (Math.random() - 0.5) * 2 * vibrationLimit;
+                    m.y = m.solidY + (Math.random() - 0.5) * 2 * vibrationLimit;
+                }
+                
+                if (speedLimit > 0) {
+                    // Add random motion (Brownian)
+                    m.vx += (Math.random() - 0.5) * brownianMotion;
+                    m.vy += (Math.random() - 0.5) * brownianMotion;
+
+                    // Clamp velocity to speed limit
+                    const speed = Math.sqrt(m.vx * m.vx + m.vy * m.vy);
+                    if (speed > speedLimit) {
+                        m.vx = (m.vx / speed) * speedLimit;
+                        m.vy = (m.vy / speed) * speedLimit;
+                    }
+                    
+                    m.x += m.vx;
+                    m.y += m.vy;
+                }
+
+                // Wall collisions
+                if (m.x - MOLECULE_RADIUS < 0) { m.x = MOLECULE_RADIUS; m.vx *= -1; }
+                if (m.x + MOLECULE_RADIUS > canvasWidth) { m.x = canvasWidth - MOLECULE_RADIUS; m.vx *= -1; }
+                if (m.y + MOLECULE_RADIUS > canvasHeight) { m.y = canvasHeight - MOLECULE_RADIUS; m.vy *= -1; } // Bottom wall
+                
+                // Special rule for "Gas" - escape the top
+                if (state === "Gas" && m.y - MOLECULE_RADIUS < 0) {
+                    // Reset molecule at the bottom to simulate "new" molecules boiling up
+                    m.y = canvasHeight - MOLECULE_RADIUS;
+                    m.x = Math.random() * canvasWidth;
+                } else if (state !== "Gas" && m.y - MOLECULE_RADIUS < 0) {
+                    // Top wall collision for non-gas states
+                    m.y = MOLECULE_RADIUS; 
+                    m.vy *= -1;
+                }
+
+                m.draw();
+            }
+        }
+
+
+        function initializeChart() {
+            const chartCtx = document.getElementById('temp-chart').getContext('2d');
+            tempChart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels: timeData,
+                    datasets: [{
+                        label: 'Temperature',
+                        data: tempData,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    animation: {
+                        duration: 0 // disable animations
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Temperature (°C)' }
+                        },
+                        x: {
+                             title: { display: true, text: 'Time' },
+                             ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+
+        function changeSubstance(name) {
+            substance = { ...compounds[name] };
+            substance.temp = substance.startTemp;
+            substance.state = substance.startState;
+            substance.transitionProgress = 0;
+            
+             // Define graph scale dynamically
+            const range = substance.boilPoint - substance.startTemp;
+            let min, max;
+
+            if (range > 1000) {
+                // If boiling point is extreme (like Gallium), focus on melting point
+                const minInterestingPoint = Math.min(substance.startTemp, substance.meltPoint);
+                const maxInterestingPoint = substance.meltPoint;
+                const meltRange = Math.abs(maxInterestingPoint - minInterestingPoint);
+                const padding = Math.max(meltRange * 0.5, 20); // Add 50% padding, or at least 20 degrees
+                min = minInterestingPoint - padding;
+                max = maxInterestingPoint + padding;
+            } else {
+                // Otherwise, show the full range from start to boil
+                const padding = Math.max(range * 0.1, 20); // Add 10% padding, or at least 20 degrees
+                min = substance.startTemp - padding;
+                max = substance.boilPoint + padding;
+            }
+
+            // Handle edge case where min and max are the same
+            if (min === max) { 
+                min -= 20;
+                max += 20;
+            }
+
+            substance.minScaleTemp = min;
+            substance.maxScaleTemp = max;
+
+            // Reset graph data and scales
+            timeData.length = 0;
+            tempData.length = 0;
+            timeStep = 0;
+            if (tempChart) {
+                 tempChart.options.scales.y.min = substance.minScaleTemp;
+                 tempChart.options.scales.y.max = substance.maxScaleTemp;
+                 tempChart.update();
+            }
+
+            // Reset slider and heatRate
+            heatSlider.value = 0;
+            heatRate = 0;
+
+            // Reset pause button
+            isPaused = false;
+            if (pauseBtn) { // Check if pauseBtn exists
+                pauseBtn.textContent = 'Pause';
+                pauseBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                pauseBtn.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
+            }
+
+
+            // Reset guessing game UI
+            answersSection.classList.add('hidden');
+            feedbackText.textContent = '';
+            boilingFeedbackText.textContent = ''; // New
+            meltingPointGuessInput.value = '';
+            boilingPointGuessInput.value = ''; // New
+            meltingPointGuessInput.disabled = false;
+            boilingPointGuessInput.disabled = false; // New
+            checkGuessesBtn.disabled = false; // Renamed
+            feedbackText.className = 'text-center text-sm font-medium h-5';
+            boilingFeedbackText.className = 'text-center text-sm font-medium h-5'; // New
+
+            // Reset molecules
+            initializeMolecules();
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // Update substance names in both cards
+            substanceNameGuess.textContent = substance.name;
+            substanceNameAnswer.textContent = substance.name;
+
+            // Update the answer card (it might be hidden)
+            meltingPointDisplay.textContent = `${substance.meltPoint}°C`;
+            boilingPointDisplay.textContent = `${substance.boilPoint}°C`;
+            
+            // Update dynamic simulation displays
+            tempDisplay.textContent = `${substance.temp.toFixed(1)}°C`;
+            stateDisplay.textContent = substance.state;
+
+            const isTransitioning = ["Melting", "Boiling", "Freezing", "Condensing"].includes(substance.state);
+            
+            if (isTransitioning) {
+                progressContainer.classList.remove('hidden');
+                progressBar.style.width = `${substance.transitionProgress}%`;
+                progressText.textContent = `${substance.state} (${Math.round(substance.transitionProgress)}%)`;
+                stateDisplay.textContent = 'Transitioning...';
+            } else {
+                progressContainer.classList.add('hidden');
+            }
+        }
+
+        function checkGuesses() { // Renamed function
+            const guess = parseFloat(meltingPointGuessInput.value);
+            const boilingGuess = parseFloat(boilingPointGuessInput.value); // New
+
+            let meltingCorrect = false;
+            let boilingCorrect = false;
+
+            // Check Melting Point
+            if (isNaN(guess)) {
+                if (!meltingPointGuessInput.disabled) { // Don't overwrite if already correct
+                    feedbackText.textContent = "Please enter a valid number.";
+                    feedbackText.className = 'text-center text-sm font-medium h-5 text-yellow-600';
+                }
+            } else if (Math.abs(guess - substance.meltPoint) <= 1) { 
+                feedbackText.textContent = "Correct! Well done.";
+                feedbackText.className = 'text-center text-sm font-medium h-5 text-green-600';
+                meltingPointGuessInput.disabled = true;
+                meltingCorrect = true;
+            } else {
+                feedbackText.textContent = `Not quite! Try observing the graph and guess again.`;
+                feedbackText.className = 'text-center text-sm font-medium h-5 text-red-600';
+            }
+
+            // Check Boiling Point
+            if (isNaN(boilingGuess)) {
+                 if (!boilingPointGuessInput.disabled) {
+                    boilingFeedbackText.textContent = "Please enter a valid number.";
+                    boilingFeedbackText.className = 'text-center text-sm font-medium h-5 text-yellow-600';
+                 }
+            } else if (Math.abs(boilingGuess - substance.boilPoint) <= 1) { 
+                boilingFeedbackText.textContent = "Correct! Well done.";
+                boilingFeedbackText.className = 'text-center text-sm font-medium h-5 text-green-600';
+                boilingPointGuessInput.disabled = true;
+                boilingCorrect = true;
+            } else {
+                boilingFeedbackText.textContent = `Not quite! Try observing the graph and guess again.`;
+                boilingFeedbackText.className = 'text-center text-sm font-medium h-5 text-red-600';
+            }
+
+            // Check if both are correct
+            if ((meltingPointGuessInput.disabled && boilingPointGuessInput.disabled) || (meltingCorrect && boilingCorrect)) {
+                answersSection.classList.remove('hidden');
+                checkGuessesBtn.disabled = true;
+            }
+        }
+        
+        function simulationTick() {
+            if (isPaused) return; // New: Stop all simulation logic if paused
+
+            if (heatRate === 0) {
+                 updateMolecules(); // Keep vibrating even if no heat change
+                 return;
+            }
+
+            const rateFactor = Math.abs(heatRate) / 10; // 0.1 to 1.0
+            const effectiveTempStep = MAX_TEMP_STEP * rateFactor;
+            const effectiveProgressStep = PROGRESS_STEP * rateFactor;
+            
+            timeStep++;
+
+            if (heatRate > 0) { // Heating
+                 switch (substance.state) {
+                    case "Solid":
+                        substance.temp += effectiveTempStep;
+                        if (substance.temp >= substance.meltPoint) {
+                            substance.temp = substance.meltPoint;
+                            substance.state = "Melting";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Melting":
+                        substance.transitionProgress += effectiveProgressStep;
+                        if (substance.transitionProgress >= 100) {
+                            substance.state = "Liquid";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Liquid":
+                        substance.temp += effectiveTempStep;
+                        if (substance.temp >= substance.boilPoint) {
+                            substance.temp = substance.boilPoint;
+                            substance.state = "Boiling";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Boiling":
+                        substance.transitionProgress += effectiveProgressStep;
+                        if (substance.transitionProgress >= 100) {
+                            substance.state = "Gas";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Gas":
+                        substance.temp += effectiveTempStep;
+                        break;
+                    case "Freezing":
+                        substance.transitionProgress -= effectiveProgressStep;
+                        if (substance.transitionProgress <= 0) {
+                            substance.state = "Liquid";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Condensing":
+                        substance.transitionProgress -= effectiveProgressStep;
+                        if (substance.transitionProgress <= 0) {
+                            substance.state = "Gas";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                }
+            } else { // Cooling (heatRate < 0)
+                switch (substance.state) {
+                    case "Gas":
+                        substance.temp -= effectiveTempStep;
+                        if (substance.temp <= substance.boilPoint) {
+                            substance.temp = substance.boilPoint;
+                            substance.state = "Condensing";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Condensing":
+                        substance.transitionProgress += effectiveProgressStep;
+                        if (substance.transitionProgress >= 100) {
+                            substance.state = "Liquid";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Liquid":
+                        substance.temp -= effectiveTempStep;
+                        if (substance.temp <= substance.meltPoint) {
+                            substance.temp = substance.meltPoint;
+                            substance.state = "Freezing";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Freezing":
+                        substance.transitionProgress += effectiveProgressStep;
+                        if (substance.transitionProgress >= 100) {
+                            substance.state = "Solid";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Solid":
+                        substance.temp -= effectiveTempStep;
+                        break;
+                    case "Melting":
+                        substance.transitionProgress -= effectiveProgressStep;
+                        if (substance.transitionProgress <= 0) {
+                            substance.state = "Solid";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                    case "Boiling":
+                        substance.transitionProgress -= effectiveProgressStep;
+                        if (substance.transitionProgress <= 0) {
+                            substance.state = "Liquid";
+                            substance.transitionProgress = 0;
+                        }
+                        break;
+                }
+            }
+            updateDisplay();
+
+            // Update graph data
+            timeData.push(timeStep);
+            tempData.push(substance.temp);
+
+            if(timeData.length > MAX_GRAPH_POINTS) {
+                timeData.shift();
+                tempData.shift();
+            }
+            tempChart.update();
+            updateMolecules();
+        }
+
+        // --- Event Listeners ---
+        heatSlider.addEventListener('input', (event) => {
+            heatRate = parseInt(event.target.value);
+        });
+
+        substanceSelector.addEventListener('change', (event) => {
+            changeSubstance(event.target.value);
+        });
+        
+        pauseBtn.addEventListener('click', () => { // New
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseBtn.textContent = 'Resume';
+                pauseBtn.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
+                pauseBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+            } else {
+                pauseBtn.textContent = 'Pause';
+                pauseBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                pauseBtn.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
+            }
+        });
+
+        checkGuessesBtn.addEventListener('click', checkGuesses); // Renamed
+        meltingPointGuessInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                checkGuesses(); // Renamed
+            }
+        });
+        boilingPointGuessInput.addEventListener('keyup', (event) => { // New
+            if (event.key === 'Enter') {
+                checkGuesses(); // Renamed
+            }
+        });
+
+        // --- Initial Load & Simulation Start ---
+        window.onload = () => {
+            initializeChart();
+            // Initialize canvas context and dimensions
+            ctx = canvasEl.getContext('2d');
+            canvasEl.width = canvasEl.offsetWidth;
+            canvasEl.height = canvasEl.offsetHeight;
+
+            changeSubstance("Water"); // Initialize with water, which will call initializeMolecules
+            setInterval(simulationTick, SIMULATION_INTERVAL); // Start the simulation loop
+        };
+
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron Configuration Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569; 
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Orbital Box Styling */
+        .orbital-box {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        
+        .arrow {
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+        .dark input[type=range]::-webkit-slider-runnable-track {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-e2e8f0 transition-colors duration-300 dark">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center shrink-0 transition-colors duration-300">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-500/10 p-2 rounded-lg">
+                <i data-lucide="atom" class="text-blue-600 dark:text-blue-400 w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Electron Explorer</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Interactive Configuration & Shells</p>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="flex items-center gap-4">
+            
+            <!-- Atom Controls -->
+            <div class="flex items-center gap-4 bg-slate-100 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-colors duration-300">
+                <button id="prevBtn" class="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-300 transition-colors shadow-sm dark:shadow-none">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                
+                <div class="flex flex-col items-center w-64 px-2">
+                    <div class="flex justify-between w-full text-xs text-slate-500 dark:text-slate-400 mb-1 font-mono">
+                        <span>H (1)</span>
+                        <span id="sliderValue">C (6)</span>
+                        <span>Og (118)</span>
+                    </div>
+                    <input type="range" id="atomSlider" min="1" max="118" value="6" class="w-full">
+                </div>
+
+                <button id="nextBtn" class="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-300 transition-colors shadow-sm dark:shadow-none">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+                
+                <div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+
+                <div class="relative group">
+                    <input type="number" id="atomInput" min="1" max="118" value="6" 
+                        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-center rounded-lg w-16 py-1 focus:outline-none focus:border-blue-500 font-mono transition-colors duration-300">
+                    <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-slate-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">Atomic Number (Z)</span>
+                </div>
+            </div>
+
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700/50">
+                <i id="themeIcon" data-lucide="moon" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Panel: Visualization (Canvas) -->
+        <section class="w-1/2 relative bg-slate-100 dark:bg-slate-950 flex flex-col border-r border-slate-200 dark:border-slate-800 transition-colors duration-300">
+            
+            <!-- View Tabs -->
+            <div class="absolute top-4 left-4 z-10 flex p-1 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <button id="tabBohr" class="px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-500 text-white shadow-sm transition-all">
+                    Bohr Model
+                </button>
+                <button id="tabQuantum" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+                    Quantum Cloud
+                </button>
+            </div>
+
+            <div class="absolute top-16 left-4 z-10 pointer-events-none">
+                <div id="modelDesc" class="text-[10px] text-slate-500 dark:text-slate-500 max-w-[200px]">
+                    Classical solar system model. Electrons orbit in fixed shells. Good for counting shells.
+                </div>
+            </div>
+            
+            <!-- Element Card (Overlay) -->
+            <div class="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 p-4 rounded-xl shadow-lg dark:shadow-2xl min-w-[140px] text-center transition-colors duration-300">
+                <div id="elNumber" class="text-slate-500 dark:text-slate-400 text-xs font-mono mb-1">6</div>
+                <div id="elSymbol" class="text-4xl font-bold text-slate-800 dark:text-white mb-1">C</div>
+                <div id="elName" class="text-blue-600 dark:text-blue-400 text-sm font-semibold">Carbon</div>
+                <div id="elMass" class="text-slate-500 text-[10px] mt-2">Atomic Mass: 12.011</div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="flex-1 w-full h-full relative overflow-hidden" id="canvasContainer">
+                <canvas id="atomCanvas" class="absolute inset-0"></canvas>
+            </div>
+            
+            <!-- Legend -->
+            <div class="absolute bottom-4 left-4 z-10 flex gap-4 bg-white/50 dark:bg-slate-900/50 p-2 rounded-lg backdrop-blur-sm text-xs border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
+                    <span class="text-slate-600 dark:text-slate-300">Electron/Density</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                    <span class="text-slate-600 dark:text-slate-300">Nucleus</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel: Data & Orbitals -->
+        <section class="w-1/2 flex flex-col bg-white dark:bg-slate-900 overflow-y-auto transition-colors duration-300">
+            
+            <!-- Config Text -->
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="text-slate-500 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider mb-3">Electron Configuration</h3>
+                <div id="configText" class="font-mono text-xl md:text-2xl text-blue-600 dark:text-blue-300 break-words leading-relaxed font-bold">
+                    1s² 2s² 2p²
+                </div>
+                <div id="nobleConfigText" class="font-mono text-sm text-slate-500 mt-2">
+                    [He] 2s² 2p²
+                </div>
+            </div>
+
+            <!-- Shell Stats -->
+            <div class="grid grid-cols-4 gap-px bg-slate-200 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
+                <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
+                    <div class="text-xs text-slate-500 uppercase mb-1">Valence e⁻</div>
+                    <div id="valenceCount" class="text-xl font-bold text-slate-900 dark:text-white">4</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
+                    <div class="text-xs text-slate-500 uppercase mb-1">Shells</div>
+                    <div id="shellCount" class="text-xl font-bold text-slate-900 dark:text-white">2</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
+                    <div class="text-xs text-slate-500 uppercase mb-1">Block</div>
+                    <div id="blockType" class="text-xl font-bold text-slate-900 dark:text-white">p</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
+                    <div class="text-xs text-slate-500 uppercase mb-1">Category</div>
+                    <div id="elCategory" class="text-sm font-bold text-slate-900 dark:text-white truncate">Non-metal</div>
+                </div>
+            </div>
+
+            <!-- Orbital Diagram -->
+            <div class="p-6 flex-1">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="text-slate-500 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">Orbital Diagram</h3>
+                    <div class="text-[10px] text-slate-500">Energy Increases →</div>
+                </div>
+                
+                <div id="orbitalContainer" class="flex flex-wrap gap-4 content-start">
+                    <!-- Orbitals injected here via JS -->
+                </div>
+            </div>
+
+            <!-- Shell Table -->
+            <div class="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 transition-colors">
+                <h3 class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Shell Occupation (K, L, M...)</h3>
+                <div class="flex gap-2" id="shellBars">
+                    <!-- Bars injected here -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // --- Data ---
+        const elements = [
+            null,
+            { s: "H", n: "Hydrogen", m: 1.008, c: "Non-metal" }, { s: "He", n: "Helium", m: 4.003, c: "Noble Gas" },
+            { s: "Li", n: "Lithium", m: 6.941, c: "Alkali Metal" }, { s: "Be", n: "Beryllium", m: 9.012, c: "Alkaline Earth" },
+            { s: "B", n: "Boron", m: 10.81, c: "Metalloid" }, { s: "C", n: "Carbon", m: 12.01, c: "Non-metal" },
+            { s: "N", n: "Nitrogen", m: 14.01, c: "Non-metal" }, { s: "O", n: "Oxygen", m: 16.00, c: "Non-metal" },
+            { s: "F", n: "Fluorine", m: 19.00, c: "Halogen" }, { s: "Ne", n: "Neon", m: 20.18, c: "Noble Gas" },
+            { s: "Na", n: "Sodium", m: 22.99, c: "Alkali Metal" }, { s: "Mg", n: "Magnesium", m: 24.31, c: "Alkaline Earth" },
+            { s: "Al", n: "Aluminum", m: 26.98, c: "Post-transition" }, { s: "Si", n: "Silicon", m: 28.09, c: "Metalloid" },
+            { s: "P", n: "Phosphorus", m: 30.97, c: "Non-metal" }, { s: "S", n: "Sulfur", m: 32.06, c: "Non-metal" },
+            { s: "Cl", n: "Chlorine", m: 35.45, c: "Halogen" }, { s: "Ar", n: "Argon", m: 39.95, c: "Noble Gas" },
+            { s: "K", n: "Potassium", m: 39.10, c: "Alkali Metal" }, { s: "Ca", n: "Calcium", m: 40.08, c: "Alkaline Earth" },
+            { s: "Sc", n: "Scandium", m: 44.96, c: "Transition Metal" }, { s: "Ti", n: "Titanium", m: 47.87, c: "Transition Metal" },
+            { s: "V", n: "Vanadium", m: 50.94, c: "Transition Metal" }, { s: "Cr", n: "Chromium", m: 52.00, c: "Transition Metal" },
+            { s: "Mn", n: "Manganese", m: 54.94, c: "Transition Metal" }, { s: "Fe", n: "Iron", m: 55.85, c: "Transition Metal" },
+            { s: "Co", n: "Cobalt", m: 58.93, c: "Transition Metal" }, { s: "Ni", n: "Nickel", m: 58.69, c: "Transition Metal" },
+            { s: "Cu", n: "Copper", m: 63.55, c: "Transition Metal" }, { s: "Zn", n: "Zinc", m: 65.38, c: "Transition Metal" },
+            { s: "Ga", n: "Gallium", m: 69.72, c: "Post-transition" }, { s: "Ge", n: "Germanium", m: 72.63, c: "Metalloid" },
+            { s: "As", n: "Arsenic", m: 74.92, c: "Metalloid" }, { s: "Se", n: "Selenium", m: 78.96, c: "Non-metal" },
+            { s: "Br", n: "Bromine", m: 79.90, c: "Halogen" }, { s: "Kr", n: "Krypton", m: 83.80, c: "Noble Gas" },
+            { s: "Rb", n: "Rubidium", m: 85.47, c: "Alkali Metal" }, { s: "Sr", n: "Strontium", m: 87.62, c: "Alkaline Earth" },
+            { s: "Y", n: "Yttrium", m: 88.91, c: "Transition Metal" }, { s: "Zr", n: "Zirconium", m: 91.22, c: "Transition Metal" },
+            { s: "Nb", n: "Niobium", m: 92.91, c: "Transition Metal" }, { s: "Mo", n: "Molybdenum", m: 95.96, c: "Transition Metal" },
+            { s: "Tc", n: "Technetium", m: 98, c: "Transition Metal" }, { s: "Ru", n: "Ruthenium", m: 101.1, c: "Transition Metal" },
+            { s: "Rh", n: "Rhodium", m: 102.9, c: "Transition Metal" }, { s: "Pd", n: "Palladium", m: 106.4, c: "Transition Metal" },
+            { s: "Ag", n: "Silver", m: 107.9, c: "Transition Metal" }, { s: "Cd", n: "Cadmium", m: 112.4, c: "Transition Metal" },
+            { s: "In", n: "Indium", m: 114.8, c: "Post-transition" }, { s: "Sn", n: "Tin", m: 118.7, c: "Post-transition" },
+            { s: "Sb", n: "Antimony", m: 121.8, c: "Metalloid" }, { s: "Te", n: "Tellurium", m: 127.6, c: "Metalloid" },
+            { s: "I", n: "Iodine", m: 126.9, c: "Halogen" }, { s: "Xe", n: "Xenon", m: 131.3, c: "Noble Gas" },
+            { s: "Cs", n: "Cesium", m: 132.9, c: "Alkali Metal" }, { s: "Ba", n: "Barium", m: 137.3, c: "Alkaline Earth" },
+            { s: "La", n: "Lanthanum", m: 138.9, c: "Lanthanide" }, { s: "Ce", n: "Cerium", m: 140.1, c: "Lanthanide" },
+            { s: "Pr", n: "Praseodymium", m: 140.9, c: "Lanthanide" }, { s: "Nd", n: "Neodymium", m: 144.2, c: "Lanthanide" },
+            { s: "Pm", n: "Promethium", m: 145, c: "Lanthanide" }, { s: "Sm", n: "Samarium", m: 150.4, c: "Lanthanide" },
+            { s: "Eu", n: "Europium", m: 152.0, c: "Lanthanide" }, { s: "Gd", n: "Gadolinium", m: 157.3, c: "Lanthanide" },
+            { s: "Tb", n: "Terbium", m: 158.9, c: "Lanthanide" }, { s: "Dy", n: "Dysprosium", m: 162.5, c: "Lanthanide" },
+            { s: "Ho", n: "Holmium", m: 164.9, c: "Lanthanide" }, { s: "Er", n: "Erbium", m: 167.3, c: "Lanthanide" },
+            { s: "Tm", n: "Thulium", m: 168.9, c: "Lanthanide" }, { s: "Yb", n: "Ytterbium", m: 173.0, c: "Lanthanide" },
+            { s: "Lu", n: "Lutetium", m: 175.0, c: "Lanthanide" }, { s: "Hf", n: "Hafnium", m: 178.5, c: "Transition Metal" },
+            { s: "Ta", n: "Tantalum", m: 180.9, c: "Transition Metal" }, { s: "W", n: "Tungsten", m: 183.8, c: "Transition Metal" },
+            { s: "Re", n: "Rhenium", m: 186.2, c: "Transition Metal" }, { s: "Os", n: "Osmium", m: 190.2, c: "Transition Metal" },
+            { s: "Ir", n: "Iridium", m: 192.2, c: "Transition Metal" }, { s: "Pt", n: "Platinum", m: 195.1, c: "Transition Metal" },
+            { s: "Au", n: "Gold", m: 197.0, c: "Transition Metal" }, { s: "Hg", n: "Mercury", m: 200.6, c: "Transition Metal" },
+            { s: "Tl", n: "Thallium", m: 204.4, c: "Post-transition" }, { s: "Pb", n: "Lead", m: 207.2, c: "Post-transition" },
+            { s: "Bi", n: "Bismuth", m: 209.0, c: "Post-transition" }, { s: "Po", n: "Polonium", m: 209, c: "Post-transition" },
+            { s: "At", n: "Astatine", m: 210, c: "Halogen" }, { s: "Rn", n: "Radon", m: 222, c: "Noble Gas" },
+            { s: "Fr", n: "Francium", m: 223, c: "Alkali Metal" }, { s: "Ra", n: "Radium", m: 226, c: "Alkaline Earth" },
+            { s: "Ac", n: "Actinium", m: 227, c: "Actinide" }, { s: "Th", n: "Thorium", m: 232.0, c: "Actinide" },
+            { s: "Pa", n: "Protactinium", m: 231.0, c: "Actinide" }, { s: "U", n: "Uranium", m: 238.0, c: "Actinide" },
+            { s: "Np", n: "Neptunium", m: 237, c: "Actinide" }, { s: "Pu", n: "Plutonium", m: 244, c: "Actinide" },
+            { s: "Am", n: "Americium", m: 243, c: "Actinide" }, { s: "Cm", n: "Curium", m: 247, c: "Actinide" },
+            { s: "Bk", n: "Berkelium", m: 247, c: "Actinide" }, { s: "Cf", n: "Californium", m: 251, c: "Actinide" },
+            { s: "Es", n: "Einsteinium", m: 252, c: "Actinide" }, { s: "Fm", n: "Fermium", m: 257, c: "Actinide" },
+            { s: "Md", n: "Mendelevium", m: 258, c: "Actinide" }, { s: "No", n: "Nobelium", m: 259, c: "Actinide" },
+            { s: "Lr", n: "Lawrencium", m: 262, c: "Actinide" }, { s: "Rf", n: "Rutherfordium", m: 267, c: "Transition Metal" },
+            { s: "Db", n: "Dubnium", m: 270, c: "Transition Metal" }, { s: "Sg", n: "Seaborgium", m: 271, c: "Transition Metal" },
+            { s: "Bh", n: "Bohrium", m: 270, c: "Transition Metal" }, { s: "Hs", n: "Hassium", m: 277, c: "Transition Metal" },
+            { s: "Mt", n: "Meitnerium", m: 276, c: "Transition Metal" }, { s: "Ds", n: "Darmstadtium", m: 281, c: "Transition Metal" },
+            { s: "Rg", n: "Roentgenium", m: 280, c: "Transition Metal" }, { s: "Cn", n: "Copernicium", m: 285, c: "Transition Metal" },
+            { s: "Nh", n: "Nihonium", m: 284, c: "Post-transition" }, { s: "Fl", n: "Flerovium", m: 289, c: "Post-transition" },
+            { s: "Mc", n: "Moscovium", m: 288, c: "Post-transition" }, { s: "Lv", n: "Livermorium", m: 293, c: "Post-transition" },
+            { s: "Ts", n: "Tennessine", m: 294, c: "Halogen" }, { s: "Og", n: "Oganesson", m: 294, c: "Noble Gas" }
+        ];
+
+        // --- Logic: Electron Configuration ---
+        const capacities = { s: 2, p: 6, d: 10, f: 14 };
+        const aufbauOrder = [ "1s", "2s", "2p", "3s", "3p", "4s", "3d", "4p", "5s", "4d", "5p", "6s", "4f", "5d", "6p", "7s", "5f", "6d", "7p" ];
+        const exceptions = {
+            24: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":1, "3d":5 },
+            29: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":1, "3d":10 },
+            41: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":2, "3d":10, "4p":6, "5s":1, "4d":4 },
+            42: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":2, "3d":10, "4p":6, "5s":1, "4d":5 },
+            44: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":2, "3d":10, "4p":6, "5s":1, "4d":7 },
+            45: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":2, "3d":10, "4p":6, "5s":1, "4d":8 },
+            46: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":2, "3d":10, "4p":6, "5s":0, "4d":10 },
+            47: { "1s":2, "2s":2, "2p":6, "3s":2, "3p":6, "4s":2, "3d":10, "4p":6, "5s":1, "4d":10 },
+            78: { "6s":1, "4f":14, "5d":9 },
+            79: { "6s":1, "4f":14, "5d":10 },
+        };
+
+        function getConfiguration(Z) {
+            let config = {};
+            let remaining = Z;
+            if (exceptions[Z] && Object.keys(exceptions[Z]).length > 4) return exceptions[Z];
+            for (let sub of aufbauOrder) {
+                if (remaining <= 0) break;
+                let type = sub.slice(-1);
+                let cap = capacities[type];
+                let fill = Math.min(remaining, cap);
+                config[sub] = fill;
+                remaining -= fill;
+            }
+            if (exceptions[Z]) {
+                const patch = exceptions[Z];
+                for (let orb in patch) config[orb] = patch[orb];
+            }
+            return config;
+        }
+
+        function sortOrbitalsForDisplay(configKeys) {
+            return configKeys.sort((a, b) => {
+                const nA = parseInt(a), nB = parseInt(b);
+                if (nA !== nB) return nA - nB;
+                const typeOrder = { 's': 1, 'p': 2, 'd': 3, 'f': 4 };
+                return typeOrder[a.slice(-1)] - typeOrder[b.slice(-1)];
+            });
+        }
+
+        function getNobleGasShort(Z) {
+            const nobles = [{z:2,s:"He"},{z:10,s:"Ne"},{z:18,s:"Ar"},{z:36,s:"Kr"},{z:54,s:"Xe"},{z:86,s:"Rn"},{z:118,s:"Og"}];
+            for (let i = nobles.length - 1; i >= 0; i--) if (Z > nobles[i].z) return nobles[i];
+            return null;
+        }
+
+        // --- Interaction State ---
+        let currentZ = 6;
+        let viewMode = 'bohr'; // 'bohr' or 'quantum'
+        let animationFrameId;
+
+        // --- DOM Elements ---
+        const slider = document.getElementById('atomSlider');
+        const input = document.getElementById('atomInput');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const sliderValueDisplay = document.getElementById('sliderValue');
+
+        // Theme
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Tabs
+        const tabBohr = document.getElementById('tabBohr');
+        const tabQuantum = document.getElementById('tabQuantum');
+        const modelDesc = document.getElementById('modelDesc');
+
+        const elSymbol = document.getElementById('elSymbol');
+        const elNumber = document.getElementById('elNumber');
+        const elName = document.getElementById('elName');
+        const elMass = document.getElementById('elMass');
+        const elCategory = document.getElementById('elCategory');
+        const configText = document.getElementById('configText');
+        const nobleConfigText = document.getElementById('nobleConfigText');
+        const valenceCount = document.getElementById('valenceCount');
+        const shellCount = document.getElementById('shellCount');
+        const blockType = document.getElementById('blockType');
+        const orbitalContainer = document.getElementById('orbitalContainer');
+        const shellBars = document.getElementById('shellBars');
+        const canvas = document.getElementById('atomCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Event Listeners ---
+        function updateZ(newZ) {
+            if (newZ < 1) newZ = 1;
+            if (newZ > 118) newZ = 118;
+            currentZ = parseInt(newZ);
+            slider.value = currentZ;
+            input.value = currentZ;
+            render();
+        }
+
+        function switchTab(mode) {
+            viewMode = mode;
+            if (mode === 'bohr') {
+                tabBohr.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-500 text-white shadow-sm transition-all";
+                tabQuantum.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-all";
+                modelDesc.innerText = "Classical solar system model. Electrons orbit in fixed shells. Good for counting shells.";
+            } else {
+                tabQuantum.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-500 text-white shadow-sm transition-all";
+                tabBohr.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-all";
+                modelDesc.innerText = "Mathematical orbital shapes. Smooth gradients represent the probability density functions (|ψ|²) of s, p, d, and f orbitals.";
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark');
+            if (isDark) {
+                themeIcon.setAttribute('data-lucide', 'moon');
+            } else {
+                themeIcon.setAttribute('data-lucide', 'sun');
+            }
+            lucide.createIcons();
+        }
+
+        slider.addEventListener('input', (e) => updateZ(e.target.value));
+        input.addEventListener('change', (e) => updateZ(e.target.value));
+        prevBtn.addEventListener('click', () => updateZ(currentZ - 1));
+        nextBtn.addEventListener('click', () => updateZ(currentZ + 1));
+        
+        tabBohr.addEventListener('click', () => switchTab('bohr'));
+        tabQuantum.addEventListener('click', () => switchTab('quantum'));
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // --- Rendering Logic ---
+
+        function render() {
+            const el = elements[currentZ] || { s: "?", n: "Unknown", m: 0, c: "Unknown" };
+            
+            // Header Info
+            elSymbol.innerText = el.s;
+            elNumber.innerText = currentZ;
+            elName.innerText = el.n;
+            elMass.innerText = `Atomic Mass: ${el.m}`;
+            elCategory.innerText = el.c;
+            sliderValueDisplay.innerText = `${el.s} (${currentZ})`;
+
+            const config = getConfiguration(currentZ);
+            const sortedKeys = sortOrbitalsForDisplay(Object.keys(config));
+            
+            // Text Config
+            let configString = "";
+            let valence = 0;
+            let maxN = 0;
+            let lastOrbital = "";
+            const shellFill = {};
+
+            sortedKeys.forEach(orb => {
+                const n = parseInt(orb);
+                const count = config[orb];
+                const type = orb.slice(-1);
+                
+                configString += `${orb}<sup>${count}</sup> `;
+                if (n > maxN) maxN = n;
+                if (!shellFill[n]) shellFill[n] = 0;
+                shellFill[n] += count;
+                lastOrbital = type;
+            });
+
+            valence = shellFill[maxN] || 0;
+            configText.innerHTML = configString;
+            valenceCount.innerText = valence;
+            shellCount.innerText = maxN;
+            blockType.innerText = lastOrbital;
+
+            // Noble Gas Config
+            const noble = getNobleGasShort(currentZ);
+            if (noble) {
+                let nobleStr = `[${noble.sym}] `;
+                let nobleCoreZ = noble.z;
+                let currentCount = 0;
+                let buildingStr = "";
+                for(let orb of aufbauOrder) {
+                    if(!config[orb]) continue;
+                    currentCount += config[orb];
+                    if (currentCount > nobleCoreZ) {
+                         buildingStr += `${orb}<sup>${config[orb]}</sup> `;
+                    }
+                }
+                nobleConfigText.innerHTML = nobleStr + buildingStr;
+            } else {
+                nobleConfigText.innerHTML = "No noble core";
+            }
+
+            // Orbital Boxes
+            orbitalContainer.innerHTML = '';
+            const activeOrbitals = aufbauOrder.filter(orb => config[orb]);
+            
+            activeOrbitals.forEach(orb => {
+                const type = orb.slice(-1);
+                const filled = config[orb];
+                const capacity = capacities[type];
+                const boxCount = capacity / 2;
+
+                const subshellDiv = document.createElement('div');
+                subshellDiv.className = "flex flex-col items-center gap-1";
+                const boxesDiv = document.createElement('div');
+                boxesDiv.className = "flex gap-1";
+
+                for (let i = 0; i < boxCount; i++) {
+                    const box = document.createElement('div');
+                    box.className = "orbital-box w-8 h-8 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-blue-300 shadow-sm dark:shadow-inner transition-colors";
+                    
+                    let hasUp = false, hasDown = false;
+                    if (filled > i) hasUp = true;
+                    if (filled > (i + boxCount)) hasDown = true;
+
+                    if (hasUp && !hasDown) {
+                        box.innerHTML = `<span class="arrow text-base">↑</span>`;
+                    } else if (hasUp && hasDown) {
+                        box.innerHTML = `<span class="arrow text-sm">⇅</span>`;
+                    }
+                    boxesDiv.appendChild(box);
+                }
+                subshellDiv.appendChild(boxesDiv);
+                const label = document.createElement('span');
+                label.className = "text-[10px] text-slate-500 font-mono";
+                label.innerText = orb;
+                subshellDiv.appendChild(label);
+                orbitalContainer.appendChild(subshellDiv);
+            });
+
+            // Shell Stats
+            shellBars.innerHTML = '';
+            const shellLabels = ['K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+            Object.keys(shellFill).sort().forEach((n, idx) => {
+                const count = shellFill[n];
+                const max = 2 * (n*n);
+                const percent = (count / max) * 100;
+                
+                const barContainer = document.createElement('div');
+                barContainer.className = "flex flex-col items-center flex-1";
+                
+                const track = document.createElement('div');
+                track.className = "w-full h-24 bg-slate-200 dark:bg-slate-800 rounded-lg relative overflow-hidden flex items-end justify-center transition-colors";
+                
+                const fillBar = document.createElement('div');
+                fillBar.className = "w-full bg-blue-500/50 absolute bottom-0 transition-all duration-500";
+                fillBar.style.height = `${percent}%`;
+                
+                const countText = document.createElement('span');
+                countText.className = "relative z-10 text-xs font-bold text-slate-700 dark:text-white mb-1";
+                countText.innerText = count;
+
+                track.appendChild(fillBar);
+                track.appendChild(countText);
+                
+                const label = document.createElement('div');
+                label.className = "text-[10px] text-slate-500 mt-2 font-mono";
+                label.innerText = `${n} (${shellLabels[idx] || '?'})`;
+                
+                barContainer.appendChild(track);
+                barContainer.appendChild(label);
+                shellBars.appendChild(barContainer);
+            });
+        }
+
+        // --- Canvas Drawing ---
+        
+        function drawAtom() {
+            const config = getConfiguration(currentZ);
+            
+            const container = document.getElementById('canvasContainer');
+            // Fix: Check for zero dimensions to prevent negative radius errors
+            if (!container || !container.clientWidth || !container.clientHeight) return;
+
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (viewMode === 'bohr') {
+                drawBohr(cx, cy, config);
+            } else {
+                drawQuantum(cx, cy, config);
+            }
+        }
+
+        function drawBohr(cx, cy, config) {
+            // Aggregate shell data
+            const shellFill = {};
+            Object.keys(config).forEach(orb => {
+                const n = parseInt(orb);
+                if (!shellFill[n]) shellFill[n] = 0;
+                shellFill[n] += config[orb];
+            });
+
+            // Draw Nucleus
+            ctx.beginPath();
+            ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const shells = Object.keys(shellFill).sort((a,b) => a-b);
+            const maxRadius = Math.min(cx, cy) - 20;
+
+            // Fix: Ensure maxRadius is positive
+            if (maxRadius <= 0) return;
+
+            const spacing = maxRadius / (shells.length + 1);
+            const isDark = document.body.classList.contains('dark');
+
+            shells.forEach((n, index) => {
+                const radius = spacing * (index + 2);
+                const electronCount = shellFill[n];
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = isDark ? '#334155' : '#cbd5e1'; 
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                const time = Date.now() * 0.001; 
+                const speed = 0.5 - (index * 0.05);
+                
+                for (let i = 0; i < electronCount; i++) {
+                    const angleOffset = (Math.PI * 2 * i) / electronCount;
+                    const angle = angleOffset + (time * speed);
+                    const ex = cx + Math.cos(angle) * radius;
+                    const ey = cy + Math.sin(angle) * radius;
+
+                    ctx.beginPath();
+                    ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#facc15';
+                    ctx.shadowColor = '#facc15';
+                    ctx.shadowBlur = 5;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+        }
+
+        // Mathematical Orbital Shapes
+        // Renders smooth gradients representing the wavefunction |ψ|²
+        // showing the characteristic shapes (s=sphere, p=dumbbell, d=clover).
+        function drawQuantum(cx, cy, config) {
+            const isDark = document.body.classList.contains('dark');
+            
+            const scale = Math.min(cx, cy) / 10; 
+
+            // Helper to get L
+            const getL = (type) => {
+                if (type === 's') return 0;
+                if (type === 'p') return 1;
+                if (type === 'd') return 2;
+                if (type === 'f') return 3;
+                return 0;
+            };
+
+            // Helper to draw a lobe (for p, d, f orbitals)
+            const drawLobe = (cx, cy, size, angle, colorStr, alpha) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+                
+                const lobeLen = size;
+                const lobeWidth = size * 0.5;
+                
+                // Gradient for the lobe volume
+                const grad = ctx.createRadialGradient(0, lobeLen * 0.6, 0, 0, lobeLen * 0.6, lobeLen * 0.7);
+                grad.addColorStop(0, colorStr(alpha));
+                grad.addColorStop(1, colorStr(0));
+                
+                ctx.fillStyle = grad;
+                
+                ctx.beginPath();
+                ctx.ellipse(0, lobeLen * 0.5, lobeWidth, lobeLen * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            };
+
+            // Use 'screen' (additive) blend for dark mode to make orbitals glow when stacked
+            // 'multiply' for light mode to overlay cleanly
+            ctx.globalCompositeOperation = isDark ? 'screen' : 'multiply';
+
+            // Sort orbitals by size (n) so we render roughly back to front, 
+            // though blend modes handle overlap gracefully.
+            Object.keys(config).sort((a,b) => parseInt(a) - parseInt(b)).forEach(orb => {
+                const n = parseInt(orb);
+                const type = orb.slice(-1);
+                const l = getL(type);
+                
+                // Determine base color
+                let baseColor;
+                if (isDark) {
+                    if (type === 's') baseColor = [56, 189, 248]; // blue
+                    else if (type === 'p') baseColor = [244, 114, 182]; // pink
+                    else if (type === 'd') baseColor = [167, 139, 250]; // purple
+                    else baseColor = [163, 230, 53]; // lime
+                } else {
+                    if (type === 's') baseColor = [3, 105, 161];
+                    else if (type === 'p') baseColor = [190, 24, 93];
+                    else if (type === 'd') baseColor = [109, 40, 217];
+                    else baseColor = [63, 98, 18];
+                }
+                
+                // Opacity
+                const alpha = isDark ? 0.4 : 0.2;
+                const colorStr = (a) => `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${a})`;
+
+                // Size scales with n. Real atoms scale ~n^2, but linear is better for 2D visualization
+                const size = n * 2.5 * scale; 
+
+                if (l === 0) {
+                    // s-orbital: Sphere
+                    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size);
+                    grad.addColorStop(0, colorStr(alpha));
+                    grad.addColorStop(0.4, colorStr(alpha * 0.6));
+                    grad.addColorStop(1, colorStr(0));
+                    
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, size, 0, Math.PI * 2);
+                    ctx.fill();
+                } 
+                else if (l === 1) {
+                    // p-orbital: Dumbbell (2 lobes vertical for simplicity)
+                    drawLobe(cx, cy, size, 0, colorStr, alpha);       // Up
+                    drawLobe(cx, cy, size, Math.PI, colorStr, alpha); // Down
+                }
+                else if (l === 2) {
+                    // d-orbital: Clover (4 lobes in X shape)
+                    for(let k=0; k<4; k++) {
+                        drawLobe(cx, cy, size, (Math.PI/4) + (k * Math.PI/2), colorStr, alpha);
+                    }
+                }
+                else if (l === 3) {
+                    // f-orbital: Complex (Simplified to 6 lobes for 2D)
+                    for(let k=0; k<6; k++) {
+                        drawLobe(cx, cy, size, (k * Math.PI/3), colorStr, alpha);
+                    }
+                }
+            });
+
+            // Restore composite operation for Nucleus
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Draw Nucleus
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444'; // Red
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            drawAtom();
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        lucide.createIcons();
+        render();
+        animate();
+
+        window.addEventListener('resize', () => {
+            render();
+        });
+
+    </script>
+</body>
+</html>

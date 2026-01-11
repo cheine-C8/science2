@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydrogen Bond Interactive</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden; /* Hide scrollbars */
+        }
+        h1 {
+            color: #005a9c;
+        }
+        p {
+            max-width: 600px;
+            margin: 10px auto;
+            line-height: 1.5;
+        }
+        /* The main stage for the interaction */
+        #simulation-container {
+            position: relative;
+            width: 90vw;
+            height: 60vh;
+            max-width: 800px;
+            margin: 20px auto;
+            border: 2px solid #b0c4de;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden; /* Keep molecules inside */
+            touch-action: none; /* Improve touch device support */
+        }
+
+        /* Base style for a water molecule group */
+        .water-molecule {
+            position: absolute;
+            /* width and height are used for physics, but position is set by transform */
+            width: 120px;
+            height: 105px;
+            cursor: grab;
+            /* This transform-origin is key for rotation */
+            transform-origin: 60px 45px; /* Centered on the Oxygen atom */
+            /* We now use transform to position, not top/left */
+            will-change: transform;
+        }
+
+        .water-molecule:active, .is-dragging {
+            cursor: grabbing;
+            z-index: 100; /* Bring to front when grabbed */
+        }
+
+        /* The Oxygen atom */
+        .oxygen {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background-color: #d9534f; /* Red */
+            border-radius: 50%;
+            left: 25px; /* (120 - 70) / 2 */
+            top: 15px;
+            border: 3px solid #b34541;
+            box-sizing: border-box;
+            
+            /* Text for partial charge */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* The Hydrogen atoms */
+        .hydrogen {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #eaf2f8; /* Light blue/white */
+            border-radius: 50%;
+            border: 3px solid #aed6f1;
+            box-sizing: border-box;
+
+            /* Text for partial charge */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Positioning for the two hydrogens */
+        .h1 {
+            left: 0px;
+            top: 65px;
+        }
+        .h2 {
+            right: 0px;
+            top: 65px;
+        }
+
+        /* Covalent bond lines */
+        .bond {
+            position: absolute;
+            background-color: #555;
+            height: 4px;
+            transform-origin: left center;
+        }
+
+        .bond1 {
+            width: 45px;
+            left: 28px;
+            top: 63px;
+            transform: rotate(30deg);
+        }
+
+        .bond2 {
+            width: 45px;
+            right: 28px;
+            top: 63px;
+            transform: rotate(-30deg);
+        }
+        
+        /* The canvas for drawing hydrogen bonds */
+        #bond-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to go "through" to molecules */
+            z-index: 50;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Interactive Hydrogen Bonding</h1>
+    <p>The molecules will now move on their own! You can still click and drag them. When a Hydrogen (H) gets close to an Oxygen (O), a <strong>hydrogen bond</strong> will form!</p>
+
+    <!-- This is the stage where the interaction happens -->
+    <div id="simulation-container">
+        
+        <!-- The canvas where H-bonds will be drawn by JavaScript -->
+        <canvas id="bond-canvas"></canvas>
+
+        <!-- Initial positions are set with data- attributes, not style -->
+        <!-- Water Molecule 1 -->
+        <div class="water-molecule" id="water1" data-x="100" data-y="50" data-rot="20">
+            <div class="bond bond1"></div>
+            <div class="bond bond2"></div>
+            <div class="oxygen">O</div>
+            <div class="hydrogen h1">H</div>
+            <div class="hydrogen h2">H</div>
+        </div>
+
+        <!-- Water Molecule 2 -->
+        <div class="water-molecule" id="water2" data-x="300" data-y="200" data-rot="-30">
+            <div class="bond bond1"></div>
+            <div class="bond bond2"></div>
+            <div class="oxygen">O</div>
+            <div class="hydrogen h1">H</div>
+            <div class="hydrogen h2">H</div>
+        </div>
+
+        <!-- Water Molecule 3 -->
+        <div class="water-molecule" id="water3" data-x="500" data-y="100" data-rot="120">
+            <div class="bond bond1"></div>
+            <div class="bond bond2"></div>
+            <div class="oxygen">O</div>
+            <div class="hydrogen h1">H</div>
+            <div class="hydrogen h2">H</div>
+        </div>
+        
+        <!-- NEW MOLECULE 4 -->
+        <div class="water-molecule" id="water4" data-x="100" data-y="300" data-rot="90">
+            <div class="bond bond1"></div>
+            <div class="bond bond2"></div>
+            <div class="oxygen">O</div>
+            <div class="hydrogen h1">H</div>
+            <div class="hydrogen h2">H</div>
+        </div>
+        
+        <!-- Water Molecule 5 -->
+        <div class="water-molecule" id="water5" data-x="450" data-y="350" data-rot="-100">
+            <div class="bond bond1"></div>
+            <div class="bond bond2"></div>
+            <div class="oxygen">O</div>
+            <div class="hydrogen h1">H</div>
+            <div class="hydrogen h2">H</div>
+        </div>
+        
+    </div>
+    
+    <p><strong>Science:</strong> Water ($\text{H}_2\text{O}$) is a <strong>polar molecule</strong>. The electronegative Oxygen (O) pulls electrons, making the Hydrogens (H) partially positive. The dotted line is the attraction between one molecule's H and another's O.</p>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const container = document.getElementById('simulation-container');
+            const canvas = document.getElementById('bond-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let containerWidth = container.clientWidth;
+            let containerHeight = container.clientHeight;
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+
+            const moleculesData = []; // This will store our molecule objects
+            const bondDistanceThreshold = 100;
+            
+            // --- Dragging State ---
+            let activeMoleculeData = null;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            // --- Initialization ---
+            const moleculeElements = document.querySelectorAll('.water-molecule');
+            moleculeElements.forEach(el => {
+                const molWidth = 120;
+                const molHeight = 105;
+                
+                const data = {
+                    el: el,
+                    id: el.id,
+                    width: molWidth,
+                    height: molHeight,
+                    x: parseFloat(el.dataset.x) || Math.random() * (containerWidth - molWidth),
+                    y: parseFloat(el.dataset.y) || Math.random() * (containerHeight - molHeight),
+                    rot: parseFloat(el.dataset.rot) || Math.random() * 360,
+                    // Velocities start at 0
+                    vx: 0,
+                    vy: 0,
+                    vRot: 0,
+                    isDragging: false,
+                    isBonded: false // NEW: Track bonding state
+                };
+                moleculesData.push(data);
+
+                // Add drag listeners
+                el.addEventListener('mousedown', startDrag);
+                el.addEventListener('touchstart', startDrag, { passive: false });
+            });
+
+            // --- Drag Logic ---
+            function startDrag(e) {
+                const event = e.touches ? e.touches[0] : e;
+                const targetEl = event.target.closest('.water-molecule');
+                if (!targetEl) return;
+
+                activeMoleculeData = moleculesData.find(m => m.el === targetEl);
+                if (!activeMoleculeData) return;
+
+                activeMoleculeData.isDragging = true;
+                activeMoleculeData.el.classList.add('is-dragging');
+                
+                const containerRect = container.getBoundingClientRect();
+                const startX_container = event.clientX - containerRect.left;
+                const startY_container = event.clientY - containerRect.top;
+                
+                // Offset from the molecule's top-left corner
+                offsetX = startX_container - activeMoleculeData.x;
+                offsetY = startY_container - activeMoleculeData.y;
+
+                document.addEventListener('mousemove', onDrag, { passive: false });
+                document.addEventListener('touchmove', onDrag, { passive: false });
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+                
+                e.preventDefault();
+            }
+
+            function onDrag(e) {
+                if (!activeMoleculeData) return;
+
+                const event = e.touches ? e.touches[0] : e;
+                const containerRect = container.getBoundingClientRect();
+
+                // Calculate new top-left position
+                let newX = event.clientX - containerRect.left - offsetX;
+                let newY = event.clientY - containerRect.top - offsetY;
+
+                // Constrain molecule within the container
+                newX = Math.max(0, Math.min(newX, containerWidth - activeMoleculeData.width));
+                newY = Math.max(0, Math.min(newY, containerHeight - activeMoleculeData.height));
+
+                activeMoleculeData.x = newX;
+                activeMoleculeData.y = newY;
+                
+                e.preventDefault();
+            }
+
+            function endDrag() {
+                if (activeMoleculeData) {
+                    activeMoleculeData.isDragging = false;
+                    activeMoleculeData.el.classList.remove('is-dragging');
+                }
+                activeMoleculeData = null;
+
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('touchmove', onDrag);
+                document.removeEventListener('mouseup', endDrag);
+                document.removeEventListener('touchend', endDrag);
+            }
+
+            // --- Animation Loop ---
+            function gameLoop() {
+                // NEW: Reset bond state each frame
+                moleculesData.forEach(mol => { mol.isBonded = false; });
+                
+                // NEW: Check bonds *before* physics to set the isBonded flag
+                checkHydrogenBonds();
+                updatePhysics();
+                updateDOM();
+                
+                requestAnimationFrame(gameLoop);
+            }
+
+            function updatePhysics() {
+                const maxSpeed = 1.0;
+                const maxRot = 0.5;
+                
+                moleculesData.forEach(mol => {
+                    if (mol.isDragging) return; // Don't apply physics if user is dragging
+
+                    // NEW: Apply damping based on bond state
+                    // 0.92 is strong damping (bonded), 0.995 is very light (unbonded)
+                    const damping = mol.isBonded ? 0.92 : 0.995;
+                    mol.vx *= damping;
+                    mol.vy *= damping;
+                    mol.vRot *= damping;
+
+                    // NEW: Apply "Brownian motion" (a random jiggle)
+                    mol.vx += (Math.random() - 0.5) * 0.2;
+                    mol.vy += (Math.random() - 0.5) * 0.2;
+                    mol.vRot += (Math.random() - 0.5) * 0.1;
+                    
+                    // NEW: Clamp speed to a max
+                    mol.vx = Math.max(-maxSpeed, Math.min(maxSpeed, mol.vx));
+                    mol.vy = Math.max(-maxSpeed, Math.min(maxSpeed, mol.vy));
+                    mol.vRot = Math.max(-maxRot, Math.min(maxRot, mol.vRot));
+
+                    // Update positions
+                    mol.x += mol.vx;
+                    mol.y += mol.vy;
+                    mol.rot += mol.vRot;
+
+                    // Wall collision (position)
+                    if (mol.x < 0 || mol.x + mol.width > containerWidth) {
+                        mol.vx *= -1; // Reverse horizontal velocity
+                        mol.x = Math.max(0, Math.min(mol.x, containerWidth - mol.width)); // Clamp position
+                    }
+                    if (mol.y < 0 || mol.y + mol.height > containerHeight) {
+                        mol.vy *= -1; // Reverse vertical velocity
+                        mol.y = Math.max(0, Math.min(mol.y, containerHeight - mol.height)); // Clamp position
+                    }
+                    
+                    // Optional: Make rotation bounce (less realistic, but can be fun)
+                    // if (mol.rot < -360 || mol.rot > 360) {
+                    //    mol.vRot *= -1;
+                    // }
+                });
+            }
+
+            function updateDOM() {
+                moleculesData.forEach(mol => {
+                    // We use translate for positioning and rotate for rotation
+                    // This is more performant than changing top/left
+                    mol.el.style.transform = `translate(${mol.x}px, ${mol.y}px) rotate(${mol.rot}deg)`;
+                });
+            }
+
+            // --- Hydrogen Bond Drawing Logic ---
+            
+            function getAtomPositions(molData) {
+                // Get the center of the div
+                const moleculeX = molData.x + molData.width / 2;
+                const moleculeY = molData.y + molData.height / 2;
+                
+                const angle = molData.rot * (Math.PI / 180);
+
+                // Local offsets from the div's center (60, 52.5)
+                // Oxygen is at (60, 45) in local space -> (0, -7.5) from center
+                const o_localX = 0;
+                const o_localY = -7.5;
+                
+                // H1 is at (20, 85) in local space -> (-40, 32.5) from center
+                const h1_localX = -40;
+                const h1_localY = 32.5;
+                
+                // H2 is at (100, 85) in local space -> (40, 32.5) from center
+                const h2_localX = 40;
+                const h2_localY = 32.5;
+                
+                // Apply rotation to local coordinates
+                const rotate = (x, y) => ({
+                    x: x * Math.cos(angle) - y * Math.sin(angle),
+                    y: x * Math.sin(angle) + y * Math.cos(angle)
+                });
+
+                const o_rotated = rotate(o_localX, o_localY);
+                const h1_rotated = rotate(h1_localX, h1_localY);
+                const h2_rotated = rotate(h2_localX, h2_localY);
+                
+                // Return absolute positions within the canvas
+                return {
+                    id: molData.id,
+                    oxygen: { x: moleculeX + o_rotated.x, y: moleculeY + o_rotated.y },
+                    h1: { x: moleculeX + h1_rotated.x, y: moleculeY + h1_rotated.y },
+                    h2: { x: moleculeX + h2_rotated.x, y: moleculeY + h2_rotated.y }
+                };
+            }
+
+            function checkHydrogenBonds() {
+                // Clear the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const positions = moleculesData.map(getAtomPositions);
+                // NEW: Get the raw data objects to pass them for state change
+                const allMolData = moleculesData;
+
+                for (let i = 0; i < positions.length; i++) {
+                    for (let j = i + 1; j < positions.length; j++) {
+                        
+                        const molA_pos = positions[i];
+                        const molB_pos = positions[j];
+                        
+                        // NEW: Pass the molecule data objects
+                        const molA_data = allMolData[i];
+                        const molB_data = allMolData[j];
+
+                        // Check A(H1) <-> B(O)
+                        checkAndDrawBond(molA_pos.h1, molB_pos.oxygen, molA_data, molB_data);
+                        // Check A(H2) <-> B(O)
+                        checkAndDrawBond(molA_pos.h2, molB_pos.oxygen, molA_data, molB_data);
+                        // Check B(H1) <-> A(O)
+                        checkAndDrawBond(molB_pos.h1, molA_pos.oxygen, molB_data, molA_data);
+                        // Check B(H2) <-> A(O)
+                        checkAndDrawBond(molB_pos.h2, molA_pos.oxygen, molB_data, molA_data);
+                    }
+                }
+            }
+
+            // NEW: Added molA_data and molB_data to update their state
+            function checkAndDrawBond(h_pos, o_pos, molA_data, molB_data) {
+                const dx = h_pos.x - o_pos.x;
+                const dy = h_pos.y - o_pos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < bondDistanceThreshold) {
+                    // Draw the bond!
+                    ctx.beginPath();
+                    ctx.setLineDash([5, 5]); // Dotted line
+                    ctx.moveTo(h_pos.x, h_pos.y);
+                    ctx.lineTo(o_pos.x, o_pos.y);
+                    ctx.strokeStyle = '#007bff'; // Blue
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // NEW: Set the bonded state for both molecules
+                    molA_data.isBonded = true;
+                    molB_data.isBonded = true;
+                }
+            }
+
+            // Re-check bonds if window is resized
+            window.addEventListener('resize', () => {
+                containerWidth = container.clientWidth;
+                containerHeight = container.clientHeight;
+                canvas.width = containerWidth;
+                canvas.height = containerHeight;
+                // No need to call checkHydrogenBonds, game loop does it
+            });
+
+            // Start the animation loop!
+            gameLoop();
+        });
+    </script>
+
+</body>
+</html>
+
+
