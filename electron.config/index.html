@@ -1,41 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Electron Configuration Worksheet</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         .orbital-box {
             transition: all 0.2s;
         }
+
         .orbital-box:hover:not(.locked) {
-            border-color: #6366f1; /* indigo-500 */
+            border-color: #6366f1;
+            /* indigo-500 */
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
+
         .orbital-box.active:not(.locked) {
-            background-color: #eff6ff; /* blue-50 */
+            background-color: #eff6ff;
+            /* blue-50 */
         }
+
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-4 md:p-8">
 
-    <div class="max-w-5xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
-        
+    <!-- Added ID "capture-target" to the main card for the screenshot function -->
+    <div id="capture-target" class="max-w-5xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+
         <!-- Header -->
         <div class="bg-indigo-600 p-6 text-white flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold flex items-center gap-2">
                     <div class="w-8 h-8 border-2 border-white rounded flex items-center justify-center">
                         <!-- ArrowUp Icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="19" x2="12" y2="5"></line>
+                            <polyline points="5 12 12 5 19 12"></polyline>
+                        </svg>
                     </div>
                     Electron Configuration
                 </h1>
@@ -48,96 +69,151 @@
         </div>
 
         <!-- Control Bar -->
-        <div class="bg-gray-100 p-4 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+        <div class="bg-gray-100 p-4 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center"
+            data-html2canvas-ignore="true">
             <div class="flex items-center gap-2">
-                <button id="prevBtn" class="p-2 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed">
+                <button id="prevBtn"
+                    class="p-2 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed">
                     <!-- Chevron Left -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
                 </button>
-                
+
                 <div class="bg-white px-4 py-2 rounded-lg border border-gray-300 shadow-sm min-w-[200px] text-center">
-                    <span class="text-gray-500 text-xs uppercase tracking-wider font-bold block" id="elementNumberDisplay">Element 1</span>
+                    <span class="text-gray-500 text-xs uppercase tracking-wider font-bold block"
+                        id="elementNumberDisplay">Element 1</span>
                     <span class="text-2xl font-bold text-indigo-700" id="elementNameDisplay">Hydrogen (H)</span>
                 </div>
 
-                <button id="nextBtn" class="p-2 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed">
+                <button id="nextBtn"
+                    class="p-2 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed">
                     <!-- Chevron Right -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
                 </button>
-                
-                <button id="randomBtn" class="ml-2 p-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1">
+
+                <button id="randomBtn"
+                    class="ml-2 p-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1">
                     <!-- Refresh Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
                     Random
                 </button>
             </div>
 
             <div class="flex items-center gap-4">
                 <div class="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-100">
-                    Electrons Used: <span id="electronsUsed" class="font-bold text-blue-800">0</span> / <span id="electronsTotal">1</span>
+                    Electrons Used: <span id="electronsUsed" class="font-bold text-blue-800">0</span> / <span
+                        id="electronsTotal">1</span>
                 </div>
                 <button id="resetBtn" class="text-gray-500 hover:text-gray-700 transition-colors" title="Reset Board">
                     <!-- Rotate CCW -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
                 </button>
             </div>
         </div>
 
+        <!-- Element Info Sub-header (Visible only in screenshot) -->
+        <div id="screenshotHeader" class="hidden bg-gray-50 p-4 text-center border-b border-gray-200">
+            <div class="text-xl font-bold text-indigo-700" id="printElementName">Hydrogen (H)</div>
+            <div class="text-sm text-gray-500" id="printElementNum">Atomic Number: 1</div>
+        </div>
+
         <!-- Main Workspace -->
         <div class="p-8">
-            
+
             <!-- Instructions -->
-            <div class="mb-8 p-5 bg-indigo-50 border border-indigo-200 rounded-lg flex flex-col md:flex-row gap-4 text-sm text-indigo-900">
+            <div class="mb-8 p-5 bg-indigo-50 border border-indigo-200 rounded-lg flex flex-col md:flex-row gap-4 text-sm text-indigo-900"
+                data-html2canvas-ignore="true">
                 <div class="text-indigo-600 mt-0.5 flex-shrink-0">
                     <!-- Help Circle -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                 </div>
                 <div class="space-y-2">
                     <h3 class="font-bold text-indigo-800 text-base">How to fill the electron "bunk beds":</h3>
                     <p>
-                        Electrons are negatively charged and repel each other, like magnets. To share a space, they need to be distinct.
+                        Electrons are negatively charged and repel each other, like magnets. To share a space, they need
+                        to be distinct.
                     </p>
                     <ul class="list-disc pl-5 space-y-1 text-indigo-800">
                         <li>
-                            <strong>First Click (Up Arrow):</strong> Places the first electron. Electrons are like siblings who want their own rooms—fill every empty box in a row with one "up" electron <em>before</em> pairing them up.
+                            <strong>First Click (Up Arrow):</strong> Places the first electron. Electrons are like
+                            siblings who want their own rooms—fill every empty box in a row with one "up" electron
+                            <em>before</em> pairing them up.
                         </li>
                         <li>
-                            <strong>Second Click (Down Arrow):</strong> Places a second electron. To share the room without "fighting" (repelling), it must spin the opposite way.
+                            <strong>Second Click (Down Arrow):</strong> Places a second electron. To share the room
+                            without "fighting" (repelling), it must spin the opposite way.
                         </li>
                         <li><strong>Third Click:</strong> Clears the box.</li>
                     </ul>
                     <p class="text-xs text-indigo-600 italic mt-1 border-t border-indigo-200 pt-2">
-                        <strong>Scientific Terms:</strong> Filling low energy first = <em>Aufbau Principle</em>. Giving everyone their own room before pairing = <em>Hund's Rule</em>.
+                        <strong>Scientific Terms:</strong> Filling low energy first = <em>Aufbau Principle</em>. Giving
+                        everyone their own room before pairing = <em>Hund's Rule</em>.
                     </p>
                 </div>
             </div>
 
             <!-- Orbital Visualization -->
-            <div id="orbitalsContainer" class="flex flex-wrap items-end justify-center gap-4 min-h-[300px] content-center bg-white rounded-xl border border-dashed border-gray-300 p-8">
+            <div id="orbitalsContainer"
+                class="flex flex-wrap items-end justify-center gap-4 min-h-[300px] content-center bg-white rounded-xl border border-dashed border-gray-300 p-8">
                 <!-- Javascript will inject orbitals here -->
             </div>
 
             <!-- Action Area -->
             <div class="mt-8 flex flex-col items-center gap-4">
-                
+
                 <!-- Feedback Message -->
-                <div id="feedbackContainer" class="hidden flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in">
+                <div id="feedbackContainer"
+                    class="hidden flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in">
                     <span id="feedbackIcon"></span>
                     <span id="feedbackText"></span>
                 </div>
 
-                <div class="flex gap-4">
-                    <button id="checkBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
+                <div class="flex gap-4" data-html2canvas-ignore="true">
+                    <button id="checkBtn"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
                         Check Answer
                     </button>
 
-                    <button id="hintBtn" class="hidden bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-600 px-6 py-3 rounded-lg font-semibold transition-all">
+                    <button id="downloadBtn"
+                        class="hidden bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download Image
+                    </button>
+
+                    <button id="hintBtn"
+                        class="hidden bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-600 px-6 py-3 rounded-lg font-semibold transition-all">
                         Show Hint
                     </button>
                 </div>
 
                 <!-- Simple Text Hint -->
-                <div id="hintText" class="hidden mt-4 p-4 bg-gray-100 rounded text-gray-600 text-sm max-w-md text-center">
+                <div id="hintText"
+                    class="hidden mt-4 p-4 bg-gray-100 rounded text-gray-600 text-sm max-w-md text-center"
+                    data-html2canvas-ignore="true">
                     <!-- Hint injected here -->
                 </div>
 
@@ -146,7 +222,7 @@
 
         <!-- Footer -->
         <div class="bg-gray-50 p-4 border-t text-center text-gray-400 text-sm">
-           Science Worksheet • Electron Configuration Practice
+            Science Worksheet • Electron Configuration Practice
         </div>
 
     </div>
@@ -229,7 +305,7 @@
 
             ORBITAL_ORDER.forEach((orbital) => {
                 const electronsForThisOrbital = Math.min(electronsRemaining, orbital.capacity);
-                
+
                 if (electronsForThisOrbital > 0) {
                     // Initialize empty
                     for (let i = 0; i < orbital.boxes; i++) {
@@ -240,17 +316,17 @@
                     let filledCount = 0;
                     for (let i = 0; i < orbital.boxes; i++) {
                         if (filledCount < electronsForThisOrbital) {
-                            config[`${orbital.name}-${i}`] = 1; 
+                            config[`${orbital.name}-${i}`] = 1;
                             filledCount++;
                         }
                     }
-                    
+
                     // 2. Pair up
                     if (electronsForThisOrbital > orbital.boxes) {
                         let secondPassCount = electronsForThisOrbital - orbital.boxes;
                         for (let i = 0; i < orbital.boxes; i++) {
                             if (secondPassCount > 0) {
-                                config[`${orbital.name}-${i}`] = 2; 
+                                config[`${orbital.name}-${i}`] = 2;
                                 secondPassCount--;
                             }
                         }
@@ -348,11 +424,15 @@
 
         const render = () => {
             const el = getCurrentElement();
-            
+
             // Update Header info
             document.getElementById('elementNumberDisplay').textContent = `Element ${el.number}`;
             document.getElementById('elementNameDisplay').textContent = `${el.name} (${el.symbol})`;
-            
+
+            // Update Print Header
+            document.getElementById('printElementName').textContent = `${el.name} (${el.symbol})`;
+            document.getElementById('printElementNum').textContent = `Atomic Number: ${el.number}`;
+
             // Update counts
             const used = getFilledElectronsCount();
             const usedEl = document.getElementById('electronsUsed');
@@ -367,23 +447,23 @@
             // Render Orbitals
             const container = document.getElementById('orbitalsContainer');
             container.innerHTML = '';
-            
+
             // Render all needed orbitals (fixed set for visual stability: up to 5s)
             ORBITAL_ORDER.forEach(orbital => {
                 const subshellDiv = document.createElement('div');
                 subshellDiv.className = "flex flex-col items-center mx-2 mb-4";
-                
+
                 const boxesContainer = document.createElement('div');
                 boxesContainer.className = "flex space-x-1 mb-1";
 
-                for(let i=0; i<orbital.boxes; i++) {
+                for (let i = 0; i < orbital.boxes; i++) {
                     const id = `${orbital.name}-${i}`;
                     const val = state.userConfig[id] || 0;
                     const isLocked = state.feedback === 'correct';
 
                     const box = document.createElement('div');
                     box.className = `orbital-box w-12 h-12 border-2 flex items-center justify-center cursor-pointer bg-white relative ${isLocked ? 'cursor-default locked' : 'border-gray-300'}`;
-                    
+
                     if (val === 0) box.classList.add('border-gray-300');
                     else box.classList.add('border-gray-800');
 
@@ -395,7 +475,7 @@
                 }
 
                 subshellDiv.appendChild(boxesContainer);
-                
+
                 const label = document.createElement('span');
                 label.className = "text-sm font-semibold text-gray-600";
                 label.textContent = orbital.name;
@@ -404,12 +484,15 @@
                 container.appendChild(subshellDiv);
             });
 
-            // Feedback Area
+            // Feedback Area & Buttons
             const fbContainer = document.getElementById('feedbackContainer');
             const fbIcon = document.getElementById('feedbackIcon');
             const fbText = document.getElementById('feedbackText');
             const hintBtn = document.getElementById('hintBtn');
+            const checkBtn = document.getElementById('checkBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
             const hintText = document.getElementById('hintText');
+            const screenshotHeader = document.getElementById('screenshotHeader');
 
             if (state.feedback) {
                 fbContainer.classList.remove('hidden');
@@ -417,16 +500,27 @@
                     fbContainer.className = "flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in bg-green-100 text-green-700";
                     fbIcon.innerHTML = ICONS.checkCircle;
                     fbText.textContent = "Correct! Great Job.";
+
                     hintBtn.classList.add('hidden');
+                    checkBtn.classList.add('hidden');
+                    downloadBtn.classList.remove('hidden');
+                    screenshotHeader.classList.remove('hidden'); // Show small header for the screenshot context
                 } else {
                     fbContainer.className = "flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in bg-red-100 text-red-700";
                     fbIcon.innerHTML = ICONS.alertCircle;
                     fbText.textContent = state.feedback;
+
                     hintBtn.classList.remove('hidden');
+                    checkBtn.classList.remove('hidden');
+                    downloadBtn.classList.add('hidden');
+                    screenshotHeader.classList.add('hidden');
                 }
             } else {
                 fbContainer.classList.add('hidden');
                 hintBtn.classList.add('hidden');
+                checkBtn.classList.remove('hidden');
+                downloadBtn.classList.add('hidden');
+                screenshotHeader.classList.add('hidden');
             }
 
             // Hint Text
@@ -456,7 +550,7 @@
         };
 
         document.getElementById('resetBtn').onclick = resetBoard;
-        
+
         document.getElementById('checkBtn').onclick = checkAnswer;
 
         document.getElementById('hintBtn').onclick = () => {
@@ -464,9 +558,32 @@
             render();
         };
 
+        document.getElementById('downloadBtn').onclick = () => {
+            const el = getCurrentElement();
+            const target = document.getElementById('capture-target');
+
+            // Use html2canvas to take screenshot
+            // data-html2canvas-ignore attributes are used in HTML to exclude elements
+            html2canvas(target, {
+                scale: 2, // Retine quality
+                backgroundColor: '#ffffff', // Force white background
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `electron-config-${el.symbol}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error("Capture failed:", err);
+                alert("Could not generate image. Please try again.");
+            });
+        };
+
         // Initial Render
         render();
 
     </script>
 </body>
+
 </html>
