@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron Configuration Worksheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .orbital-box {
+            transition: all 0.2s;
+        }
+        .orbital-box:hover:not(.locked) {
+            border-color: #6366f1; /* indigo-500 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .orbital-box.active:not(.locked) {
+            background-color: #eff6ff; /* blue-50 */
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-indigo-600 p-6 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold flex items-center gap-2">
+                    <div class="w-8 h-8 border-2 border-white rounded flex items-center justify-center">
+                        <!-- ArrowUp Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                    </div>
+                    Electron Configuration
+                </h1>
+                <p class="text-indigo-100 mt-1">Interactive Worksheet</p>
+            </div>
+            <div class="hidden md:block text-right">
+                <div class="text-sm font-semibold opacity-75">Current Mode</div>
+                <div class="font-bold text-lg capitalize">Practice</div>
+            </div>
+        </div>
+
+        <!-- Control Bar -->
+        <div class="bg-gray-100 p-4 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+            <div class="flex items-center gap-2">
+                <button id="prevBtn" class="p-2 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed">
+                    <!-- Chevron Left -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                
+                <div class="bg-white px-4 py-2 rounded-lg border border-gray-300 shadow-sm min-w-[200px] text-center">
+                    <span class="text-gray-500 text-xs uppercase tracking-wider font-bold block" id="elementNumberDisplay">Element 1</span>
+                    <span class="text-2xl font-bold text-indigo-700" id="elementNameDisplay">Hydrogen (H)</span>
+                </div>
+
+                <button id="nextBtn" class="p-2 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed">
+                    <!-- Chevron Right -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+                
+                <button id="randomBtn" class="ml-2 p-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1">
+                    <!-- Refresh Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    Random
+                </button>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-100">
+                    Electrons Used: <span id="electronsUsed" class="font-bold text-blue-800">0</span> / <span id="electronsTotal">1</span>
+                </div>
+                <button id="resetBtn" class="text-gray-500 hover:text-gray-700 transition-colors" title="Reset Board">
+                    <!-- Rotate CCW -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="p-8">
+            
+            <!-- Instructions -->
+            <div class="mb-8 p-5 bg-indigo-50 border border-indigo-200 rounded-lg flex flex-col md:flex-row gap-4 text-sm text-indigo-900">
+                <div class="text-indigo-600 mt-0.5 flex-shrink-0">
+                    <!-- Help Circle -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-indigo-800 text-base">How to fill the electron "bunk beds":</h3>
+                    <p>
+                        Electrons are negatively charged and repel each other, like magnets. To share a space, they need to be distinct.
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-indigo-800">
+                        <li>
+                            <strong>First Click (Up Arrow):</strong> Places the first electron. Electrons are like siblings who want their own rooms—fill every empty box in a row with one "up" electron <em>before</em> pairing them up.
+                        </li>
+                        <li>
+                            <strong>Second Click (Down Arrow):</strong> Places a second electron. To share the room without "fighting" (repelling), it must spin the opposite way.
+                        </li>
+                        <li><strong>Third Click:</strong> Clears the box.</li>
+                    </ul>
+                    <p class="text-xs text-indigo-600 italic mt-1 border-t border-indigo-200 pt-2">
+                        <strong>Scientific Terms:</strong> Filling low energy first = <em>Aufbau Principle</em>. Giving everyone their own room before pairing = <em>Hund's Rule</em>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Orbital Visualization -->
+            <div id="orbitalsContainer" class="flex flex-wrap items-end justify-center gap-4 min-h-[300px] content-center bg-white rounded-xl border border-dashed border-gray-300 p-8">
+                <!-- Javascript will inject orbitals here -->
+            </div>
+
+            <!-- Action Area -->
+            <div class="mt-8 flex flex-col items-center gap-4">
+                
+                <!-- Feedback Message -->
+                <div id="feedbackContainer" class="hidden flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in">
+                    <span id="feedbackIcon"></span>
+                    <span id="feedbackText"></span>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="checkBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
+                        Check Answer
+                    </button>
+
+                    <button id="hintBtn" class="hidden bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-600 px-6 py-3 rounded-lg font-semibold transition-all">
+                        Show Hint
+                    </button>
+                </div>
+
+                <!-- Simple Text Hint -->
+                <div id="hintText" class="hidden mt-4 p-4 bg-gray-100 rounded text-gray-600 text-sm max-w-md text-center">
+                    <!-- Hint injected here -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 p-4 border-t text-center text-gray-400 text-sm">
+           Science Worksheet • Electron Configuration Practice
+        </div>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Constants & Data ---
+        const ORBITAL_ORDER = [
+            { name: '1s', n: 1, l: 's', capacity: 2, boxes: 1 },
+            { name: '2s', n: 2, l: 's', capacity: 2, boxes: 1 },
+            { name: '2p', n: 2, l: 'p', capacity: 6, boxes: 3 },
+            { name: '3s', n: 3, l: 's', capacity: 2, boxes: 1 },
+            { name: '3p', n: 3, l: 'p', capacity: 6, boxes: 3 },
+            { name: '4s', n: 4, l: 's', capacity: 2, boxes: 1 },
+            { name: '3d', n: 3, l: 'd', capacity: 10, boxes: 5 },
+            { name: '4p', n: 4, l: 'p', capacity: 6, boxes: 3 },
+            { name: '5s', n: 5, l: 's', capacity: 2, boxes: 1 },
+        ];
+
+        const ELEMENTS = [
+            { number: 1, symbol: 'H', name: 'Hydrogen' },
+            { number: 2, symbol: 'He', name: 'Helium' },
+            { number: 3, symbol: 'Li', name: 'Lithium' },
+            { number: 4, symbol: 'Be', name: 'Beryllium' },
+            { number: 5, symbol: 'B', name: 'Boron' },
+            { number: 6, symbol: 'C', name: 'Carbon' },
+            { number: 7, symbol: 'N', name: 'Nitrogen' },
+            { number: 8, symbol: 'O', name: 'Oxygen' },
+            { number: 9, symbol: 'F', name: 'Fluorine' },
+            { number: 10, symbol: 'Ne', name: 'Neon' },
+            { number: 11, symbol: 'Na', name: 'Sodium' },
+            { number: 12, symbol: 'Mg', name: 'Magnesium' },
+            { number: 13, symbol: 'Al', name: 'Aluminum' },
+            { number: 14, symbol: 'Si', name: 'Silicon' },
+            { number: 15, symbol: 'P', name: 'Phosphorus' },
+            { number: 16, symbol: 'S', name: 'Sulfur' },
+            { number: 17, symbol: 'Cl', name: 'Chlorine' },
+            { number: 18, symbol: 'Ar', name: 'Argon' },
+            { number: 19, symbol: 'K', name: 'Potassium' },
+            { number: 20, symbol: 'Ca', name: 'Calcium' },
+            { number: 21, symbol: 'Sc', name: 'Scandium' },
+            { number: 22, symbol: 'Ti', name: 'Titanium' },
+            { number: 23, symbol: 'V', name: 'Vanadium' },
+            { number: 24, symbol: 'Cr', name: 'Chromium', exception: true },
+            { number: 25, symbol: 'Mn', name: 'Manganese' },
+            { number: 26, symbol: 'Fe', name: 'Iron' },
+            { number: 27, symbol: 'Co', name: 'Cobalt' },
+            { number: 28, symbol: 'Ni', name: 'Nickel' },
+            { number: 29, symbol: 'Cu', name: 'Copper', exception: true },
+            { number: 30, symbol: 'Zn', name: 'Zinc' },
+            { number: 31, symbol: 'Ga', name: 'Gallium' },
+            { number: 32, symbol: 'Ge', name: 'Germanium' },
+            { number: 33, symbol: 'As', name: 'Arsenic' },
+            { number: 34, symbol: 'Se', name: 'Selenium' },
+            { number: 35, symbol: 'Br', name: 'Bromine' },
+            { number: 36, symbol: 'Kr', name: 'Krypton' },
+        ];
+
+        // --- Icons (SVG Strings) ---
+        const ICONS = {
+            arrowUp: `<svg class="w-8 h-8 text-gray-800 absolute -translate-x-1" stroke-width="2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5L7 10"></path></svg>`,
+            arrowDown: `<svg class="w-8 h-8 text-gray-800 absolute translate-x-1" stroke-width="2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14l5-5"></path></svg>`,
+            checkCircle: `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            alertCircle: `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+        };
+
+        // --- State ---
+        let state = {
+            currentElementIndex: 0,
+            userConfig: {}, // format: { '1s-0': 1, ... }
+            feedback: null, // null, 'correct', or error message string
+            showHint: false
+        };
+
+        // --- Logic ---
+
+        const getCorrectConfiguration = (atomicNumber) => {
+            const config = {};
+            let electronsRemaining = atomicNumber;
+
+            ORBITAL_ORDER.forEach((orbital) => {
+                const electronsForThisOrbital = Math.min(electronsRemaining, orbital.capacity);
+                
+                if (electronsForThisOrbital > 0) {
+                    // Initialize empty
+                    for (let i = 0; i < orbital.boxes; i++) {
+                        config[`${orbital.name}-${i}`] = 0;
+                    }
+
+                    // 1. Fill one in each box (Hund's)
+                    let filledCount = 0;
+                    for (let i = 0; i < orbital.boxes; i++) {
+                        if (filledCount < electronsForThisOrbital) {
+                            config[`${orbital.name}-${i}`] = 1; 
+                            filledCount++;
+                        }
+                    }
+                    
+                    // 2. Pair up
+                    if (electronsForThisOrbital > orbital.boxes) {
+                        let secondPassCount = electronsForThisOrbital - orbital.boxes;
+                        for (let i = 0; i < orbital.boxes; i++) {
+                            if (secondPassCount > 0) {
+                                config[`${orbital.name}-${i}`] = 2; 
+                                secondPassCount--;
+                            }
+                        }
+                    }
+                }
+                electronsRemaining -= electronsForThisOrbital;
+            });
+            return config;
+        };
+
+        const getCurrentElement = () => ELEMENTS[state.currentElementIndex];
+
+        const getFilledElectronsCount = () => {
+            return Object.values(state.userConfig).reduce((acc, val) => {
+                return acc + (val === 2 ? 2 : val === 1 ? 1 : 0);
+            }, 0);
+        };
+
+        // --- Actions ---
+
+        const handleBoxClick = (id) => {
+            if (state.feedback === 'correct') return;
+
+            const currentVal = state.userConfig[id] || 0;
+            let newVal = 0;
+
+            // Cycle: 0 -> 1 -> 2 -> 0
+            if (currentVal === 0) newVal = 1;
+            else if (currentVal === 1) newVal = 2;
+            else newVal = 0;
+
+            // Cap electron count
+            const maxElectrons = getCurrentElement().number;
+            const currentTotal = getFilledElectronsCount();
+            const diff = (newVal === 2 ? 2 : newVal) - (currentVal === 2 ? 2 : currentVal);
+
+            if (currentTotal + diff > maxElectrons && diff > 0) {
+                return; // Prevent adding if full
+            }
+
+            state.userConfig[id] = newVal;
+            state.feedback = null; // Clear feedback on edit
+            render();
+        };
+
+        const checkAnswer = () => {
+            const currentElement = getCurrentElement();
+            const correctState = getCorrectConfiguration(currentElement.number);
+            let isCorrect = true;
+            let errorMsg = "";
+            const filledCount = getFilledElectronsCount();
+
+            // Check correctness
+            for (let orbital of ORBITAL_ORDER) {
+                for (let i = 0; i < orbital.boxes; i++) {
+                    const key = `${orbital.name}-${i}`;
+                    const userVal = state.userConfig[key] || 0;
+                    const correctVal = correctState[key] || 0;
+
+                    if (userVal !== correctVal) {
+                        isCorrect = false;
+                        if (userVal === 0 && correctVal > 0) errorMsg = "You haven't filled all the necessary orbitals.";
+                        else if (userVal > correctVal) errorMsg = "You placed too many electrons in an orbital.";
+                        else if (userVal < correctVal && userVal > 0) errorMsg = "Check your pairing.";
+                        else if (userVal > 0 && correctVal === 0) errorMsg = "You filled a higher energy orbital too early.";
+                        else errorMsg = "Incorrect configuration.";
+                        break;
+                    }
+                }
+                if (!isCorrect) break;
+            }
+
+            if (filledCount !== currentElement.number) {
+                isCorrect = false;
+                errorMsg = `You need ${currentElement.number} electrons, but you placed ${filledCount}.`;
+            }
+
+            state.feedback = isCorrect ? 'correct' : errorMsg;
+            render();
+        };
+
+        const resetBoard = () => {
+            state.userConfig = {};
+            state.feedback = null;
+            state.showHint = false;
+            render();
+        };
+
+        const setElement = (index) => {
+            state.currentElementIndex = index;
+            resetBoard();
+        };
+
+        // --- DOM Rendering ---
+
+        const render = () => {
+            const el = getCurrentElement();
+            
+            // Update Header info
+            document.getElementById('elementNumberDisplay').textContent = `Element ${el.number}`;
+            document.getElementById('elementNameDisplay').textContent = `${el.name} (${el.symbol})`;
+            
+            // Update counts
+            const used = getFilledElectronsCount();
+            const usedEl = document.getElementById('electronsUsed');
+            usedEl.textContent = used;
+            usedEl.className = `font-bold ${used === el.number ? 'text-green-600' : 'text-blue-800'}`;
+            document.getElementById('electronsTotal').textContent = el.number;
+
+            // Nav buttons state
+            document.getElementById('prevBtn').disabled = state.currentElementIndex === 0;
+            document.getElementById('nextBtn').disabled = state.currentElementIndex === ELEMENTS.length - 1;
+
+            // Render Orbitals
+            const container = document.getElementById('orbitalsContainer');
+            container.innerHTML = '';
+            
+            // Render all needed orbitals (fixed set for visual stability: up to 5s)
+            ORBITAL_ORDER.forEach(orbital => {
+                const subshellDiv = document.createElement('div');
+                subshellDiv.className = "flex flex-col items-center mx-2 mb-4";
+                
+                const boxesContainer = document.createElement('div');
+                boxesContainer.className = "flex space-x-1 mb-1";
+
+                for(let i=0; i<orbital.boxes; i++) {
+                    const id = `${orbital.name}-${i}`;
+                    const val = state.userConfig[id] || 0;
+                    const isLocked = state.feedback === 'correct';
+
+                    const box = document.createElement('div');
+                    box.className = `orbital-box w-12 h-12 border-2 flex items-center justify-center cursor-pointer bg-white relative ${isLocked ? 'cursor-default locked' : 'border-gray-300'}`;
+                    
+                    if (val === 0) box.classList.add('border-gray-300');
+                    else box.classList.add('border-gray-800');
+
+                    if (val >= 1) box.innerHTML += ICONS.arrowUp;
+                    if (val === 2) box.innerHTML += ICONS.arrowDown;
+
+                    box.onclick = () => handleBoxClick(id);
+                    boxesContainer.appendChild(box);
+                }
+
+                subshellDiv.appendChild(boxesContainer);
+                
+                const label = document.createElement('span');
+                label.className = "text-sm font-semibold text-gray-600";
+                label.textContent = orbital.name;
+                subshellDiv.appendChild(label);
+
+                container.appendChild(subshellDiv);
+            });
+
+            // Feedback Area
+            const fbContainer = document.getElementById('feedbackContainer');
+            const fbIcon = document.getElementById('feedbackIcon');
+            const fbText = document.getElementById('feedbackText');
+            const hintBtn = document.getElementById('hintBtn');
+            const hintText = document.getElementById('hintText');
+
+            if (state.feedback) {
+                fbContainer.classList.remove('hidden');
+                if (state.feedback === 'correct') {
+                    fbContainer.className = "flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in bg-green-100 text-green-700";
+                    fbIcon.innerHTML = ICONS.checkCircle;
+                    fbText.textContent = "Correct! Great Job.";
+                    hintBtn.classList.add('hidden');
+                } else {
+                    fbContainer.className = "flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold fade-in bg-red-100 text-red-700";
+                    fbIcon.innerHTML = ICONS.alertCircle;
+                    fbText.textContent = state.feedback;
+                    hintBtn.classList.remove('hidden');
+                }
+            } else {
+                fbContainer.classList.add('hidden');
+                hintBtn.classList.add('hidden');
+            }
+
+            // Hint Text
+            if (state.showHint) {
+                hintText.classList.remove('hidden');
+                hintText.innerHTML = `Remember: The <strong>${el.symbol}</strong> atom has atomic number ${el.number}. 
+                 You should fill the lower energy orbitals (like 1s) completely before moving up. 
+                 Within a subshell like 'p' or 'd', separate electrons before pairing them!`;
+            } else {
+                hintText.classList.add('hidden');
+            }
+        };
+
+        // --- Event Listeners ---
+
+        document.getElementById('prevBtn').onclick = () => {
+            if (state.currentElementIndex > 0) setElement(state.currentElementIndex - 1);
+        };
+
+        document.getElementById('nextBtn').onclick = () => {
+            if (state.currentElementIndex < ELEMENTS.length - 1) setElement(state.currentElementIndex + 1);
+        };
+
+        document.getElementById('randomBtn').onclick = () => {
+            const r = Math.floor(Math.random() * ELEMENTS.length);
+            setElement(r);
+        };
+
+        document.getElementById('resetBtn').onclick = resetBoard;
+        
+        document.getElementById('checkBtn').onclick = checkAnswer;
+
+        document.getElementById('hintBtn').onclick = () => {
+            state.showHint = true;
+            render();
+        };
+
+        // Initial Render
+        render();
+
+    </script>
+</body>
+</html>
