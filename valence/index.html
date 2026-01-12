@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valence Electron & Octet Investigator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom animations for smooth transitions */
+        .electron {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .shell-ring {
+            transition: all 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-800 p-4">
+
+    <!-- Header -->
+    <header class="max-w-5xl mx-auto mb-6 text-center">
+        <h1 class="text-3xl font-bold text-indigo-700 flex items-center justify-center gap-2">
+            <i data-lucide="atom" class="w-8 h-8"></i>
+            Valence Electron & Octet Investigator
+        </h1>
+        <p class="text-slate-600 mt-2">Select an element to investigate its specific bonding limits.</p>
+    </header>
+
+    <main class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- LEFT COLUMN: VISUALIZER -->
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center relative overflow-hidden min-h-[450px]">
+            
+            <!-- Status Badge -->
+            <div class="absolute top-4 left-4 z-10">
+                <span id="status-badge" class="px-3 py-1 rounded-full text-sm font-bold border transition-colors duration-300">
+                    Loading...
+                </span>
+            </div>
+
+            <!-- ATOM VISUALIZATION AREA -->
+            <div class="relative w-80 h-80 flex items-center justify-center mt-8">
+                
+                <!-- Nucleus -->
+                <div class="absolute z-30 w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-inner transition-transform duration-300 hover:scale-110 border-4 border-white">
+                    <span id="atom-symbol" class="text-white font-bold text-xl">C</span>
+                </div>
+
+                <!-- Inner Shell (Dynamic) -->
+                <div id="inner-shell" class="absolute w-40 h-40 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center transition-all duration-500 z-10">
+                    <!-- Inner electrons injected via JS -->
+                </div>
+
+                <!-- Valence Shell (Outer Ring) -->
+                <div id="valence-shell-ring" class="shell-ring absolute w-72 h-72 rounded-full border-2 border-indigo-400 flex items-center justify-center z-20">
+                    <!-- Electrons will be injected here via JS -->
+                </div>
+                
+                <!-- Label -->
+                <div class="absolute -bottom-6 text-xs text-slate-400 font-medium tracking-widest uppercase">
+                    Valence Shell
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="mt-12 flex flex-col items-center gap-2 w-full max-w-sm">
+                <div class="flex gap-4 w-full justify-center">
+                    <button id="btn-lose" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-100 transition-colors font-medium">
+                        <i data-lucide="minus" class="w-4 h-4"></i> Lose Electron
+                    </button>
+                    <button id="btn-gain" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100 transition-colors font-medium">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Gain Electron
+                    </button>
+                </div>
+                <!-- Limit Explanation Text -->
+                <p id="limit-hint" class="text-xs text-slate-400 italic h-4 text-center"></p>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: CONTROLS & ANALYSIS -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Controls Card -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <i data-lucide="refresh-ccw" class="w-5 h-5"></i> Setup
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Dropdown (Always visible) -->
+                    <div id="element-select-container" class="transition-all duration-300">
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Select Element</label>
+                        <select id="element-select" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                            <!-- Options injected via JS -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500 flex-1 flex flex-col justify-center">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="info" class="w-5 h-5 text-indigo-500"></i> Analysis
+                </h2>
+                
+                <div class="space-y-6">
+                    
+                    <!-- Counter -->
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <span class="text-slate-600 font-medium">Current Valence Electrons:</span>
+                        <span id="valence-count" class="text-2xl font-bold text-indigo-700">4</span>
+                    </div>
+
+                    <!-- Logic Steps -->
+                    <div class="space-y-4">
+                        <!-- Octet Status -->
+                        <div class="flex items-start gap-3">
+                            <div id="icon-octet" class="mt-1 min-w-[20px] h-5 rounded-full flex items-center justify-center">
+                                <!-- Icon injected via JS -->
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-700">Octet Rule Status</h4>
+                                <p id="text-octet" class="text-sm text-slate-600 leading-snug">Loading...</p>
+                            </div>
+                        </div>
+
+                        <!-- Behavior -->
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 min-w-[20px] h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-700">Behavior Prediction</h4>
+                                <p id="text-prediction" class="text-sm text-slate-600 leading-snug">Loading...</p>
+                            </div>
+                        </div>
+
+                        <!-- Bonding -->
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 min-w-[20px] h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-700">Bonding Outcome</h4>
+                                <p id="text-bond-main" class="text-sm font-medium text-indigo-700">Loading...</p>
+                                <p id="text-bond-sub" class="text-xs text-slate-500">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Charge Indicator -->
+                    <div id="charge-container" class="mt-4 p-4 bg-slate-800 rounded-lg text-white text-center transition-all duration-300 overflow-hidden">
+                        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Resulting Ion Charge</p>
+                        <div id="charge-value" class="text-3xl font-mono font-bold">+0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Data ---
+        // 'period' helps determine inner shell size
+        // 'min' and 'max' limit the buttons to enforce chemical realism
+        const elements = [
+            // Metals: Can lose down to 0, usually max out at their neutral state (don't gain)
+            { name: 'Lithium (Li)', symbol: 'Li', atomicNumber: 3, valence: 1, period: 2, min: 0, max: 1 },
+            { name: 'Beryllium (Be)', symbol: 'Be', atomicNumber: 4, valence: 2, period: 2, min: 0, max: 2 },
+            { name: 'Boron (B)', symbol: 'B', atomicNumber: 5, valence: 3, period: 2, min: 0, max: 3 }, // Treated as metal/metalloid losing e- here
+            
+            // Carbon: Special case, share 4 to get to 8. Doesn't typically lose 4 in this model.
+            { name: 'Carbon (C)', symbol: 'C', atomicNumber: 6, valence: 4, period: 2, min: 4, max: 8 },
+            
+            // Non-Metals: Start at neutral, gain up to 8. Don't typically lose e-.
+            { name: 'Nitrogen (N)', symbol: 'N', atomicNumber: 7, valence: 5, period: 2, min: 5, max: 8 },
+            { name: 'Oxygen (O)', symbol: 'O', atomicNumber: 8, valence: 6, period: 2, min: 6, max: 8 },
+            { name: 'Fluorine (F)', symbol: 'F', atomicNumber: 9, valence: 7, period: 2, min: 7, max: 8 },
+            
+            // Noble Gases: Stable
+            { name: 'Neon (Ne)', symbol: 'Ne', atomicNumber: 10, valence: 8, period: 2, min: 8, max: 8 },
+            
+            // Period 3 Matches
+            { name: 'Sodium (Na)', symbol: 'Na', atomicNumber: 11, valence: 1, period: 3, min: 0, max: 1 },
+            { name: 'Magnesium (Mg)', symbol: 'Mg', atomicNumber: 12, valence: 2, period: 3, min: 0, max: 2 },
+            { name: 'Chlorine (Cl)', symbol: 'Cl', atomicNumber: 17, valence: 7, period: 3, min: 7, max: 8 },
+            { name: 'Argon (Ar)', symbol: 'Ar', atomicNumber: 18, valence: 8, period: 3, min: 8, max: 8 },
+        ];
+
+        // --- State ---
+        let state = {
+            selectedElement: elements[3], // Start with Carbon
+            currentValence: 4
+        };
+
+        // --- DOM Elements ---
+        const dom = {
+            atomSymbol: document.getElementById('atom-symbol'),
+            valenceShell: document.getElementById('valence-shell-ring'),
+            innerShell: document.getElementById('inner-shell'),
+            statusBadge: document.getElementById('status-badge'),
+            valenceCount: document.getElementById('valence-count'),
+            iconOctet: document.getElementById('icon-octet'),
+            textOctet: document.getElementById('text-octet'),
+            textPrediction: document.getElementById('text-prediction'),
+            textBondMain: document.getElementById('text-bond-main'),
+            textBondSub: document.getElementById('text-bond-sub'),
+            chargeContainer: document.getElementById('charge-container'),
+            chargeValue: document.getElementById('charge-value'),
+            btnLose: document.getElementById('btn-lose'),
+            btnGain: document.getElementById('btn-gain'),
+            limitHint: document.getElementById('limit-hint'),
+            selectContainer: document.getElementById('element-select-container'),
+            elementSelect: document.getElementById('element-select')
+        };
+
+        // --- Initialization ---
+        function init() {
+            // Populate Dropdown
+            elements.forEach(el => {
+                const option = document.createElement('option');
+                option.value = el.symbol;
+                option.textContent = `Group ${el.valence === 1 || el.valence === 2 ? el.valence : el.valence + 10} - ${el.name}`;
+                if (el.symbol === 'C') option.selected = true;
+                dom.elementSelect.appendChild(option);
+            });
+
+            // Event Listeners
+            dom.btnLose.addEventListener('click', () => updateValence(-1));
+            dom.btnGain.addEventListener('click', () => updateValence(1));
+            
+            dom.elementSelect.addEventListener('change', (e) => {
+                const el = elements.find(item => item.symbol === e.target.value);
+                state.selectedElement = el;
+                state.currentValence = el.valence;
+                render();
+            });
+
+            // Initial Render
+            render();
+            lucide.createIcons();
+        }
+
+        // --- Logic ---
+
+        function updateValence(delta) {
+            const { min, max } = state.selectedElement;
+            let newVal = state.currentValence + delta;
+            
+            // Respect chemical limits
+            if (newVal < min) newVal = min;
+            if (newVal > max) newVal = max;
+            
+            // Hard safety limits
+            if (newVal < 0) newVal = 0;
+            if (newVal > 8) newVal = 8;
+            
+            state.currentValence = newVal;
+            render();
+        }
+
+        // --- Rendering ---
+
+        function render() {
+            const { currentValence, selectedElement } = state;
+            const { min, max, valence: initialValence } = selectedElement;
+            const isStable = currentValence === 0 || currentValence === 8;
+            const isCation = currentValence === 0;
+
+            // 1. Update Controls UI
+            dom.atomSymbol.textContent = selectedElement.symbol;
+
+            // 2. Render Shells
+            renderValenceShell(currentValence, isStable, isCation);
+            renderInnerShell(selectedElement.period, isCation);
+
+            // 3. Update Buttons & Limit Text
+            const atMin = currentValence <= min;
+            const atMax = currentValence >= max;
+            
+            dom.btnLose.disabled = atMin;
+            dom.btnGain.disabled = atMax;
+
+            // Generate Limit Hints
+            dom.limitHint.textContent = "";
+            if (atMax && max < 8) {
+                dom.limitHint.textContent = "Metals typically release electrons, not gain them.";
+            } else if (atMin && min > 0) {
+                dom.limitHint.textContent = "Non-metals strongly hold their electrons.";
+            } else if (max === 8 && min === 8) {
+                dom.limitHint.textContent = "Noble Gases are already stable.";
+            }
+
+            // 4. Analysis Logic
+            dom.valenceCount.textContent = currentValence;
+
+            // Status Badge & Text
+            if (isStable) {
+                dom.statusBadge.className = "px-3 py-1 rounded-full text-sm font-bold border bg-green-100 text-green-700 border-green-300";
+                dom.statusBadge.textContent = currentValence === 8 ? "Stable Octet" : "Stable Cation";
+                
+                if (currentValence === 8) {
+                    dom.textOctet.textContent = selectedElement.valence === 8 ? "Naturally stable Noble Gas." : "Full valence shell achieved via gaining/sharing.";
+                } else {
+                    dom.textOctet.textContent = "Valence shell emptied. The full inner shell is now exposed, making the ion stable.";
+                }
+                
+                dom.iconOctet.className = "mt-1 min-w-[20px] h-5 rounded-full flex items-center justify-center bg-green-100 text-green-600";
+                dom.iconOctet.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i>';
+            } else if (currentValence === initialValence) {
+                 dom.statusBadge.className = "px-3 py-1 rounded-full text-sm font-bold border bg-slate-100 text-slate-600 border-slate-300";
+                dom.statusBadge.textContent = "Neutral Atom";
+                dom.textOctet.textContent = "Atom is electrically neutral but chemically reactive.";
+                
+                dom.iconOctet.className = "mt-1 min-w-[20px] h-5 rounded-full flex items-center justify-center bg-slate-200 text-slate-500";
+                dom.iconOctet.innerHTML = '<i data-lucide="minus" class="w-3.5 h-3.5"></i>';
+            } else {
+                dom.statusBadge.className = "px-3 py-1 rounded-full text-sm font-bold border bg-amber-50 text-amber-700 border-amber-200";
+                dom.statusBadge.textContent = "Unstable Ion";
+                dom.textOctet.textContent = "Ion is charged but has not yet reached a stable configuration.";
+
+                dom.iconOctet.className = "mt-1 min-w-[20px] h-5 rounded-full flex items-center justify-center bg-amber-100 text-amber-600";
+                dom.iconOctet.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>';
+            }
+
+            // Prediction Text
+            if (currentValence === 0) dom.textPrediction.textContent = "Atom has lost its valence electron(s). It is now a stable positive ion (cation) with a full inner shell.";
+            else if (currentValence === 8) dom.textPrediction.textContent = "Atom has a full shell. It is inert.";
+            else if (currentValence < 4) dom.textPrediction.textContent = `Easier to LOSE ${currentValence} electron${currentValence > 1 ? 's' : ''} than gain ${8 - currentValence}.`;
+            else if (currentValence > 4) dom.textPrediction.textContent = `Easier to GAIN ${8 - currentValence} electron${8 - currentValence > 1 ? 's' : ''} than lose ${currentValence}.`;
+            else dom.textPrediction.textContent = "4 Valence Electrons. Half-full shell. Sharing electrons (covalent bonding) is preferred over gaining or losing.";
+
+            // Bond Info
+            if (currentValence === 8 && initialValence === 8) {
+                 dom.textBondMain.textContent = "0 Bonds";
+                 dom.textBondSub.textContent = "None (Inert)";
+            } else if (currentValence === 8) {
+                // Determine bonds made
+                const gained = 8 - initialValence;
+                dom.textBondMain.textContent = `${gained} Bond${gained > 1 ? 's' : ''} or -${gained} Ion`;
+                dom.textBondSub.textContent = "Covalent Sharing or Anion";
+            } else if (currentValence === 0) {
+                dom.textBondMain.textContent = "Ionic Interactions";
+                dom.textBondSub.textContent = `Forms +${initialValence} Cation`;
+            } else {
+                // In transition
+                dom.textBondMain.textContent = "Reactive";
+                dom.textBondSub.textContent = "Seeking stability...";
+            }
+
+            // Charge Container
+            if (currentValence === initialValence) {
+                dom.chargeContainer.style.height = '0px';
+                dom.chargeContainer.style.padding = '0px';
+                dom.chargeContainer.style.opacity = '0';
+            } else {
+                dom.chargeContainer.style.height = 'auto';
+                dom.chargeContainer.style.padding = '16px';
+                dom.chargeContainer.style.opacity = '1';
+                
+                const charge = currentValence - initialValence;
+                // If I have 1 valence and I started with 1 (charge 0).
+                // If I have 0 valence and I started with 1 (charge +1).
+                // Wait, charge = proton count - electron count.
+                // Simplified: Charge = (Initial Valence) - (Current Valence)
+                // e.g. C (4) -> 8. Charge = 4 - 8 = -4 (if ionic) or just shared.
+                // e.g. Li (1) -> 0. Charge = 1 - 0 = +1.
+                
+                let chargeNum = initialValence - currentValence;
+                let sign = chargeNum > 0 ? '+' : ''; // Negative handled by number
+                
+                dom.chargeValue.textContent = `${sign}${chargeNum}`;
+            }
+
+            // Re-initialize icons for newly added innerHTML
+            lucide.createIcons();
+        }
+
+        function renderValenceShell(count, isStable, isCation) {
+            dom.valenceShell.innerHTML = ''; 
+            
+            // Visual style for the outer ring
+            if (isCation) {
+                // If Cation, outer shell is empty and ghostly
+                dom.valenceShell.className = "shell-ring absolute w-72 h-72 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center opacity-40 z-10";
+            } else if (isStable) {
+                // Stable Octet (8 valence)
+                dom.valenceShell.className = "shell-ring absolute w-72 h-72 rounded-full border-2 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.3)] flex items-center justify-center z-20";
+            } else {
+                // Standard active
+                dom.valenceShell.className = "shell-ring absolute w-72 h-72 rounded-full border-2 border-indigo-400 flex items-center justify-center z-20";
+            }
+
+            for (let i = 0; i < 8; i++) {
+                const angle = (i * 45 - 90) * (Math.PI / 180);
+                const radius = 144; 
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                
+                const isFilled = i < count;
+
+                const electron = document.createElement('div');
+                electron.className = `electron absolute w-6 h-6 rounded-full transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center border
+                    ${isFilled 
+                        ? 'bg-yellow-400 shadow-md scale-100 border-yellow-500 z-10' 
+                        : 'bg-slate-100 scale-75 border-slate-200 z-0'
+                    }`;
+                
+                electron.style.top = `calc(50% + ${y}px)`;
+                electron.style.left = `calc(50% + ${x}px)`;
+
+                if (isFilled) {
+                    const symbol = document.createElement('span');
+                    symbol.className = "text-[10px] text-yellow-800 font-bold";
+                    symbol.textContent = "-";
+                    electron.appendChild(symbol);
+                }
+
+                dom.valenceShell.appendChild(electron);
+            }
+        }
+
+        function renderInnerShell(period, isExposed) {
+            dom.innerShell.innerHTML = '';
+            
+            // Determine inner shell count
+            // Period 2 elements (Li..Ne) have filled n=1 (2 electrons)
+            // Period 3 elements (Na..Ar) have filled n=2 (8 electrons)
+            const count = period === 2 ? 2 : 8;
+
+            if (isExposed) {
+                // Active Inner Shell (Stable Cation Core)
+                dom.innerShell.className = "absolute w-40 h-40 rounded-full border-2 border-green-400 shadow-[0_0_25px_rgba(74,222,128,0.5)] flex items-center justify-center transition-all duration-500 z-30 bg-green-50/10";
+            } else {
+                // Inactive Inner Shell (Background Core)
+                dom.innerShell.className = "absolute w-40 h-40 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center opacity-40 transition-all duration-500 z-10";
+            }
+
+            for (let i = 0; i < count; i++) {
+                let x, y;
+                const radius = 70; 
+
+                if (count === 2) {
+                    // North and South
+                    const angle = (i * 180 - 90) * (Math.PI / 180); 
+                    x = Math.cos(angle) * radius;
+                    y = Math.sin(angle) * radius;
+                } else {
+                    // Octet circle
+                    const angle = (i * 45 - 90) * (Math.PI / 180);
+                    x = Math.cos(angle) * radius;
+                    y = Math.sin(angle) * radius;
+                }
+
+                const electron = document.createElement('div');
+                
+                if (isExposed) {
+                    // Bright electrons
+                    electron.className = "electron absolute w-5 h-5 rounded-full transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center bg-green-400 border border-green-500 shadow-sm";
+                    electron.innerHTML = '<span class="text-[9px] text-white font-bold">-</span>';
+                } else {
+                    // Gray dots
+                    electron.className = "electron absolute w-2 h-2 rounded-full transform -translate-x-1/2 -translate-y-1/2 bg-slate-400";
+                }
+
+                electron.style.top = `calc(50% + ${y}px)`;
+                electron.style.left = `calc(50% + ${x}px)`;
+
+                dom.innerShell.appendChild(electron);
+            }
+        }
+
+        // Run
+        init();
+
+    </script>
+</body>
+</html>
