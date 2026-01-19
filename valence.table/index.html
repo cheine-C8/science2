@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valence Explorer - Interactive Periodic Table</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Custom Tailwind Config for specific colors if needed, but default is fine -->
+    <style>
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICONS (Inline SVGs to avoid dependencies) ---
+        const IconAtom = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="1" />
+                <path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" />
+                <path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" />
+            </svg>
+        );
+
+        const IconTrophy = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </svg>
+        );
+
+        const IconFilter = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+        );
+
+        const IconX = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+            </svg>
+        );
+
+        // --- DATA ---
+        const elementData = [
+            { atomicNumber: 1, symbol: "H", name: "Hydrogen", group: 1, period: 1, category: "nonmetal" },
+            { atomicNumber: 2, symbol: "He", name: "Helium", group: 18, period: 1, category: "noble-gas" },
+            { atomicNumber: 3, symbol: "Li", name: "Lithium", group: 1, period: 2, category: "alkali-metal" },
+            { atomicNumber: 4, symbol: "Be", name: "Beryllium", group: 2, period: 2, category: "alkaline-earth-metal" },
+            { atomicNumber: 5, symbol: "B", name: "Boron", group: 13, period: 2, category: "metalloid" },
+            { atomicNumber: 6, symbol: "C", name: "Carbon", group: 14, period: 2, category: "nonmetal" },
+            { atomicNumber: 7, symbol: "N", name: "Nitrogen", group: 15, period: 2, category: "nonmetal" },
+            { atomicNumber: 8, symbol: "O", name: "Oxygen", group: 16, period: 2, category: "nonmetal" },
+            { atomicNumber: 9, symbol: "F", name: "Fluorine", group: 17, period: 2, category: "halogen" },
+            { atomicNumber: 10, symbol: "Ne", name: "Neon", group: 18, period: 2, category: "noble-gas" },
+            { atomicNumber: 11, symbol: "Na", name: "Sodium", group: 1, period: 3, category: "alkali-metal" },
+            { atomicNumber: 12, symbol: "Mg", name: "Magnesium", group: 2, period: 3, category: "alkaline-earth-metal" },
+            { atomicNumber: 13, symbol: "Al", name: "Aluminium", group: 13, period: 3, category: "post-transition-metal" },
+            { atomicNumber: 14, symbol: "Si", name: "Silicon", group: 14, period: 3, category: "metalloid" },
+            { atomicNumber: 15, symbol: "P", name: "Phosphorus", group: 15, period: 3, category: "nonmetal" },
+            { atomicNumber: 16, symbol: "S", name: "Sulfur", group: 16, period: 3, category: "nonmetal" },
+            { atomicNumber: 17, symbol: "Cl", name: "Chlorine", group: 17, period: 3, category: "halogen" },
+            { atomicNumber: 18, symbol: "Ar", name: "Argon", group: 18, period: 3, category: "noble-gas" },
+            { atomicNumber: 19, symbol: "K", name: "Potassium", group: 1, period: 4, category: "alkali-metal" },
+            { atomicNumber: 20, symbol: "Ca", name: "Calcium", group: 2, period: 4, category: "alkaline-earth-metal" },
+            { atomicNumber: 21, symbol: "Sc", name: "Scandium", group: 3, period: 4, category: "transition-metal" },
+            { atomicNumber: 22, symbol: "Ti", name: "Titanium", group: 4, period: 4, category: "transition-metal" },
+            { atomicNumber: 23, symbol: "V", name: "Vanadium", group: 5, period: 4, category: "transition-metal" },
+            { atomicNumber: 24, symbol: "Cr", name: "Chromium", group: 6, period: 4, category: "transition-metal" },
+            { atomicNumber: 25, symbol: "Mn", name: "Manganese", group: 7, period: 4, category: "transition-metal" },
+            { atomicNumber: 26, symbol: "Fe", name: "Iron", group: 8, period: 4, category: "transition-metal" },
+            { atomicNumber: 27, symbol: "Co", name: "Cobalt", group: 9, period: 4, category: "transition-metal" },
+            { atomicNumber: 28, symbol: "Ni", name: "Nickel", group: 10, period: 4, category: "transition-metal" },
+            { atomicNumber: 29, symbol: "Cu", name: "Copper", group: 11, period: 4, category: "transition-metal" },
+            { atomicNumber: 30, symbol: "Zn", name: "Zinc", group: 12, period: 4, category: "transition-metal" },
+            { atomicNumber: 31, symbol: "Ga", name: "Gallium", group: 13, period: 4, category: "post-transition-metal" },
+            { atomicNumber: 32, symbol: "Ge", name: "Germanium", group: 14, period: 4, category: "metalloid" },
+            { atomicNumber: 33, symbol: "As", name: "Arsenic", group: 15, period: 4, category: "metalloid" },
+            { atomicNumber: 34, symbol: "Se", name: "Selenium", group: 16, period: 4, category: "nonmetal" },
+            { atomicNumber: 35, symbol: "Br", name: "Bromine", group: 17, period: 4, category: "halogen" },
+            { atomicNumber: 36, symbol: "Kr", name: "Krypton", group: 18, period: 4, category: "noble-gas" },
+            { atomicNumber: 37, symbol: "Rb", name: "Rubidium", group: 1, period: 5, category: "alkali-metal" },
+            { atomicNumber: 38, symbol: "Sr", name: "Strontium", group: 2, period: 5, category: "alkaline-earth-metal" },
+            { atomicNumber: 39, symbol: "Y", name: "Yttrium", group: 3, period: 5, category: "transition-metal" },
+            { atomicNumber: 40, symbol: "Zr", name: "Zirconium", group: 4, period: 5, category: "transition-metal" },
+            { atomicNumber: 41, symbol: "Nb", name: "Niobium", group: 5, period: 5, category: "transition-metal" },
+            { atomicNumber: 42, symbol: "Mo", name: "Molybdenum", group: 6, period: 5, category: "transition-metal" },
+            { atomicNumber: 43, symbol: "Tc", name: "Technetium", group: 7, period: 5, category: "transition-metal" },
+            { atomicNumber: 44, symbol: "Ru", name: "Ruthenium", group: 8, period: 5, category: "transition-metal" },
+            { atomicNumber: 45, symbol: "Rh", name: "Rhodium", group: 9, period: 5, category: "transition-metal" },
+            { atomicNumber: 46, symbol: "Pd", name: "Palladium", group: 10, period: 5, category: "transition-metal" },
+            { atomicNumber: 47, symbol: "Ag", name: "Silver", group: 11, period: 5, category: "transition-metal" },
+            { atomicNumber: 48, symbol: "Cd", name: "Cadmium", group: 12, period: 5, category: "transition-metal" },
+            { atomicNumber: 49, symbol: "In", name: "Indium", group: 13, period: 5, category: "post-transition-metal" },
+            { atomicNumber: 50, symbol: "Sn", name: "Tin", group: 14, period: 5, category: "post-transition-metal" },
+            { atomicNumber: 51, symbol: "Sb", name: "Antimony", group: 15, period: 5, category: "metalloid" },
+            { atomicNumber: 52, symbol: "Te", name: "Tellurium", group: 16, period: 5, category: "metalloid" },
+            { atomicNumber: 53, symbol: "I", name: "Iodine", group: 17, period: 5, category: "halogen" },
+            { atomicNumber: 54, symbol: "Xe", name: "Xenon", group: 18, period: 5, category: "noble-gas" },
+            { atomicNumber: 55, symbol: "Cs", name: "Caesium", group: 1, period: 6, category: "alkali-metal" },
+            { atomicNumber: 56, symbol: "Ba", name: "Barium", group: 2, period: 6, category: "alkaline-earth-metal" },
+            { atomicNumber: 57, symbol: "La", name: "Lanthanum", group: 3, period: 6, category: "lanthanide" },
+            { atomicNumber: 72, symbol: "Hf", name: "Hafnium", group: 4, period: 6, category: "transition-metal" },
+            { atomicNumber: 73, symbol: "Ta", name: "Tantalum", group: 5, period: 6, category: "transition-metal" },
+            { atomicNumber: 74, symbol: "W", name: "Tungsten", group: 6, period: 6, category: "transition-metal" },
+            { atomicNumber: 75, symbol: "Re", name: "Rhenium", group: 7, period: 6, category: "transition-metal" },
+            { atomicNumber: 76, symbol: "Os", name: "Osmium", group: 8, period: 6, category: "transition-metal" },
+            { atomicNumber: 77, symbol: "Ir", name: "Iridium", group: 9, period: 6, category: "transition-metal" },
+            { atomicNumber: 78, symbol: "Pt", name: "Platinum", group: 10, period: 6, category: "transition-metal" },
+            { atomicNumber: 79, symbol: "Au", name: "Gold", group: 11, period: 6, category: "transition-metal" },
+            { atomicNumber: 80, symbol: "Hg", name: "Mercury", group: 12, period: 6, category: "transition-metal" },
+            { atomicNumber: 81, symbol: "Tl", name: "Thallium", group: 13, period: 6, category: "post-transition-metal" },
+            { atomicNumber: 82, symbol: "Pb", name: "Lead", group: 14, period: 6, category: "post-transition-metal" },
+            { atomicNumber: 83, symbol: "Bi", name: "Bismuth", group: 15, period: 6, category: "post-transition-metal" },
+            { atomicNumber: 84, symbol: "Po", name: "Polonium", group: 16, period: 6, category: "post-transition-metal" },
+            { atomicNumber: 85, symbol: "At", name: "Astatine", group: 17, period: 6, category: "halogen" },
+            { atomicNumber: 86, symbol: "Rn", name: "Radon", group: 18, period: 6, category: "noble-gas" },
+            { atomicNumber: 87, symbol: "Fr", name: "Francium", group: 1, period: 7, category: "alkali-metal" },
+            { atomicNumber: 88, symbol: "Ra", name: "Radium", group: 2, period: 7, category: "alkaline-earth-metal" },
+            { atomicNumber: 89, symbol: "Ac", name: "Actinium", group: 3, period: 7, category: "actinide" },
+            { atomicNumber: 104, symbol: "Rf", name: "Rutherfordium", group: 4, period: 7, category: "transition-metal" },
+            { atomicNumber: 105, symbol: "Db", name: "Dubnium", group: 5, period: 7, category: "transition-metal" },
+            { atomicNumber: 106, symbol: "Sg", name: "Seaborgium", group: 6, period: 7, category: "transition-metal" },
+            { atomicNumber: 107, symbol: "Bh", name: "Bohrium", group: 7, period: 7, category: "transition-metal" },
+            { atomicNumber: 108, symbol: "Hs", name: "Hassium", group: 8, period: 7, category: "transition-metal" },
+            { atomicNumber: 109, symbol: "Mt", name: "Meitnerium", group: 9, period: 7, category: "unknown" },
+            { atomicNumber: 110, symbol: "Ds", name: "Darmstadtium", group: 10, period: 7, category: "unknown" },
+            { atomicNumber: 111, symbol: "Rg", name: "Roentgenium", group: 11, period: 7, category: "unknown" },
+            { atomicNumber: 112, symbol: "Cn", name: "Copernicium", group: 12, period: 7, category: "unknown" },
+            { atomicNumber: 113, symbol: "Nh", name: "Nihonium", group: 13, period: 7, category: "unknown" },
+            { atomicNumber: 114, symbol: "Fl", name: "Flerovium", group: 14, period: 7, category: "unknown" },
+            { atomicNumber: 115, symbol: "Mc", name: "Moscovium", group: 15, period: 7, category: "unknown" },
+            { atomicNumber: 116, symbol: "Lv", name: "Livermorium", group: 16, period: 7, category: "unknown" },
+            { atomicNumber: 117, symbol: "Ts", name: "Tennessine", group: 17, period: 7, category: "unknown" },
+            { atomicNumber: 118, symbol: "Og", name: "Oganesson", group: 18, period: 7, category: "unknown" }
+        ];
+
+        const lanthanides = [
+            { atomicNumber: 58, symbol: "Ce", name: "Cerium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 59, symbol: "Pr", name: "Praseodymium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 60, symbol: "Nd", name: "Neodymium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 61, symbol: "Pm", name: "Promethium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 62, symbol: "Sm", name: "Samarium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 63, symbol: "Eu", name: "Europium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 64, symbol: "Gd", name: "Gadolinium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 65, symbol: "Tb", name: "Terbium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 66, symbol: "Dy", name: "Dysprosium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 67, symbol: "Ho", name: "Holmium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 68, symbol: "Er", name: "Erbium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 69, symbol: "Tm", name: "Thulium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 70, symbol: "Yb", name: "Ytterbium", group: null, period: 8, category: "lanthanide" },
+            { atomicNumber: 71, symbol: "Lu", name: "Lutetium", group: 3, period: 8, category: "lanthanide" }
+        ];
+
+        const actinides = [
+            { atomicNumber: 90, symbol: "Th", name: "Thorium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 91, symbol: "Pa", name: "Protactinium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 92, symbol: "U", name: "Uranium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 93, symbol: "Np", name: "Neptunium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 94, symbol: "Pu", name: "Plutonium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 95, symbol: "Am", name: "Americium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 96, symbol: "Cm", name: "Curium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 97, symbol: "Bk", name: "Berkelium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 98, symbol: "Cf", name: "Californium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 99, symbol: "Es", name: "Einsteinium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 100, symbol: "Fm", name: "Fermium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 101, symbol: "Md", name: "Mendelevium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 102, symbol: "No", name: "Nobelium", group: null, period: 9, category: "actinide" },
+            { atomicNumber: 103, symbol: "Lr", name: "Lawrencium", group: 3, period: 9, category: "actinide" }
+        ];
+
+        // Helper to determine valence electrons based on typical main group rules
+        const getValence = (el) => {
+            if (el.group === 1) return 1;
+            if (el.group === 2) return 2;
+            if (el.group >= 13 && el.group <= 17) return el.group - 10;
+            if (el.group === 18) return el.symbol === "He" ? 2 : 8;
+            return null; // Variable for transition metals
+        };
+
+        const getCategoryColor = (category) => {
+            const colors = {
+                "alkali-metal": "bg-red-500 border-red-700 text-white",
+                "alkaline-earth-metal": "bg-orange-400 border-orange-600 text-black",
+                "transition-metal": "bg-yellow-200 border-yellow-400 text-black",
+                "post-transition-metal": "bg-green-300 border-green-500 text-black",
+                "metalloid": "bg-teal-400 border-teal-600 text-black",
+                "nonmetal": "bg-blue-300 border-blue-500 text-black",
+                "halogen": "bg-blue-500 border-blue-700 text-white",
+                "noble-gas": "bg-indigo-400 border-indigo-600 text-white",
+                "lanthanide": "bg-pink-300 border-pink-500 text-black",
+                "actinide": "bg-purple-300 border-purple-500 text-black",
+                "unknown": "bg-gray-300 border-gray-500 text-black"
+            };
+            return colors[category] || "bg-gray-200";
+        };
+
+        // --- COMPONENTS ---
+
+        const ElementCell = ({ element, onClick, isDimmed, isHighlighted, showValence }) => {
+            const valence = getValence(element);
+            const colorClass = getCategoryColor(element.category);
+
+            return (
+                <div
+                    onClick={() => onClick(element)}
+                    className={`
+                        relative p-0.5 flex flex-col items-center justify-center 
+                        cursor-pointer transition-all duration-200 border
+                        ${isDimmed ? 'opacity-20 scale-90 grayscale' : 'opacity-100 scale-100'}
+                        ${isHighlighted ? 'ring-4 ring-yellow-400 z-10 shadow-lg scale-110' : 'hover:scale-110 hover:z-10 hover:shadow-md'}
+                        ${colorClass}
+                        w-full aspect-square min-w-[32px] sm:min-w-[40px] md:min-w-[48px] rounded-sm select-none
+                    `}
+                    style={{
+                        gridColumn: element.group || 'auto',
+                        gridRow: element.period
+                    }}
+                >
+                    <span className="text-[0.4rem] sm:text-[0.6rem] absolute top-0.5 left-1 opacity-70">{element.atomicNumber}</span>
+                    <span className="font-bold text-xs sm:text-base md:text-lg leading-none mt-1 sm:mt-2">{element.symbol}</span>
+                    
+                    {showValence && valence !== null && (
+                        <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white text-black text-[0.6rem] sm:text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center border border-gray-300 shadow-sm z-20">
+                            {valence}
+                        </div>
+                    )}
+                    
+                    <span className="hidden lg:block text-[0.45rem] leading-none opacity-80 truncate w-full text-center px-0.5">
+                        {element.name}
+                    </span>
+                </div>
+            );
+        };
+
+        const ElementInfoModal = ({ element, onClose }) => {
+            if (!element) return null;
+            const valence = getValence(element);
+            const colorClass = getCategoryColor(element.category);
+
+            return (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-sm w-full p-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <IconX size={24} />
+                        </button>
+                        
+                        <div className="flex items-center gap-6 mb-6">
+                            <div className={`w-24 h-24 rounded-lg shadow-inner flex flex-col items-center justify-center border-4 ${colorClass}`}>
+                                <span className="text-xl opacity-70">{element.atomicNumber}</span>
+                                <span className="text-4xl font-bold">{element.symbol}</span>
+                            </div>
+                            <div>
+                                <h2 className="text-3xl font-bold dark:text-white">{element.name}</h2>
+                                <p className="text-gray-500 dark:text-gray-300 capitalize">{element.category.replace(/-/g, ' ')}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Group</p>
+                                <p className="text-xl font-mono dark:text-white">{element.group || "N/A"}</p>
+                            </div>
+                            <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Period</p>
+                                <p className="text-xl font-mono dark:text-white">{element.period}</p>
+                            </div>
+                            <div className={`col-span-2 p-4 rounded-lg border-2 ${valence !== null ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'}`}>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 uppercase font-semibold mb-1">Valence Electrons</p>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-3xl font-bold text-blue-600 dark:text-blue-300">
+                                        {valence !== null ? valence : "?"}
+                                    </span>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                        {valence !== null 
+                                            ? "Outer shell electrons responsible for bonding."
+                                            : "Variable for Transition Metals & Lanthanides/Actinides."}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [mode, setMode] = useState('explore'); // 'explore', 'quiz'
+            const [filterValence, setFilterValence] = useState(null);
+            const [selectedElement, setSelectedElement] = useState(null);
+            const [quizTarget, setQuizTarget] = useState(null);
+            const [quizFeedback, setQuizFeedback] = useState(null); // 'correct', 'incorrect'
+            const [score, setScore] = useState(0);
+
+            // --- QUIZ LOGIC ---
+            const startQuiz = () => {
+                setMode('quiz');
+                setFilterValence(null);
+                setSelectedElement(null);
+                nextQuestion();
+                setScore(0);
+            };
+
+            const nextQuestion = () => {
+                const target = Math.floor(Math.random() * 8) + 1;
+                setQuizTarget(target);
+                setQuizFeedback(null);
+            };
+
+            const handleElementClick = (element) => {
+                if (mode === 'explore') {
+                    setSelectedElement(element);
+                } else if (mode === 'quiz') {
+                    const valence = getValence(element);
+                    if (valence === quizTarget) {
+                        setQuizFeedback('correct');
+                        setScore(s => s + 1);
+                        setTimeout(() => {
+                            nextQuestion();
+                        }, 1500);
+                    } else {
+                        setQuizFeedback('incorrect');
+                        setScore(s => Math.max(0, s - 1));
+                    }
+                }
+            };
+
+            const handleFilterClick = (num) => {
+                if (mode === 'quiz') return; 
+                if (filterValence === num) {
+                    setFilterValence(null);
+                } else {
+                    setFilterValence(num);
+                }
+            };
+
+            const isElementDimmed = (element) => {
+                if (mode === 'quiz') {
+                    const v = getValence(element);
+                    return v === null; 
+                }
+                if (filterValence !== null) {
+                    return getValence(element) !== filterValence;
+                }
+                return false;
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    
+                    {/* HEADER & CONTROLS */}
+                    <header className="bg-white dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-40">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                            
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-600 text-white p-2 rounded-lg">
+                                    <IconAtom size={24} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold leading-tight">Valence Explorer</h1>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Interactive Periodic Table</p>
+                                </div>
+                            </div>
+
+                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                <button 
+                                    onClick={() => { setMode('explore'); setFilterValence(null); }}
+                                    className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${mode === 'explore' ? 'bg-white dark:bg-slate-600 shadow-sm text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
+                                >
+                                    Explore
+                                </button>
+                                <button 
+                                    onClick={startQuiz}
+                                    className={`px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${mode === 'quiz' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-300' : 'text-gray-500 dark:text-gray-400'}`}
+                                >
+                                    <IconTrophy size={16} /> Quiz Mode
+                                </button>
+                            </div>
+
+                            {mode === 'quiz' && (
+                                <div className="flex items-center gap-4 bg-purple-50 dark:bg-purple-900/30 px-4 py-2 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    <div className="text-right">
+                                        <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Target</p>
+                                        <p className="font-bold">Find: {quizTarget} Valence e⁻</p>
+                                    </div>
+                                    <div className="h-8 w-px bg-purple-200 dark:bg-purple-700"></div>
+                                    <div className="text-left">
+                                        <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Score</p>
+                                        <p className="font-bold text-xl">{score}</p>
+                                    </div>
+                                    {quizFeedback && (
+                                        <div className={`ml-2 px-3 py-1 rounded-full text-sm font-bold animate-pulse ${quizFeedback === 'correct' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {quizFeedback === 'correct' ? 'Correct!' : 'Try Again'}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* VALENCE FILTER BAR */}
+                        {mode === 'explore' && (
+                            <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 overflow-x-auto">
+                                <div className="flex items-center gap-2 min-w-max pb-2">
+                                    <span className="flex items-center gap-2 text-sm font-bold text-gray-500 mr-2">
+                                        <IconFilter size={16} /> Filter by Valence:
+                                    </span>
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => handleFilterClick(num)}
+                                            className={`
+                                                w-10 h-10 rounded-full font-bold text-sm transition-all border-2
+                                                ${filterValence === num 
+                                                    ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-md' 
+                                                    : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-500'}
+                                            `}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
+                                    <button 
+                                        onClick={() => setFilterValence(null)}
+                                        className="ml-2 text-xs text-gray-400 hover:text-gray-600 underline"
+                                        disabled={!filterValence}
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </header>
+
+                    {/* MAIN TABLE AREA */}
+                    <main className="flex-1 overflow-auto p-4 md:p-8 cursor-grab active:cursor-grabbing">
+                        <div className="min-w-fit max-w-[95vw] 2xl:max-w-7xl mx-auto">
+                            {/* Main Grid: Tight spacing (gap-px) */}
+                            <div className="grid gap-px auto-rows-min" style={{ gridTemplateColumns: 'repeat(18, minmax(0, 1fr))' }}>
+                                
+                                {elementData.map(el => (
+                                    <ElementCell 
+                                        key={el.atomicNumber} 
+                                        element={el}
+                                        onClick={handleElementClick}
+                                        isDimmed={isElementDimmed(el)}
+                                        isHighlighted={false}
+                                        showValence={mode === 'explore' && (filterValence === getValence(el))}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* F-BLOCK (Lanthanides & Actinides) */}
+                            <div className="mt-4 ml-[11%] lg:ml-[16.6%] grid gap-px" style={{ gridTemplateColumns: 'repeat(15, minmax(0, 1fr))' }}>
+                                <div className="col-span-15 text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Lanthanides & Actinides (Variable Valence)</div>
+                                
+                                <div className="w-full aspect-square hidden sm:block"></div> 
+
+                                {lanthanides.map((el, i) => (
+                                    <ElementCell 
+                                        key={el.atomicNumber} 
+                                        element={el}
+                                        onClick={handleElementClick}
+                                        isDimmed={isElementDimmed(el)}
+                                        isHighlighted={false}
+                                        showValence={false}
+                                    />
+                                ))}
+
+                                <div className="col-span-15 h-2"></div>
+                                
+                                <div className="w-full aspect-square hidden sm:block"></div>
+
+                                {actinides.map((el, i) => (
+                                    <ElementCell 
+                                        key={el.atomicNumber} 
+                                        element={el}
+                                        onClick={handleElementClick}
+                                        isDimmed={isElementDimmed(el)}
+                                        isHighlighted={false}
+                                        showValence={false}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </main>
+
+                    {selectedElement && (
+                        <ElementInfoModal 
+                            element={selectedElement} 
+                            onClose={() => setSelectedElement(null)} 
+                        />
+                    )}
+
+                    <footer className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 text-xs text-center text-gray-500">
+                        <div className="flex flex-wrap justify-center gap-4 max-w-5xl mx-auto">
+                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> Alkali Metal (1e⁻)</div>
+                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-400"></div> Alkaline Earth (2e⁻)</div>
+                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200 border border-yellow-400"></div> Transition Metal (Var)</div>
+                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Halogen (7e⁻)</div>
+                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-indigo-400"></div> Noble Gas (8e⁻)</div>
+                        </div>
+                        <div className="mt-2 opacity-60">
+                            Note: Valence electron rules shown apply primarily to main group elements (s and p blocks). Transition metals are marked as variable.
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
