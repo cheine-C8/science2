@@ -5,168 +5,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chemistry Interactives</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #4f46e5;
-            --accent-color: #06b6d4;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
-            --card-bg: #ffffff;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --p: #2563eb;
+            --t: #1e293b;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--bg-color);
             margin: 0;
-            padding: 0;
-            min-height: 100vh;
+            color: var(--t);
+            background: #f8fafc;
+            line-height: 1.5;
         }
 
         header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 2.5rem 2rem;
+            background: linear-gradient(135deg, var(--p), #4f46e5);
+            color: #fff;
+            padding: 2rem;
             text-align: center;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-md);
         }
 
         h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
             margin: 0;
-            letter-spacing: -0.05em;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 2rem;
         }
 
-        header p {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-top: 0.75rem;
-            font-weight: 300;
+        p {
+            margin: 0.5rem 0 0;
+            opacity: 0.8;
+            font-size: 0.9rem;
         }
 
         main {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 0 2rem 3rem;
-        }
-
-        section {
-            margin-bottom: 2.5rem;
+            padding: 1.5rem;
         }
 
         h2 {
-            font-size: 1.5rem;
-            color: var(--text-color);
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            border-left: 4px solid #06b6d4;
+            padding-left: 0.7rem;
+            margin: 2rem 0 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        nav {
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        h2::before {
-            content: '';
-            display: block;
-            width: 6px;
-            height: 20px;
-            background: var(--accent-color);
-            border-radius: 4px;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1rem;
-        }
-
-        li {
-            height: 100%;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
         a {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 100%;
-            padding: 1.25rem;
-            text-decoration: none;
-            color: var(--text-color);
-            background: var(--card-bg);
-            border-radius: 10px;
+            background: #fff;
             border: 1px solid #e2e8f0;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--t);
             font-weight: 600;
-            font-size: 1rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        a::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+            transition: 0.2s;
         }
 
         a:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
-        }
-
-        a:hover::after {
-            transform: scaleX(1);
-        }
-
-        a:active {
+            border-color: var(--p);
+            color: var(--p);
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
         }
 
-        /* Footer */
         footer {
             text-align: center;
             padding: 2rem;
+            font-size: 0.8rem;
             color: #64748b;
-            font-size: 0.9rem;
-            border-top: 1px solid #e2e8f0;
-            margin-top: auto;
-        }
-
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2.5rem;
-            }
-
-            header {
-                padding: 3rem 1.5rem;
-            }
-
-            main {
-                padding: 0 1.5rem 3rem;
-            }
         }
     </style>
 </head>
@@ -176,41 +92,24 @@
         <h1>Science</h1>
         <p>Interactive Chemistry Explorations</p>
     </header>
-
     <main>
-        <section>
-            <h2>Atoms & Elements</h2>
-            <ul>
-                <li><a href="./bohr.model/index.html">Bohr Model</a></li>
-                <li><a href="./atomic.size/index.html">Atomic Size</a></li>
-                <li><a href="./element.tile/index.html">Element Tile</a></li>
-                <li><a href="./periodic.quest/index.html">Periodic Quest</a></li>
-                <li><a href="./radiation/index.html">Radiation</a></li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Electrons & Valence</h2>
-            <ul>
-                <li><a href="./electron.config/index.html">Electron Configuration</a></li>
-                <li><a href="./electron.dot/index.html">Electron Dot</a></li>
-                <li><a href="./valence/index.html">Valence</a></li>
-                <li><a href="./valence.table/index.html">Valence Table</a></li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Molecules & Properties</h2>
-            <ul>
-                <li><a href="./hydrogenbonding/index.html">Hydrogen Bonding</a></li>
-                <li><a href="./meltingpoint/index.html">Melting Point</a></li>
-            </ul>
-        </section>
+        <h2>Atoms & Elements</h2>
+        <nav>
+            <a href="./bohr.model/">Bohr Model</a><a href="./atomic.size/">Atomic Size</a>
+            <a href="./element.tile/">Element Tile</a><a href="./periodic.quest/">Periodic Quest</a>
+            <a href="./radiation/">Radiation</a>
+        </nav>
+        <h2>Electrons & Valence</h2>
+        <nav>
+            <a href="./electron.config/">Electron Config</a><a href="./electron.dot/">Electron Dot</a>
+            <a href="./valence/">Valence</a><a href="./valence.table/">Valence Table</a>
+        </nav>
+        <h2>Molecules</h2>
+        <nav>
+            <a href="./hydrogenbonding/">Hydrogen Bonding</a><a href="./meltingpoint/">Melting Point</a>
+        </nav>
     </main>
-
-    <footer>
-        &copy; 2026 Science2 Project. Built for Discovery.
-    </footer>
+    <footer>&copy; 2026 Science2 Project</footer>
 </body>
 
 </html>
