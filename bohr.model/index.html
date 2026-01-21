@@ -189,10 +189,10 @@
             <!-- Element Card (Overlay) -->
             <div
                 class="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 p-4 rounded-xl shadow-lg dark:shadow-2xl min-w-[140px] text-center transition-colors duration-300">
-                <div id="elNumber" class="text-slate-500 dark:text-slate-400 text-xs font-mono mb-1">6</div>
-                <div id="elSymbol" class="text-4xl font-bold text-slate-800 dark:text-white mb-1">C</div>
-                <div id="elName" class="text-blue-600 dark:text-blue-400 text-sm font-semibold">Carbon</div>
-                <div id="elMass" class="text-slate-500 text-[10px] mt-2">Atomic Mass: 12.011</div>
+                <div id="elNumber" class="text-slate-500 dark:text-slate-400 text-xs font-mono mb-1">1</div>
+                <div id="elSymbol" class="text-4xl font-bold text-slate-800 dark:text-white mb-1">H</div>
+                <div id="elName" class="text-blue-600 dark:text-blue-400 text-sm font-semibold">Hydrogen</div>
+                <div id="elMass" class="text-slate-500 text-[10px] mt-2">Atomic Mass: 1.008</div>
             </div>
 
             <!-- Canvas Container -->
@@ -223,10 +223,10 @@
                     Electron Configuration</h3>
                 <div id="configText"
                     class="font-mono text-xl md:text-2xl text-blue-600 dark:text-blue-300 break-words leading-relaxed font-bold">
-                    1s² 2s² 2p²
+                    1s¹
                 </div>
                 <div id="nobleConfigText" class="font-mono text-sm text-slate-500 mt-2">
-                    [He] 2s² 2p²
+                    1s¹
                 </div>
             </div>
 
@@ -235,15 +235,15 @@
                 class="grid grid-cols-4 gap-px bg-slate-200 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
                 <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
                     <div class="text-xs text-slate-500 uppercase mb-1">Valence e⁻</div>
-                    <div id="valenceCount" class="text-xl font-bold text-slate-900 dark:text-white">4</div>
+                    <div id="valenceCount" class="text-xl font-bold text-slate-900 dark:text-white">1</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
                     <div class="text-xs text-slate-500 uppercase mb-1">Shells</div>
-                    <div id="shellCount" class="text-xl font-bold text-slate-900 dark:text-white">2</div>
+                    <div id="shellCount" class="text-xl font-bold text-slate-900 dark:text-white">1</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
                     <div class="text-xs text-slate-500 uppercase mb-1">Block</div>
-                    <div id="blockType" class="text-xl font-bold text-slate-900 dark:text-white">p</div>
+                    <div id="blockType" class="text-xl font-bold text-slate-900 dark:text-white">s</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
                     <div class="text-xs text-slate-500 uppercase mb-1">Category</div>
@@ -394,7 +394,7 @@
         }
 
         // --- Interaction State ---
-        let currentZ = 6;
+        let currentZ = 1;
         let viewMode = 'bohr'; // 'bohr' or 'quantum'
         let animationFrameId;
         let isPaused = false;
