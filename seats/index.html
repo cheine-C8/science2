@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Builder Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar for cleanliness */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        /* Dragging visual cues */
+        .dragging {
+            opacity: 0.5;
+            border: 2px dashed #4ade80; /* green-400 */
+        }
+        .drag-over {
+            background-color: #f0fdf4; /* green-50 */
+            border-color: #86efac; /* green-300 */
+            border-style: dashed;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-green-200">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <div class="flex items-center gap-2">
+            <div class="bg-green-600 p-2 rounded-lg text-white">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">Team Builder Pro</h1>
+        </div>
+        
+        <!-- Action Buttons (Hidden by default) -->
+        <div id="header-actions" class="flex gap-2 hidden">
+            <button onclick="app.generateTeams()" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span class="hidden sm:inline">Re-Shuffle</span>
+            </button>
+            <button onclick="app.reset()" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> <span class="hidden sm:inline">Reset</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT COLUMN: Controls & Input -->
+            <!-- The class 'lg:flex' ensures it stays visible on desktop even if generated, but we toggle 'hidden' on mobile via JS -->
+            <div id="input-section" class="lg:col-span-3 flex flex-col gap-6 lg:flex">
+                
+                <!-- Settings Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="settings" class="w-4 h-4"></i> Configuration
+                    </h2>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Number of Teams</label>
+                        <div class="flex items-center">
+                            <button onclick="app.updateTeamCount(-1)" class="w-10 h-10 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 hover:bg-slate-100 flex items-center justify-center font-bold text-slate-600">-</button>
+                            <input type="number" id="team-count" value="2" readonly class="h-10 w-full text-center border-y border-slate-300 text-slate-800 font-semibold focus:outline-none">
+                            <button onclick="app.updateTeamCount(1)" class="w-10 h-10 rounded-r-md border border-l-0 border-slate-300 bg-slate-50 hover:bg-slate-100 flex items-center justify-center font-bold text-slate-600">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Names Input Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Participants</label>
+                        <span id="name-counter" class="text-xs bg-slate-100 px-2 py-1 rounded-full text-slate-500">0 Names</span>
+                    </div>
+                    <textarea id="names-input" oninput="app.updateNameCount()" class="flex-1 w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all resize-none min-h-[300px] outline-none" placeholder="Enter names here...&#10;One name per line&#10;John Doe&#10;Jane Smith"></textarea>
+                    <button onclick="app.generateTeams()" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="shuffle" class="w-5 h-5"></i> Generate Teams
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Results Area -->
+            <div class="lg:col-span-9">
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="h-full flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/50">
+                    <div class="bg-white p-4 rounded-full shadow-sm mb-4">
+                        <i data-lucide="users" class="w-12 h-12 text-slate-300"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-700 mb-2">Ready to Organize?</h3>
+                    <p class="text-slate-500 max-w-md">
+                        Enter your list of names on the left, choose how many teams you need, and hit Generate.
+                    </p>
+                </div>
+
+                <!-- Results Grid (Hidden by default) -->
+                <div id="results-area" class="space-y-6 hidden">
+                    <div class="flex justify-between items-center bg-blue-50 border border-blue-100 p-4 rounded-lg text-blue-800">
+                        <p class="text-sm flex items-center gap-2">
+                            <i data-lucide="grip-vertical" class="w-4 h-4"></i> 
+                            <span class="font-semibold">Tip:</span> Drag and drop names to move them between teams.
+                        </p>
+                        <button onclick="app.copyToClipboard()" class="text-sm font-medium hover:underline flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy List
+                        </button>
+                    </div>
+
+                    <div id="teams-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- Teams will be injected here via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const app = (() => {
+            // --- State ---
+            let state = {
+                teamCount: 2,
+                teams: [], // Array of { id, name, members: [] }
+                isGenerated: false,
+                editingTeamId: null
+            };
+
+            // --- Cache DOM Elements ---
+            const els = {
+                headerActions: document.getElementById('header-actions'),
+                inputSection: document.getElementById('input-section'),
+                teamCountDisplay: document.getElementById('team-count'),
+                nameCounter: document.getElementById('name-counter'),
+                namesInput: document.getElementById('names-input'),
+                emptyState: document.getElementById('empty-state'),
+                resultsArea: document.getElementById('results-area'),
+                teamsGrid: document.getElementById('teams-grid')
+            };
+
+            // --- Core Logic ---
+
+            const updateTeamCount = (delta) => {
+                const newVal = Math.max(2, state.teamCount + delta);
+                state.teamCount = newVal;
+                els.teamCountDisplay.value = newVal;
+            };
+
+            const updateNameCount = () => {
+                const count = els.namesInput.value.split('\n').filter(n => n.trim()).length;
+                els.nameCounter.textContent = `${count} Names`;
+            };
+
+            const generateTeams = () => {
+                const rawNames = els.namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== '');
+                
+                if (rawNames.length === 0) {
+                    alert("Please enter some names first!");
+                    return;
+                }
+
+                // Fisher-Yates Shuffle
+                const shuffled = [...rawNames];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+
+                // Create Buckets
+                const newTeams = Array.from({ length: state.teamCount }, (_, i) => ({
+                    id: `team-${i + 1}`,
+                    name: `Team ${i + 1}`,
+                    members: []
+                }));
+
+                // Distribute
+                shuffled.forEach((name, index) => {
+                    const teamIndex = index % state.teamCount;
+                    newTeams[teamIndex].members.push(name);
+                });
+
+                state.teams = newTeams;
+                state.isGenerated = true;
+                state.editingTeamId = null;
+                render();
+            };
+
+            const reset = () => {
+                if(confirm('Are you sure you want to reset all teams?')) {
+                    state.isGenerated = false;
+                    state.teams = [];
+                    state.editingTeamId = null;
+                    render();
+                }
+            };
+
+            // --- Renaming Logic ---
+
+            const startEditing = (teamId) => {
+                state.editingTeamId = teamId;
+                render();
+                // Auto focus
+                const input = document.getElementById(`edit-input-${teamId}`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            };
+
+            const saveTeamName = (teamId, newName) => {
+                const team = state.teams.find(t => t.id === teamId);
+                if (team && newName.trim()) {
+                    team.name = newName.trim();
+                }
+                state.editingTeamId = null;
+                render();
+            };
+
+            const handleEditKeydown = (e, teamId) => {
+                if (e.key === 'Enter') {
+                    saveTeamName(teamId, e.target.value);
+                } else if (e.key === 'Escape') {
+                    state.editingTeamId = null;
+                    render();
+                }
+            };
+
+            // --- Drag and Drop Logic (Native API) ---
+
+            let draggedItem = null;
+
+            const handleDragStart = (e, memberName, originTeamId) => {
+                draggedItem = { member: memberName, originId: originTeamId };
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', JSON.stringify(draggedItem));
+                
+                // Add class for styling
+                setTimeout(() => e.target.classList.add('dragging'), 0);
+            };
+
+            const handleDragEnd = (e) => {
+                e.target.classList.remove('dragging');
+                draggedItem = null;
+                // Clean up drag-over classes
+                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            };
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const teamCard = e.target.closest('.team-card');
+                if (teamCard) {
+                    teamCard.classList.add('drag-over');
+                }
+            };
+
+            const handleDragLeave = (e) => {
+                const teamCard = e.target.closest('.team-card');
+                if (teamCard) {
+                    teamCard.classList.remove('drag-over');
+                }
+            };
+
+            const handleDrop = (e, targetTeamId) => {
+                e.preventDefault();
+                if (!draggedItem) return;
+
+                const { member, originId } = draggedItem;
+
+                if (originId !== targetTeamId) {
+                    // Update State
+                    const originTeam = state.teams.find(t => t.id === originId);
+                    const targetTeam = state.teams.find(t => t.id === targetTeamId);
+
+                    // Remove from old
+                    originTeam.members = originTeam.members.filter(m => m !== member);
+                    // Add to new
+                    targetTeam.members.push(member);
+
+                    render();
+                } else {
+                    // Just clean up styles if dropped in same place
+                    handleDragEnd(e); 
+                    // Need to manually trigger render or class removal because dragEnd might fire on the element that is destroyed/recreated? 
+                    // Actually render() handles cleanup because it rebuilds DOM.
+                    render();
+                }
+            };
+
+            // --- Utilities ---
+
+            const copyToClipboard = () => {
+                let text = "";
+                state.teams.forEach(t => {
+                    text += `${t.name}:\n${t.members.map(m => `- ${m}`).join('\n')}\n\n`;
+                });
+                navigator.clipboard.writeText(text).then(() => {
+                    alert("Results copied to clipboard!");
+                });
+            };
+
+            // --- Rendering ---
+
+            const render = () => {
+                // 1. Toggle Sections
+                if (state.isGenerated) {
+                    els.headerActions.classList.remove('hidden');
+                    els.emptyState.classList.add('hidden');
+                    els.resultsArea.classList.remove('hidden');
+                    
+                    // On mobile, hide input section when generated
+                    els.inputSection.classList.add('hidden');
+                    // On desktop, ensure flex is maintained (tailwind class lg:flex does this, but we need to ensure 'hidden' doesn't override it on desktop)
+                    // The class list 'hidden lg:flex' works: hidden applies to all, lg:flex overrides on large.
+                    
+                } else {
+                    els.headerActions.classList.add('hidden');
+                    els.emptyState.classList.remove('hidden');
+                    els.resultsArea.classList.add('hidden');
+                    els.inputSection.classList.remove('hidden');
+                }
+
+                // 2. Render Grid
+                els.teamsGrid.innerHTML = ''; // Clear current
+
+                state.teams.forEach(team => {
+                    // Wrapper
+                    const card = document.createElement('div');
+                    card.className = "team-card bg-white rounded-xl shadow-sm border-2 border-transparent transition-all flex flex-col h-full";
+                    // Drag Events for Container
+                    card.ondragover = handleDragOver;
+                    card.ondragleave = handleDragLeave;
+                    card.ondrop = (e) => handleDrop(e, team.id);
+
+                    // Header
+                    const header = document.createElement('div');
+                    header.className = "p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white rounded-t-xl min-h-[72px]";
+
+                    if (state.editingTeamId === team.id) {
+                        // Edit Mode
+                        header.innerHTML = `
+                            <div class="flex items-center gap-2 w-full">
+                                <input id="edit-input-${team.id}" type="text" value="${escapeHtml(team.name)}" 
+                                    class="flex-1 px-2 py-1 text-lg font-bold border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    onblur="app.saveTeamName('${team.id}', this.value)"
+                                    onkeydown="app.handleEditKeydown(event, '${team.id}')"
+                                />
+                                <button onmousedown="app.saveTeamName('${team.id}', document.getElementById('edit-input-${team.id}').value)" class="text-green-600 hover:bg-green-100 p-1 rounded">
+                                    <i data-lucide="check" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // Display Mode
+                        header.innerHTML = `
+                            <div class="flex items-center gap-2 w-full group cursor-pointer select-none" onclick="app.startEditing('${team.id}')">
+                                <h3 class="font-bold text-lg text-slate-800 truncate max-w-[200px]">${escapeHtml(team.name)}</h3>
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100"></i>
+                                <span class="ml-auto bg-slate-200 text-slate-600 text-xs font-bold px-2 py-1 rounded-full">${team.members.length}</span>
+                            </div>
+                        `;
+                    }
+                    card.appendChild(header);
+
+                    // List
+                    const listContainer = document.createElement('div');
+                    listContainer.className = "p-3 flex-1 min-h-[150px]";
+                    
+                    if (team.members.length === 0) {
+                        listContainer.innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 text-sm italic">Drop names here</div>`;
+                    } else {
+                        const ul = document.createElement('ul');
+                        ul.className = "space-y-2";
+                        
+                        team.members.forEach(member => {
+                            const li = document.createElement('li');
+                            li.className = "bg-slate-50 hover:bg-white border border-slate-200 hover:border-green-400 hover:shadow-md rounded-md p-3 text-slate-700 flex items-center gap-3 cursor-grab active:cursor-grabbing transition-all group";
+                            li.draggable = true;
+                            li.ondragstart = (e) => handleDragStart(e, member, team.id);
+                            li.ondragend = handleDragEnd;
+                            
+                            li.innerHTML = `
+                                <div class="text-slate-300 group-hover:text-green-500">
+                                    <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-medium">${escapeHtml(member)}</span>
+                            `;
+                            ul.appendChild(li);
+                        });
+                        listContainer.appendChild(ul);
+                    }
+                    card.appendChild(listContainer);
+                    els.teamsGrid.appendChild(card);
+                });
+
+                // Refresh Icons
+                lucide.createIcons();
+            };
+
+            // Helper to prevent XSS
+            const escapeHtml = (str) => {
+                if(!str) return '';
+                return str
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            };
+
+            // Initial Icon Load
+            lucide.createIcons();
+
+            // Expose public methods
+            return {
+                updateTeamCount,
+                updateNameCount,
+                generateTeams,
+                reset,
+                startEditing,
+                saveTeamName,
+                handleEditKeydown,
+                copyToClipboard
+            };
+
+        })();
+    </script>
+</body>
+</html>
