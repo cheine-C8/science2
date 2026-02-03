@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ion Builder - Chemistry Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; /* Prevent body scroll */
+        }
+        .atom-display {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #1e293b;
+            line-height: 1;
+        }
+        .charge-sup {
+            vertical-align: super;
+            font-size: 1.8rem;
+            margin-left: 4px;
+            color: #3b82f6;
+        }
+        .control-section {
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+            transition: opacity 0.3s ease;
+            position: relative;
+        }
+        .section-disabled {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+        .feedback-container {
+            height: 2rem;
+            margin-top: 0.2rem;
+            display: flex;
+            align-items: center;
+        }
+        .feedback-msg {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.4rem;
+            display: none;
+            width: 100%;
+            line-height: 1.1;
+        }
+        .success-pulse {
+            animation: pulse-green 0.5s ease;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            100% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+    </style>
+</head>
+<body class="p-2">
+
+    <div class="max-w-4xl w-full h-[580px] bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col md:flex-row">
+        
+        <!-- Left Side: Controls -->
+        <div class="p-6 md:w-3/5 border-r border-slate-100 flex flex-col">
+            <h1 class="text-xl font-bold text-slate-800 mb-4">Ion Builder</h1>
+            
+            <div class="flex-1">
+                <!-- Step 1: Input Atom -->
+                <div class="control-section" id="sec1">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">1. Element Symbol</label>
+                    <input type="text" id="atomInput" maxlength="2" placeholder="e.g. Mg, Fe, C" 
+                        oninput="validateSymbol()"
+                        class="w-full p-2 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-base font-medium h-10">
+                    <div class="feedback-container">
+                        <div id="feedback1" class="feedback-msg"></div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Valence Electrons -->
+                <div class="control-section section-disabled" id="sec2">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">2. How many valence electrons?</label>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <script>
+                            for(let i=1; i<=8; i++) {
+                                document.write(`<button onclick="validateValence(${i})" class="valence-btn border-2 border-slate-200 hover:border-blue-400 rounded-lg font-bold text-slate-700 transition-all text-xs h-8" data-val="${i}">${i}</button>`);
+                            }
+                        </script>
+                    </div>
+                    <div class="feedback-container">
+                        <div id="feedback2" class="feedback-msg"></div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Interaction -->
+                <div class="control-section section-disabled" id="sec3">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">3. To become stable, will it gain or lose?</label>
+                    <div class="flex gap-2">
+                        <button onclick="validateMode('lose')" id="btnLose" class="flex-1 border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-orange-50 transition-all text-xs h-10">
+                            Loses Electrons
+                        </button>
+                        <button onclick="validateMode('gain')" id="btnGain" class="flex-1 border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-green-50 transition-all text-xs h-10">
+                            Gains Electrons
+                        </button>
+                    </div>
+                    <div class="feedback-container">
+                        <div id="feedback3" class="feedback-msg"></div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Charge -->
+                <div class="control-section section-disabled" id="sec4">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">4. Resulting Charge</label>
+                    <div id="chargeGrid" class="grid grid-cols-4 gap-1.5">
+                        <!-- Dynamic charges -->
+                    </div>
+                    <div class="feedback-container">
+                        <div id="feedback4" class="feedback-msg"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="resetTool()" class="w-full text-slate-400 text-[10px] font-semibold hover:text-slate-600 transition-colors pt-2">
+                Start Over
+            </button>
+        </div>
+
+        <!-- Right Side: Preview -->
+        <div class="p-6 md:w-2/5 bg-slate-50 flex flex-col items-center justify-center text-center">
+            <div class="mb-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ion Preview</span>
+            </div>
+            
+            <div id="previewCard" class="bg-white rounded-2xl shadow-sm border border-slate-200 w-full aspect-square flex items-center justify-center relative transition-all duration-300 max-w-[200px]">
+                <div id="finalSymbol" class="atom-display">
+                    <span id="resSymbol">?</span><span id="resCharge" class="charge-sup"></span>
+                </div>
+            </div>
+
+            <div id="statusTag" class="mt-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter opacity-0">
+                -
+            </div>
+
+            <div class="mt-4 text-xs text-slate-500 px-2 min-h-[3rem] flex items-center justify-center">
+                <p id="summaryText">Enter an element symbol to start.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const elementValence = {
+            'H': 1, 'He': 8, 'Li': 1, 'Be': 2, 'B': 3, 'C': 4, 'N': 5, 'O': 6, 'F': 7, 'Ne': 8,
+            'Na': 1, 'Mg': 2, 'Al': 3, 'Si': 4, 'P': 5, 'S': 6, 'Cl': 7, 'Ar': 8,
+            'K': 1, 'Ca': 2, 'Ga': 3, 'Ge': 4, 'As': 5, 'Se': 6, 'Br': 7, 'Kr': 8,
+            'Rb': 1, 'Sr': 2, 'In': 3, 'Sn': 4, 'Sb': 5, 'Te': 6, 'I': 7, 'Xe': 8,
+            'Cs': 1, 'Ba': 2, 'Tl': 3, 'Pb': 4, 'Bi': 5
+        };
+
+        const transitionMetals = {
+            'Fe': ['2+', '3+'], 'Cu': ['+', '2+'], 'Ag': ['+'], 'Au': ['+', '3+'],
+            'Ni': ['2+', '3+'], 'Zn': ['2+'], 'Cr': ['2+', '3+'], 'Mn': ['2+', '4+', '7+'],
+            'Co': ['2+', '3+'], 'Pt': ['2+', '4+'], 'Hg': ['+', '2+']
+        };
+
+        const group14Elements = ['C', 'Si', 'Ge'];
+
+        let state = {
+            symbol: '',
+            valence: 0,
+            mode: '', 
+            charge: '',
+            chargeValue: 0,
+            isTransition: false
+        };
+
+        function validateSymbol() {
+            const input = document.getElementById('atomInput').value.trim();
+            lockFrom(2); 
+            state.isTransition = false;
+            
+            if (input.length > 0) {
+                state.symbol = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+                document.getElementById('resSymbol').textContent = state.symbol;
+                
+                // Check Group 14
+                if (group14Elements.includes(state.symbol)) {
+                    showFeedback(1, "Group 14 atoms usually share electrons (covalent), not form ions.", true);
+                    document.getElementById('summaryText').textContent = `${state.symbol} tends to form 4 covalent bonds.`;
+                    lockFrom(2);
+                    return;
+                }
+
+                // Check Transition Metals
+                if (transitionMetals[state.symbol]) {
+                    state.isTransition = true;
+                    const possibleIons = transitionMetals[state.symbol];
+                    const ionsText = possibleIons.join(' / ');
+                    
+                    // Show in preview immediately
+                    document.getElementById('resCharge').textContent = ionsText;
+                    document.getElementById('resCharge').style.fontSize = possibleIons.length > 2 ? '1rem' : '1.5rem';
+                    
+                    // Update UI
+                    showFeedback(1, `Transition Metal identified.`, false);
+                    document.getElementById('summaryText').textContent = `${state.symbol} is a transition metal and forms variable charges: ${possibleIons.join(', ')}.`;
+                    
+                    const tag = document.getElementById('statusTag');
+                    tag.style.opacity = '1';
+                    tag.textContent = 'Multi-Valent Metal';
+                    tag.className = `mt-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-600`;
+                    
+                    document.getElementById('previewCard').classList.add('ring-4', 'ring-amber-400');
+                    
+                    // Gray out all subsequent steps
+                    lockFrom(2);
+                    return;
+                }
+
+                unlockStep(2);
+                showFeedback(1, "Symbol set!", false);
+                document.getElementById('summaryText').textContent = "Now select valence electrons.";
+            } else {
+                state.symbol = '';
+                document.getElementById('resSymbol').textContent = '?';
+                document.getElementById('resCharge').textContent = '';
+                document.getElementById('summaryText').textContent = "Enter an element symbol to start.";
+                document.getElementById('feedback1').style.display = 'none';
+                document.getElementById('previewCard').classList.remove('ring-4', 'ring-amber-400');
+                document.getElementById('statusTag').style.opacity = '0';
+            }
+        }
+
+        function validateValence(num) {
+            if (state.isTransition) return;
+
+            const expected = elementValence[state.symbol];
+            document.querySelectorAll('.valence-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'bg-red-500'));
+            const btn = document.querySelector(`.valence-btn[data-val="${num}"]`);
+
+            if (expected !== undefined) {
+                if (num === expected) {
+                    state.valence = num;
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                    if (num === 8) {
+                        showFeedback(2, `${state.symbol} is a stable Noble Gas!`);
+                        lockFrom(3);
+                    } else {
+                        showFeedback(2, `Correct! ${num} valence e⁻.`, false);
+                        unlockStep(3);
+                    }
+                } else {
+                    btn.classList.add('bg-red-500', 'text-white');
+                    showFeedback(2, `Incorrect for ${state.symbol}.`, true);
+                    lockFrom(3);
+                }
+            } else {
+                state.valence = num;
+                btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                showFeedback(2, `Setting ${num} electrons.`, false);
+                unlockStep(3);
+            }
+        }
+
+        function validateMode(mode) {
+            if (state.isTransition) return;
+
+            let isCorrect = false;
+            let msg = "";
+            if (state.valence < 4 && mode === 'lose') {
+                isCorrect = true;
+                msg = "Correct! Metals lose e⁻.";
+            } else if (state.valence > 4 && mode === 'gain') {
+                isCorrect = true;
+                msg = "Correct! Non-metals gain e⁻.";
+            } else if (state.valence === 4) {
+                isCorrect = true; 
+                msg = "Proceed to charge!";
+            } else {
+                msg = mode === 'gain' ? "Easier to lose a few." : "Easier to gain a few.";
+            }
+
+            if (isCorrect) {
+                state.mode = mode;
+                document.getElementById('btnLose').className = `flex-1 border-2 rounded-xl font-semibold transition-all text-xs h-10 ${mode === 'lose' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-700'}`;
+                document.getElementById('btnGain').className = `flex-1 border-2 rounded-xl font-semibold transition-all text-xs h-10 ${mode === 'gain' ? 'border-green-500 bg-green-50 text-green-700' : 'border-slate-200 text-slate-700'}`;
+                showFeedback(3, msg, false);
+                renderChargeButtons();
+                unlockStep(4);
+            } else {
+                showFeedback(3, msg, true);
+                lockFrom(4);
+            }
+        }
+
+        function renderChargeButtons() {
+            const grid = document.getElementById('chargeGrid');
+            grid.innerHTML = '';
+            const sign = state.mode === 'lose' ? '+' : '-';
+            [1, 2, 3, 4].forEach(val => {
+                const chargeStr = val === 1 ? sign : val + sign;
+                const btn = document.createElement('button');
+                btn.textContent = chargeStr;
+                btn.className = "charge-btn border-2 border-slate-200 hover:border-blue-400 rounded-lg font-bold text-slate-700 transition-all text-xs h-8";
+                btn.onclick = () => validateCharge(val, chargeStr, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function validateCharge(val, str, btnElement) {
+            const expected = state.mode === 'lose' ? state.valence : (8 - state.valence);
+            if (val === expected) {
+                state.charge = str;
+                state.chargeValue = val;
+                document.querySelectorAll('.charge-btn').forEach(b => b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600'));
+                btnElement.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                showFeedback(4, `Perfect! Ion is stable.`, false);
+                completeIon();
+            } else {
+                showFeedback(4, `Incorrect. Count to reach 0 or 8.`, true);
+                document.getElementById('resCharge').textContent = '';
+                document.getElementById('statusTag').style.opacity = '0';
+            }
+        }
+
+        function unlockStep(step) {
+            document.getElementById('sec' + step).classList.remove('section-disabled');
+        }
+
+        function lockFrom(step) {
+            for (let i = step; i <= 4; i++) {
+                const sec = document.getElementById('sec' + i);
+                sec.classList.add('section-disabled');
+                const fb = document.getElementById('feedback' + i);
+                if(fb) fb.style.display = 'none';
+            }
+            if (step <= 2) {
+                document.querySelectorAll('.valence-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'bg-red-500'));
+            }
+            if (step <= 3) {
+                state.mode = '';
+                document.getElementById('btnLose').className = "flex-1 border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-orange-50 transition-all text-xs h-10";
+                document.getElementById('btnGain').className = "flex-1 border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-green-50 transition-all text-xs h-10";
+            }
+            if (step <= 4) {
+                state.charge = '';
+                if (!state.isTransition) {
+                    document.getElementById('resCharge').textContent = '';
+                    document.getElementById('statusTag').style.opacity = '0';
+                    document.getElementById('previewCard').classList.remove('ring-4', 'ring-green-400', 'ring-orange-400');
+                }
+            }
+        }
+
+        function showFeedback(step, msg, isError = false) {
+            const fb = document.getElementById('feedback' + step);
+            fb.style.display = 'block';
+            fb.textContent = msg;
+            fb.className = `feedback-msg ${isError ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`;
+            if (!isError) {
+                document.getElementById('sec' + step).classList.add('success-pulse');
+                setTimeout(() => document.getElementById('sec' + step).classList.remove('success-pulse'), 500);
+            }
+        }
+
+        function completeIon() {
+            document.getElementById('resCharge').textContent = state.charge;
+            document.getElementById('resCharge').style.fontSize = '2rem';
+            const tag = document.getElementById('statusTag');
+            tag.style.opacity = '1';
+            const isCation = state.mode === 'lose';
+            tag.textContent = isCation ? 'Cation' : 'Anion';
+            tag.className = `mt-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isCation ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`;
+            document.getElementById('summaryText').innerHTML = `<span>Success! Created <b>${state.symbol}${state.charge}</b>.</span>`;
+            document.getElementById('previewCard').classList.add('ring-4', isCation ? 'ring-orange-400' : 'ring-green-400');
+        }
+
+        function resetTool() { location.reload(); }
+    </script>
+</body>
+</html>
