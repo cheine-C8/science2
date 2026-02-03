@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,35 +8,37 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --atom-size: 54px;
-            --bond-width: 14px;
+            --atom-size: 52px;
             --grid-size: 60px;
         }
-        body, html {
+
+        body,
+        html {
             margin: 0;
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background-color: #ffffff;
-            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
+
         #app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
+
         #canvas-container {
             flex-grow: 1;
             position: relative;
             background-color: #ffffff;
-            /* Subtle grid background */
-            background-image: 
-                radial-gradient(circle, #e2e8f0 1.5px, transparent 1.5px);
+            background-image: radial-gradient(circle, #e2e8f0 1.5px, transparent 1.5px);
             background-size: var(--grid-size) var(--grid-size);
             background-position: center center;
             overflow: hidden;
             touch-action: none;
         }
+
         .atom {
             position: absolute;
             width: var(--atom-size);
@@ -49,19 +52,39 @@
             cursor: pointer;
             user-select: none;
             z-index: 30;
-            border: 3px solid #000000;
+            border: 3px solid #1e293b;
             transform: translate(-50%, -50%);
-            transition: transform 0.1s ease, left 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-size: 1.25rem;
+            transition: left 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.1s ease;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
-        /* Disable transition during active dragging for responsiveness */
-        .atom.dragging { 
-            cursor: grabbing; 
-            scale: 1.1; 
-            z-index: 40; 
-            transition: transform 0.1s ease; 
+
+        .atom:hover {
+            transform: translate(-50%, -50%) scale(1.05);
         }
-        
+
+        .atom.dragging {
+            cursor: grabbing;
+            z-index: 40;
+            transition: none !important;
+            opacity: 0.95;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .atom-ghost {
+            position: absolute;
+            width: var(--atom-size);
+            height: var(--atom-size);
+            border-radius: 9999px;
+            border: 2px dashed #94a3b8;
+            background: rgba(241, 245, 249, 0.5);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+            z-index: 5;
+        }
+
         svg#bond-svg {
             position: absolute;
             top: 0;
@@ -71,11 +94,12 @@
             pointer-events: none;
             z-index: 10;
         }
+
         .bond-hitbox {
             cursor: pointer;
             pointer-events: all;
             stroke: transparent;
-            stroke-width: 30;
+            stroke-width: 32;
             fill: none;
         }
 
@@ -83,7 +107,7 @@
             position: absolute;
             width: 7px;
             height: 7px;
-            background: #000000;
+            background: #0f172a;
             border-radius: 50%;
             pointer-events: none;
             z-index: 25;
@@ -91,14 +115,11 @@
             transition: left 0.15s ease, top 0.15s ease;
         }
 
-        .tool-panel {
-            @apply bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm z-50;
-        }
-        
+        /* Tool Palette UI */
         .element-chip {
-            width: var(--atom-size);
-            height: var(--atom-size);
-            border-radius: 9999px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -106,57 +127,134 @@
             color: white;
             cursor: pointer;
             user-select: none;
-            border: 3px solid #000000;
-            transition: transform 0.1s ease;
-            font-size: 1.25rem;
-            box-sizing: border-box;
-        }
-        
-        .element-chip.active {
-            transform: scale(1.15);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
-            z-index: 60;
+            border: 2px solid transparent;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1rem;
         }
 
-        .palette-container {
-            @apply flex flex-col items-center gap-1;
+        .element-chip:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .element-chip.active {
+            @apply ring-4 ring-slate-900 ring-offset-2;
+            transform: translateY(0px) scale(1.05);
+        }
+
+        /* Mode Buttons Styling */
+        .tool-btn {
+            @apply flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 border-2 border-transparent;
+            @apply bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-95;
+        }
+
+        .tool-btn svg {
+            @apply opacity-60;
+        }
+
+        .tool-btn.active-blue {
+            @apply bg-blue-700 text-white border-blue-900 ring-2 ring-blue-400 ring-offset-1 shadow-inner;
+            box-shadow: inset 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-btn.active-blue svg {
+            @apply opacity-100;
+        }
+
+        .tool-btn.active-red {
+            @apply bg-red-700 text-white border-red-900 ring-2 ring-red-400 ring-offset-1 shadow-inner;
+            box-shadow: inset 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-btn.active-red svg {
+            @apply opacity-100;
+        }
+
+        .verify-btn {
+            @apply bg-slate-900 text-white hover:bg-slate-800 active:scale-95 px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-200 transition-all;
         }
     </style>
 </head>
+
 <body>
 
     <div id="app-container">
-        <header class="tool-panel">
-            <div class="flex items-center gap-10">
-                <div class="flex items-center gap-2">
-                    <div class="bg-black p-2 rounded-xl text-white">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="8"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
+        <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm z-50">
+            <div class="flex items-center gap-6">
+                <!-- Branding -->
+                <div class="flex items-center gap-3 pr-6 border-r border-slate-200">
+                    <div class="bg-slate-900 p-2 rounded-lg text-white">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3">
+                            <circle cx="12" cy="12" r="8" />
+                            <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                        </svg>
                     </div>
-                    <span class="font-black text-slate-900 tracking-tight text-xl uppercase hidden sm:inline">Lewis Builder</span>
+                    <span class="font-black text-slate-800 tracking-tight text-lg uppercase hidden lg:inline">Lewis
+                        Builder</span>
                 </div>
-                
-                <div id="element-palette" class="flex gap-4 border-l-2 pl-10 border-slate-200">
-                    <!-- Atoms generated by JS -->
+
+                <!-- Atom Palette -->
+                <div id="element-palette" class="flex gap-3">
+                    <!-- JS Generated -->
+                </div>
+
+                <!-- Interaction Tools -->
+                <div class="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200">
+                    <button id="mode-select" onclick="setMode('select')" class="tool-btn active-blue"
+                        title="Cycle lone pairs (click) or Create bonds (drag)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                        Bond
+                    </button>
+                    <button id="mode-move" onclick="setMode('move')" class="tool-btn" title="Drag atoms to reposition">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l3 3 3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
+                        </svg>
+                        Move
+                    </button>
+                    <button id="mode-erase" onclick="setMode('erase')" class="tool-btn"
+                        title="Click atoms or bonds to remove">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </svg>
+                        Erase
+                    </button>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
-                <div class="flex bg-slate-200 p-1 rounded-2xl">
-                    <button onclick="setMode('select')" id="mode-select" class="px-5 py-2 rounded-xl text-sm font-bold transition-all bg-white shadow-sm text-blue-600">Place/Move</button>
-                    <button onclick="setMode('erase')" id="mode-erase" class="px-5 py-2 rounded-xl text-sm font-bold transition-all text-slate-600">Eraser</button>
-                </div>
-                <button onclick="checkStructure()" class="bg-black text-white px-6 py-2 rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95">Verify</button>
-                <button onclick="resetCanvas()" class="text-slate-400 hover:text-red-500 transition-all p-2">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            <div class="flex items-center gap-3">
+                <button onclick="checkStructure()" class="verify-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    Verify Octets
+                </button>
+                <div class="w-px h-8 bg-slate-200 mx-2"></div>
+                <button onclick="resetCanvas()"
+                    class="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all p-2 rounded-lg"
+                    title="Reset Canvas">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>
                 </button>
             </div>
         </header>
 
         <div id="canvas-container">
+            <div id="ghost" class="atom-ghost"></div>
             <svg id="bond-svg"></svg>
         </div>
 
-        <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-slate-900 text-white rounded-3xl shadow-2xl opacity-0 transition-all translate-y-4 pointer-events-none flex items-center gap-4 z-[100]">
+        <!-- Toast Messages -->
+        <div id="toast"
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl opacity-0 transition-all translate-y-4 pointer-events-none flex items-center gap-4 z-[100] border border-slate-700">
             <span id="toast-icon" class="text-xl"></span>
             <span id="toast-msg" class="font-bold text-sm tracking-wide"></span>
         </div>
@@ -165,44 +263,41 @@
     <script>
         const canvas = document.getElementById('canvas-container');
         const bondSvg = document.getElementById('bond-svg');
+        const ghost = document.getElementById('ghost');
         const GRID_SIZE = 60;
-        
+
         let atoms = [];
         let bonds = [];
-        let currentMode = 'select'; 
+        let currentMode = 'select';
         let activeSymbol = 'C';
-        
+
         let dragSourceAtom = null;
         let isDragging = false;
-        let hasMoved = false;
+        let hasMovedSignificantly = false;
+        let initialAtomPos = { x: 0, y: 0 };
         let mouseDownPos = { x: 0, y: 0 };
         let currentMousePos = { x: 0, y: 0 };
 
         const elements = {
-            'H': { color: '#a1a1aa', valence: 1, octet: 2 },
-            'C': { color: '#18181b', valence: 4, octet: 8 },
+            'H': { color: '#71717a', valence: 1, octet: 2 },
+            'C': { color: '#0f172a', valence: 4, octet: 8 },
             'N': { color: '#2563eb', valence: 5, octet: 8 },
-            'O': { color: '#b91c1c', valence: 6, octet: 8 },
-            'F': { color: '#d97706', valence: 7, octet: 8 },
-            'Cl': { color: '#059669', valence: 7, octet: 8 }
+            'O': { color: '#dc2626', valence: 6, octet: 8 },
+            'F': { color: '#ea580c', valence: 7, octet: 8 },
+            'Cl': { color: '#16a34a', valence: 7, octet: 8 }
         };
 
         function getSnappedCoord(val) {
-            // Find center of canvas to align grid properly
             const rect = canvas.getBoundingClientRect();
-            const centerOffset = {
-                x: (rect.width / 2) % GRID_SIZE,
-                y: (rect.height / 2) % GRID_SIZE
-            };
-            return Math.round((val - centerOffset.x) / GRID_SIZE) * GRID_SIZE + centerOffset.x;
+            const centerOffsetX = (rect.width / 2) % GRID_SIZE;
+            const centerOffsetY = (rect.height / 2) % GRID_SIZE;
+            return Math.round((val - centerOffsetX) / GRID_SIZE) * GRID_SIZE + centerOffsetX;
         }
 
         function init() {
             const palette = document.getElementById('element-palette');
             palette.innerHTML = '';
             Object.keys(elements).forEach(sym => {
-                const container = document.createElement('div');
-                container.className = 'palette-container';
                 const div = document.createElement('div');
                 div.className = `element-chip ${sym === activeSymbol ? 'active' : ''}`;
                 div.style.backgroundColor = elements[sym].color;
@@ -213,35 +308,47 @@
                         c.classList.toggle('active', c.innerText === sym);
                     });
                 };
-                container.appendChild(div);
-                palette.appendChild(container);
+                palette.appendChild(div);
             });
             render();
         }
 
         function setMode(m) {
             currentMode = m;
-            document.getElementById('mode-select').className = m === 'select' ? 'px-5 py-2 rounded-xl text-sm font-bold transition-all bg-white shadow-sm text-blue-600' : 'px-5 py-2 rounded-xl text-sm font-bold transition-all text-slate-600';
-            document.getElementById('mode-erase').className = m === 'erase' ? 'px-5 py-2 rounded-xl text-sm font-bold transition-all bg-white shadow-sm text-red-600' : 'px-5 py-2 rounded-xl text-sm font-bold transition-all text-slate-600';
+
+            const btnSelect = document.getElementById('mode-select');
+            const btnMove = document.getElementById('mode-move');
+            const btnErase = document.getElementById('mode-erase');
+
+            // Reset classes
+            [btnSelect, btnMove, btnErase].forEach(b => {
+                b.className = 'tool-btn';
+            });
+
+            // Set active classes
+            const activeBtn = document.getElementById(`mode-${m}`);
+            if (m === 'erase') activeBtn.classList.add('active-red');
+            else activeBtn.classList.add('active-blue');
         }
 
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const rawX = e.clientX - rect.left;
             const rawY = e.clientY - rect.top;
+
             mouseDownPos = { x: rawX, y: rawY };
             currentMousePos = { ...mouseDownPos };
 
             const hitAtom = findAtomAt(rawX, rawY);
-            
+
             if (hitAtom) {
                 dragSourceAtom = hitAtom;
+                initialAtomPos = { x: hitAtom.x, y: hitAtom.y };
                 isDragging = true;
-                hasMoved = false;
+                hasMovedSignificantly = false;
             } else if (e.target === canvas && currentMode === 'select') {
                 const snappedX = getSnappedCoord(rawX);
                 const snappedY = getSnappedCoord(rawY);
-                // Check if space is already occupied
                 if (!findAtomAt(snappedX, snappedY)) {
                     atoms.push({ id: Date.now(), symbol: activeSymbol, x: snappedX, y: snappedY, lonePairs: 0 });
                 }
@@ -250,57 +357,67 @@
         });
 
         window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
+            if (!isDragging || !dragSourceAtom) return;
             const rect = canvas.getBoundingClientRect();
             currentMousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-            
+
             const dx = currentMousePos.x - mouseDownPos.x;
             const dy = currentMousePos.y - mouseDownPos.y;
-            if (Math.sqrt(dx*dx + dy*dy) > 10) hasMoved = true;
+            if (Math.sqrt(dx * dx + dy * dy) > 5) hasMovedSignificantly = true;
 
-            if (hasMoved) {
-                // If holding modifiers, we move the atom instead of drawing a bond
-                if (e.shiftKey || e.altKey || e.ctrlKey) {
-                    dragSourceAtom.x = getSnappedCoord(currentMousePos.x);
-                    dragSourceAtom.y = getSnappedCoord(currentMousePos.y);
+            if (hasMovedSignificantly) {
+                if (currentMode === 'move') {
+                    dragSourceAtom.x = currentMousePos.x;
+                    dragSourceAtom.y = currentMousePos.y;
+
+                    ghost.style.display = 'block';
+                    ghost.style.left = `${getSnappedCoord(currentMousePos.x)}px`;
+                    ghost.style.top = `${getSnappedCoord(currentMousePos.y)}px`;
                 }
                 render();
             }
         });
 
         window.addEventListener('mouseup', (e) => {
-            if (!isDragging) return;
-            
-            if (!hasMoved) {
-                // Handle single clicks
+            if (!isDragging || !dragSourceAtom) return;
+            ghost.style.display = 'none';
+
+            if (!hasMovedSignificantly) {
                 if (currentMode === 'erase') {
                     deleteAtom(dragSourceAtom.id);
-                } else {
+                } else if (currentMode === 'select') {
                     dragSourceAtom.lonePairs = (dragSourceAtom.lonePairs + 1) % 5;
                 }
             } else {
-                // Handle drags (bond creation or move completion)
-                if (e.shiftKey || e.altKey || e.ctrlKey) {
-                    // Atom already moved in mousemove
-                    dragSourceAtom.x = getSnappedCoord(currentMousePos.x);
-                    dragSourceAtom.y = getSnappedCoord(currentMousePos.y);
-                } else {
-                    // Bond creation
+                if (currentMode === 'move') {
+                    const finalX = getSnappedCoord(currentMousePos.x);
+                    const finalY = getSnappedCoord(currentMousePos.y);
+                    const occupied = atoms.find(a => a.id !== dragSourceAtom.id && a.x === finalX && a.y === finalY);
+
+                    if (occupied) {
+                        dragSourceAtom.x = initialAtomPos.x;
+                        dragSourceAtom.y = initialAtomPos.y;
+                    } else {
+                        dragSourceAtom.x = finalX;
+                        dragSourceAtom.y = finalY;
+                    }
+                } else if (currentMode === 'select') {
                     const targetAtom = findAtomAt(currentMousePos.x, currentMousePos.y);
                     if (targetAtom && targetAtom.id !== dragSourceAtom.id) {
                         addOrCycleBond(dragSourceAtom.id, targetAtom.id);
                     }
+                    dragSourceAtom.x = initialAtomPos.x;
+                    dragSourceAtom.y = initialAtomPos.y;
                 }
             }
-            
+
             isDragging = false;
             dragSourceAtom = null;
             render();
         });
 
         function findAtomAt(x, y) {
-            // Check if coordinates are within atom radius (27px)
-            return atoms.find(a => Math.sqrt((a.x-x)**2 + (a.y-y)**2) < 27);
+            return atoms.find(a => Math.sqrt((a.x - x) ** 2 + (a.y - y) ** 2) < 28);
         }
 
         function deleteAtom(id) {
@@ -318,52 +435,54 @@
             bondSvg.innerHTML = '';
             document.querySelectorAll('.atom, .lone-pair-dot').forEach(el => el.remove());
 
-            // Draw Bonds
             bonds.forEach(bond => {
                 const a1 = atoms.find(a => a.id === bond.a);
                 const a2 = atoms.find(a => a.id === bond.b);
                 if (a1 && a2) {
-                    drawBond(a1, a2, bond.type, '#d1d5db', 14);
+                    drawBond(a1, a2, bond.type, '#cbd5e1', 14);
                     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                     hit.setAttribute('x1', a1.x); hit.setAttribute('y1', a1.y);
                     hit.setAttribute('x2', a2.x); hit.setAttribute('y2', a2.y);
                     hit.setAttribute('class', 'bond-hitbox');
                     hit.onclick = (e) => {
                         e.stopPropagation();
-                        if (currentMode === 'erase') bonds = bonds.filter(b => b !== bond);
-                        else bond.type = (bond.type % 3) + 1;
+                        if (currentMode === 'erase') {
+                            bonds = bonds.filter(b => b !== bond);
+                        } else if (currentMode === 'select') {
+                            bond.type = (bond.type % 3) + 1;
+                        }
                         render();
                     };
                     bondSvg.appendChild(hit);
                 }
             });
 
-            // Draw Bond Preview (Dragging)
-            if (isDragging && hasMoved && dragSourceAtom && !window.event?.shiftKey && !window.event?.ctrlKey && !window.event?.altKey) {
-                const target = findAtomAt(currentMousePos.x, currentMousePos.y);
-                const end = target ? { x: target.x, y: target.y } : currentMousePos;
-                drawBond(dragSourceAtom, end, 1, '#cbd5e1', 14, true);
+            if (isDragging && hasMovedSignificantly && currentMode === 'select' && dragSourceAtom) {
+                const hoverAtom = findAtomAt(currentMousePos.x, currentMousePos.y);
+                if (hoverAtom && hoverAtom.id !== dragSourceAtom.id) {
+                    drawBond({ x: initialAtomPos.x, y: initialAtomPos.y }, hoverAtom, 1, '#94a3b8', 14, true);
+                } else {
+                    drawBond({ x: initialAtomPos.x, y: initialAtomPos.y }, currentMousePos, 1, '#94a3b8', 14, true);
+                }
             }
 
-            // Draw Atoms
             atoms.forEach(atom => {
                 const div = document.createElement('div');
-                div.className = `atom ${dragSourceAtom?.id === atom.id && isDragging ? 'dragging' : ''}`;
+                div.className = `atom ${dragSourceAtom?.id === atom.id && isDragging && currentMode === 'move' ? 'dragging' : ''}`;
                 div.style.left = `${atom.x}px`;
                 div.style.top = `${atom.y}px`;
                 div.style.backgroundColor = elements[atom.symbol].color;
                 div.innerText = atom.symbol;
                 canvas.appendChild(div);
 
-                // Draw Lone Pairs
                 for (let i = 0; i < atom.lonePairs; i++) {
                     const angle = (i * 90) * (Math.PI / 180);
                     const radius = 28;
                     [-5, 5].forEach(offset => {
                         const dot = document.createElement('div');
                         dot.className = 'lone-pair-dot';
-                        dot.style.left = `${atom.x + Math.cos(angle) * radius + Math.cos(angle + Math.PI/2) * offset}px`;
-                        dot.style.top = `${atom.y + Math.sin(angle) * radius + Math.sin(angle + Math.PI/2) * offset}px`;
+                        dot.style.left = `${atom.x + Math.cos(angle) * radius + Math.cos(angle + Math.PI / 2) * offset}px`;
+                        dot.style.top = `${atom.y + Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * offset}px`;
                         canvas.appendChild(dot);
                     });
                 }
@@ -373,30 +492,26 @@
         function drawBond(a1, a2, type, color, width, isPreview = false) {
             const dx = a2.x - a1.x;
             const dy = a2.y - a1.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 10) return;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 5) return;
 
             const offsets = type === 1 ? [0] : (type === 2 ? [-7, 7] : [-10, 0, 10]);
             offsets.forEach(offset => {
                 const ox = (-dy / dist) * offset;
                 const oy = (dx / dist) * offset;
-                
+
                 const outline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                outline.setAttribute('x1', a1.x + ox);
-                outline.setAttribute('y1', a1.y + oy);
-                outline.setAttribute('x2', a2.x + ox);
-                outline.setAttribute('y2', a2.y + oy);
-                outline.setAttribute('stroke', '#000000');
+                outline.setAttribute('x1', a1.x + ox); outline.setAttribute('y1', a1.y + oy);
+                outline.setAttribute('x2', a2.x + ox); outline.setAttribute('y2', a2.y + oy);
+                outline.setAttribute('stroke', '#0f172a');
                 outline.setAttribute('stroke-width', width + 4);
                 outline.setAttribute('stroke-linecap', 'butt');
                 if (isPreview) outline.setAttribute('stroke-dasharray', '5 5');
                 bondSvg.appendChild(outline);
 
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', a1.x + ox);
-                line.setAttribute('y1', a1.y + oy);
-                line.setAttribute('x2', a2.x + ox);
-                line.setAttribute('y2', a2.y + oy);
+                line.setAttribute('x1', a1.x + ox); line.setAttribute('y1', a1.y + oy);
+                line.setAttribute('x2', a2.x + ox); line.setAttribute('y2', a2.y + oy);
                 line.setAttribute('stroke', color);
                 line.setAttribute('stroke-width', width);
                 line.setAttribute('stroke-linecap', 'butt');
@@ -434,4 +549,5 @@
         init();
     </script>
 </body>
+
 </html>
