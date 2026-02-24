@@ -91,6 +91,7 @@
         // --- App State ---
         let user = null;
         let strokes = [];
+        let localStrokes = []; // Instantly preserves strokes even if Firebase connection/rules fail
         let tool = 'pencil';
         let color = '#3b82f6';
         let lineWidth = 3;
@@ -165,8 +166,11 @@
                 ctx.stroke();
             };
 
-            // Remote strokes
+            // Remote strokes from Firebase
             strokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
+
+            // Local fallback strokes (ensures they never vanish)
+            localStrokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
 
             // Local active stroke
             if (isDrawing && tool === 'pencil') {
@@ -192,16 +196,24 @@
         }
 
         async function eraseAt(worldPos) {
-            if (!user) return;
             const radius = 20 / camera.zoom;
+
+            // Instantly remove from local fallback array
+            localStrokes = localStrokes.filter(stroke => 
+                !(stroke.points && stroke.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius))
+            );
+
+            if (!user) return;
+            
+            // Remove from Firebase synced array
             const strokesToErase = strokes.filter(stroke => 
                 stroke.points && stroke.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius)
             );
 
             for (const stroke of strokesToErase) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id));
-                } catch (e) { console.error("Erase error:", e); }
+                // Fire and forget delete to keep UI fast
+                deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id))
+                    .catch(e => console.error("Erase error:", e));
             }
         }
 
@@ -231,19 +243,32 @@
             if (!isDrawing) return;
             isDrawing = false;
             
-            if (tool === 'pencil' && currentPath.length > 1 && user) {
-                const strokeData = { 
-                    points: JSON.stringify(currentPath), 
+            if (tool === 'pencil' && currentPath.length > 1) {
+                const strokePath = [...currentPath]; // copy current points
+                
+                // Add to local strokes instantly to completely prevent disappearing issues
+                localStrokes.push({ 
+                    id: 'local-' + Date.now(), 
+                    points: strokePath, 
                     color, 
                     lineWidth, 
-                    userId: user.uid, 
-                    createdAt: Date.now() 
-                };
+                    userId: user ? user.uid : 'offline' 
+                });
                 
-                try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData);
-                } catch (e) { 
-                    console.error("Save error:", e); 
+                if (user) {
+                    const strokeData = { 
+                        points: JSON.stringify(strokePath), 
+                        color, 
+                        lineWidth, 
+                        userId: user.uid, 
+                        createdAt: Date.now() 
+                    };
+                    
+                    // Attempt to save to Firebase, catching errors so it doesn't break
+                    addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData)
+                        .catch(e => {
+                            console.warn("Firebase save rejected/failed. Stroke kept locally.", e);
+                        });
                 }
             }
             currentPath = [];
@@ -310,13 +335,20 @@
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
         document.getElementById('btn-clear').onclick = async () => {
-            if (!user || !confirm("Clear the entire board for everyone?")) return;
+            if (!confirm("Clear the entire board for everyone?")) return;
+            
+            localStrokes = []; // Instantly clear locally
+            
+            if (!user) return;
             try {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
                 const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', d.id)));
                 await Promise.all(deletePromises);
             } catch (e) { console.error("Clear error:", e); }
         };
+
+        // Start rendering unconditionally
+        requestAnimationFrame(render);
 
         // Initialize App
         async function init() {
@@ -327,15 +359,15 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                statusInfo.innerText = "Auth Failed";
-                console.error(e);
-                return;
+                statusInfo.innerText = "Offline Mode (Local Only)";
+                console.error("Auth failed (Is Anonymous Sign-in enabled in your Firebase project?):", e);
+                // Intentionally NOT returning here so offline functionality works
             }
 
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if (u) {
-                    statusInfo.innerText = `User: ${u.uid}`;
+                    statusInfo.innerText = `Online (${u.uid.substring(0,5)}...)`;
                     
                     const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
                     onSnapshot(q, (snap) => {
@@ -348,13 +380,13 @@
                             return { id: d.id, ...data, points };
                         });
                     }, (err) => {
-                        console.error("Firestore error:", err);
-                        statusInfo.innerText = "Sync Error";
+                        console.error("Firestore sync error (Check Firestore Rules!):", err);
+                        statusInfo.innerText = "Sync Error - Running Locally";
                     });
+                } else {
+                    statusInfo.innerText = "Offline Mode";
                 }
             });
-
-            requestAnimationFrame(render);
         }
 
         init();
