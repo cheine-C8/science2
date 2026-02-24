@@ -69,21 +69,18 @@
         // --- Firebase Configuration ---
         let firebaseConfig;
 
-        // CHECK: Are we in the preview environment or standalone?
         if (typeof __firebase_config !== 'undefined') {
-            // 1. IN PREVIEW: Use the automatically provided credentials
             firebaseConfig = JSON.parse(__firebase_config);
         } else {
-            // 2. STANDALONE (GitHub/Local): Replace this with your actual Firebase Console config
-          const firebaseConfig = {
-  apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
-  authDomain: "whiteboard-23ad5.firebaseapp.com",
-  projectId: "whiteboard-23ad5",
-  storageBucket: "whiteboard-23ad5.firebasestorage.app",
-  messagingSenderId: "1097713600229",
-  appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
-  measurementId: "G-MR9C9WYE9M"
-};
+            firebaseConfig = {
+                apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
+                authDomain: "whiteboard-23ad5.firebaseapp.com",
+                projectId: "whiteboard-23ad5",
+                storageBucket: "whiteboard-23ad5.firebasestorage.app",
+                messagingSenderId: "1097713600229",
+                appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
+                measurementId: "G-MR9C9WYE9M"
+            };
         }
 
         const app = initializeApp(firebaseConfig);
@@ -275,8 +272,9 @@
         document.getElementById('btn-width-up').onclick = () => { lineWidth = Math.min(20, lineWidth + 1); widthDisplay.innerText = lineWidth; };
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
+        // Removed native confirm() dialog for better iframe compatibility
         document.getElementById('btn-clear').onclick = async () => {
-            if (!user || !confirm("Clear board for everyone?")) return;
+            if (!user) return;
             try {
                 const snap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes')));
                 const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', d.id)));
