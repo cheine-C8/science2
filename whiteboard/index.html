@@ -66,6 +66,31 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // --- Firebase Configuration ---
+        let firebaseConfig;
+
+        // CHECK: Are we in the preview environment or standalone?
+        if (typeof __firebase_config !== 'undefined') {
+            // 1. IN PREVIEW: Use the automatically provided credentials
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // 2. STANDALONE (GitHub/Local): Replace this with your actual Firebase Console config
+          const firebaseConfig = {
+  apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
+  authDomain: "whiteboard-23ad5.firebaseapp.com",
+  projectId: "whiteboard-23ad5",
+  storageBucket: "whiteboard-23ad5.firebasestorage.app",
+  messagingSenderId: "1097713600229",
+  appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
+  measurementId: "G-MR9C9WYE9M"
+};
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-whiteboard-app';
+
         // --- App State ---
         let user = null;
         let strokes = [];
@@ -76,14 +101,6 @@
         let isDrawing = false;
         let currentPath = [];
 
-        // --- Firebase Configuration ---
-        // Using environment provided config to resolve API Key errors
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
         // --- DOM Elements ---
         const canvas = document.getElementById('whiteboardCanvas');
         const ctx = canvas.getContext('2d');
@@ -91,7 +108,6 @@
         const statusInfo = document.getElementById('status-info');
         const cameraInfo = document.getElementById('camera-info');
 
-        // Initialize Lucide Icons
         lucide.createIcons();
 
         function screenToWorld(screenX, screenY) {
@@ -119,7 +135,6 @@
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
 
-            // Draw Grid
             const gridSize = 50;
             ctx.beginPath();
             ctx.strokeStyle = '#f1f5f9';
@@ -236,7 +251,6 @@
             camera.y = e.clientY - mouseBefore.y * newZoom;
         }, { passive: false });
 
-        // --- UI Logic ---
         const toolBtns = document.querySelectorAll('.tool-btn');
         const setActiveTool = (id, toolName) => {
             toolBtns.forEach(b => b.classList.remove('active'));
@@ -270,9 +284,7 @@
             } catch (e) { console.error(e); }
         };
 
-        // --- Auth & Sync ---
         async function init() {
-            // STEP 1: AUTHENTICATE FIRST (MANDATORY)
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -285,17 +297,15 @@
                 return;
             }
 
-            // STEP 2: LISTEN FOR AUTH STATE
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if (u) {
                     statusInfo.innerText = `Connected: ${u.uid.slice(0, 6)}`;
-                    // STEP 3: SYNC DATA ONLY AFTER AUTH
                     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
                     onSnapshot(q, (snap) => {
                         strokes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     }, (err) => {
-                        console.error("Firestore error:", err);
+                        console.error("Firestore sync error:", err);
                     });
                 }
             });
