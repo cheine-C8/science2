@@ -163,12 +163,15 @@
                 ctx.stroke();
             };
 
+            // Render all saved strokes
             strokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
 
+            // Render the stroke currently being drawn
             if (isDrawing && tool === 'pencil') {
                 drawPath(currentPath, color, lineWidth);
             }
 
+            // Render eraser cursor
             if (isDrawing && tool === 'eraser') {
                 const lastPos = currentPath[currentPath.length - 1];
                 if (lastPos) {
@@ -188,7 +191,7 @@
             if (!user) return;
             const radius = 20 / camera.zoom;
             const strokesToErase = strokes.filter(stroke => 
-                stroke.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius)
+                stroke.points && stroke.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius)
             );
 
             for (const stroke of strokesToErase) {
@@ -223,17 +226,23 @@
             if (!isDrawing) return;
             isDrawing = false;
             if (tool === 'pencil' && currentPath.length > 1 && user) {
+                // Stringify the array of objects before saving to Firebase to avoid nested array/object limits
                 const strokeData = { 
-                    points: [...currentPath], 
+                    points: JSON.stringify(currentPath), 
                     color, 
                     lineWidth, 
                     userId: user.uid, 
                     createdAt: Date.now() 
                 };
-                currentPath = [];
+                
+                // Clear the current path instantly so it doesn't stay stuck on screen if the network is slow
+                currentPath = []; 
+                
                 try {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData);
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error("Error saving stroke:", e); 
+                }
             }
             currentPath = [];
         });
@@ -272,7 +281,6 @@
         document.getElementById('btn-width-up').onclick = () => { lineWidth = Math.min(20, lineWidth + 1); widthDisplay.innerText = lineWidth; };
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
-        // Removed native confirm() dialog for better iframe compatibility
         document.getElementById('btn-clear').onclick = async () => {
             if (!user) return;
             try {
@@ -301,7 +309,17 @@
                     statusInfo.innerText = `Connected: ${u.uid.slice(0, 6)}`;
                     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
                     onSnapshot(q, (snap) => {
-                        strokes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        // Map the documents and parse the JSON string back into an array of objects
+                        strokes = snap.docs.map(d => {
+                            const data = d.data();
+                            let parsedPoints = [];
+                            try {
+                                parsedPoints = typeof data.points === 'string' ? JSON.parse(data.points) : data.points;
+                            } catch(e) {
+                                console.error("Error parsing stroke points", e);
+                            }
+                            return { id: d.id, ...data, points: parsedPoints };
+                        });
                     }, (err) => {
                         console.error("Firestore sync error:", err);
                     });
