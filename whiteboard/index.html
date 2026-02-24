@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Infinite Whiteboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; }
+        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; overscroll-behavior: none; }
         canvas { display: block; touch-action: none; }
         .tool-btn.active { background-color: #2563eb; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2); }
         .color-btn.active { transform: scale(1.25); border-color: #94a3b8; }
@@ -16,14 +16,14 @@
 <body class="bg-white select-none">
 
     <!-- Top Toolbar -->
-    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200">
-        <button id="btn-pencil" class="tool-btn active p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pencil">
+    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 sm:gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 max-w-[95vw] overflow-x-auto">
+        <button id="btn-pencil" class="tool-btn active p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pencil">
             <i data-lucide="pencil"></i>
         </button>
-        <button id="btn-eraser" class="tool-btn p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Eraser">
+        <button id="btn-eraser" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Eraser">
             <i data-lucide="eraser"></i>
         </button>
-        <button id="btn-pan" class="tool-btn p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pan & Zoom">
+        <button id="btn-pan" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pan & Zoom">
             <i data-lucide="move"></i>
         </button>
         
@@ -33,21 +33,20 @@
             <button data-color="#3b82f6" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]"></button>
             <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]"></button>
             <button data-color="#10b981" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#10b981]"></button>
-            <button data-color="#f59e0b" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f59e0b]"></button>
             <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]"></button>
         </div>
         
         <div class="w-px h-8 bg-slate-200 mx-1"></div>
         
-        <div class="flex items-center gap-2 px-2">
-            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded"><i data-lucide="minus" size="14"></i></button>
-            <span id="width-display" class="text-xs font-bold w-4 text-center">3</span>
-            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded"><i data-lucide="plus" size="14"></i></button>
+        <div class="flex items-center gap-1 sm:gap-2 px-1">
+            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600"><i data-lucide="minus" size="14"></i></button>
+            <span id="width-display" class="text-xs font-bold w-4 text-center text-slate-700">3</span>
+            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600"><i data-lucide="plus" size="14"></i></button>
         </div>
         
         <div class="w-px h-8 bg-slate-200 mx-1"></div>
         
-        <button id="btn-clear" class="p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors" title="Clear Board">
+        <button id="btn-clear" class="p-2 sm:p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors" title="Clear Board">
             <i data-lucide="trash-2"></i>
         </button>
     </div>
@@ -55,16 +54,16 @@
     <!-- Info Overlay -->
     <div class="absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none">
         <p class="font-bold text-slate-700">Infinite Board</p>
-        <p id="status-info">Connecting...</p>
+        <p id="status-info">Initialising...</p>
         <p id="camera-info">Zoom: 100%</p>
     </div>
 
     <canvas id="whiteboardCanvas"></canvas>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         let firebaseConfig;
@@ -72,6 +71,7 @@
         if (typeof __firebase_config !== 'undefined') {
             firebaseConfig = JSON.parse(__firebase_config);
         } else {
+            // Restoring the specific API keys for the user's project
             firebaseConfig = {
                 apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
                 authDomain: "whiteboard-23ad5.firebaseapp.com",
@@ -86,7 +86,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-whiteboard-app';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-whiteboard';
 
         // --- App State ---
         let user = null;
@@ -97,8 +97,8 @@
         let camera = { x: 0, y: 0, zoom: 1 };
         let isDrawing = false;
         let currentPath = [];
+        let lastTouch = null;
 
-        // --- DOM Elements ---
         const canvas = document.getElementById('whiteboardCanvas');
         const ctx = canvas.getContext('2d');
         const widthDisplay = document.getElementById('width-display');
@@ -124,6 +124,7 @@
                 canvas.height = h * dpr;
                 canvas.style.width = w + 'px';
                 canvas.style.height = h + 'px';
+                ctx.resetTransform();
                 ctx.scale(dpr, dpr);
             }
 
@@ -132,6 +133,7 @@
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
 
+            // Grid
             const gridSize = 50;
             ctx.beginPath();
             ctx.strokeStyle = '#f1f5f9';
@@ -163,22 +165,24 @@
                 ctx.stroke();
             };
 
-            // Render all saved strokes
+            // Remote strokes
             strokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
 
-            // Render the stroke currently being drawn
+            // Local active stroke
             if (isDrawing && tool === 'pencil') {
                 drawPath(currentPath, color, lineWidth);
             }
 
-            // Render eraser cursor
+            // Eraser cursor
             if (isDrawing && tool === 'eraser') {
                 const lastPos = currentPath[currentPath.length - 1];
                 if (lastPos) {
                     ctx.beginPath();
                     ctx.arc(lastPos.x, lastPos.y, 15 / camera.zoom, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                    ctx.setLineDash([5, 5]);
                     ctx.stroke();
+                    ctx.setLineDash([]);
                 }
             }
 
@@ -197,36 +201,37 @@
             for (const stroke of strokesToErase) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id));
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error("Erase error:", e); }
             }
         }
 
-        canvas.addEventListener('mousedown', (e) => {
+        const handleStart = (clientX, clientY) => {
             isDrawing = true;
-            const worldPos = screenToWorld(e.clientX, e.clientY);
+            const worldPos = screenToWorld(clientX, clientY);
             if (tool === 'pencil' || tool === 'eraser') {
                 currentPath = [worldPos];
                 if (tool === 'eraser') eraseAt(worldPos);
             }
-        });
+            lastTouch = { x: clientX, y: clientY };
+        };
 
-        window.addEventListener('mousemove', (e) => {
+        const handleMove = (clientX, clientY, movementX, movementY) => {
             if (!isDrawing) return;
             if (tool === 'pan') {
-                camera.x += e.movementX;
-                camera.y += e.movementY;
+                camera.x += movementX;
+                camera.y += movementY;
             } else {
-                const worldPos = screenToWorld(e.clientX, e.clientY);
+                const worldPos = screenToWorld(clientX, clientY);
                 currentPath.push(worldPos);
                 if (tool === 'eraser') eraseAt(worldPos);
             }
-        });
+        };
 
-        window.addEventListener('mouseup', async () => {
+        const handleEnd = async () => {
             if (!isDrawing) return;
             isDrawing = false;
+            
             if (tool === 'pencil' && currentPath.length > 1 && user) {
-                // Stringify the array of objects before saving to Firebase to avoid nested array/object limits
                 const strokeData = { 
                     points: JSON.stringify(currentPath), 
                     color, 
@@ -235,18 +240,40 @@
                     createdAt: Date.now() 
                 };
                 
-                // Clear the current path instantly so it doesn't stay stuck on screen if the network is slow
-                currentPath = []; 
-                
                 try {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData);
                 } catch (e) { 
-                    console.error("Error saving stroke:", e); 
+                    console.error("Save error:", e); 
                 }
             }
             currentPath = [];
-        });
+            lastTouch = null;
+        };
 
+        // Mouse Events
+        canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY, e.movementX, e.movementY));
+        window.addEventListener('mouseup', handleEnd);
+
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                handleStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && lastTouch) {
+                const touch = e.touches[0];
+                handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
+                lastTouch = { x: touch.clientX, y: touch.clientY };
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', handleEnd);
+
+        // Zoom
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const factor = Math.pow(1.1, -e.deltaY / 150);
@@ -257,6 +284,7 @@
             camera.y = e.clientY - mouseBefore.y * newZoom;
         }, { passive: false });
 
+        // UI Interactions
         const toolBtns = document.querySelectorAll('.tool-btn');
         const setActiveTool = (id, toolName) => {
             toolBtns.forEach(b => b.classList.remove('active'));
@@ -282,14 +310,15 @@
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
         document.getElementById('btn-clear').onclick = async () => {
-            if (!user) return;
+            if (!user || !confirm("Clear the entire board for everyone?")) return;
             try {
-                const snap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes')));
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
                 const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', d.id)));
                 await Promise.all(deletePromises);
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Clear error:", e); }
         };
 
+        // Initialize App
         async function init() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -297,31 +326,30 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) { 
-                console.error("Authentication failed:", e); 
-                statusInfo.innerText = "Auth Error"; 
+            } catch (e) {
+                statusInfo.innerText = "Auth Failed";
+                console.error(e);
                 return;
             }
 
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if (u) {
-                    statusInfo.innerText = `Connected: ${u.uid.slice(0, 6)}`;
-                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
+                    statusInfo.innerText = `User: ${u.uid}`;
+                    
+                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
                     onSnapshot(q, (snap) => {
-                        // Map the documents and parse the JSON string back into an array of objects
                         strokes = snap.docs.map(d => {
                             const data = d.data();
-                            let parsedPoints = [];
+                            let points = [];
                             try {
-                                parsedPoints = typeof data.points === 'string' ? JSON.parse(data.points) : data.points;
-                            } catch(e) {
-                                console.error("Error parsing stroke points", e);
-                            }
-                            return { id: d.id, ...data, points: parsedPoints };
+                                points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points;
+                            } catch(e) { points = []; }
+                            return { id: d.id, ...data, points };
                         });
                     }, (err) => {
-                        console.error("Firestore sync error:", err);
+                        console.error("Firestore error:", err);
+                        statusInfo.innerText = "Sync Error";
                     });
                 }
             });
