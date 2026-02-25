@@ -96,6 +96,7 @@
         let user = null;
         let strokes = [];
         let localStrokes = []; // Instantly preserves strokes even if Firebase connection/rules fail
+        const imageCache = new Map(); // Cache image elements so we don't spam DOM creations
         let tool = 'pencil';
         let color = '#3b82f6';
         let lineWidth = 3;
@@ -156,29 +157,42 @@
             }
             ctx.stroke();
 
-            const drawPath = (path, sColor, sWidth) => {
-                if (!path || path.length < 2) return;
-                ctx.beginPath();
-                ctx.strokeStyle = sColor;
-                ctx.lineWidth = sWidth;
-                ctx.lineJoin = 'round';
-                ctx.lineCap = 'round';
-                ctx.moveTo(path[0].x, path[0].y);
-                for (let i = 1; i < path.length; i++) {
-                    ctx.lineTo(path[i].x, path[i].y);
+            const drawItem = (item) => {
+                if (item.type === 'image') {
+                    let img = imageCache.get(item.id);
+                    if (!img) {
+                        img = new Image();
+                        img.src = item.data;
+                        imageCache.set(item.id, img);
+                    }
+                    if (img.complete) {
+                        ctx.drawImage(img, item.x, item.y, item.width, item.height);
+                    }
+                } else {
+                    // Draw normal pen stroke path
+                    if (!item.points || item.points.length < 2) return;
+                    ctx.beginPath();
+                    ctx.strokeStyle = item.color;
+                    ctx.lineWidth = item.lineWidth;
+                    ctx.lineJoin = 'round';
+                    ctx.lineCap = 'round';
+                    ctx.moveTo(item.points[0].x, item.points[0].y);
+                    for (let i = 1; i < item.points.length; i++) {
+                        ctx.lineTo(item.points[i].x, item.points[i].y);
+                    }
+                    ctx.stroke();
                 }
-                ctx.stroke();
             };
 
-            // Remote strokes from Firebase
-            strokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
+            // Remote strokes and images from Firebase
+            strokes.forEach(s => drawItem(s));
 
-            // Local fallback strokes (ensures they never vanish)
-            localStrokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
+            // Local fallback strokes/images (ensures they never vanish)
+            localStrokes.forEach(s => drawItem(s));
 
             // Local active stroke
             if (isDrawing && tool === 'pencil') {
-                drawPath(currentPath, color, lineWidth);
+                drawItem({ points: currentPath, color, lineWidth });
             }
 
             // Eraser cursor
@@ -202,17 +216,23 @@
         async function eraseAt(worldPos) {
             const radius = 20 / camera.zoom;
 
+            const isHit = (item) => {
+                if (item.type === 'image') {
+                    // Check if eraser overlaps the bounding box of the image
+                    return worldPos.x >= item.x && worldPos.x <= item.x + item.width &&
+                           worldPos.y >= item.y && worldPos.y <= item.y + item.height;
+                } else {
+                    return item.points && item.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius);
+                }
+            };
+
             // Instantly remove from local fallback array
-            localStrokes = localStrokes.filter(stroke => 
-                !(stroke.points && stroke.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius))
-            );
+            localStrokes = localStrokes.filter(stroke => !isHit(stroke));
 
             if (!user) return;
             
             // Remove from Firebase synced array
-            const strokesToErase = strokes.filter(stroke => 
-                stroke.points && stroke.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius)
-            );
+            const strokesToErase = strokes.filter(stroke => isHit(stroke));
 
             for (const stroke of strokesToErase) {
                 // Fire and forget delete to keep UI fast
@@ -278,6 +298,67 @@
             currentPath = [];
             lastTouch = null;
         };
+
+        // --- Handle Image Paste Events ---
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            // Target center of screen for placement
+                            const centerPos = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
+                            
+                            // Constrain massive images so they don't break firestore doc limits
+                            let w = img.width;
+                            let h = img.height;
+                            const maxDim = 800; 
+                            if (w > maxDim || h > maxDim) {
+                                const ratio = Math.min(maxDim / w, maxDim / h);
+                                w *= ratio;
+                                h *= ratio;
+                            }
+                            
+                            // Draw to offscreen canvas to compress as WebP
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = w;
+                            tempCanvas.height = h;
+                            const tCtx = tempCanvas.getContext('2d');
+                            tCtx.drawImage(img, 0, 0, w, h);
+                            
+                            // 60% quality WebP to ensure it's lightweight for Firebase
+                            const compressedData = tempCanvas.toDataURL('image/webp', 0.6);
+
+                            const imgData = {
+                                type: 'image',
+                                data: compressedData,
+                                x: centerPos.x - w / 2,
+                                y: centerPos.y - h / 2,
+                                width: w,
+                                height: h,
+                                userId: user ? user.uid : 'offline',
+                                createdAt: Date.now()
+                            };
+
+                            const localId = 'local-img-' + Date.now();
+                            localStrokes.push({ id: localId, ...imgData });
+
+                            if (user) {
+                                addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), imgData)
+                                    .catch(err => console.warn("Firebase save rejected. Image kept locally.", err));
+                            }
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
 
         // Mouse Events
         canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
@@ -375,6 +456,11 @@
                     onSnapshot(q, (snap) => {
                         strokes = snap.docs.map(d => {
                             const data = d.data();
+                            if (data.type === 'image') {
+                                return { id: d.id, ...data };
+                            }
+                            
+                            // Handle standard strokes
                             let points = [];
                             try {
                                 points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points;
