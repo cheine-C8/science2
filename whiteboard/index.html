@@ -11,12 +11,16 @@
         canvas { display: block; touch-action: none; }
         .tool-btn.active { background-color: #2563eb; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2); }
         .color-btn.active { transform: scale(1.25); border-color: #94a3b8; }
+        
+        /* Hide scrollbar for the toolbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white select-none">
 
-    <!-- Top Toolbar -->
-    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 sm:gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 max-w-[95vw] overflow-x-auto">
+    <!-- Left Toolbar -->
+    <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 max-h-[95vh] overflow-y-auto no-scrollbar">
         <button id="btn-select" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Select & Move">
             <i data-lucide="mouse-pointer-2"></i>
         </button>
@@ -33,9 +37,9 @@
             <i data-lucide="move"></i>
         </button>
         
-        <div class="w-px h-8 bg-slate-200 mx-1"></div>
+        <div class="w-8 h-px bg-slate-200 my-1"></div>
         
-        <div id="color-palette" class="flex gap-1 px-1">
+        <div id="color-palette" class="grid grid-cols-2 gap-2 p-1">
             <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]" title="Red"></button>
             <button data-color="#f97316" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f97316]" title="Orange"></button>
             <button data-color="#eab308" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#eab308]" title="Yellow"></button>
@@ -46,23 +50,23 @@
             <button data-color="#6b7280" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#6b7280]" title="Gray"></button>
         </div>
         
-        <div class="w-px h-8 bg-slate-200 mx-1"></div>
+        <div class="w-8 h-px bg-slate-200 my-1"></div>
         
-        <div class="flex items-center gap-1 sm:gap-2 px-1">
-            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600"><i data-lucide="minus" size="14"></i></button>
-            <span id="width-display" class="text-xs font-bold w-4 text-center text-slate-700">3</span>
-            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600"><i data-lucide="plus" size="14"></i></button>
+        <div class="flex flex-col items-center gap-1 py-1">
+            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600" title="Increase Line Width"><i data-lucide="plus" size="16"></i></button>
+            <span id="width-display" class="text-xs font-bold w-full text-center text-slate-700 py-1">3</span>
+            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600" title="Decrease Line Width"><i data-lucide="minus" size="16"></i></button>
         </div>
         
-        <div class="w-px h-8 bg-slate-200 mx-1"></div>
+        <div class="w-8 h-px bg-slate-200 my-1"></div>
         
         <button id="btn-clear" class="p-2 sm:p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors" title="Clear Board">
             <i data-lucide="trash-2"></i>
         </button>
     </div>
 
-    <!-- Info Overlay -->
-    <div class="absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none">
+    <!-- Info Overlay (Moved to right side to avoid overlap) -->
+    <div class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none text-right">
         <p class="font-bold text-slate-700">Infinite Board</p>
         <p id="status-info">Initialising...</p>
         <p id="camera-info">Zoom: 100%</p>
