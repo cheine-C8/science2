@@ -30,10 +30,14 @@
         <div class="w-px h-8 bg-slate-200 mx-1"></div>
         
         <div id="color-palette" class="flex gap-1 px-1">
-            <button data-color="#3b82f6" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]"></button>
-            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]"></button>
-            <button data-color="#10b981" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#10b981]"></button>
-            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]"></button>
+            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]" title="Red"></button>
+            <button data-color="#f97316" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f97316]" title="Orange"></button>
+            <button data-color="#eab308" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#eab308]" title="Yellow"></button>
+            <button data-color="#22c55e" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#22c55e]" title="Green"></button>
+            <button data-color="#3b82f6" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]" title="Blue"></button>
+            <button data-color="#8b5cf6" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#8b5cf6]" title="Violet"></button>
+            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]" title="Black"></button>
+            <button data-color="#6b7280" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#6b7280]" title="Gray"></button>
         </div>
         
         <div class="w-px h-8 bg-slate-200 mx-1"></div>
@@ -335,8 +339,6 @@
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
         document.getElementById('btn-clear').onclick = async () => {
-            if (!confirm("Clear the entire board for everyone?")) return;
-            
             localStrokes = []; // Instantly clear locally
             
             if (!user) return;
