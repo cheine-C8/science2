@@ -792,6 +792,9 @@
                 const touch = e.touches[0];
                 handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
                 lastTouch = { x: touch.clientX, y: touch.clientY };
+                // iOS Safari suspends requestAnimationFrame during touch gestures,
+                // so we must render synchronously here for live stroke feedback.
+                render();
             } else if (e.touches.length === 2 && initialPinchDistance && initialPinchCenter) {
                 const currentDistance = getDistance(e.touches[0], e.touches[1]);
                 const currentCenter = getCenter(e.touches[0], e.touches[1]);
