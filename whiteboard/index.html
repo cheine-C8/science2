@@ -246,6 +246,9 @@
         // Grid caching for performance
         let cachedGridZoom = 0;
         let cachedGridCanvas = null;
+        let isDirty = true;
+
+        window.addEventListener('resize', () => isDirty = true);
 
         function getGridCache(zoom) {
             // Rebuild the grid cache if the zoom changed significantly
@@ -269,6 +272,12 @@
         }
 
         function render() {
+            if (!isDirty && !isDrawing && !draggingItem) {
+                requestAnimationFrame(render);
+                return;
+            }
+            isDirty = false;
+
             const dpr = window.devicePixelRatio || 1;
             const w = window.innerWidth;
             const h = window.innerHeight;
@@ -311,6 +320,12 @@
             ctx.fillRect(0, 0, wScaled, hScaled);
             ctx.restore();
 
+            // Calculate visible world bounds for culling
+            const viewMinX = -camera.x / camera.zoom;
+            const viewMaxX = (w - camera.x) / camera.zoom;
+            const viewMinY = -camera.y / camera.zoom;
+            const viewMaxY = (h - camera.y) / camera.zoom;
+
             const drawItem = (item) => {
                 let renderX = item.x;
                 let renderY = item.y;
@@ -322,6 +337,12 @@
                 }
 
                 if (item.type === 'image') {
+                    // Quick bounds check
+                    if (renderX > viewMaxX || renderX + item.width < viewMinX ||
+                        renderY > viewMaxY || renderY + item.height < viewMinY) {
+                        return; // Off screen
+                    }
+
                     let img = imageCache.get(item.id);
                     if (!img) {
                         img = new Image();
@@ -332,6 +353,12 @@
                         ctx.drawImage(img, renderX, renderY, item.width, item.height);
                     }
                 } else if (item.type === 'sticky') {
+                    // Quick bounds check
+                    if (renderX > viewMaxX || renderX + item.width < viewMinX ||
+                        renderY > viewMaxY || renderY + item.height < viewMinY) {
+                        return; // Off screen
+                    }
+
                     ctx.shadowColor = 'rgba(0,0,0,0.1)';
                     ctx.shadowBlur = 10 / camera.zoom;
                     ctx.shadowOffsetY = 5 / camera.zoom;
@@ -345,45 +372,70 @@
                         ctx.textBaseline = 'top';
                         wrapText(ctx, item.text, renderX + 10, renderY + 10, item.width - 20, 22);
                     }
-                } else if (item.type === 'arrow') {
+                } else if (item.type === 'arrow' || !item.type || item.type === 'stroke') {
                     if (!item.points || item.points.length < 2) return;
-                    const start = item.points[0];
-                    const end = item.points[item.points.length - 1];
 
-                    ctx.beginPath();
-                    ctx.strokeStyle = item.color;
-                    ctx.fillStyle = item.color;
-                    ctx.lineWidth = item.lineWidth;
-                    ctx.lineJoin = 'round';
-                    ctx.lineCap = 'round';
-
-                    // Draw line
-                    ctx.moveTo(start.x, start.y);
-                    ctx.lineTo(end.x, end.y);
-                    ctx.stroke();
-
-                    // Draw arrowhead
-                    const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                    const headlen = 15 + item.lineWidth * 1.5; // length of head in pixels
-
-                    ctx.beginPath();
-                    ctx.moveTo(end.x, end.y);
-                    ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
-                    ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
-                    ctx.lineTo(end.x, end.y);
-                    ctx.fill();
-                } else {
-                    if (!item.points || item.points.length < 2) return;
-                    ctx.beginPath();
-                    ctx.strokeStyle = item.color;
-                    ctx.lineWidth = item.lineWidth;
-                    ctx.lineJoin = 'round';
-                    ctx.lineCap = 'round';
-                    ctx.moveTo(item.points[0].x, item.points[0].y);
-                    for (let i = 1; i < item.points.length; i++) {
-                        ctx.lineTo(item.points[i].x, item.points[i].y);
+                    // Compute bounding box if not cached
+                    if (item.minX === undefined) {
+                        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                        for (let p of item.points) {
+                            if (p.x < minX) minX = p.x;
+                            if (p.x > maxX) maxX = p.x;
+                            if (p.y < minY) minY = p.y;
+                            if (p.y > maxY) maxY = p.y;
+                        }
+                        item.minX = minX;
+                        item.maxX = maxX;
+                        item.minY = minY;
+                        item.maxY = maxY;
                     }
-                    ctx.stroke();
+
+                    // Cull off-screen strokes
+                    const padding = (item.lineWidth || 10) / 2 + 20; // +20 for arrowheads/shadows
+                    if (item.minX - padding > viewMaxX || item.maxX + padding < viewMinX ||
+                        item.minY - padding > viewMaxY || item.maxY + padding < viewMinY) {
+                        return;
+                    }
+
+                    if (item.type === 'arrow') {
+                        const start = item.points[0];
+                        const end = item.points[item.points.length - 1];
+
+                        ctx.beginPath();
+                        ctx.strokeStyle = item.color;
+                        ctx.fillStyle = item.color;
+                        ctx.lineWidth = item.lineWidth;
+                        ctx.lineJoin = 'round';
+                        ctx.lineCap = 'round';
+
+                        // Draw line
+                        ctx.moveTo(start.x, start.y);
+                        ctx.lineTo(end.x, end.y);
+                        ctx.stroke();
+
+                        // Draw arrowhead
+                        const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                        const headlen = 15 + item.lineWidth * 1.5; // length of head in pixels
+
+                        ctx.beginPath();
+                        ctx.moveTo(end.x, end.y);
+                        ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
+                        ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
+                        ctx.lineTo(end.x, end.y);
+                        ctx.fill();
+                    } else {
+                        if (!item.points || item.points.length < 2) return;
+                        ctx.beginPath();
+                        ctx.strokeStyle = item.color;
+                        ctx.lineWidth = item.lineWidth;
+                        ctx.lineJoin = 'round';
+                        ctx.lineCap = 'round';
+                        ctx.moveTo(item.points[0].x, item.points[0].y);
+                        for (let i = 1; i < item.points.length; i++) {
+                            ctx.lineTo(item.points[i].x, item.points[i].y);
+                        }
+                        ctx.stroke();
+                    }
                 }
             };
 
@@ -425,7 +477,6 @@
                 }
             }
 
-            // Sync Text Editor Overlay Position
             if (editingItem && textEditor.style.display !== 'none') {
                 const screenPosX = editingItem.x * camera.zoom + camera.x;
                 const screenPosY = editingItem.y * camera.zoom + camera.y;
@@ -461,6 +512,7 @@
                 deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id))
                     .catch(e => console.error("Erase error:", e));
             }
+            isDirty = true;
         }
 
         const stickyColors = {
@@ -526,21 +578,23 @@
             if (isSpaceDown || tool === 'pan') {
                 camera.x += movementX;
                 camera.y += movementY;
+                isDirty = true;
             } else if (tool === 'select' && draggingItem) {
                 const worldPos = screenToWorld(clientX, clientY);
                 draggingItem.newX = worldPos.x - draggingItem.offsetX;
                 draggingItem.newY = worldPos.y - draggingItem.offsetY;
+                isDirty = true;
             } else {
                 const worldPos = screenToWorld(clientX, clientY);
-                // Apple Pencil generates events at 240Hz; cull points that are less than a logical half-pixel apart 
-                // to prevent massive arrays that lag drawing/syncing.
+                // Culling point inputs from rapid digitizers at logic level
                 if (currentPath.length > 0) {
                     const lastPos = currentPath[currentPath.length - 1];
                     const physicalDist = Math.hypot(worldPos.x - lastPos.x, worldPos.y - lastPos.y) * camera.zoom;
-                    if (physicalDist < 0.5) return;
+                    if (physicalDist < 2.0) return;
                 }
 
                 currentPath.push(worldPos);
+                isDirty = true;
                 if (tool === 'eraser') eraseAt(worldPos);
             }
         };
@@ -609,6 +663,7 @@
                 }
                 editingItem = null;
                 textEditor.classList.add('hidden');
+                isDirty = true;
             }
         });
 
@@ -725,6 +780,7 @@
                 initialPinchCenter = getCenter(e.touches[0], e.touches[1]);
                 initialCameraZoom = camera.zoom;
                 initialCameraPos = { x: camera.x, y: camera.y };
+                isDirty = true;
             }
         }, { passive: false });
 
@@ -751,6 +807,7 @@
                 camera.zoom = newZoom;
                 camera.x = currentCenter.x - worldCenterBefore.x * newZoom;
                 camera.y = currentCenter.y - worldCenterBefore.y * newZoom;
+                isDirty = true;
             }
         }, { passive: false });
 
@@ -777,10 +834,12 @@
                 camera.zoom = newZoom;
                 camera.x = e.clientX - mouseBefore.x * newZoom;
                 camera.y = e.clientY - mouseBefore.y * newZoom;
+                isDirty = true;
             } else {
                 // Pan with 2-finger scroll on trackpads or regular mouse scroll
                 camera.x -= e.deltaX;
                 camera.y -= e.deltaY;
+                isDirty = true;
             }
         }, { passive: false });
 
@@ -809,11 +868,12 @@
             };
         });
 
-        document.getElementById('btn-width-up').onclick = () => { lineWidth = Math.min(20, lineWidth + 1); widthDisplay.innerText = lineWidth; };
-        document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
+        document.getElementById('btn-width-up').onclick = () => { lineWidth = Math.min(20, lineWidth + 1); widthDisplay.innerText = lineWidth; isDirty = true; };
+        document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; isDirty = true; };
 
         document.getElementById('btn-clear').onclick = async () => {
             localStrokes = [];
+            isDirty = true;
             if (!user) return;
             try {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
@@ -852,6 +912,7 @@
                             try { points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch (e) { }
                             return { id: d.id, ...data, points };
                         });
+                        isDirty = true;
                     }, (err) => {
                         statusInfo.innerText = "Sync Error - Running Locally";
                     });
