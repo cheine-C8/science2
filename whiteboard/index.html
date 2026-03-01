@@ -24,6 +24,13 @@
             -webkit-touch-callout: none;
         }
 
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
         .tool-btn.active {
             background-color: #2563eb;
             color: white;
@@ -141,6 +148,7 @@
         style="transform-origin: top left; font-family: sans-serif;"></textarea>
 
     <canvas id="whiteboardCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -187,6 +195,8 @@
 
         const canvas = document.getElementById('whiteboardCanvas');
         const ctx = canvas.getContext('2d');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
         const widthDisplay = document.getElementById('width-display');
         const statusInfo = document.getElementById('status-info');
         const cameraInfo = document.getElementById('camera-info');
@@ -456,25 +466,8 @@
                 ctx.setLineDash([]);
             }
 
-            // Local active stroke
-            if (isDrawing && tool === 'pencil') {
-                drawItem({ points: currentPath, color, lineWidth });
-            } else if (isDrawing && tool === 'arrow') {
-                drawItem({ type: 'arrow', points: currentPath, color, lineWidth });
-            }
-
-            // Eraser cursor
-            if (isDrawing && tool === 'eraser') {
-                const lastPos = currentPath[currentPath.length - 1];
-                if (lastPos) {
-                    ctx.beginPath();
-                    ctx.arc(lastPos.x, lastPos.y, 15 / camera.zoom, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-                    ctx.setLineDash([5, 5]);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
-            }
+            // Active stroke and eraser cursor are now drawn on the overlay canvas
+            // (see renderOverlay) so iOS Safari can composite them during touch gestures.
 
             if (editingItem && textEditor.style.display !== 'none') {
                 const screenPosX = editingItem.x * camera.zoom + camera.x;
@@ -489,7 +482,79 @@
 
             ctx.restore();
             cameraInfo.innerText = `Zoom: ${(camera.zoom * 100).toFixed(0)}%`;
+            renderOverlay();
             requestAnimationFrame(render);
+        }
+
+        // Separate overlay canvas for the active stroke being drawn.
+        // iOS Safari defers main canvas composition during touch gestures,
+        // but a lightweight overlay canvas gets its own compositing layer
+        // and updates immediately.
+        function renderOverlay() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const targetWidth = Math.round(w * dpr);
+            const targetHeight = Math.round(h * dpr);
+
+            if (overlayCanvas.width !== targetWidth || overlayCanvas.height !== targetHeight) {
+                overlayCanvas.width = targetWidth;
+                overlayCanvas.height = targetHeight;
+                overlayCanvas.style.width = w + 'px';
+                overlayCanvas.style.height = h + 'px';
+            }
+
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            overlayCtx.resetTransform();
+            overlayCtx.scale(dpr, dpr);
+            overlayCtx.translate(camera.x, camera.y);
+            overlayCtx.scale(camera.zoom, camera.zoom);
+
+            // Draw active stroke
+            if (isDrawing && (tool === 'pencil' || tool === 'arrow') && currentPath.length > 1) {
+                overlayCtx.beginPath();
+                overlayCtx.strokeStyle = color;
+                overlayCtx.lineWidth = lineWidth;
+                overlayCtx.lineJoin = 'round';
+                overlayCtx.lineCap = 'round';
+
+                if (tool === 'arrow') {
+                    const start = currentPath[0];
+                    const end = currentPath[currentPath.length - 1];
+                    overlayCtx.moveTo(start.x, start.y);
+                    overlayCtx.lineTo(end.x, end.y);
+                    overlayCtx.stroke();
+
+                    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                    const headlen = 15 + lineWidth * 1.5;
+                    overlayCtx.fillStyle = color;
+                    overlayCtx.beginPath();
+                    overlayCtx.moveTo(end.x, end.y);
+                    overlayCtx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
+                    overlayCtx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
+                    overlayCtx.lineTo(end.x, end.y);
+                    overlayCtx.fill();
+                } else {
+                    overlayCtx.moveTo(currentPath[0].x, currentPath[0].y);
+                    for (let i = 1; i < currentPath.length; i++) {
+                        overlayCtx.lineTo(currentPath[i].x, currentPath[i].y);
+                    }
+                    overlayCtx.stroke();
+                }
+            }
+
+            // Eraser cursor
+            if (isDrawing && tool === 'eraser' && currentPath.length > 0) {
+                const lastPos = currentPath[currentPath.length - 1];
+                overlayCtx.beginPath();
+                overlayCtx.arc(lastPos.x, lastPos.y, 15 / camera.zoom, 0, Math.PI * 2);
+                overlayCtx.strokeStyle = 'rgba(0,0,0,0.2)';
+                overlayCtx.setLineDash([5, 5]);
+                overlayCtx.stroke();
+                overlayCtx.setLineDash([]);
+            }
+
+            overlayCtx.resetTransform();
         }
 
         async function eraseAt(worldPos) {
@@ -792,9 +857,9 @@
                 const touch = e.touches[0];
                 handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
                 lastTouch = { x: touch.clientX, y: touch.clientY };
-                // iOS Safari suspends requestAnimationFrame during touch gestures,
-                // so we must render synchronously here for live stroke feedback.
-                render();
+                // iOS Safari defers main canvas composition during touch gestures.
+                // Only update the lightweight overlay canvas for live stroke feedback.
+                renderOverlay();
             } else if (e.touches.length === 2 && initialPinchDistance && initialPinchCenter) {
                 const currentDistance = getDistance(e.touches[0], e.touches[1]);
                 const currentCenter = getCenter(e.touches[0], e.touches[1]);
