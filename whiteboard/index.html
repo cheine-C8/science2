@@ -243,6 +243,31 @@
             return null;
         }
 
+        // Grid caching for performance
+        let cachedGridZoom = 0;
+        let cachedGridCanvas = null;
+
+        function getGridCache(zoom) {
+            // Rebuild the grid cache if the zoom changed significantly
+            if (!cachedGridCanvas || Math.abs(cachedGridZoom - zoom) > 0.1) {
+                cachedGridCanvas = document.createElement('canvas');
+                cachedGridCanvas.width = 50;
+                cachedGridCanvas.height = 50;
+                const gCtx = cachedGridCanvas.getContext('2d');
+
+                gCtx.strokeStyle = '#f1f5f9';
+                gCtx.lineWidth = 1 / zoom;
+
+                gCtx.beginPath();
+                gCtx.moveTo(0, 0); gCtx.lineTo(0, 50);
+                gCtx.moveTo(0, 0); gCtx.lineTo(50, 0);
+                gCtx.stroke();
+
+                cachedGridZoom = zoom;
+            }
+            return cachedGridCanvas;
+        }
+
         function render() {
             const dpr = window.devicePixelRatio || 1;
             const w = window.innerWidth;
@@ -261,27 +286,30 @@
             }
 
             ctx.clearRect(0, 0, w, h);
+            ctx.restore();
+
             ctx.save();
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
 
-            // Grid
-            const gridSize = 50;
-            ctx.beginPath();
-            ctx.strokeStyle = '#f1f5f9';
-            ctx.lineWidth = 1 / camera.zoom;
-            const startX = Math.floor(-camera.x / camera.zoom / gridSize) * gridSize;
-            const endX = startX + (w / camera.zoom) + gridSize;
-            const startY = Math.floor(-camera.y / camera.zoom / gridSize) * gridSize;
-            const endY = startY + (h / camera.zoom) + gridSize;
+            // Draw cached grid instead of paths
+            const gridCanvas = getGridCache(camera.zoom);
+            const wScaled = w / camera.zoom;
+            const hScaled = h / camera.zoom;
+            const gridPattern = ctx.createPattern(gridCanvas, 'repeat');
 
-            for (let x = startX; x <= endX; x += gridSize) {
-                ctx.moveTo(x, startY); ctx.lineTo(x, endY);
-            }
-            for (let y = startY; y <= endY; y += gridSize) {
-                ctx.moveTo(startX, y); ctx.lineTo(endX, y);
-            }
-            ctx.stroke();
+            ctx.save();
+            ctx.fillStyle = gridPattern;
+            ctx.translate(-camera.x / camera.zoom, -camera.y / camera.zoom);
+
+            // We need to offset the pattern translation so it stays locked to world coordinates (0,0)
+            const patternOffsetX = (-camera.x / camera.zoom) % 50;
+            const patternOffsetY = (-camera.y / camera.zoom) % 50;
+            const matrix = new DOMMatrix().translate(-patternOffsetX, -patternOffsetY);
+            gridPattern.setTransform(matrix);
+
+            ctx.fillRect(0, 0, wScaled, hScaled);
+            ctx.restore();
 
             const drawItem = (item) => {
                 let renderX = item.x;
