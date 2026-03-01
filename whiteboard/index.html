@@ -21,6 +21,7 @@
         canvas {
             display: block;
             touch-action: none;
+            -webkit-touch-callout: none;
         }
 
         .tool-btn.active {
@@ -66,6 +67,11 @@
             title="Pencil">
             <i data-lucide="pencil"></i>
         </button>
+        <button id="btn-arrow"
+            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
+            title="Arrow">
+            <i data-lucide="arrow-up-right"></i>
+        </button>
         <button id="btn-eraser"
             class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
             title="Eraser">
@@ -91,6 +97,10 @@
             <button data-color="#3b82f6"
                 class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]"
                 title="Blue"></button>
+            <button data-color="#1e3a8a" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#1e3a8a]"
+                title="Dark Blue"></button>
+            <button data-color="#ec4899" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ec4899]"
+                title="Pink"></button>
             <button data-color="#8b5cf6" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#8b5cf6]"
                 title="Violet"></button>
             <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]"
@@ -176,7 +186,8 @@
         let isSpaceDown = false;
 
         const canvas = document.getElementById('whiteboardCanvas');
-        const ctx = canvas.getContext('2d');
+        // Use desynchronized for lower latency on devices like Apple Pencil
+        const ctx = canvas.getContext('2d', { desynchronized: true });
         const widthDisplay = document.getElementById('width-display');
         const statusInfo = document.getElementById('status-info');
         const cameraInfo = document.getElementById('camera-info');
@@ -237,9 +248,12 @@
             const w = window.innerWidth;
             const h = window.innerHeight;
 
-            if (canvas.width !== w * dpr) {
-                canvas.width = w * dpr;
-                canvas.height = h * dpr;
+            const targetWidth = Math.round(w * dpr);
+            const targetHeight = Math.round(h * dpr);
+
+            if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
                 canvas.style.width = w + 'px';
                 canvas.style.height = h + 'px';
                 ctx.resetTransform();
@@ -303,6 +317,33 @@
                         ctx.textBaseline = 'top';
                         wrapText(ctx, item.text, renderX + 10, renderY + 10, item.width - 20, 22);
                     }
+                } else if (item.type === 'arrow') {
+                    if (!item.points || item.points.length < 2) return;
+                    const start = item.points[0];
+                    const end = item.points[item.points.length - 1];
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = item.color;
+                    ctx.fillStyle = item.color;
+                    ctx.lineWidth = item.lineWidth;
+                    ctx.lineJoin = 'round';
+                    ctx.lineCap = 'round';
+
+                    // Draw line
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                    ctx.stroke();
+
+                    // Draw arrowhead
+                    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                    const headlen = 15 + item.lineWidth * 1.5; // length of head in pixels
+
+                    ctx.beginPath();
+                    ctx.moveTo(end.x, end.y);
+                    ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
+                    ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
+                    ctx.lineTo(end.x, end.y);
+                    ctx.fill();
                 } else {
                     if (!item.points || item.points.length < 2) return;
                     ctx.beginPath();
@@ -339,6 +380,8 @@
             // Local active stroke
             if (isDrawing && tool === 'pencil') {
                 drawItem({ points: currentPath, color, lineWidth });
+            } else if (isDrawing && tool === 'arrow') {
+                drawItem({ type: 'arrow', points: currentPath, color, lineWidth });
             }
 
             // Eraser cursor
@@ -395,6 +438,7 @@
         const stickyColors = {
             '#ef4444': '#fecaca', '#f97316': '#fed7aa', '#eab308': '#fef08a',
             '#22c55e': '#bbf7d0', '#3b82f6': '#bfdbfe', '#8b5cf6': '#ddd6fe',
+            '#1e3a8a': '#93c5fd', '#ec4899': '#fbcfe8',
             '#000000': '#f1f5f9', '#6b7280': '#e2e8f0'
         };
 
@@ -406,7 +450,7 @@
 
             if (isSpaceDown || tool === 'pan') {
                 // handleMove does panning
-            } else if (tool === 'pencil' || tool === 'eraser') {
+            } else if (tool === 'pencil' || tool === 'eraser' || tool === 'arrow') {
                 currentPath = [worldPos];
                 if (tool === 'eraser') eraseAt(worldPos);
             } else if (tool === 'sticky') {
@@ -460,6 +504,14 @@
                 draggingItem.newY = worldPos.y - draggingItem.offsetY;
             } else {
                 const worldPos = screenToWorld(clientX, clientY);
+                // Apple Pencil generates events at 240Hz; cull points that are less than a logical half-pixel apart 
+                // to prevent massive arrays that lag drawing/syncing.
+                if (currentPath.length > 0) {
+                    const lastPos = currentPath[currentPath.length - 1];
+                    const physicalDist = Math.hypot(worldPos.x - lastPos.x, worldPos.y - lastPos.y) * camera.zoom;
+                    if (physicalDist < 0.5) return;
+                }
+
                 currentPath.push(worldPos);
                 if (tool === 'eraser') eraseAt(worldPos);
             }
@@ -469,16 +521,18 @@
             if (!isDrawing) return;
             isDrawing = false;
 
-            if ((!isSpaceDown && tool === 'pencil') && currentPath.length > 1) {
-                const strokePath = [...currentPath];
+            if ((!isSpaceDown && (tool === 'pencil' || tool === 'arrow')) && currentPath.length > 1) {
+                const strokePath = (tool === 'arrow') ? [currentPath[0], currentPath[currentPath.length - 1]] : [...currentPath];
                 localStrokes.push({
                     id: 'local-' + Date.now(),
+                    type: tool === 'arrow' ? 'arrow' : 'stroke',
                     points: strokePath, color, lineWidth,
                     userId: user ? user.uid : 'offline'
                 });
 
                 if (user) {
                     const strokeData = {
+                        type: tool === 'arrow' ? 'arrow' : 'stroke',
                         points: JSON.stringify(strokePath), color, lineWidth,
                         userId: user.uid, createdAt: Date.now()
                     };
@@ -548,7 +602,7 @@
         window.addEventListener('keyup', e => {
             if (e.code === 'Space') {
                 isSpaceDown = false;
-                canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : tool === 'sticky' ? 'crosshair' : 'crosshair';
+                canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : (tool === 'sticky' || tool === 'arrow') ? 'crosshair' : 'crosshair';
             }
         });
 
@@ -708,12 +762,13 @@
             toolBtns.forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             tool = toolName;
-            canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : tool === 'sticky' ? 'crosshair' : 'crosshair';
+            canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : (tool === 'sticky' || tool === 'arrow') ? 'crosshair' : 'crosshair';
         };
 
         document.getElementById('btn-select').onclick = () => setActiveTool('btn-select', 'select');
         document.getElementById('btn-sticky').onclick = () => setActiveTool('btn-sticky', 'sticky');
         document.getElementById('btn-pencil').onclick = () => setActiveTool('btn-pencil', 'pencil');
+        document.getElementById('btn-arrow').onclick = () => setActiveTool('btn-arrow', 'arrow');
         document.getElementById('btn-eraser').onclick = () => setActiveTool('btn-eraser', 'eraser');
         document.getElementById('btn-pan').onclick = () => setActiveTool('btn-pan', 'pan');
 
