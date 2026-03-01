@@ -186,8 +186,7 @@
         let isSpaceDown = false;
 
         const canvas = document.getElementById('whiteboardCanvas');
-        // Use desynchronized for lower latency on devices like Apple Pencil
-        const ctx = canvas.getContext('2d', { desynchronized: true });
+        const ctx = canvas.getContext('2d');
         const widthDisplay = document.getElementById('width-display');
         const statusInfo = document.getElementById('status-info');
         const cameraInfo = document.getElementById('camera-info');
