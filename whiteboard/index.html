@@ -2,99 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Infinite Whiteboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; }
+        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; overscroll-behavior: none; }
         canvas { display: block; touch-action: none; }
         .tool-btn.active { background-color: #2563eb; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2); }
         .color-btn.active { transform: scale(1.25); border-color: #94a3b8; }
+        
+        /* Hide scrollbar for the toolbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white select-none">
 
-    <!-- Top Toolbar -->
-    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200">
-        <button id="btn-pencil" class="tool-btn active p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pencil">
+    <!-- Left Toolbar -->
+    <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 max-h-[95vh] overflow-y-auto no-scrollbar">
+        <button id="btn-select" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Select & Move">
+            <i data-lucide="mouse-pointer-2"></i>
+        </button>
+        <button id="btn-sticky" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Sticky Note">
+            <i data-lucide="sticky-note"></i>
+        </button>
+        <button id="btn-pencil" class="tool-btn active p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pencil">
             <i data-lucide="pencil"></i>
         </button>
-        <button id="btn-eraser" class="tool-btn p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Eraser">
+        <button id="btn-eraser" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Eraser">
             <i data-lucide="eraser"></i>
         </button>
-        <button id="btn-pan" class="tool-btn p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pan & Zoom">
+        <button id="btn-pan" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pan & Zoom">
             <i data-lucide="move"></i>
         </button>
         
-        <div class="w-px h-8 bg-slate-200 mx-1"></div>
+        <div class="w-8 h-px bg-slate-200 my-1"></div>
         
-        <div id="color-palette" class="flex gap-1 px-1">
-            <button data-color="#3b82f6" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]"></button>
-            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]"></button>
-            <button data-color="#10b981" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#10b981]"></button>
-            <button data-color="#f59e0b" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f59e0b]"></button>
-            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]"></button>
+        <div id="color-palette" class="grid grid-cols-2 gap-2 p-1">
+            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]" title="Red"></button>
+            <button data-color="#f97316" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f97316]" title="Orange"></button>
+            <button data-color="#eab308" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#eab308]" title="Yellow"></button>
+            <button data-color="#22c55e" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#22c55e]" title="Green"></button>
+            <button data-color="#3b82f6" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]" title="Blue"></button>
+            <button data-color="#8b5cf6" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#8b5cf6]" title="Violet"></button>
+            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]" title="Black"></button>
+            <button data-color="#6b7280" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#6b7280]" title="Gray"></button>
         </div>
         
-        <div class="w-px h-8 bg-slate-200 mx-1"></div>
+        <div class="w-8 h-px bg-slate-200 my-1"></div>
         
-        <div class="flex items-center gap-2 px-2">
-            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded"><i data-lucide="minus" size="14"></i></button>
-            <span id="width-display" class="text-xs font-bold w-4 text-center">3</span>
-            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded"><i data-lucide="plus" size="14"></i></button>
+        <div class="flex flex-col items-center gap-1 py-1">
+            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600" title="Increase Line Width"><i data-lucide="plus" size="16"></i></button>
+            <span id="width-display" class="text-xs font-bold w-full text-center text-slate-700 py-1">3</span>
+            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600" title="Decrease Line Width"><i data-lucide="minus" size="16"></i></button>
         </div>
         
-        <div class="w-px h-8 bg-slate-200 mx-1"></div>
+        <div class="w-8 h-px bg-slate-200 my-1"></div>
         
-        <button id="btn-clear" class="p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors" title="Clear Board">
+        <button id="btn-clear" class="p-2 sm:p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors" title="Clear Board">
             <i data-lucide="trash-2"></i>
         </button>
     </div>
 
-    <!-- Info Overlay -->
-    <div class="absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none">
-        <p class="font-bold text-slate-700">Infinite Board (HTML)</p>
-        <p id="status-info">Connecting...</p>
+    <!-- Info Overlay (Moved to right side to avoid overlap) -->
+    <div class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none text-right">
+        <p class="font-bold text-slate-700">Infinite Board</p>
+        <p id="status-info">Initialising...</p>
         <p id="camera-info">Zoom: 100%</p>
     </div>
 
+    <textarea id="text-editor" class="absolute hidden bg-transparent outline-none resize-none overflow-hidden text-slate-800" style="transform-origin: top left; font-family: sans-serif;"></textarea>
+
     <canvas id="whiteboardCanvas"></canvas>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, setDoc, query, deleteDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        let firebaseConfig;
+
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            firebaseConfig = {
+                apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
+                authDomain: "whiteboard-23ad5.firebaseapp.com",
+                projectId: "whiteboard-23ad5",
+                storageBucket: "whiteboard-23ad5.firebasestorage.app",
+                messagingSenderId: "1097713600229",
+                appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
+                measurementId: "G-MR9C9WYE9M"
+            };
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-whiteboard';
 
         // --- App State ---
         let user = null;
         let strokes = [];
+        let localStrokes = []; 
+        const imageCache = new Map(); 
         let tool = 'pencil';
         let color = '#3b82f6';
         let lineWidth = 3;
         let camera = { x: 0, y: 0, zoom: 1 };
         let isDrawing = false;
         let currentPath = [];
+        let lastTouch = null;
+        let draggingItem = null; // Tracks the image currently being moved
+        let editingItem = null;
+        let isSpaceDown = false;
 
-        // --- Firebase Config ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'infinite-whiteboard-html';
-
-        // --- DOM Elements ---
         const canvas = document.getElementById('whiteboardCanvas');
         const ctx = canvas.getContext('2d');
         const widthDisplay = document.getElementById('width-display');
         const statusInfo = document.getElementById('status-info');
         const cameraInfo = document.getElementById('camera-info');
+        const textEditor = document.getElementById('text-editor');
 
-        // Initialize Lucide Icons
         lucide.createIcons();
 
-        // --- Coordinate Helpers ---
         function screenToWorld(screenX, screenY) {
             return {
                 x: (screenX - camera.x) / camera.zoom,
@@ -102,7 +135,47 @@
             };
         }
 
-        // --- Rendering Logic ---
+        // Word wrap helper
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const paragraphs = text.split('\n');
+            for (let i = 0; i < paragraphs.length; i++) {
+                const words = paragraphs[i].split(' ');
+                let line = '';
+                for(let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    const metrics = context.measureText(testLine);
+                    if (metrics.width > maxWidth && n > 0) {
+                        context.fillText(line, x, y);
+                        line = words[n] + ' ';
+                        y += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                context.fillText(line, x, y);
+                y += lineHeight;
+            }
+        }
+
+        // Hit testing for images and stickies
+        function getHitItem(worldPos) {
+            // Check localStrokes first (drawn on top)
+            for (let i = localStrokes.length - 1; i >= 0; i--) {
+                const item = localStrokes[i];
+                if ((item.type === 'image' || item.type === 'sticky') && worldPos.x >= item.x && worldPos.x <= item.x + item.width && worldPos.y >= item.y && worldPos.y <= item.y + item.height) {
+                    return item;
+                }
+            }
+            // Then check remote strokes
+            for (let i = strokes.length - 1; i >= 0; i--) {
+                const item = strokes[i];
+                if ((item.type === 'image' || item.type === 'sticky') && worldPos.x >= item.x && worldPos.x <= item.x + item.width && worldPos.y >= item.y && worldPos.y <= item.y + item.height) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
         function render() {
             const dpr = window.devicePixelRatio || 1;
             const w = window.innerWidth;
@@ -113,6 +186,7 @@
                 canvas.height = h * dpr;
                 canvas.style.width = w + 'px';
                 canvas.style.height = h + 'px';
+                ctx.resetTransform();
                 ctx.scale(dpr, dpr);
             }
 
@@ -121,7 +195,7 @@
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
 
-            // Draw Grid
+            // Grid
             const gridSize = 50;
             ctx.beginPath();
             ctx.strokeStyle = '#f1f5f9';
@@ -139,35 +213,101 @@
             }
             ctx.stroke();
 
-            // Draw Paths
-            const drawPath = (path, sColor, sWidth) => {
-                if (!path || path.length < 2) return;
-                ctx.beginPath();
-                ctx.strokeStyle = sColor;
-                ctx.lineWidth = sWidth;
-                ctx.lineJoin = 'round';
-                ctx.lineCap = 'round';
-                ctx.moveTo(path[0].x, path[0].y);
-                for (let i = 1; i < path.length; i++) {
-                    ctx.lineTo(path[i].x, path[i].y);
+            const drawItem = (item) => {
+                let renderX = item.x;
+                let renderY = item.y;
+
+                // Override coordinates if this item is currently being dragged
+                if (draggingItem && draggingItem.twins.includes(item)) {
+                    renderX = draggingItem.newX;
+                    renderY = draggingItem.newY;
                 }
-                ctx.stroke();
+
+                if (item.type === 'image') {
+                    let img = imageCache.get(item.id);
+                    if (!img) {
+                        img = new Image();
+                        img.src = item.data;
+                        imageCache.set(item.id, img);
+                    }
+                    if (img.complete) {
+                        ctx.drawImage(img, renderX, renderY, item.width, item.height);
+                    }
+                } else if (item.type === 'sticky') {
+                    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                    ctx.shadowBlur = 10 / camera.zoom;
+                    ctx.shadowOffsetY = 5 / camera.zoom;
+                    ctx.fillStyle = item.color;
+                    ctx.fillRect(renderX, renderY, item.width, item.height);
+                    ctx.shadowColor = 'transparent';
+
+                    if (item.text && item !== editingItem) {
+                        ctx.fillStyle = '#1e293b';
+                        ctx.font = `16px sans-serif`;
+                        ctx.textBaseline = 'top';
+                        wrapText(ctx, item.text, renderX + 10, renderY + 10, item.width - 20, 22);
+                    }
+                } else {
+                    if (!item.points || item.points.length < 2) return;
+                    ctx.beginPath();
+                    ctx.strokeStyle = item.color;
+                    ctx.lineWidth = item.lineWidth;
+                    ctx.lineJoin = 'round';
+                    ctx.lineCap = 'round';
+                    ctx.moveTo(item.points[0].x, item.points[0].y);
+                    for (let i = 1; i < item.points.length; i++) {
+                        ctx.lineTo(item.points[i].x, item.points[i].y);
+                    }
+                    ctx.stroke();
+                }
             };
 
-            strokes.forEach(s => drawPath(s.points, s.color, s.lineWidth));
+            // Remote strokes and images
+            strokes.forEach(s => drawItem(s));
+            // Local fallback strokes/images (Deduplicated so locally placed stickies don't double up)
+            localStrokes.forEach(s => {
+                if (!strokes.some(remote => remote.id === s.id)) drawItem(s);
+            });
 
-            if (isDrawing && tool === 'pencil') {
-                drawPath(currentPath, color, lineWidth);
+            // Visual bounding box for the dragged image
+            if (draggingItem && draggingItem.twins.length > 0) {
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2 / camera.zoom;
+                ctx.setLineDash([5 / camera.zoom, 5 / camera.zoom]);
+                const w = draggingItem.twins[0].width;
+                const h = draggingItem.twins[0].height;
+                ctx.strokeRect(draggingItem.newX, draggingItem.newY, w, h);
+                ctx.setLineDash([]);
             }
 
+            // Local active stroke
+            if (isDrawing && tool === 'pencil') {
+                drawItem({ points: currentPath, color, lineWidth });
+            }
+
+            // Eraser cursor
             if (isDrawing && tool === 'eraser') {
                 const lastPos = currentPath[currentPath.length - 1];
                 if (lastPos) {
                     ctx.beginPath();
-                    ctx.arc(lastPos.x, lastPos.y, 10 / camera.zoom, 0, Math.PI * 2);
+                    ctx.arc(lastPos.x, lastPos.y, 15 / camera.zoom, 0, Math.PI * 2);
                     ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                    ctx.setLineDash([5, 5]);
                     ctx.stroke();
+                    ctx.setLineDash([]);
                 }
+            }
+
+            // Sync Text Editor Overlay Position
+            if (editingItem && textEditor.style.display !== 'none') {
+                const screenPosX = editingItem.x * camera.zoom + camera.x;
+                const screenPosY = editingItem.y * camera.zoom + camera.y;
+                textEditor.style.left = screenPosX + 'px';
+                textEditor.style.top = screenPosY + 'px';
+                textEditor.style.width = (editingItem.width * camera.zoom) + 'px';
+                textEditor.style.height = (editingItem.height * camera.zoom) + 'px';
+                textEditor.style.fontSize = (16 * camera.zoom) + 'px';
+                textEditor.style.padding = (10 * camera.zoom) + 'px';
             }
 
             ctx.restore();
@@ -175,58 +315,270 @@
             requestAnimationFrame(render);
         }
 
-        // --- Eraser Logic ---
         async function eraseAt(worldPos) {
-            const radius = 15 / camera.zoom;
-            for (const stroke of strokes) {
-                const isNear = stroke.points.some(p => {
-                    const dx = p.x - worldPos.x;
-                    const dy = p.y - worldPos.y;
-                    return Math.sqrt(dx*dx + dy*dy) < radius;
-                });
-                if (isNear) {
-                    try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id));
-                    } catch (e) { console.error(e); }
+            const radius = 20 / camera.zoom;
+            const isHit = (item) => {
+                if (item.type === 'image' || item.type === 'sticky') {
+                    return worldPos.x >= item.x && worldPos.x <= item.x + item.width &&
+                           worldPos.y >= item.y && worldPos.y <= item.y + item.height;
+                } else {
+                    return item.points && item.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius);
                 }
+            };
+
+            localStrokes = localStrokes.filter(stroke => !isHit(stroke));
+            if (!user) return;
+            
+            const strokesToErase = strokes.filter(stroke => isHit(stroke));
+            for (const stroke of strokesToErase) {
+                deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id))
+                    .catch(e => console.error("Erase error:", e));
             }
         }
 
-        // --- Interaction Handlers ---
-        canvas.addEventListener('mousedown', (e) => {
+        const stickyColors = {
+            '#ef4444': '#fecaca', '#f97316': '#fed7aa', '#eab308': '#fef08a',
+            '#22c55e': '#bbf7d0', '#3b82f6': '#bfdbfe', '#8b5cf6': '#ddd6fe',
+            '#000000': '#f1f5f9', '#6b7280': '#e2e8f0'
+        };
+
+        const handleStart = (clientX, clientY) => {
+            if (editingItem) return; // ignore clicks behind textarea
+
             isDrawing = true;
-            const worldPos = screenToWorld(e.clientX, e.clientY);
-            if (tool === 'pencil' || tool === 'eraser') {
+            const worldPos = screenToWorld(clientX, clientY);
+            
+            if (isSpaceDown || tool === 'pan') {
+                // handleMove does panning
+            } else if (tool === 'pencil' || tool === 'eraser') {
                 currentPath = [worldPos];
                 if (tool === 'eraser') eraseAt(worldPos);
+            } else if (tool === 'sticky') {
+                const localId = 'sticky-' + Date.now();
+                const newSticky = {
+                    id: localId, type: 'sticky',
+                    x: worldPos.x - 75, y: worldPos.y - 75, width: 150, height: 150,
+                    color: stickyColors[color] || '#fef08a', text: '',
+                    userId: user ? user.uid : 'offline', createdAt: Date.now()
+                };
+                localStrokes.push(newSticky);
+                if (user) setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', localId), newSticky);
+                
+                setActiveTool('btn-select', 'select');
+                openTextEditor(newSticky);
+                isDrawing = false;
+            } else if (tool === 'select') {
+                const hitItem = getHitItem(worldPos);
+                if (hitItem) {
+                    // Collect both local and remote duplicates (twins) of the same image to prevent ghosting when moving
+                    const twins = [...localStrokes, ...strokes].filter(s => 
+                        (s.type === 'image' || s.type === 'sticky') && 
+                        Math.abs(s.x - hitItem.x) < 1 && 
+                        Math.abs(s.y - hitItem.y) < 1 && 
+                        s.width === hitItem.width
+                    );
+                    
+                    draggingItem = {
+                        twins,
+                        offsetX: worldPos.x - hitItem.x,
+                        offsetY: worldPos.y - hitItem.y,
+                        newX: hitItem.x,
+                        newY: hitItem.y
+                    };
+                } else {
+                    isDrawing = false; // Prevent move triggers if clicked empty space
+                }
             }
-        });
+            lastTouch = { x: clientX, y: clientY };
+        };
 
-        window.addEventListener('mousemove', (e) => {
+        const handleMove = (clientX, clientY, movementX, movementY) => {
             if (!isDrawing) return;
-            if (tool === 'pan') {
-                camera.x += e.movementX;
-                camera.y += e.movementY;
+            
+            if (isSpaceDown || tool === 'pan') {
+                camera.x += movementX;
+                camera.y += movementY;
+            } else if (tool === 'select' && draggingItem) {
+                const worldPos = screenToWorld(clientX, clientY);
+                draggingItem.newX = worldPos.x - draggingItem.offsetX;
+                draggingItem.newY = worldPos.y - draggingItem.offsetY;
             } else {
-                const worldPos = screenToWorld(e.clientX, e.clientY);
+                const worldPos = screenToWorld(clientX, clientY);
                 currentPath.push(worldPos);
                 if (tool === 'eraser') eraseAt(worldPos);
             }
-        });
+        };
 
-        window.addEventListener('mouseup', async () => {
+        const handleEnd = async () => {
             if (!isDrawing) return;
             isDrawing = false;
-            if (tool === 'pencil' && currentPath.length > 1 && user) {
-                const strokeData = { points: [...currentPath], color, lineWidth, userId: user.uid, createdAt: Date.now() };
-                currentPath = [];
-                try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData);
-                } catch (e) { console.error(e); }
+            
+            if ((!isSpaceDown && tool === 'pencil') && currentPath.length > 1) {
+                const strokePath = [...currentPath]; 
+                localStrokes.push({ 
+                    id: 'local-' + Date.now(), 
+                    points: strokePath, color, lineWidth, 
+                    userId: user ? user.uid : 'offline' 
+                });
+                
+                if (user) {
+                    const strokeData = { 
+                        points: JSON.stringify(strokePath), color, lineWidth, 
+                        userId: user.uid, createdAt: Date.now() 
+                    };
+                    addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData)
+                        .catch(e => console.warn("Firebase save rejected/failed.", e));
+                }
+            } else if (tool === 'select' && draggingItem) {
+                const { twins, newX, newY } = draggingItem;
+                
+                // Finalize position for all twins
+                twins.forEach(twin => {
+                    twin.x = newX;
+                    twin.y = newY;
+                    
+                    // If this twin is a synced Firebase item, update its position remotely
+                    if (strokes.some(s => s.id === twin.id) && user) {
+                        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', twin.id), {
+                            x: newX,
+                            y: newY
+                        }).catch(e => console.error("Move sync error:", e));
+                    }
+                });
+                
+                draggingItem = null;
             }
+            
             currentPath = [];
+            lastTouch = null;
+        };
+
+        function openTextEditor(item) {
+            editingItem = item;
+            textEditor.value = item.text || '';
+            textEditor.style.display = 'block';
+            textEditor.classList.remove('hidden');
+            textEditor.focus();
+        }
+
+        textEditor.addEventListener('blur', () => {
+            if (editingItem) {
+                editingItem.text = textEditor.value;
+                if (user) {
+                    const idToUpdate = editingItem.id;
+                    updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', idToUpdate), { text: editingItem.text })
+                        .catch(e => console.warn("Failed to update sticky text", e));
+                }
+                editingItem = null;
+                textEditor.classList.add('hidden');
+            }
         });
 
+        canvas.addEventListener('dblclick', (e) => {
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            const hit = getHitItem(worldPos);
+            if (hit && hit.type === 'sticky') {
+                openTextEditor(hit);
+            }
+        });
+
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space' && document.activeElement !== textEditor) {
+                e.preventDefault();
+                isSpaceDown = true;
+                canvas.style.cursor = 'grab';
+            }
+        });
+        window.addEventListener('keyup', e => {
+            if (e.code === 'Space') {
+                isSpaceDown = false;
+                canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : tool === 'sticky' ? 'crosshair' : 'crosshair';
+            }
+        });
+
+        // --- Handle Image Paste Events ---
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const centerPos = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
+                            let w = img.width;
+                            let h = img.height;
+                            const maxDim = 800; 
+                            if (w > maxDim || h > maxDim) {
+                                const ratio = Math.min(maxDim / w, maxDim / h);
+                                w *= ratio;
+                                h *= ratio;
+                            }
+                            
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = w;
+                            tempCanvas.height = h;
+                            const tCtx = tempCanvas.getContext('2d');
+                            tCtx.drawImage(img, 0, 0, w, h);
+                            
+                            const compressedData = tempCanvas.toDataURL('image/webp', 0.6);
+
+                            const imgData = {
+                                type: 'image',
+                                data: compressedData,
+                                x: centerPos.x - w / 2,
+                                y: centerPos.y - h / 2,
+                                width: w,
+                                height: h,
+                                userId: user ? user.uid : 'offline',
+                                createdAt: Date.now()
+                            };
+
+                            const localId = 'local-img-' + Date.now();
+                            localStrokes.push({ id: localId, ...imgData });
+
+                            if (user) {
+                                addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), imgData)
+                                    .catch(err => console.warn("Firebase save rejected.", err));
+                            }
+                            
+                            // Automatically switch to select tool when pasting an image
+                            setActiveTool('btn-select', 'select');
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
+
+        // Mouse Events
+        canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY, e.movementX, e.movementY));
+        window.addEventListener('mouseup', handleEnd);
+
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                handleStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && lastTouch) {
+                const touch = e.touches[0];
+                handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
+                lastTouch = { x: touch.clientX, y: touch.clientY };
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', handleEnd);
+
+        // Zoom
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const factor = Math.pow(1.1, -e.deltaY / 150);
@@ -237,15 +589,17 @@
             camera.y = e.clientY - mouseBefore.y * newZoom;
         }, { passive: false });
 
-        // --- UI Logic ---
+        // UI Interactions
         const toolBtns = document.querySelectorAll('.tool-btn');
         const setActiveTool = (id, toolName) => {
             toolBtns.forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             tool = toolName;
-            canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : 'crosshair';
+            canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : tool === 'sticky' ? 'crosshair' : 'crosshair';
         };
 
+        document.getElementById('btn-select').onclick = () => setActiveTool('btn-select', 'select');
+        document.getElementById('btn-sticky').onclick = () => setActiveTool('btn-sticky', 'sticky');
         document.getElementById('btn-pencil').onclick = () => setActiveTool('btn-pencil', 'pencil');
         document.getElementById('btn-eraser').onclick = () => setActiveTool('btn-eraser', 'eraser');
         document.getElementById('btn-pan').onclick = () => setActiveTool('btn-pan', 'pan');
@@ -263,12 +617,18 @@
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
         document.getElementById('btn-clear').onclick = async () => {
-            if (!user || !confirm("Clear board for everyone?")) return;
-            const snap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes')));
-            snap.forEach(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', d.id)));
+            localStrokes = []; 
+            if (!user) return;
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
+                const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', d.id)));
+                await Promise.all(deletePromises);
+            } catch (e) { console.error("Clear error:", e); }
         };
 
-        // --- Auth & Sync ---
+        requestAnimationFrame(render);
+
+        // Initialize App
         async function init() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -276,20 +636,33 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) { console.error(e); statusInfo.innerText = "Auth Error"; }
+            } catch (e) {
+                statusInfo.innerText = "Offline Mode (Local Only)";
+            }
 
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if (u) {
-                    statusInfo.innerText = `User ID: ${u.uid.slice(0, 8)}...`;
-                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
+                    statusInfo.innerText = `Online (${u.uid.substring(0,5)}...)`;
+                    
+                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
                     onSnapshot(q, (snap) => {
-                        strokes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        strokes = snap.docs.map(d => {
+                            const data = d.data();
+                            if (data.type === 'image' || data.type === 'sticky') {
+                                return { id: d.id, ...data };
+                            }
+                            let points = [];
+                            try { points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch(e) {}
+                            return { id: d.id, ...data, points };
+                        });
+                    }, (err) => {
+                        statusInfo.innerText = "Sync Error - Running Locally";
                     });
+                } else {
+                    statusInfo.innerText = "Offline Mode";
                 }
             });
-
-            requestAnimationFrame(render);
         }
 
         init();
