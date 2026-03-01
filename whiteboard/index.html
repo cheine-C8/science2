@@ -747,12 +747,7 @@
             }
         });
 
-        // Mouse Events
-        canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
-        window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY, e.movementX, e.movementY));
-        window.addEventListener('mouseup', handleEnd);
-
-        // Touch & Multitouch Events
+        // Touch & Multitouch State
         let initialPinchDistance = null;
         let initialCameraZoom = 1;
         let initialPinchCenter = null;
@@ -769,29 +764,48 @@
             };
         }
 
-        canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                handleStart(e.touches[0].clientX, e.touches[0].clientY);
-            } else if (e.touches.length === 2) {
-                if (isDrawing) handleEnd();
+        // --- Unified Pointer Events for Stylus/Touch/Mouse ---
+        const activePointers = new Map();
 
-                initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
-                initialPinchCenter = getCenter(e.touches[0], e.touches[1]);
+        canvas.addEventListener('pointerdown', (e) => {
+            activePointers.set(e.pointerId, e);
+            canvas.setPointerCapture(e.pointerId);
+
+            if (activePointers.size === 1) {
+                handleStart(e.clientX, e.clientY);
+            } else if (activePointers.size === 2) {
+                if (isDrawing) handleEnd();
+                const pts = Array.from(activePointers.values());
+                initialPinchDistance = getDistance(pts[0], pts[1]);
+                initialPinchCenter = getCenter(pts[0], pts[1]);
                 initialCameraZoom = camera.zoom;
                 initialCameraPos = { x: camera.x, y: camera.y };
                 isDirty = true;
             }
-        }, { passive: false });
+        });
 
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 1 && lastTouch) {
-                const touch = e.touches[0];
-                handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
-                lastTouch = { x: touch.clientX, y: touch.clientY };
-            } else if (e.touches.length === 2 && initialPinchDistance && initialPinchCenter) {
-                const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                const currentCenter = getCenter(e.touches[0], e.touches[1]);
+        canvas.addEventListener('pointermove', (e) => {
+            if (!activePointers.has(e.pointerId)) return;
+            activePointers.set(e.pointerId, e);
+
+            if (activePointers.size === 1) {
+                // Prevent scrolling when drawing
+                if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+                    // e.preventDefault() doesn't work reliably in pointermove for iOS, 
+                    // but we have touch-action: none in CSS which handles this natively.
+                }
+
+                let movementX = 0, movementY = 0;
+                if (lastTouch) {
+                    movementX = e.clientX - lastTouch.x;
+                    movementY = e.clientY - lastTouch.y;
+                }
+                handleMove(e.clientX, e.clientY, movementX, movementY);
+                lastTouch = { x: e.clientX, y: e.clientY };
+            } else if (activePointers.size === 2 && initialPinchDistance && initialPinchCenter) {
+                const pts = Array.from(activePointers.values());
+                const currentDistance = getDistance(pts[0], pts[1]);
+                const currentCenter = getCenter(pts[0], pts[1]);
 
                 // Pinch to Zoom
                 const zoomFactor = currentDistance / initialPinchDistance;
@@ -808,18 +822,24 @@
                 camera.y = currentCenter.y - worldCenterBefore.y * newZoom;
                 isDirty = true;
             }
-        }, { passive: false });
+        });
 
-        canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) {
+        const handlePointerUp = (e) => {
+            activePointers.delete(e.pointerId);
+
+            if (activePointers.size < 2) {
                 initialPinchDistance = null;
                 initialPinchCenter = null;
                 initialCameraPos = null;
             }
-            if (e.touches.length === 0) {
+            if (activePointers.size === 0) {
                 handleEnd();
             }
-        });
+        };
+
+        canvas.addEventListener('pointerup', handlePointerUp);
+        canvas.addEventListener('pointercancel', handlePointerUp);
+        canvas.addEventListener('pointerout', handlePointerUp);
 
         // Trackpad & Mouse Wheel (Zoom & Pan)
         canvas.addEventListener('wheel', (e) => {
