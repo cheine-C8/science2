@@ -525,6 +525,7 @@
             if (editingItem) return; // ignore clicks behind textarea
 
             isDrawing = true;
+            isDirty = true;
             const worldPos = screenToWorld(clientX, clientY);
 
             if (isSpaceDown || tool === 'pan') {
@@ -601,6 +602,7 @@
         const handleEnd = async () => {
             if (!isDrawing) return;
             isDrawing = false;
+            isDirty = true;
 
             if ((!isSpaceDown && (tool === 'pencil' || tool === 'arrow')) && currentPath.length > 1) {
                 const strokePath = (tool === 'arrow') ? [currentPath[0], currentPath[currentPath.length - 1]] : [...currentPath];
@@ -839,7 +841,6 @@
 
         canvas.addEventListener('pointerup', handlePointerUp);
         canvas.addEventListener('pointercancel', handlePointerUp);
-        canvas.addEventListener('pointerout', handlePointerUp);
 
         // Trackpad & Mouse Wheel (Zoom & Pan)
         canvas.addEventListener('wheel', (e) => {
