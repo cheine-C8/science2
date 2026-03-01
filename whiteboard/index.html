@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,72 +8,127 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; overscroll-behavior: none; }
-        canvas { display: block; touch-action: none; }
-        .tool-btn.active { background-color: #2563eb; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2); }
-        .color-btn.active { transform: scale(1.25); border-color: #94a3b8; }
-        
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            overscroll-behavior: none;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        .tool-btn.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+        }
+
+        .color-btn.active {
+            transform: scale(1.25);
+            border-color: #94a3b8;
+        }
+
         /* Hide scrollbar for the toolbar but keep functionality */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
+
 <body class="bg-white select-none">
 
-    <!-- Left Toolbar -->
-    <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 max-h-[95vh] overflow-y-auto no-scrollbar">
-        <button id="btn-select" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Select & Move">
+    <!-- Toolbar -->
+    <div
+        class="absolute top-4 right-4 sm:top-1/2 sm:-translate-y-1/2 sm:left-4 sm:right-auto z-10 flex flex-row sm:flex-col items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 w-[calc(100vw-2rem)] sm:w-auto overflow-x-auto sm:overflow-visible no-scrollbar">
+        <button id="btn-select"
+            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
+            title="Select & Move">
             <i data-lucide="mouse-pointer-2"></i>
         </button>
-        <button id="btn-sticky" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Sticky Note">
+        <button id="btn-sticky"
+            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
+            title="Sticky Note">
             <i data-lucide="sticky-note"></i>
         </button>
-        <button id="btn-pencil" class="tool-btn active p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pencil">
+        <button id="btn-pencil"
+            class="tool-btn active p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
+            title="Pencil">
             <i data-lucide="pencil"></i>
         </button>
-        <button id="btn-eraser" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Eraser">
+        <button id="btn-eraser"
+            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
+            title="Eraser">
             <i data-lucide="eraser"></i>
         </button>
-        <button id="btn-pan" class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600" title="Pan & Zoom">
+        <button id="btn-pan"
+            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
+            title="Pan & Zoom">
             <i data-lucide="move"></i>
         </button>
-        
-        <div class="w-8 h-px bg-slate-200 my-1"></div>
-        
-        <div id="color-palette" class="grid grid-cols-2 gap-2 p-1">
-            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]" title="Red"></button>
-            <button data-color="#f97316" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f97316]" title="Orange"></button>
-            <button data-color="#eab308" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#eab308]" title="Yellow"></button>
-            <button data-color="#22c55e" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#22c55e]" title="Green"></button>
-            <button data-color="#3b82f6" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]" title="Blue"></button>
-            <button data-color="#8b5cf6" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#8b5cf6]" title="Violet"></button>
-            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]" title="Black"></button>
-            <button data-color="#6b7280" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#6b7280]" title="Gray"></button>
+
+        <div class="w-px h-8 sm:w-8 sm:h-px bg-slate-200 mx-1 sm:my-1 sm:mx-0 shrink-0"></div>
+
+        <div id="color-palette" class="grid grid-cols-4 sm:grid-cols-2 gap-2 p-1 shrink-0">
+            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]"
+                title="Red"></button>
+            <button data-color="#f97316" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f97316]"
+                title="Orange"></button>
+            <button data-color="#eab308" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#eab308]"
+                title="Yellow"></button>
+            <button data-color="#22c55e" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#22c55e]"
+                title="Green"></button>
+            <button data-color="#3b82f6"
+                class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]"
+                title="Blue"></button>
+            <button data-color="#8b5cf6" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#8b5cf6]"
+                title="Violet"></button>
+            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]"
+                title="Black"></button>
+            <button data-color="#6b7280" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#6b7280]"
+                title="Gray"></button>
         </div>
-        
-        <div class="w-8 h-px bg-slate-200 my-1"></div>
-        
-        <div class="flex flex-col items-center gap-1 py-1">
-            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600" title="Increase Line Width"><i data-lucide="plus" size="16"></i></button>
-            <span id="width-display" class="text-xs font-bold w-full text-center text-slate-700 py-1">3</span>
-            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600" title="Decrease Line Width"><i data-lucide="minus" size="16"></i></button>
+
+        <div class="w-px h-8 sm:w-8 sm:h-px bg-slate-200 mx-1 sm:my-1 sm:mx-0 shrink-0"></div>
+
+        <div class="flex flex-row sm:flex-col items-center gap-1 py-1 shrink-0">
+            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600 shrink-0"
+                title="Increase Line Width"><i data-lucide="plus" size="16"></i></button>
+            <span id="width-display"
+                class="text-xs font-bold w-6 sm:w-full text-center text-slate-700 py-1 shrink-0">3</span>
+            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600 shrink-0"
+                title="Decrease Line Width"><i data-lucide="minus" size="16"></i></button>
         </div>
-        
-        <div class="w-8 h-px bg-slate-200 my-1"></div>
-        
-        <button id="btn-clear" class="p-2 sm:p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors" title="Clear Board">
+
+        <div class="w-px h-8 sm:w-8 sm:h-px bg-slate-200 mx-1 sm:my-1 sm:mx-0 shrink-0"></div>
+
+        <button id="btn-clear" class="p-2 sm:p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors shrink-0"
+            title="Clear Board">
             <i data-lucide="trash-2"></i>
         </button>
     </div>
 
-    <!-- Info Overlay (Moved to right side to avoid overlap) -->
-    <div class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none text-right">
+    <!-- Info Overlay (Moved to bottom on mobile so it doesn't overlap the new top toolbar) -->
+    <div
+        class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none text-right">
         <p class="font-bold text-slate-700">Infinite Board</p>
         <p id="status-info">Initialising...</p>
         <p id="camera-info">Zoom: 100%</p>
     </div>
 
-    <textarea id="text-editor" class="absolute hidden bg-transparent outline-none resize-none overflow-hidden text-slate-800" style="transform-origin: top left; font-family: sans-serif;"></textarea>
+    <textarea id="text-editor"
+        class="absolute hidden bg-transparent outline-none resize-none overflow-hidden text-slate-800"
+        style="transform-origin: top left; font-family: sans-serif;"></textarea>
 
     <canvas id="whiteboardCanvas"></canvas>
 
@@ -106,8 +162,8 @@
         // --- App State ---
         let user = null;
         let strokes = [];
-        let localStrokes = []; 
-        const imageCache = new Map(); 
+        let localStrokes = [];
+        const imageCache = new Map();
         let tool = 'pencil';
         let color = '#3b82f6';
         let lineWidth = 3;
@@ -141,7 +197,7 @@
             for (let i = 0; i < paragraphs.length; i++) {
                 const words = paragraphs[i].split(' ');
                 let line = '';
-                for(let n = 0; n < words.length; n++) {
+                for (let n = 0; n < words.length; n++) {
                     const testLine = line + words[n] + ' ';
                     const metrics = context.measureText(testLine);
                     if (metrics.width > maxWidth && n > 0) {
@@ -320,7 +376,7 @@
             const isHit = (item) => {
                 if (item.type === 'image' || item.type === 'sticky') {
                     return worldPos.x >= item.x && worldPos.x <= item.x + item.width &&
-                           worldPos.y >= item.y && worldPos.y <= item.y + item.height;
+                        worldPos.y >= item.y && worldPos.y <= item.y + item.height;
                 } else {
                     return item.points && item.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius);
                 }
@@ -328,7 +384,7 @@
 
             localStrokes = localStrokes.filter(stroke => !isHit(stroke));
             if (!user) return;
-            
+
             const strokesToErase = strokes.filter(stroke => isHit(stroke));
             for (const stroke of strokesToErase) {
                 deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id))
@@ -347,7 +403,7 @@
 
             isDrawing = true;
             const worldPos = screenToWorld(clientX, clientY);
-            
+
             if (isSpaceDown || tool === 'pan') {
                 // handleMove does panning
             } else if (tool === 'pencil' || tool === 'eraser') {
@@ -363,7 +419,7 @@
                 };
                 localStrokes.push(newSticky);
                 if (user) setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', localId), newSticky);
-                
+
                 setActiveTool('btn-select', 'select');
                 openTextEditor(newSticky);
                 isDrawing = false;
@@ -371,13 +427,13 @@
                 const hitItem = getHitItem(worldPos);
                 if (hitItem) {
                     // Collect both local and remote duplicates (twins) of the same image to prevent ghosting when moving
-                    const twins = [...localStrokes, ...strokes].filter(s => 
-                        (s.type === 'image' || s.type === 'sticky') && 
-                        Math.abs(s.x - hitItem.x) < 1 && 
-                        Math.abs(s.y - hitItem.y) < 1 && 
+                    const twins = [...localStrokes, ...strokes].filter(s =>
+                        (s.type === 'image' || s.type === 'sticky') &&
+                        Math.abs(s.x - hitItem.x) < 1 &&
+                        Math.abs(s.y - hitItem.y) < 1 &&
                         s.width === hitItem.width
                     );
-                    
+
                     draggingItem = {
                         twins,
                         offsetX: worldPos.x - hitItem.x,
@@ -394,7 +450,7 @@
 
         const handleMove = (clientX, clientY, movementX, movementY) => {
             if (!isDrawing) return;
-            
+
             if (isSpaceDown || tool === 'pan') {
                 camera.x += movementX;
                 camera.y += movementY;
@@ -412,31 +468,31 @@
         const handleEnd = async () => {
             if (!isDrawing) return;
             isDrawing = false;
-            
+
             if ((!isSpaceDown && tool === 'pencil') && currentPath.length > 1) {
-                const strokePath = [...currentPath]; 
-                localStrokes.push({ 
-                    id: 'local-' + Date.now(), 
-                    points: strokePath, color, lineWidth, 
-                    userId: user ? user.uid : 'offline' 
+                const strokePath = [...currentPath];
+                localStrokes.push({
+                    id: 'local-' + Date.now(),
+                    points: strokePath, color, lineWidth,
+                    userId: user ? user.uid : 'offline'
                 });
-                
+
                 if (user) {
-                    const strokeData = { 
-                        points: JSON.stringify(strokePath), color, lineWidth, 
-                        userId: user.uid, createdAt: Date.now() 
+                    const strokeData = {
+                        points: JSON.stringify(strokePath), color, lineWidth,
+                        userId: user.uid, createdAt: Date.now()
                     };
                     addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData)
                         .catch(e => console.warn("Firebase save rejected/failed.", e));
                 }
             } else if (tool === 'select' && draggingItem) {
                 const { twins, newX, newY } = draggingItem;
-                
+
                 // Finalize position for all twins
                 twins.forEach(twin => {
                     twin.x = newX;
                     twin.y = newY;
-                    
+
                     // If this twin is a synced Firebase item, update its position remotely
                     if (strokes.some(s => s.id === twin.id) && user) {
                         updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', twin.id), {
@@ -445,10 +501,10 @@
                         }).catch(e => console.error("Move sync error:", e));
                     }
                 });
-                
+
                 draggingItem = null;
             }
-            
+
             currentPath = [];
             lastTouch = null;
         };
@@ -504,26 +560,26 @@
                 if (item.kind === 'file' && item.type.startsWith('image/')) {
                     const blob = item.getAsFile();
                     const reader = new FileReader();
-                    
+
                     reader.onload = (event) => {
                         const img = new Image();
                         img.onload = () => {
                             const centerPos = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
                             let w = img.width;
                             let h = img.height;
-                            const maxDim = 800; 
+                            const maxDim = 800;
                             if (w > maxDim || h > maxDim) {
                                 const ratio = Math.min(maxDim / w, maxDim / h);
                                 w *= ratio;
                                 h *= ratio;
                             }
-                            
+
                             const tempCanvas = document.createElement('canvas');
                             tempCanvas.width = w;
                             tempCanvas.height = h;
                             const tCtx = tempCanvas.getContext('2d');
                             tCtx.drawImage(img, 0, 0, w, h);
-                            
+
                             const compressedData = tempCanvas.toDataURL('image/webp', 0.6);
 
                             const imgData = {
@@ -544,7 +600,7 @@
                                 addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), imgData)
                                     .catch(err => console.warn("Firebase save rejected.", err));
                             }
-                            
+
                             // Automatically switch to select tool when pasting an image
                             setActiveTool('btn-select', 'select');
                         };
@@ -560,10 +616,33 @@
         window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY, e.movementX, e.movementY));
         window.addEventListener('mouseup', handleEnd);
 
-        // Touch Events
+        // Touch & Multitouch Events
+        let initialPinchDistance = null;
+        let initialCameraZoom = 1;
+        let initialPinchCenter = null;
+        let initialCameraPos = null;
+
+        function getDistance(t1, t2) {
+            return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        }
+
+        function getCenter(t1, t2) {
+            return {
+                x: (t1.clientX + t2.clientX) / 2,
+                y: (t1.clientY + t2.clientY) / 2
+            };
+        }
+
         canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
                 handleStart(e.touches[0].clientX, e.touches[0].clientY);
+            } else if (e.touches.length === 2) {
+                if (isDrawing) handleEnd();
+
+                initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+                initialPinchCenter = getCenter(e.touches[0], e.touches[1]);
+                initialCameraZoom = camera.zoom;
+                initialCameraPos = { x: camera.x, y: camera.y };
             }
         }, { passive: false });
 
@@ -573,20 +652,54 @@
                 const touch = e.touches[0];
                 handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
                 lastTouch = { x: touch.clientX, y: touch.clientY };
+            } else if (e.touches.length === 2 && initialPinchDistance && initialPinchCenter) {
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                const currentCenter = getCenter(e.touches[0], e.touches[1]);
+
+                // Pinch to Zoom
+                const zoomFactor = currentDistance / initialPinchDistance;
+                const newZoom = Math.min(Math.max(initialCameraZoom * zoomFactor, 0.05), 20);
+
+                // Pan with two fingers
+                const worldCenterBefore = {
+                    x: (initialPinchCenter.x - initialCameraPos.x) / initialCameraZoom,
+                    y: (initialPinchCenter.y - initialCameraPos.y) / initialCameraZoom
+                };
+
+                camera.zoom = newZoom;
+                camera.x = currentCenter.x - worldCenterBefore.x * newZoom;
+                camera.y = currentCenter.y - worldCenterBefore.y * newZoom;
             }
         }, { passive: false });
 
-        canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+                initialPinchCenter = null;
+                initialCameraPos = null;
+            }
+            if (e.touches.length === 0) {
+                handleEnd();
+            }
+        });
 
-        // Zoom
+        // Trackpad & Mouse Wheel (Zoom & Pan)
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const factor = Math.pow(1.1, -e.deltaY / 150);
-            const newZoom = Math.min(Math.max(camera.zoom * factor, 0.05), 20);
-            const mouseBefore = screenToWorld(e.clientX, e.clientY);
-            camera.zoom = newZoom;
-            camera.x = e.clientX - mouseBefore.x * newZoom;
-            camera.y = e.clientY - mouseBefore.y * newZoom;
+
+            if (e.ctrlKey) {
+                // Pinch-to-zoom on trackpads or Ctrl+Scroll on mouse
+                const factor = Math.pow(1.1, -e.deltaY / 150);
+                const newZoom = Math.min(Math.max(camera.zoom * factor, 0.05), 20);
+                const mouseBefore = screenToWorld(e.clientX, e.clientY);
+                camera.zoom = newZoom;
+                camera.x = e.clientX - mouseBefore.x * newZoom;
+                camera.y = e.clientY - mouseBefore.y * newZoom;
+            } else {
+                // Pan with 2-finger scroll on trackpads or regular mouse scroll
+                camera.x -= e.deltaX;
+                camera.y -= e.deltaY;
+            }
         }, { passive: false });
 
         // UI Interactions
@@ -617,7 +730,7 @@
         document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; };
 
         document.getElementById('btn-clear').onclick = async () => {
-            localStrokes = []; 
+            localStrokes = [];
             if (!user) return;
             try {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
@@ -643,8 +756,8 @@
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if (u) {
-                    statusInfo.innerText = `Online (${u.uid.substring(0,5)}...)`;
-                    
+                    statusInfo.innerText = `Online (${u.uid.substring(0, 5)}...)`;
+
                     const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
                     onSnapshot(q, (snap) => {
                         strokes = snap.docs.map(d => {
@@ -653,7 +766,7 @@
                                 return { id: d.id, ...data };
                             }
                             let points = [];
-                            try { points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch(e) {}
+                            try { points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch (e) { }
                             return { id: d.id, ...data, points };
                         });
                     }, (err) => {
@@ -668,4 +781,5 @@
         init();
     </script>
 </body>
+
 </html>
