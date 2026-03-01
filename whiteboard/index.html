@@ -24,11 +24,14 @@
             -webkit-touch-callout: none;
         }
 
-        #overlayCanvas {
+        #strokeOverlay {
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
+            z-index: 1;
         }
 
         .tool-btn.active {
@@ -148,7 +151,12 @@
         style="transform-origin: top left; font-family: sans-serif;"></textarea>
 
     <canvas id="whiteboardCanvas"></canvas>
-    <canvas id="overlayCanvas"></canvas>
+    <svg id="strokeOverlay" xmlns="http://www.w3.org/2000/svg">
+        <polyline id="activeStroke" fill="none" points="" />
+        <!-- Arrow marker drawn as simple lines -->
+        <line id="arrowLine" stroke-linecap="round" />
+        <polygon id="arrowHead" />
+    </svg>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -195,8 +203,9 @@
 
         const canvas = document.getElementById('whiteboardCanvas');
         const ctx = canvas.getContext('2d');
-        const overlayCanvas = document.getElementById('overlayCanvas');
-        const overlayCtx = overlayCanvas.getContext('2d');
+        const activeStrokeSVG = document.getElementById('activeStroke');
+        const arrowLineSVG = document.getElementById('arrowLine');
+        const arrowHeadSVG = document.getElementById('arrowHead');
         const widthDisplay = document.getElementById('width-display');
         const statusInfo = document.getElementById('status-info');
         const cameraInfo = document.getElementById('camera-info');
@@ -486,75 +495,68 @@
             requestAnimationFrame(render);
         }
 
-        // Separate overlay canvas for the active stroke being drawn.
-        // iOS Safari defers main canvas composition during touch gestures,
-        // but a lightweight overlay canvas gets its own compositing layer
-        // and updates immediately.
+        // Convert world coordinates to screen coordinates for SVG
+        function worldToScreen(wx, wy) {
+            return {
+                x: wx * camera.zoom + camera.x,
+                y: wy * camera.zoom + camera.y
+            };
+        }
+
+        // Use SVG (not canvas) for the active stroke overlay.
+        // iOS Safari defers ALL canvas composition during touch gestures,
+        // but updates SVG/DOM elements immediately.
         function renderOverlay() {
-            const dpr = window.devicePixelRatio || 1;
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            const targetWidth = Math.round(w * dpr);
-            const targetHeight = Math.round(h * dpr);
-
-            if (overlayCanvas.width !== targetWidth || overlayCanvas.height !== targetHeight) {
-                overlayCanvas.width = targetWidth;
-                overlayCanvas.height = targetHeight;
-                overlayCanvas.style.width = w + 'px';
-                overlayCanvas.style.height = h + 'px';
-            }
-
-            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            overlayCtx.resetTransform();
-            overlayCtx.scale(dpr, dpr);
-            overlayCtx.translate(camera.x, camera.y);
-            overlayCtx.scale(camera.zoom, camera.zoom);
-
-            // Draw active stroke
-            if (isDrawing && (tool === 'pencil' || tool === 'arrow') && currentPath.length > 1) {
-                overlayCtx.beginPath();
-                overlayCtx.strokeStyle = color;
-                overlayCtx.lineWidth = lineWidth;
-                overlayCtx.lineJoin = 'round';
-                overlayCtx.lineCap = 'round';
-
-                if (tool === 'arrow') {
-                    const start = currentPath[0];
-                    const end = currentPath[currentPath.length - 1];
-                    overlayCtx.moveTo(start.x, start.y);
-                    overlayCtx.lineTo(end.x, end.y);
-                    overlayCtx.stroke();
-
-                    const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                    const headlen = 15 + lineWidth * 1.5;
-                    overlayCtx.fillStyle = color;
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(end.x, end.y);
-                    overlayCtx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
-                    overlayCtx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
-                    overlayCtx.lineTo(end.x, end.y);
-                    overlayCtx.fill();
-                } else {
-                    overlayCtx.moveTo(currentPath[0].x, currentPath[0].y);
-                    for (let i = 1; i < currentPath.length; i++) {
-                        overlayCtx.lineTo(currentPath[i].x, currentPath[i].y);
-                    }
-                    overlayCtx.stroke();
+            if (isDrawing && (tool === 'pencil') && currentPath.length > 1) {
+                // Build screen-space points string for SVG polyline
+                let pts = '';
+                for (let i = 0; i < currentPath.length; i++) {
+                    const sp = worldToScreen(currentPath[i].x, currentPath[i].y);
+                    pts += sp.x + ',' + sp.y + ' ';
                 }
-            }
+                activeStrokeSVG.setAttribute('points', pts);
+                activeStrokeSVG.setAttribute('stroke', color);
+                activeStrokeSVG.setAttribute('stroke-width', lineWidth);
+                activeStrokeSVG.setAttribute('stroke-linejoin', 'round');
+                activeStrokeSVG.setAttribute('stroke-linecap', 'round');
+                activeStrokeSVG.style.display = '';
+                arrowLineSVG.style.display = 'none';
+                arrowHeadSVG.style.display = 'none';
+            } else if (isDrawing && tool === 'arrow' && currentPath.length > 1) {
+                activeStrokeSVG.style.display = 'none';
+                const start = worldToScreen(currentPath[0].x, currentPath[0].y);
+                const end = worldToScreen(currentPath[currentPath.length - 1].x, currentPath[currentPath.length - 1].y);
 
-            // Eraser cursor
-            if (isDrawing && tool === 'eraser' && currentPath.length > 0) {
-                const lastPos = currentPath[currentPath.length - 1];
-                overlayCtx.beginPath();
-                overlayCtx.arc(lastPos.x, lastPos.y, 15 / camera.zoom, 0, Math.PI * 2);
-                overlayCtx.strokeStyle = 'rgba(0,0,0,0.2)';
-                overlayCtx.setLineDash([5, 5]);
-                overlayCtx.stroke();
-                overlayCtx.setLineDash([]);
-            }
+                arrowLineSVG.setAttribute('x1', start.x);
+                arrowLineSVG.setAttribute('y1', start.y);
+                arrowLineSVG.setAttribute('x2', end.x);
+                arrowLineSVG.setAttribute('y2', end.y);
+                arrowLineSVG.setAttribute('stroke', color);
+                arrowLineSVG.setAttribute('stroke-width', lineWidth);
+                arrowLineSVG.style.display = '';
 
-            overlayCtx.resetTransform();
+                // Arrowhead
+                const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                const headlen = (15 + lineWidth * 1.5) * camera.zoom;
+                const p1x = end.x - headlen * Math.cos(angle - Math.PI / 6);
+                const p1y = end.y - headlen * Math.sin(angle - Math.PI / 6);
+                const p2x = end.x - headlen * Math.cos(angle + Math.PI / 6);
+                const p2y = end.y - headlen * Math.sin(angle + Math.PI / 6);
+                arrowHeadSVG.setAttribute('points', `${end.x},${end.y} ${p1x},${p1y} ${p2x},${p2y}`);
+                arrowHeadSVG.setAttribute('fill', color);
+                arrowHeadSVG.style.display = '';
+            } else {
+                activeStrokeSVG.style.display = 'none';
+                arrowLineSVG.style.display = 'none';
+                arrowHeadSVG.style.display = 'none';
+            }
+        }
+
+        function clearOverlay() {
+            activeStrokeSVG.setAttribute('points', '');
+            activeStrokeSVG.style.display = 'none';
+            arrowLineSVG.style.display = 'none';
+            arrowHeadSVG.style.display = 'none';
         }
 
         async function eraseAt(worldPos) {
@@ -668,6 +670,7 @@
             if (!isDrawing) return;
             isDrawing = false;
             isDirty = true;
+            clearOverlay();
 
             if ((!isSpaceDown && (tool === 'pencil' || tool === 'arrow')) && currentPath.length > 1) {
                 const strokePath = (tool === 'arrow') ? [currentPath[0], currentPath[currentPath.length - 1]] : [...currentPath];
