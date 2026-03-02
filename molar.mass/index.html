@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
@@ -29,12 +30,23 @@
         }
     </style>
 </head>
+
 <body class="p-4 md:p-8">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <header class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-slate-800">Molar Mass Calculator</h1>
             <p class="text-slate-600 mt-2">Enter a chemical formula to see the step-by-step breakdown.</p>
+
+            <!-- Mode Toggle -->
+            <div class="mt-6 inline-flex p-1 bg-slate-200 rounded-xl">
+                <button id="mode-student" onclick="setMode('student')"
+                    class="px-6 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-blue-600 shadow-sm">Student
+                    Mode</button>
+                <button id="mode-answer" onclick="setMode('answer')"
+                    class="px-6 py-2 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-800">Answer
+                    Mode</button>
+            </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -42,19 +54,21 @@
             <div class="lg:col-span-2 space-y-6">
                 <!-- Input Card -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <label for="formula" class="block text-sm font-semibold text-slate-700 mb-2">Chemical Formula</label>
-                    <input 
-                        type="text" 
-                        id="formula" 
-                        placeholder="e.g., H2O, H2SO4, Ca(OH)2" 
-                        class="formula-input w-full p-4 text-xl border border-slate-300 rounded-xl transition-all"
-                    >
+                    <label for="formula" class="block text-sm font-semibold text-slate-700 mb-2">Chemical
+                        Formula</label>
+                    <input type="text" id="formula" placeholder="e.g., H2O, H2SO4, Ca(OH)2"
+                        class="formula-input w-full p-4 text-xl border border-slate-300 rounded-xl transition-all">
                     <div id="error-msg" class="text-red-500 text-sm mt-2 hidden"></div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Try these:</span>
-                        <button onclick="setFormula('C6H12O6')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-600">Glucose</button>
-                        <button onclick="setFormula('NaCl')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-600">Table Salt</button>
-                        <button onclick="setFormula('Mg3(PO4)2')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-600">Magnesium Phosphate</button>
+                        <button onclick="setFormula('C6H12O6')"
+                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-600">Glucose</button>
+                        <button onclick="setFormula('NaCl')"
+                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-600">Table
+                            Salt</button>
+                        <button onclick="setFormula('Mg3(PO4)2')"
+                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-600">Magnesium
+                            Phosphate</button>
                     </div>
                 </div>
 
@@ -63,7 +77,12 @@
                     <div class="flex justify-between items-end border-bottom border-slate-100 pb-4 mb-4">
                         <div>
                             <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Molar Mass</h2>
-                            <p id="total-mass" class="text-4xl font-bold text-blue-600">0.00 <span class="text-lg font-normal text-slate-400">g/mol</span></p>
+                            <p id="total-mass" class="text-4xl font-bold text-blue-600">
+                                <span id="mass-value">0.00</span>
+                                <span class="text-lg font-normal text-slate-400">g/mol</span>
+                            </p>
+                            <p id="student-prompt" class="text-sm font-medium text-amber-600 mt-1 hidden">Enter all atom
+                                counts to see the result</p>
                         </div>
                         <div class="text-right">
                             <span id="formula-display" class="text-2xl font-semibold text-slate-700"></span>
@@ -92,7 +111,11 @@
             <div class="space-y-6">
                 <div class="bg-slate-800 p-6 rounded-2xl text-white shadow-lg">
                     <h3 class="text-lg font-bold mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2V15H7v-1c0-1.333 2.667-2 4-2z"></path></svg>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2V15H7v-1c0-1.333 2.667-2 4-2z">
+                            </path>
+                        </svg>
                         Common Elements
                     </h3>
                     <div class="grid grid-cols-2 gap-3 text-xs" id="quick-ref">
@@ -124,6 +147,7 @@
         };
 
         const commonOnes = ["H", "C", "N", "O", "Na", "Mg", "Al", "P", "S", "Cl", "K", "Ca", "Fe", "Cu"];
+        let currentMode = 'student';
 
         function init() {
             const refDiv = document.getElementById('quick-ref');
@@ -137,6 +161,22 @@
             document.getElementById('formula').addEventListener('input', (e) => {
                 calculate(e.target.value);
             });
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            const studentBtn = document.getElementById('mode-student');
+            const answerBtn = document.getElementById('mode-answer');
+
+            if (mode === 'student') {
+                studentBtn.className = 'px-6 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-blue-600 shadow-sm';
+                answerBtn.className = 'px-6 py-2 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-800';
+            } else {
+                answerBtn.className = 'px-6 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-blue-600 shadow-sm';
+                studentBtn.className = 'px-6 py-2 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-800';
+            }
+
+            calculate(document.getElementById('formula').value);
         }
 
         function setFormula(val) {
@@ -179,7 +219,8 @@
             const resultContainer = document.getElementById('result-container');
             const errorMsg = document.getElementById('error-msg');
             const breakdownBody = document.getElementById('breakdown-body');
-            const totalMassEl = document.getElementById('total-mass');
+            const massValueEl = document.getElementById('mass-value');
+            const studentPrompt = document.getElementById('student-prompt');
             const formulaDisplay = document.getElementById('formula-display');
 
             if (!formula.trim()) {
@@ -192,27 +233,54 @@
                 const elementCounts = parseFormula(formula);
                 let total = 0;
                 breakdownBody.innerHTML = '';
+                const sortedSymbols = Object.keys(elementCounts).sort();
 
-                Object.keys(elementCounts).sort().forEach(sym => {
-                    const count = elementCounts[sym];
+                sortedSymbols.forEach(sym => {
+                    const correctCount = elementCounts[sym];
                     const weight = atomicWeights[sym];
-                    const subtotal = count * weight;
+                    const subtotal = correctCount * weight;
                     total += subtotal;
 
                     const row = document.createElement('tr');
                     row.className = 'border-t border-slate-50';
-                    row.innerHTML = `
-                        <td class="py-4"><span class="font-bold text-slate-900">${sym}</span></td>
-                        <td class="py-4 text-slate-500">${count}</td>
-                        <td class="py-4 text-slate-500">${weight.toFixed(2)}</td>
-                        <td class="py-4 text-right font-medium text-slate-900">${subtotal.toFixed(2)}</td>
-                    `;
+
+                    if (currentMode === 'answer') {
+                        row.innerHTML = `
+                            <td class="py-4"><span class="font-bold text-slate-900">${sym}</span></td>
+                            <td class="py-4 text-slate-500">${correctCount}</td>
+                            <td class="py-4 text-slate-500">${weight.toFixed(2)}</td>
+                            <td class="py-4 text-right font-medium text-slate-900">${subtotal.toFixed(2)}</td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td class="py-4"><span class="font-bold text-slate-900">${sym}</span></td>
+                            <td class="py-2">
+                                <input type="number" min="0" 
+                                    class="atom-input w-16 p-2 border border-slate-200 rounded-lg text-center focus:ring-2 focus:ring-blue-100 outline-none" 
+                                    data-symbol="${sym}" 
+                                    data-correct="${correctCount}"
+                                    oninput="checkStudentInput()">
+                            </td>
+                            <td class="py-4 text-slate-500">${weight.toFixed(2)}</td>
+                            <td class="py-4 text-right font-medium text-slate-300 subtotal-cell">—</td>
+                        `;
+                    }
                     breakdownBody.appendChild(row);
                 });
 
-                totalMassEl.innerHTML = `${total.toFixed(2)} <span class="text-lg font-normal text-slate-400">g/mol</span>`;
+                if (currentMode === 'answer') {
+                    massValueEl.textContent = total.toFixed(2);
+                    massValueEl.parentElement.classList.remove('text-slate-300');
+                    massValueEl.parentElement.classList.add('text-blue-600');
+                    studentPrompt.classList.add('hidden');
+                } else {
+                    massValueEl.textContent = "??.??";
+                    massValueEl.parentElement.classList.remove('text-blue-600');
+                    massValueEl.parentElement.classList.add('text-slate-300');
+                    studentPrompt.classList.remove('hidden');
+                }
+
                 formulaDisplay.textContent = formula;
-                
                 resultContainer.classList.remove('hidden');
                 errorMsg.classList.add('hidden');
             } catch (err) {
@@ -222,7 +290,60 @@
             }
         }
 
+        function checkStudentInput() {
+            const inputs = document.querySelectorAll('.atom-input');
+            const subtotals = document.querySelectorAll('.subtotal-cell');
+            const massValueEl = document.getElementById('mass-value');
+            const studentPrompt = document.getElementById('student-prompt');
+            let allCorrect = true;
+            let currentTotal = 0;
+
+            inputs.forEach((input, index) => {
+                const val = parseInt(input.value);
+                const correct = parseInt(input.dataset.correct);
+                const sym = input.dataset.symbol;
+                const weight = atomicWeights[sym];
+
+                if (val === correct) {
+                    input.classList.remove('border-slate-200', 'border-red-300');
+                    input.classList.add('border-green-500', 'bg-green-50');
+
+                    const sub = val * weight;
+                    subtotals[index].textContent = sub.toFixed(2);
+                    subtotals[index].classList.remove('text-slate-300');
+                    subtotals[index].classList.add('text-slate-900');
+                    currentTotal += sub;
+                } else {
+                    allCorrect = false;
+                    subtotals[index].textContent = "—";
+                    subtotals[index].classList.add('text-slate-300');
+                    subtotals[index].classList.remove('text-slate-900');
+
+                    if (input.value !== "") {
+                        input.classList.add('border-red-300', 'bg-red-50');
+                        input.classList.remove('border-green-500', 'bg-green-50');
+                    } else {
+                        input.classList.remove('border-red-300', 'bg-red-50', 'border-green-500', 'bg-green-50');
+                        input.classList.add('border-slate-200');
+                    }
+                }
+            });
+
+            if (allCorrect && inputs.length > 0) {
+                massValueEl.textContent = currentTotal.toFixed(2);
+                massValueEl.parentElement.classList.remove('text-slate-300');
+                massValueEl.parentElement.classList.add('text-blue-600');
+                studentPrompt.classList.add('hidden');
+            } else {
+                massValueEl.textContent = "??.??";
+                massValueEl.parentElement.classList.remove('text-blue-600');
+                massValueEl.parentElement.classList.add('text-slate-300');
+                studentPrompt.classList.remove('hidden');
+            }
+        }
+
         window.onload = init;
     </script>
 </body>
+
 </html>
