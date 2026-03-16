@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,993 +7,596 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
             height: 100%;
             width: 100%;
-            overscroll-behavior: none;
+            overscroll-behavior: none; /* Prevents pull-to-refresh on mobile */
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            background-color: #f8fafc;
+            /* High-performance CSS grid pattern */
+            background-image: 
+                radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: 0px 0px;
+            touch-action: none;
         }
 
         canvas {
+            position: absolute;
+            inset: 0;
             display: block;
             touch-action: none;
             -webkit-touch-callout: none;
         }
 
-        #strokeOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
+        #mainCanvas { z-index: 10; }
+        #overlayCanvas { z-index: 20; cursor: crosshair; }
 
         .tool-btn.active {
             background-color: #2563eb;
             color: white;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
         }
 
         .color-btn.active {
             transform: scale(1.25);
-            border-color: #94a3b8;
-        }
-
-        /* Hide scrollbar for the toolbar but keep functionality */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #3b82f6;
         }
     </style>
 </head>
+<body>
 
-<body class="bg-white select-none">
+    <!-- Canvas Container -->
+    <div id="canvas-container">
+        <!-- Main canvas holds committed strokes from Firebase -->
+        <canvas id="mainCanvas"></canvas>
+        <!-- Overlay canvas provides zero-latency active drawing -->
+        <canvas id="overlayCanvas"></canvas>
+    </div>
+
+    <!-- Status Indicator -->
+    <div class="fixed top-4 right-4 bg-white/90 backdrop-blur-md rounded-xl shadow border border-gray-200 px-4 py-2 flex items-center gap-2 z-50">
+        <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-400"></div>
+        <span id="status-text" class="text-sm font-medium text-gray-700">Connecting...</span>
+    </div>
+
+    <!-- Eraser Mode Toggles -->
+    <div id="eraser-options" class="hidden fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/50 p-1.5 flex gap-1 z-50">
+        <button id="btn-erase-stroke" class="px-4 py-1.5 text-sm rounded-lg bg-blue-100 text-blue-700 font-bold transition">Stroke Erase</button>
+        <button id="btn-erase-partial" class="px-4 py-1.5 text-sm rounded-lg hover:bg-gray-100 text-gray-600 font-medium transition">Partial Erase</button>
+    </div>
 
     <!-- Toolbar -->
-    <div
-        class="absolute top-4 right-4 sm:top-1/2 sm:-translate-y-1/2 sm:left-4 sm:right-auto z-10 flex flex-row sm:flex-col items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-2xl shadow-xl border border-slate-200 w-[calc(100vw-2rem)] sm:w-auto overflow-x-auto sm:overflow-visible no-scrollbar">
-        <button id="btn-select"
-            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
-            title="Select & Move">
-            <i data-lucide="mouse-pointer-2"></i>
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-2 flex items-center gap-1.5 z-50">
+        <button id="btn-pen" class="tool-btn active text-gray-600 p-3 rounded-xl transition-all duration-200" title="Pen">
+            <i data-lucide="pen"></i>
         </button>
-        <button id="btn-sticky"
-            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
-            title="Sticky Note">
-            <i data-lucide="sticky-note"></i>
-        </button>
-        <button id="btn-pencil"
-            class="tool-btn active p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
-            title="Pencil">
-            <i data-lucide="pencil"></i>
-        </button>
-        <button id="btn-arrow"
-            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
-            title="Arrow">
-            <i data-lucide="arrow-up-right"></i>
-        </button>
-        <button id="btn-eraser"
-            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
-            title="Eraser">
+        <button id="btn-eraser" class="tool-btn text-gray-600 p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" title="Eraser">
             <i data-lucide="eraser"></i>
         </button>
-        <button id="btn-pan"
-            class="tool-btn p-2 sm:p-3 rounded-xl transition-all hover:bg-slate-100 text-slate-600 shrink-0"
-            title="Pan & Zoom">
-            <i data-lucide="move"></i>
+        <button id="btn-pan" class="tool-btn text-gray-600 p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" title="Pan (Hold Space or 2-finger drag)">
+            <i data-lucide="hand"></i>
         </button>
-
-        <div class="w-px h-8 sm:w-8 sm:h-px bg-slate-200 mx-1 sm:my-1 sm:mx-0 shrink-0"></div>
-
-        <div id="color-palette" class="grid grid-cols-4 sm:grid-cols-2 gap-2 p-1 shrink-0">
-            <button data-color="#ef4444" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ef4444]"
-                title="Red"></button>
-            <button data-color="#f97316" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#f97316]"
-                title="Orange"></button>
-            <button data-color="#eab308" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#eab308]"
-                title="Yellow"></button>
-            <button data-color="#22c55e" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#22c55e]"
-                title="Green"></button>
-            <button data-color="#3b82f6"
-                class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#3b82f6]"
-                title="Blue"></button>
-            <button data-color="#1e3a8a" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#1e3a8a]"
-                title="Dark Blue"></button>
-            <button data-color="#ec4899" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#ec4899]"
-                title="Pink"></button>
-            <button data-color="#8b5cf6" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#8b5cf6]"
-                title="Violet"></button>
-            <button data-color="#000000" class="color-btn w-6 h-6 rounded-full border-2 border-transparent bg-[#000000]"
-                title="Black"></button>
-            <button data-color="#6b7280" class="color-btn active w-6 h-6 rounded-full border-2 border-transparent bg-[#6b7280]"
-                title="Gray"></button>
+        
+        <div class="w-[1px] h-8 bg-gray-200 mx-1"></div>
+        
+        <!-- Color Palette -->
+        <div class="flex gap-2 px-2 items-center">
+            <button class="color-btn active w-7 h-7 rounded-full bg-black transition-all duration-200" data-color="#000000"></button>
+            <button class="color-btn w-7 h-7 rounded-full bg-red-500 border border-black/10 transition-all duration-200" data-color="#ef4444"></button>
+            <button class="color-btn w-7 h-7 rounded-full bg-blue-500 border border-black/10 transition-all duration-200" data-color="#3b82f6"></button>
+            <button class="color-btn w-7 h-7 rounded-full bg-green-500 border border-black/10 transition-all duration-200" data-color="#22c55e"></button>
         </div>
-
-        <div class="w-px h-8 sm:w-8 sm:h-px bg-slate-200 mx-1 sm:my-1 sm:mx-0 shrink-0"></div>
-
-        <div class="flex flex-row sm:flex-col items-center gap-1 py-1 shrink-0">
-            <button id="btn-width-up" class="p-1 hover:bg-slate-100 rounded text-slate-600 shrink-0"
-                title="Increase Line Width"><i data-lucide="plus" size="16"></i></button>
-            <span id="width-display"
-                class="text-xs font-bold w-6 sm:w-full text-center text-slate-700 py-1 shrink-0">3</span>
-            <button id="btn-width-down" class="p-1 hover:bg-slate-100 rounded text-slate-600 shrink-0"
-                title="Decrease Line Width"><i data-lucide="minus" size="16"></i></button>
+        
+        <div class="w-[1px] h-8 bg-gray-200 mx-1"></div>
+        
+        <!-- Thickness -->
+        <div class="px-2 flex items-center gap-2 group relative">
+            <i data-lucide="scaling" class="w-4 h-4 text-gray-400"></i>
+            <input type="range" id="thickness-slider" min="1" max="30" value="3" class="w-24 accent-blue-600 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer">
         </div>
-
-        <div class="w-px h-8 sm:w-8 sm:h-px bg-slate-200 mx-1 sm:my-1 sm:mx-0 shrink-0"></div>
-
-        <button id="btn-clear" class="p-2 sm:p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors shrink-0"
-            title="Clear Board">
+        
+        <div class="w-[1px] h-8 bg-gray-200 mx-1"></div>
+        
+        <!-- Clear Actions -->
+        <button id="btn-clear" class="p-3 rounded-xl hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all duration-200" title="Clear Board">
             <i data-lucide="trash-2"></i>
         </button>
     </div>
 
-    <!-- Info Overlay (Moved to bottom on mobile so it doesn't overlap the new top toolbar) -->
-    <div
-        class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-slate-200 text-[10px] text-slate-500 shadow-sm pointer-events-none text-right">
-        <p class="font-bold text-slate-700">Infinite Board</p>
-        <p id="status-info">Initialising...</p>
-        <p id="camera-info">Zoom: 100%</p>
+    <!-- Clear Board Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] hidden items-center justify-center opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-200" id="modal-content">
+            <h3 class="text-xl font-bold mb-2">Clear Board</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to clear the entire whiteboard? This cannot be undone.</p>
+            <div class="flex justify-end gap-3">
+                <button id="cancel-btn" class="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+                <button id="confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition shadow-sm">Clear All</button>
+            </div>
+        </div>
     </div>
 
-    <textarea id="text-editor"
-        class="absolute hidden bg-transparent outline-none resize-none overflow-hidden text-slate-800"
-        style="transform-origin: top left; font-family: sans-serif;"></textarea>
-
-    <canvas id="whiteboardCanvas"></canvas>
-    <svg id="strokeOverlay" xmlns="http://www.w3.org/2000/svg">
-        <polyline id="activeStroke" fill="none" points="" />
-        <!-- Arrow marker drawn as simple lines -->
-        <line id="arrowLine" stroke-linecap="round" />
-        <polygon id="arrowHead" />
-    </svg>
-
+    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, setDoc, query, deleteDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Configuration ---
-        let firebaseConfig;
-
-        if (typeof __firebase_config !== 'undefined') {
-            firebaseConfig = JSON.parse(__firebase_config);
-        } else {
-            firebaseConfig = {
-                apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
-                authDomain: "whiteboard-23ad5.firebaseapp.com",
-                projectId: "whiteboard-23ad5",
-                storageBucket: "whiteboard-23ad5.firebasestorage.app",
-                messagingSenderId: "1097713600229",
-                appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
-                measurementId: "G-MR9C9WYE9M"
-            };
-        }
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-whiteboard';
-
-        // --- App State ---
-        let user = null;
-        let strokes = [];
-        let localStrokes = [];
-        const imageCache = new Map();
-        let tool = 'pencil';
-        let color = '#6b7280';
-        let lineWidth = 3;
-        let camera = { x: 0, y: 0, zoom: 1 };
-        let isDrawing = false;
-        let currentPath = [];
-        let lastTouch = null;
-        let draggingItem = null; // Tracks the image currently being moved
-        let editingItem = null;
-        let isSpaceDown = false;
-
-        const canvas = document.getElementById('whiteboardCanvas');
-        const ctx = canvas.getContext('2d');
-        const activeStrokeSVG = document.getElementById('activeStroke');
-        const arrowLineSVG = document.getElementById('arrowLine');
-        const arrowHeadSVG = document.getElementById('arrowHead');
-        const widthDisplay = document.getElementById('width-display');
-        const statusInfo = document.getElementById('status-info');
-        const cameraInfo = document.getElementById('camera-info');
-        const textEditor = document.getElementById('text-editor');
-
+        // Initialize Lucide Icons
         lucide.createIcons();
 
-        function screenToWorld(screenX, screenY) {
+        // Application State
+        const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke' };
+        const view = { x: 0, y: 0, zoom: 1 };
+        
+        let strokes = [];
+        let isDirty = true; // Triggers requestAnimationFrame render
+        
+        // Pointers & Interactions
+        const activePointers = new Map();
+        let isDrawing = false;
+        let isPanning = false;
+        let currentStroke = null;
+        let lastRenderedPoint = null;
+        let initialPinchDistance = null;
+        let initialPinchZoom = null;
+        let initialPinchCenter = null;
+        let initialView = null;
+
+        // Canvas Setup
+        const container = document.getElementById('canvas-container');
+        const mainCanvas = document.getElementById('mainCanvas');
+        const mainCtx = mainCanvas.getContext('2d', { alpha: true });
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d', { alpha: true, desynchronized: true });
+
+        function resize() {
+            mainCanvas.width = overlayCanvas.width = window.innerWidth;
+            mainCanvas.height = overlayCanvas.height = window.innerHeight;
+            isDirty = true;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // ----------------------------------------------------------------------
+        // FIREBASE SETUP (Christian's Implementation)
+        // ----------------------------------------------------------------------
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        let auth, db;
+        let user = null;
+
+        function updateStatus(state, msg) {
+            document.getElementById('status-text').innerText = msg;
+            const dot = document.getElementById('status-dot');
+            if (state === 'online') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse';
+            } else if (state === 'offline') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+            } else {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-yellow-500';
+            }
+        }
+
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) {
+                    console.error("Auth error", e);
+                    updateStatus('offline', 'Offline (Auth Failed)');
+                }
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, u => {
+                user = u;
+                if (u) {
+                    updateStatus('online', `Live (${u.uid.substring(0, 5)}...)`);
+                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
+                    onSnapshot(q, snap => {
+                        strokes = snap.docs.map(d => {
+                            const data = d.data();
+                            let pts = [];
+                            try { pts = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch(e){}
+                            // Normalize points (supports standard arrays for bandwidth compression or objects)
+                            const normalizedPts = pts.map(p => Array.isArray(p) ? {x: p[0], y: p[1]} : p);
+                            return { id: d.id, ...data, points: normalizedPts };
+                        });
+                        isDirty = true;
+                    }, err => {
+                        updateStatus('offline', 'Sync Error');
+                    });
+                } else {
+                    updateStatus('offline', 'Offline');
+                }
+            });
+        } else {
+            updateStatus('offline', 'Local Mode');
+        }
+
+        // ----------------------------------------------------------------------
+        // HIGH PERFORMANCE RENDERING (Ken's Implementation)
+        // ----------------------------------------------------------------------
+        function renderLoop() {
+            if (isDirty) {
+                redrawMainCanvas();
+                isDirty = false;
+            }
+            requestAnimationFrame(renderLoop);
+        }
+        requestAnimationFrame(renderLoop);
+
+        function drawSmoothPath(ctx, points, color, thickness, isEraser) {
+            if (!points || points.length === 0) return;
+            ctx.beginPath();
+            ctx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = thickness;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.moveTo(points[0].x, points[0].y);
+            if (points.length < 3) {
+                for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            } else {
+                for (let i = 1; i < points.length - 2; i++) {
+                    const xc = (points[i].x + points[i+1].x) / 2;
+                    const yc = (points[i].y + points[i+1].y) / 2;
+                    ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+                }
+                ctx.quadraticCurveTo(
+                    points[points.length - 2].x, points[points.length - 2].y, 
+                    points[points.length - 1].x, points[points.length - 1].y
+                );
+            }
+            ctx.stroke();
+        }
+
+        function redrawMainCanvas() {
+            mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+            mainCtx.save();
+            mainCtx.translate(view.x, view.y);
+            mainCtx.scale(view.zoom, view.zoom);
+            
+            for (const stroke of strokes) {
+                drawSmoothPath(mainCtx, stroke.points, stroke.color, stroke.thickness, stroke.type === 'eraser');
+            }
+            mainCtx.restore();
+            
+            // Virtual Grid Parallax Update (Zero-latency background)
+            container.style.backgroundSize = `${40 * view.zoom}px ${40 * view.zoom}px`;
+            container.style.backgroundPosition = `${view.x}px ${view.y}px`;
+        }
+
+        // ----------------------------------------------------------------------
+        // INPUT & LATENCY OPTIMIZATION
+        // ----------------------------------------------------------------------
+        function getCanvasPoint(clientX, clientY) {
+            const rect = overlayCanvas.getBoundingClientRect();
             return {
-                x: (screenX - camera.x) / camera.zoom,
-                y: (screenY - camera.y) / camera.zoom
+                x: ((clientX - rect.left) - view.x) / view.zoom,
+                y: ((clientY - rect.top) - view.y) / view.zoom
             };
         }
 
-        // Word wrap helper
-        function wrapText(context, text, x, y, maxWidth, lineHeight) {
-            const paragraphs = text.split('\n');
-            for (let i = 0; i < paragraphs.length; i++) {
-                const words = paragraphs[i].split(' ');
-                let line = '';
-                for (let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n] + ' ';
-                    const metrics = context.measureText(testLine);
-                    if (metrics.width > maxWidth && n > 0) {
-                        context.fillText(line, x, y);
-                        line = words[n] + ' ';
-                        y += lineHeight;
-                    } else {
-                        line = testLine;
+        // Mathematical stroke erasing (super fast)
+        function eraseStrokeAt(pt) {
+            const threshold = 15 / view.zoom; 
+            let erasedAny = false;
+            
+            for (let i = strokes.length - 1; i >= 0; i--) {
+                const stroke = strokes[i];
+                if (stroke.type === 'eraser') continue; // Skip partial erase marks
+                
+                // Quick bounding box rejection
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                for (const p of stroke.points) {
+                    if (p.x < minX) minX = p.x;
+                    if (p.x > maxX) maxX = p.x;
+                    if (p.y < minY) minY = p.y;
+                    if (p.y > maxY) maxY = p.y;
+                }
+                if (pt.x < minX - threshold || pt.x > maxX + threshold || pt.y < minY - threshold || pt.y > maxY + threshold) continue;
+
+                // Segment distance check
+                for (let j = 0; j < stroke.points.length - 1; j++) {
+                    const p1 = stroke.points[j], p2 = stroke.points[j+1];
+                    const l2 = (p2.x - p1.x)**2 + (p2.y - p1.y)**2;
+                    let t = l2 === 0 ? 0 : ((pt.x - p1.x) * (p2.x - p1.x) + (pt.y - p1.y) * (p2.y - p1.y)) / l2;
+                    t = Math.max(0, Math.min(1, t));
+                    const distSq = (pt.x - (p1.x + t * (p2.x - p1.x)))**2 + (pt.y - (p1.y + t * (p2.y - p1.y)))**2;
+                    
+                    if (distSq <= threshold * threshold) {
+                        if (user && stroke.id) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id)).catch(()=>{});
+                        strokes.splice(i, 1);
+                        erasedAny = true;
+                        break;
                     }
                 }
-                context.fillText(line, x, y);
-                y += lineHeight;
             }
+            if (erasedAny) isDirty = true;
         }
 
-        // Hit testing for images and stickies
-        function getHitItem(worldPos) {
-            // Check localStrokes first (drawn on top)
-            for (let i = localStrokes.length - 1; i >= 0; i--) {
-                const item = localStrokes[i];
-                if ((item.type === 'image' || item.type === 'sticky') && worldPos.x >= item.x && worldPos.x <= item.x + item.width && worldPos.y >= item.y && worldPos.y <= item.y + item.height) {
-                    return item;
-                }
-            }
-            // Then check remote strokes
-            for (let i = strokes.length - 1; i >= 0; i--) {
-                const item = strokes[i];
-                if ((item.type === 'image' || item.type === 'sticky') && worldPos.x >= item.x && worldPos.x <= item.x + item.width && worldPos.y >= item.y && worldPos.y <= item.y + item.height) {
-                    return item;
-                }
-            }
-            return null;
-        }
-
-        // Grid caching for performance
-        let cachedGridZoom = 0;
-        let cachedGridCanvas = null;
-        let isDirty = true;
-
-        window.addEventListener('resize', () => isDirty = true);
-
-        function getGridCache(zoom) {
-            // Rebuild the grid cache if the zoom changed significantly
-            if (!cachedGridCanvas || Math.abs(cachedGridZoom - zoom) > 0.1) {
-                cachedGridCanvas = document.createElement('canvas');
-                cachedGridCanvas.width = 50;
-                cachedGridCanvas.height = 50;
-                const gCtx = cachedGridCanvas.getContext('2d');
-
-                gCtx.strokeStyle = '#f1f5f9';
-                gCtx.lineWidth = 1 / zoom;
-
-                gCtx.beginPath();
-                gCtx.moveTo(0, 0); gCtx.lineTo(0, 50);
-                gCtx.moveTo(0, 0); gCtx.lineTo(50, 0);
-                gCtx.stroke();
-
-                cachedGridZoom = zoom;
-            }
-            return cachedGridCanvas;
-        }
-
-        function render() {
-            if (!isDirty && !isDrawing && !draggingItem) {
-                requestAnimationFrame(render);
+        overlayCanvas.addEventListener('pointerdown', e => {
+            activePointers.set(e.pointerId, e);
+            
+            // Multitouch setup (Pinch to Zoom/Pan)
+            if (activePointers.size === 2) {
+                isDrawing = isPanning = false;
+                overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+                const pts = Array.from(activePointers.values());
+                initialPinchDistance = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+                initialPinchZoom = view.zoom;
+                initialPinchCenter = { x: (pts[0].clientX + pts[1].clientX) / 2, y: (pts[0].clientY + pts[1].clientY) / 2 };
+                initialView = { x: view.x, y: view.y, zoom: view.zoom };
                 return;
             }
-            isDirty = false;
 
-            const dpr = window.devicePixelRatio || 1;
-            const w = window.innerWidth;
-            const h = window.innerHeight;
+            if (activePointers.size === 1) {
+                if (ui.tool === 'pen' || (ui.tool === 'eraser' && ui.eraseMode === 'partial')) {
+                    isDrawing = true;
+                    const pt = getCanvasPoint(e.clientX, e.clientY);
+                    currentStroke = {
+                        id: crypto.randomUUID(),
+                        type: ui.tool === 'eraser' ? 'eraser' : 'pen',
+                        color: ui.color,
+                        thickness: ui.thickness,
+                        points: [pt]
+                    };
+                    lastRenderedPoint = { ...pt };
 
-            const targetWidth = Math.round(w * dpr);
-            const targetHeight = Math.round(h * dpr);
+                    // Initial Dot
+                    overlayCtx.lineCap = overlayCtx.lineJoin = 'round';
+                    overlayCtx.beginPath();
+                    overlayCtx.arc(pt.x * view.zoom + view.x, pt.y * view.zoom + view.y, (ui.thickness * view.zoom)/2, 0, Math.PI * 2);
+                    overlayCtx.fillStyle = ui.tool === 'eraser' ? '#ffffff' : ui.color;
+                    if (ui.tool !== 'eraser') overlayCtx.fill();
+                } else if (ui.tool === 'pan') {
+                    isPanning = true;
+                    lastRenderedPoint = { x: e.clientX, y: e.clientY };
+                    overlayCanvas.style.cursor = 'grabbing';
+                } else if (ui.tool === 'eraser' && ui.eraseMode === 'stroke') {
+                    eraseStrokeAt(getCanvasPoint(e.clientX, e.clientY));
+                }
+            }
+        });
 
-            if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-                canvas.width = targetWidth;
-                canvas.height = targetHeight;
-                canvas.style.width = w + 'px';
-                canvas.style.height = h + 'px';
-                ctx.resetTransform();
-                ctx.scale(dpr, dpr);
+        overlayCanvas.addEventListener('pointermove', e => {
+            if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, e);
+
+            // Mathematical Multitouch Pan/Zoom
+            if (activePointers.size === 2 && initialPinchDistance) {
+                const pts = Array.from(activePointers.values());
+                const curCenterX = (pts[0].clientX + pts[1].clientX) / 2;
+                const curCenterY = (pts[0].clientY + pts[1].clientY) / 2;
+                const dist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+                
+                view.zoom = Math.min(Math.max(0.1, initialView.zoom * (dist / initialPinchDistance)), 10);
+                const worldX = (initialPinchCenter.x - initialView.x) / initialView.zoom;
+                const worldY = (initialPinchCenter.y - initialView.y) / initialView.zoom;
+                view.x = curCenterX - worldX * view.zoom;
+                view.y = curCenterY - worldY * view.zoom;
+                
+                isDirty = true;
+                return;
             }
 
-            ctx.clearRect(0, 0, w, h);
-            ctx.restore();
-
-            ctx.save();
-            ctx.translate(camera.x, camera.y);
-            ctx.scale(camera.zoom, camera.zoom);
-
-            // Draw cached grid instead of paths
-            const gridCanvas = getGridCache(camera.zoom);
-            const wScaled = w / camera.zoom;
-            const hScaled = h / camera.zoom;
-            const gridPattern = ctx.createPattern(gridCanvas, 'repeat');
-
-            ctx.save();
-            ctx.fillStyle = gridPattern;
-            ctx.translate(-camera.x / camera.zoom, -camera.y / camera.zoom);
-
-            // We need to offset the pattern translation so it stays locked to world coordinates (0,0)
-            const patternOffsetX = (-camera.x / camera.zoom) % 50;
-            const patternOffsetY = (-camera.y / camera.zoom) % 50;
-            const matrix = new DOMMatrix().translate(-patternOffsetX, -patternOffsetY);
-            gridPattern.setTransform(matrix);
-
-            ctx.fillRect(0, 0, wScaled, hScaled);
-            ctx.restore();
-
-            // Calculate visible world bounds for culling
-            const viewMinX = -camera.x / camera.zoom;
-            const viewMaxX = (w - camera.x) / camera.zoom;
-            const viewMinY = -camera.y / camera.zoom;
-            const viewMaxY = (h - camera.y) / camera.zoom;
-
-            const drawItem = (item) => {
-                let renderX = item.x;
-                let renderY = item.y;
-
-                // Override coordinates if this item is currently being dragged
-                if (draggingItem && draggingItem.twins.includes(item)) {
-                    renderX = draggingItem.newX;
-                    renderY = draggingItem.newY;
-                }
-
-                if (item.type === 'image') {
-                    // Quick bounds check
-                    if (renderX > viewMaxX || renderX + item.width < viewMinX ||
-                        renderY > viewMaxY || renderY + item.height < viewMinY) {
-                        return; // Off screen
-                    }
-
-                    let img = imageCache.get(item.id);
-                    if (!img) {
-                        img = new Image();
-                        img.src = item.data;
-                        imageCache.set(item.id, img);
-                    }
-                    if (img.complete) {
-                        ctx.drawImage(img, renderX, renderY, item.width, item.height);
-                    }
-                } else if (item.type === 'sticky') {
-                    // Quick bounds check
-                    if (renderX > viewMaxX || renderX + item.width < viewMinX ||
-                        renderY > viewMaxY || renderY + item.height < viewMinY) {
-                        return; // Off screen
-                    }
-
-                    ctx.shadowColor = 'rgba(0,0,0,0.1)';
-                    ctx.shadowBlur = 10 / camera.zoom;
-                    ctx.shadowOffsetY = 5 / camera.zoom;
-                    ctx.fillStyle = item.color;
-                    ctx.fillRect(renderX, renderY, item.width, item.height);
-                    ctx.shadowColor = 'transparent';
-
-                    if (item.text && item !== editingItem) {
-                        ctx.fillStyle = '#1e293b';
-                        ctx.font = `16px sans-serif`;
-                        ctx.textBaseline = 'top';
-                        wrapText(ctx, item.text, renderX + 10, renderY + 10, item.width - 20, 22);
-                    }
-                } else if (item.type === 'arrow' || !item.type || item.type === 'stroke') {
-                    if (!item.points || item.points.length < 2) return;
-
-                    // Compute bounding box if not cached
-                    if (item.minX === undefined) {
-                        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                        for (let p of item.points) {
-                            if (p.x < minX) minX = p.x;
-                            if (p.x > maxX) maxX = p.x;
-                            if (p.y < minY) minY = p.y;
-                            if (p.y > maxY) maxY = p.y;
-                        }
-                        item.minX = minX;
-                        item.maxX = maxX;
-                        item.minY = minY;
-                        item.maxY = maxY;
-                    }
-
-                    // Cull off-screen strokes
-                    const padding = (item.lineWidth || 10) / 2 + 20; // +20 for arrowheads/shadows
-                    if (item.minX - padding > viewMaxX || item.maxX + padding < viewMinX ||
-                        item.minY - padding > viewMaxY || item.maxY + padding < viewMinY) {
-                        return;
-                    }
-
-                    if (item.type === 'arrow') {
-                        const start = item.points[0];
-                        const end = item.points[item.points.length - 1];
-
-                        ctx.beginPath();
-                        ctx.strokeStyle = item.color;
-                        ctx.fillStyle = item.color;
-                        ctx.lineWidth = item.lineWidth;
-                        ctx.lineJoin = 'round';
-                        ctx.lineCap = 'round';
-
-                        // Draw line
-                        ctx.moveTo(start.x, start.y);
-                        ctx.lineTo(end.x, end.y);
-                        ctx.stroke();
-
-                        // Draw arrowhead
-                        const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                        const headlen = 15 + item.lineWidth * 1.5; // length of head in pixels
-
-                        ctx.beginPath();
-                        ctx.moveTo(end.x, end.y);
-                        ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
-                        ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
-                        ctx.lineTo(end.x, end.y);
-                        ctx.fill();
+            // High-frequency Event Coalescing for silky smooth drawing
+            if (isDrawing && currentStroke) {
+                const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+                for (const ev of events) {
+                    const pt = getCanvasPoint(ev.clientX, ev.clientY);
+                    currentStroke.points.push(pt);
+                    
+                    if (ui.tool === 'eraser') {
+                        // Draw directly to main canvas for zero-latency partial erasing
+                        mainCtx.save();
+                        mainCtx.translate(view.x, view.y);
+                        mainCtx.scale(view.zoom, view.zoom);
+                        mainCtx.globalCompositeOperation = 'destination-out';
+                        mainCtx.beginPath();
+                        mainCtx.moveTo(lastRenderedPoint.x, lastRenderedPoint.y);
+                        mainCtx.lineTo(pt.x, pt.y);
+                        mainCtx.lineWidth = currentStroke.thickness;
+                        mainCtx.lineCap = mainCtx.lineJoin = 'round';
+                        mainCtx.stroke();
+                        mainCtx.restore();
                     } else {
-                        if (!item.points || item.points.length < 2) return;
-                        ctx.beginPath();
-                        ctx.strokeStyle = item.color;
-                        ctx.lineWidth = item.lineWidth;
-                        ctx.lineJoin = 'round';
-                        ctx.lineCap = 'round';
-                        ctx.moveTo(item.points[0].x, item.points[0].y);
-                        for (let i = 1; i < item.points.length; i++) {
-                            ctx.lineTo(item.points[i].x, item.points[i].y);
-                        }
-                        ctx.stroke();
+                        // Draw to overlay for standard pen
+                        overlayCtx.beginPath();
+                        overlayCtx.moveTo(lastRenderedPoint.x * view.zoom + view.x, lastRenderedPoint.y * view.zoom + view.y);
+                        overlayCtx.lineTo(pt.x * view.zoom + view.x, pt.y * view.zoom + view.y);
+                        overlayCtx.strokeStyle = currentStroke.color;
+                        overlayCtx.lineWidth = currentStroke.thickness * view.zoom;
+                        overlayCtx.stroke();
                     }
+                    lastRenderedPoint = { ...pt };
                 }
-            };
-
-            // Remote strokes and images
-            strokes.forEach(s => drawItem(s));
-            // Local fallback strokes/images (Deduplicated so locally placed stickies don't double up)
-            localStrokes.forEach(s => {
-                if (!strokes.some(remote => remote.id === s.id)) drawItem(s);
-            });
-
-            // Visual bounding box for the dragged image
-            if (draggingItem && draggingItem.twins.length > 0) {
-                ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 2 / camera.zoom;
-                ctx.setLineDash([5 / camera.zoom, 5 / camera.zoom]);
-                const w = draggingItem.twins[0].width;
-                const h = draggingItem.twins[0].height;
-                ctx.strokeRect(draggingItem.newX, draggingItem.newY, w, h);
-                ctx.setLineDash([]);
+            } else if (isPanning) {
+                view.x += e.clientX - lastRenderedPoint.x;
+                view.y += e.clientY - lastRenderedPoint.y;
+                lastRenderedPoint = { x: e.clientX, y: e.clientY };
+                isDirty = true;
+            } else if (ui.tool === 'eraser' && ui.eraseMode === 'stroke' && e.buttons === 1) {
+                eraseStrokeAt(getCanvasPoint(e.clientX, e.clientY));
             }
+        });
 
-            // Active stroke and eraser cursor are now drawn on the overlay canvas
-            // (see renderOverlay) so iOS Safari can composite them during touch gestures.
-
-            if (editingItem && textEditor.style.display !== 'none') {
-                const screenPosX = editingItem.x * camera.zoom + camera.x;
-                const screenPosY = editingItem.y * camera.zoom + camera.y;
-                textEditor.style.left = screenPosX + 'px';
-                textEditor.style.top = screenPosY + 'px';
-                textEditor.style.width = (editingItem.width * camera.zoom) + 'px';
-                textEditor.style.height = (editingItem.height * camera.zoom) + 'px';
-                textEditor.style.fontSize = (16 * camera.zoom) + 'px';
-                textEditor.style.padding = (10 * camera.zoom) + 'px';
-            }
-
-            ctx.restore();
-            cameraInfo.innerText = `Zoom: ${(camera.zoom * 100).toFixed(0)}%`;
-            renderOverlay();
-            requestAnimationFrame(render);
-        }
-
-        // Convert world coordinates to screen coordinates for SVG
-        function worldToScreen(wx, wy) {
-            return {
-                x: wx * camera.zoom + camera.x,
-                y: wy * camera.zoom + camera.y
-            };
-        }
-
-        // Use SVG (not canvas) for the active stroke overlay.
-        // iOS Safari defers ALL canvas composition during touch gestures,
-        // but updates SVG/DOM elements immediately.
-        function renderOverlay() {
-            if (isDrawing && (tool === 'pencil') && currentPath.length > 1) {
-                // Build screen-space points string for SVG polyline
-                let pts = '';
-                for (let i = 0; i < currentPath.length; i++) {
-                    const sp = worldToScreen(currentPath[i].x, currentPath[i].y);
-                    pts += sp.x + ',' + sp.y + ' ';
-                }
-                activeStrokeSVG.setAttribute('points', pts);
-                activeStrokeSVG.setAttribute('stroke', color);
-                activeStrokeSVG.setAttribute('stroke-width', lineWidth);
-                activeStrokeSVG.setAttribute('stroke-linejoin', 'round');
-                activeStrokeSVG.setAttribute('stroke-linecap', 'round');
-                activeStrokeSVG.style.display = '';
-                arrowLineSVG.style.display = 'none';
-                arrowHeadSVG.style.display = 'none';
-            } else if (isDrawing && tool === 'arrow' && currentPath.length > 1) {
-                activeStrokeSVG.style.display = 'none';
-                const start = worldToScreen(currentPath[0].x, currentPath[0].y);
-                const end = worldToScreen(currentPath[currentPath.length - 1].x, currentPath[currentPath.length - 1].y);
-
-                arrowLineSVG.setAttribute('x1', start.x);
-                arrowLineSVG.setAttribute('y1', start.y);
-                arrowLineSVG.setAttribute('x2', end.x);
-                arrowLineSVG.setAttribute('y2', end.y);
-                arrowLineSVG.setAttribute('stroke', color);
-                arrowLineSVG.setAttribute('stroke-width', lineWidth);
-                arrowLineSVG.style.display = '';
-
-                // Arrowhead
-                const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                const headlen = (15 + lineWidth * 1.5) * camera.zoom;
-                const p1x = end.x - headlen * Math.cos(angle - Math.PI / 6);
-                const p1y = end.y - headlen * Math.sin(angle - Math.PI / 6);
-                const p2x = end.x - headlen * Math.cos(angle + Math.PI / 6);
-                const p2y = end.y - headlen * Math.sin(angle + Math.PI / 6);
-                arrowHeadSVG.setAttribute('points', `${end.x},${end.y} ${p1x},${p1y} ${p2x},${p2y}`);
-                arrowHeadSVG.setAttribute('fill', color);
-                arrowHeadSVG.style.display = '';
-            } else {
-                activeStrokeSVG.style.display = 'none';
-                arrowLineSVG.style.display = 'none';
-                arrowHeadSVG.style.display = 'none';
-            }
-        }
-
-        function clearOverlay() {
-            activeStrokeSVG.setAttribute('points', '');
-            activeStrokeSVG.style.display = 'none';
-            arrowLineSVG.style.display = 'none';
-            arrowHeadSVG.style.display = 'none';
-        }
-
-        async function eraseAt(worldPos) {
-            const radius = 20 / camera.zoom;
-            const isHit = (item) => {
-                if (item.type === 'image' || item.type === 'sticky') {
-                    return worldPos.x >= item.x && worldPos.x <= item.x + item.width &&
-                        worldPos.y >= item.y && worldPos.y <= item.y + item.height;
-                } else {
-                    return item.points && item.points.some(p => Math.hypot(p.x - worldPos.x, p.y - worldPos.y) < radius);
-                }
-            };
-
-            localStrokes = localStrokes.filter(stroke => !isHit(stroke));
-            if (!user) return;
-
-            const strokesToErase = strokes.filter(stroke => isHit(stroke));
-            for (const stroke of strokesToErase) {
-                deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id))
-                    .catch(e => console.error("Erase error:", e));
-            }
-            isDirty = true;
-        }
-
-        const stickyColors = {
-            '#ef4444': '#fecaca', '#f97316': '#fed7aa', '#eab308': '#fef08a',
-            '#22c55e': '#bbf7d0', '#3b82f6': '#bfdbfe', '#8b5cf6': '#ddd6fe',
-            '#1e3a8a': '#93c5fd', '#ec4899': '#fbcfe8',
-            '#000000': '#f1f5f9', '#6b7280': '#e2e8f0'
-        };
-
-        const handleStart = (clientX, clientY) => {
-            if (editingItem) return; // ignore clicks behind textarea
-
-            isDrawing = true;
-            isDirty = true;
-            const worldPos = screenToWorld(clientX, clientY);
-
-            if (isSpaceDown || tool === 'pan') {
-                // handleMove does panning
-            } else if (tool === 'pencil' || tool === 'eraser' || tool === 'arrow') {
-                currentPath = [worldPos];
-                if (tool === 'eraser') eraseAt(worldPos);
-            } else if (tool === 'sticky') {
-                const localId = 'sticky-' + Date.now();
-                const newSticky = {
-                    id: localId, type: 'sticky',
-                    x: worldPos.x - 75, y: worldPos.y - 75, width: 150, height: 150,
-                    color: stickyColors[color] || '#fef08a', text: '',
-                    userId: user ? user.uid : 'offline', createdAt: Date.now()
-                };
-                localStrokes.push(newSticky);
-                if (user) setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', localId), newSticky);
-
-                setActiveTool('btn-select', 'select');
-                openTextEditor(newSticky);
-                isDrawing = false;
-            } else if (tool === 'select') {
-                const hitItem = getHitItem(worldPos);
-                if (hitItem) {
-                    // Collect both local and remote duplicates (twins) of the same image to prevent ghosting when moving
-                    const twins = [...localStrokes, ...strokes].filter(s =>
-                        (s.type === 'image' || s.type === 'sticky') &&
-                        Math.abs(s.x - hitItem.x) < 1 &&
-                        Math.abs(s.y - hitItem.y) < 1 &&
-                        s.width === hitItem.width
-                    );
-
-                    draggingItem = {
-                        twins,
-                        offsetX: worldPos.x - hitItem.x,
-                        offsetY: worldPos.y - hitItem.y,
-                        newX: hitItem.x,
-                        newY: hitItem.y
+        const commitStroke = async () => {
+            if (isDrawing && currentStroke && currentStroke.points.length > 0) {
+                const strokeToSave = { ...currentStroke };
+                strokes.push(strokeToSave);
+                isDirty = true;
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                
+                if (user) {
+                    // Bandwidth optimization: Compress points to 1 decimal place arrays
+                    const payload = {
+                        type: strokeToSave.type,
+                        color: strokeToSave.color,
+                        thickness: strokeToSave.thickness,
+                        points: JSON.stringify(strokeToSave.points.map(p => [Number(p.x.toFixed(1)), Number(p.y.toFixed(1))])),
+                        timestamp: Date.now()
                     };
-                } else {
-                    isDrawing = false; // Prevent move triggers if clicked empty space
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', strokeToSave.id), payload);
                 }
             }
-            lastTouch = { x: clientX, y: clientY };
-        };
-
-        const handleMove = (clientX, clientY, movementX, movementY) => {
-            if (!isDrawing) return;
-
-            if (isSpaceDown || tool === 'pan') {
-                camera.x += movementX;
-                camera.y += movementY;
-                isDirty = true;
-            } else if (tool === 'select' && draggingItem) {
-                const worldPos = screenToWorld(clientX, clientY);
-                draggingItem.newX = worldPos.x - draggingItem.offsetX;
-                draggingItem.newY = worldPos.y - draggingItem.offsetY;
-                isDirty = true;
-            } else {
-                const worldPos = screenToWorld(clientX, clientY);
-                // Culling point inputs from rapid digitizers at logic level
-                if (currentPath.length > 0) {
-                    const lastPos = currentPath[currentPath.length - 1];
-                    const physicalDist = Math.hypot(worldPos.x - lastPos.x, worldPos.y - lastPos.y) * camera.zoom;
-                    if (physicalDist < 2.0) return;
-                }
-
-                currentPath.push(worldPos);
-                isDirty = true;
-                if (tool === 'eraser') eraseAt(worldPos);
-            }
-        };
-
-        const handleEnd = async () => {
-            if (!isDrawing) return;
             isDrawing = false;
-            isDirty = true;
-            clearOverlay();
-
-            if ((!isSpaceDown && (tool === 'pencil' || tool === 'arrow')) && currentPath.length > 1) {
-                const strokePath = (tool === 'arrow') ? [currentPath[0], currentPath[currentPath.length - 1]] : [...currentPath];
-                localStrokes.push({
-                    id: 'local-' + Date.now(),
-                    type: tool === 'arrow' ? 'arrow' : 'stroke',
-                    points: strokePath, color, lineWidth,
-                    userId: user ? user.uid : 'offline'
-                });
-
-                if (user) {
-                    const strokeData = {
-                        type: tool === 'arrow' ? 'arrow' : 'stroke',
-                        points: JSON.stringify(strokePath), color, lineWidth,
-                        userId: user.uid, createdAt: Date.now()
-                    };
-                    addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), strokeData)
-                        .catch(e => console.warn("Firebase save rejected/failed.", e));
-                }
-            } else if (tool === 'select' && draggingItem) {
-                const { twins, newX, newY } = draggingItem;
-
-                // Finalize position for all twins
-                twins.forEach(twin => {
-                    twin.x = newX;
-                    twin.y = newY;
-
-                    // If this twin is a synced Firebase item, update its position remotely
-                    if (strokes.some(s => s.id === twin.id) && user) {
-                        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', twin.id), {
-                            x: newX,
-                            y: newY
-                        }).catch(e => console.error("Move sync error:", e));
-                    }
-                });
-
-                draggingItem = null;
-            }
-
-            currentPath = [];
-            lastTouch = null;
         };
 
-        function openTextEditor(item) {
-            editingItem = item;
-            textEditor.value = item.text || '';
-            textEditor.style.display = 'block';
-            textEditor.classList.remove('hidden');
-            textEditor.focus();
+        overlayCanvas.addEventListener('pointerup', e => {
+            activePointers.delete(e.pointerId);
+            if (activePointers.size < 2) initialPinchDistance = null;
+            if (activePointers.size === 0) {
+                commitStroke();
+                isPanning = false;
+                updateCursor();
+            }
+        });
+
+        overlayCanvas.addEventListener('pointercancel', e => {
+            activePointers.delete(e.pointerId);
+            isDrawing = isPanning = false;
+        });
+
+        // Mouse Wheel Zoom
+        overlayCanvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            const newZoom = Math.min(Math.max(0.1, view.zoom * (1 + (-e.deltaY * 0.001))), 10);
+            const rect = overlayCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
+            const worldX = (mouseX - view.x) / view.zoom, worldY = (mouseY - view.y) / view.zoom;
+            
+            view.zoom = newZoom;
+            view.x = mouseX - worldX * view.zoom;
+            view.y = mouseY - worldY * view.zoom;
+            isDirty = true;
+        }, { passive: false });
+
+        // ----------------------------------------------------------------------
+        // UI & TOOL MANAGEMENT
+        // ----------------------------------------------------------------------
+        function updateCursor() {
+            if (ui.tool === 'pan') overlayCanvas.style.cursor = isPanning ? 'grabbing' : 'grab';
+            else if (ui.tool === 'eraser') overlayCanvas.style.cursor = 'cell';
+            else overlayCanvas.style.cursor = 'crosshair';
         }
 
-        textEditor.addEventListener('blur', () => {
-            if (editingItem) {
-                editingItem.text = textEditor.value;
-                if (user) {
-                    const idToUpdate = editingItem.id;
-                    updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', idToUpdate), { text: editingItem.text })
-                        .catch(e => console.warn("Failed to update sticky text", e));
-                }
-                editingItem = null;
-                textEditor.classList.add('hidden');
-                isDirty = true;
+        function updateUI() {
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md');
+                b.classList.add('text-gray-600', 'hover:bg-gray-100');
+            });
+            const activeBtn = document.getElementById(`btn-${ui.tool}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                activeBtn.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md');
             }
+            
+            const eraserOpts = document.getElementById('eraser-options');
+            if (ui.tool === 'eraser') {
+                eraserOpts.classList.remove('hidden');
+                document.getElementById('btn-erase-stroke').className = ui.eraseMode === 'stroke' ? 'px-4 py-1.5 text-sm rounded-lg bg-blue-100 text-blue-700 font-bold transition' : 'px-4 py-1.5 text-sm rounded-lg hover:bg-gray-100 text-gray-600 font-medium transition';
+                document.getElementById('btn-erase-partial').className = ui.eraseMode === 'partial' ? 'px-4 py-1.5 text-sm rounded-lg bg-blue-100 text-blue-700 font-bold transition' : 'px-4 py-1.5 text-sm rounded-lg hover:bg-gray-100 text-gray-600 font-medium transition';
+            } else {
+                eraserOpts.classList.add('hidden');
+            }
+
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            const activeColor = document.querySelector(`.color-btn[data-color="${ui.color}"]`);
+            if (activeColor) activeColor.classList.add('active');
+            
+            updateCursor();
+        }
+
+        document.getElementById('btn-pen').onclick = () => { ui.tool = 'pen'; updateUI(); };
+        document.getElementById('btn-eraser').onclick = () => { ui.tool = 'eraser'; updateUI(); };
+        document.getElementById('btn-pan').onclick = () => { ui.tool = 'pan'; updateUI(); };
+        document.getElementById('btn-erase-stroke').onclick = () => { ui.eraseMode = 'stroke'; updateUI(); };
+        document.getElementById('btn-erase-partial').onclick = () => { ui.eraseMode = 'partial'; updateUI(); };
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                ui.color = e.target.dataset.color;
+                if (ui.tool !== 'pen') ui.tool = 'pen';
+                updateUI();
+            };
         });
 
-        canvas.addEventListener('dblclick', (e) => {
-            const worldPos = screenToWorld(e.clientX, e.clientY);
-            const hit = getHitItem(worldPos);
-            if (hit && hit.type === 'sticky') {
-                openTextEditor(hit);
-            }
-        });
+        document.getElementById('thickness-slider').oninput = e => { ui.thickness = parseInt(e.target.value); };
 
+        // Spacebar to pan functionality
+        let spacePressed = false;
+        let previousTool = ui.tool;
         window.addEventListener('keydown', e => {
-            if (e.code === 'Space' && document.activeElement !== textEditor) {
-                e.preventDefault();
-                isSpaceDown = true;
-                canvas.style.cursor = 'grab';
+            if (e.code === 'Space' && !spacePressed && document.activeElement.tagName !== 'INPUT') {
+                spacePressed = true;
+                previousTool = ui.tool;
+                ui.tool = 'pan';
+                updateUI();
             }
         });
         window.addEventListener('keyup', e => {
             if (e.code === 'Space') {
-                isSpaceDown = false;
-                canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : (tool === 'sticky' || tool === 'arrow') ? 'crosshair' : 'crosshair';
+                spacePressed = false;
+                ui.tool = previousTool;
+                updateUI();
             }
         });
 
-        // --- Handle Image Paste Events ---
-        window.addEventListener('paste', (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let index in items) {
-                const item = items[index];
-                if (item.kind === 'file' && item.type.startsWith('image/')) {
-                    const blob = item.getAsFile();
-                    const reader = new FileReader();
-
-                    reader.onload = (event) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const centerPos = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
-                            let w = img.width;
-                            let h = img.height;
-                            const maxDim = 800;
-                            if (w > maxDim || h > maxDim) {
-                                const ratio = Math.min(maxDim / w, maxDim / h);
-                                w *= ratio;
-                                h *= ratio;
-                            }
-
-                            const tempCanvas = document.createElement('canvas');
-                            tempCanvas.width = w;
-                            tempCanvas.height = h;
-                            const tCtx = tempCanvas.getContext('2d');
-                            tCtx.drawImage(img, 0, 0, w, h);
-
-                            const compressedData = tempCanvas.toDataURL('image/webp', 0.6);
-
-                            const imgData = {
-                                type: 'image',
-                                data: compressedData,
-                                x: centerPos.x - w / 2,
-                                y: centerPos.y - h / 2,
-                                width: w,
-                                height: h,
-                                userId: user ? user.uid : 'offline',
-                                createdAt: Date.now()
-                            };
-
-                            const localId = 'local-img-' + Date.now();
-                            localStrokes.push({ id: localId, ...imgData });
-
-                            if (user) {
-                                addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'), imgData)
-                                    .catch(err => console.warn("Firebase save rejected.", err));
-                            }
-
-                            // Automatically switch to select tool when pasting an image
-                            setActiveTool('btn-select', 'select');
-                        };
-                        img.src = event.target.result;
-                    };
-                    reader.readAsDataURL(blob);
+        // Clear Board Logic
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('modal-content');
+        
+        document.getElementById('btn-clear').onclick = () => {
+            overlay.classList.remove('hidden');
+            // Timeout to allow display:block to apply before animating opacity
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                modal.classList.remove('scale-95');
+            }, 10);
+        };
+        
+        const closeModal = () => {
+            overlay.classList.add('opacity-0');
+            modal.classList.add('scale-95');
+            setTimeout(() => overlay.classList.add('hidden'), 200);
+        };
+        
+        document.getElementById('cancel-btn').onclick = closeModal;
+        document.getElementById('confirm-btn').onclick = async () => {
+            closeModal();
+            if (user) {
+                for (const stroke of strokes) {
+                    deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', stroke.id)).catch(()=>{});
                 }
             }
-        });
-
-        // Touch & Multitouch State
-        let initialPinchDistance = null;
-        let initialCameraZoom = 1;
-        let initialPinchCenter = null;
-        let initialCameraPos = null;
-
-        function getDistance(t1, t2) {
-            return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        }
-
-        function getCenter(t1, t2) {
-            return {
-                x: (t1.clientX + t2.clientX) / 2,
-                y: (t1.clientY + t2.clientY) / 2
-            };
-        }
-
-        // --- Mouse Events ---
-        canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
-        window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY, e.movementX, e.movementY));
-        window.addEventListener('mouseup', handleEnd);
-
-        // --- Touch & Stylus Events ---
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 1) {
-                handleStart(e.touches[0].clientX, e.touches[0].clientY);
-            } else if (e.touches.length === 2) {
-                if (isDrawing) handleEnd();
-                initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
-                initialPinchCenter = getCenter(e.touches[0], e.touches[1]);
-                initialCameraZoom = camera.zoom;
-                initialCameraPos = { x: camera.x, y: camera.y };
-                isDirty = true;
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 1 && lastTouch) {
-                const touch = e.touches[0];
-                handleMove(touch.clientX, touch.clientY, touch.clientX - lastTouch.x, touch.clientY - lastTouch.y);
-                lastTouch = { x: touch.clientX, y: touch.clientY };
-                // iOS Safari defers main canvas composition during touch gestures.
-                // Only update the lightweight overlay canvas for live stroke feedback.
-                renderOverlay();
-            } else if (e.touches.length === 2 && initialPinchDistance && initialPinchCenter) {
-                const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                const currentCenter = getCenter(e.touches[0], e.touches[1]);
-
-                const zoomFactor = currentDistance / initialPinchDistance;
-                const newZoom = Math.min(Math.max(initialCameraZoom * zoomFactor, 0.05), 20);
-
-                const worldCenterBefore = {
-                    x: (initialPinchCenter.x - initialCameraPos.x) / initialCameraZoom,
-                    y: (initialPinchCenter.y - initialCameraPos.y) / initialCameraZoom
-                };
-
-                camera.zoom = newZoom;
-                camera.x = currentCenter.x - worldCenterBefore.x * newZoom;
-                camera.y = currentCenter.y - worldCenterBefore.y * newZoom;
-                isDirty = true;
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) {
-                initialPinchDistance = null;
-                initialPinchCenter = null;
-                initialCameraPos = null;
-            }
-            if (e.touches.length === 0) {
-                handleEnd();
-            }
-        });
-
-        // Trackpad & Mouse Wheel (Zoom & Pan)
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-
-            if (e.ctrlKey) {
-                // Pinch-to-zoom on trackpads or Ctrl+Scroll on mouse
-                const factor = Math.pow(1.1, -e.deltaY / 150);
-                const newZoom = Math.min(Math.max(camera.zoom * factor, 0.05), 20);
-                const mouseBefore = screenToWorld(e.clientX, e.clientY);
-                camera.zoom = newZoom;
-                camera.x = e.clientX - mouseBefore.x * newZoom;
-                camera.y = e.clientY - mouseBefore.y * newZoom;
-                isDirty = true;
-            } else {
-                // Pan with 2-finger scroll on trackpads or regular mouse scroll
-                camera.x -= e.deltaX;
-                camera.y -= e.deltaY;
-                isDirty = true;
-            }
-        }, { passive: false });
-
-        // UI Interactions
-        const toolBtns = document.querySelectorAll('.tool-btn');
-        const setActiveTool = (id, toolName) => {
-            toolBtns.forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            tool = toolName;
-            canvas.style.cursor = tool === 'pan' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'select' ? 'default' : (tool === 'sticky' || tool === 'arrow') ? 'crosshair' : 'crosshair';
-        };
-
-        document.getElementById('btn-select').onclick = () => setActiveTool('btn-select', 'select');
-        document.getElementById('btn-sticky').onclick = () => setActiveTool('btn-sticky', 'sticky');
-        document.getElementById('btn-pencil').onclick = () => setActiveTool('btn-pencil', 'pencil');
-        document.getElementById('btn-arrow').onclick = () => setActiveTool('btn-arrow', 'arrow');
-        document.getElementById('btn-eraser').onclick = () => setActiveTool('btn-eraser', 'eraser');
-        document.getElementById('btn-pan').onclick = () => setActiveTool('btn-pan', 'pan');
-
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                color = btn.dataset.color;
-                setActiveTool('btn-pencil', 'pencil');
-            };
-        });
-
-        document.getElementById('btn-width-up').onclick = () => { lineWidth = Math.min(20, lineWidth + 1); widthDisplay.innerText = lineWidth; isDirty = true; };
-        document.getElementById('btn-width-down').onclick = () => { lineWidth = Math.max(1, lineWidth - 1); widthDisplay.innerText = lineWidth; isDirty = true; };
-
-        document.getElementById('btn-clear').onclick = async () => {
-            localStrokes = [];
+            strokes = [];
             isDirty = true;
-            if (!user) return;
-            try {
-                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'strokes'));
-                const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', d.id)));
-                await Promise.all(deletePromises);
-            } catch (e) { console.error("Clear error:", e); }
         };
 
-        requestAnimationFrame(render);
-
-        // Initialize App
-        async function init() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) {
-                statusInfo.innerText = "Offline Mode (Local Only)";
-            }
-
-            onAuthStateChanged(auth, (u) => {
-                user = u;
-                if (u) {
-                    statusInfo.innerText = `Online (${u.uid.substring(0, 5)}...)`;
-
-                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
-                    onSnapshot(q, (snap) => {
-                        strokes = snap.docs.map(d => {
-                            const data = d.data();
-                            if (data.type === 'image' || data.type === 'sticky') {
-                                return { id: d.id, ...data };
-                            }
-                            let points = [];
-                            try { points = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch (e) { }
-                            return { id: d.id, ...data, points };
-                        });
-                        isDirty = true;
-                    }, (err) => {
-                        statusInfo.innerText = "Sync Error - Running Locally";
-                    });
-                } else {
-                    statusInfo.innerText = "Offline Mode";
-                }
-            });
-        }
-
-        init();
+        updateUI();
     </script>
 </body>
-
 </html>
