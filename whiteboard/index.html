@@ -88,15 +88,22 @@
         <button id="btn-pan" class="tool-btn text-gray-600 p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" title="Pan (Hold Space or 2-finger drag)">
             <i data-lucide="hand"></i>
         </button>
+        <button id="btn-grid" class="text-blue-600 bg-blue-50 p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" title="Toggle Grid">
+            <i data-lucide="grid-3x3"></i>
+        </button>
         
         <div class="w-[1px] h-8 bg-gray-200 mx-1"></div>
         
         <!-- Color Palette -->
-        <div class="flex gap-2 px-2 items-center">
-            <button class="color-btn active w-7 h-7 rounded-full bg-black transition-all duration-200" data-color="#000000"></button>
-            <button class="color-btn w-7 h-7 rounded-full bg-red-500 border border-black/10 transition-all duration-200" data-color="#ef4444"></button>
-            <button class="color-btn w-7 h-7 rounded-full bg-blue-500 border border-black/10 transition-all duration-200" data-color="#3b82f6"></button>
-            <button class="color-btn w-7 h-7 rounded-full bg-green-500 border border-black/10 transition-all duration-200" data-color="#22c55e"></button>
+        <div class="flex gap-1.5 px-2 items-center">
+            <button class="color-btn active w-6 h-6 rounded-full bg-black transition-all duration-200" data-color="#000000"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-gray-500 border border-black/10 transition-all duration-200" data-color="#6b7280"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-red-500 border border-black/10 transition-all duration-200" data-color="#ef4444"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-orange-500 border border-black/10 transition-all duration-200" data-color="#f97316"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-yellow-400 border border-black/10 transition-all duration-200" data-color="#eab308"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-green-500 border border-black/10 transition-all duration-200" data-color="#22c55e"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-blue-500 border border-black/10 transition-all duration-200" data-color="#3b82f6"></button>
+            <button class="color-btn w-6 h-6 rounded-full bg-purple-500 border border-black/10 transition-all duration-200" data-color="#a855f7"></button>
         </div>
         
         <div class="w-[1px] h-8 bg-gray-200 mx-1"></div>
@@ -137,7 +144,7 @@
         lucide.createIcons();
 
         // Application State
-        const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke' };
+        const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true };
         const view = { x: 0, y: 0, zoom: 1 };
         
         let strokes = [];
@@ -177,6 +184,7 @@
         
         let auth, db;
         let user = null;
+        let unsubStrokes = null;
 
         function updateStatus(state, msg) {
             document.getElementById('status-text').innerText = msg;
@@ -207,29 +215,41 @@
                     updateStatus('offline', 'Offline (Auth Failed)');
                 }
             };
-            initAuth();
-
-            onAuthStateChanged(auth, u => {
-                user = u;
-                if (u) {
-                    updateStatus('online', `Live (${u.uid.substring(0, 5)}...)`);
-                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
-                    onSnapshot(q, snap => {
-                        strokes = snap.docs.map(d => {
-                            const data = d.data();
-                            let pts = [];
-                            try { pts = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; } catch(e){}
-                            // Normalize points (supports standard arrays for bandwidth compression or objects)
-                            const normalizedPts = pts.map(p => Array.isArray(p) ? {x: p[0], y: p[1]} : p);
-                            return { id: d.id, ...data, points: normalizedPts };
+            
+            // Guarantee Auth initializes FIRST before binding listeners
+            initAuth().then(() => {
+                onAuthStateChanged(auth, u => {
+                    user = u;
+                    if (u) {
+                        updateStatus('online', `Live (${u.uid.substring(0, 5)}...)`);
+                        if (unsubStrokes) unsubStrokes();
+                        
+                        const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
+                        unsubStrokes = onSnapshot(q, snap => {
+                            strokes = snap.docs.map(d => {
+                                const data = d.data();
+                                let pts = [];
+                                try { 
+                                    pts = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; 
+                                } catch(e){
+                                    console.error("Failed to parse stroke", d.id);
+                                }
+                                // Backwards compatible normalization: handles legacy [x,y] arrays and native {x,y} objects
+                                const normalizedPts = Array.isArray(pts) ? pts.map(p => Array.isArray(p) ? {x: p[0], y: p[1]} : p) : [];
+                                return { id: d.id, ...data, points: normalizedPts };
+                            });
+                            // Sort by timestamp to ensure consistent layering
+                            strokes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                            isDirty = true;
+                        }, err => {
+                            console.error("Snapshot error:", err);
+                            updateStatus('offline', 'Sync Error');
                         });
-                        isDirty = true;
-                    }, err => {
-                        updateStatus('offline', 'Sync Error');
-                    });
-                } else {
-                    updateStatus('offline', 'Offline');
-                }
+                    } else {
+                        if (unsubStrokes) unsubStrokes();
+                        updateStatus('offline', 'Offline');
+                    }
+                });
             });
         } else {
             updateStatus('offline', 'Local Mode');
@@ -285,8 +305,13 @@
             mainCtx.restore();
             
             // Virtual Grid Parallax Update (Zero-latency background)
-            container.style.backgroundSize = `${40 * view.zoom}px ${40 * view.zoom}px`;
-            container.style.backgroundPosition = `${view.x}px ${view.y}px`;
+            if (ui.showGrid) {
+                container.style.backgroundSize = `${40 * view.zoom}px ${40 * view.zoom}px`;
+                container.style.backgroundPosition = `${view.x}px ${view.y}px`;
+                container.style.backgroundImage = 'radial-gradient(#cbd5e1 1px, transparent 1px)';
+            } else {
+                container.style.backgroundImage = 'none';
+            }
         }
 
         // ----------------------------------------------------------------------
@@ -451,12 +476,12 @@
                 overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
                 
                 if (user) {
-                    // Bandwidth optimization: Compress points to 1 decimal place arrays
+                    // Send as native objects to avoid JSON serialization bugs, preserving precision
                     const payload = {
                         type: strokeToSave.type,
                         color: strokeToSave.color,
                         thickness: strokeToSave.thickness,
-                        points: JSON.stringify(strokeToSave.points.map(p => [Number(p.x.toFixed(1)), Number(p.y.toFixed(1))])),
+                        points: strokeToSave.points.map(p => ({x: Number(p.x.toFixed(1)), y: Number(p.y.toFixed(1))})),
                         timestamp: Date.now()
                     };
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', strokeToSave.id), payload);
@@ -513,6 +538,16 @@
                 activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-100');
                 activeBtn.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md');
             }
+
+            // Grid Toggle visual state
+            const gridBtn = document.getElementById('btn-grid');
+            if (ui.showGrid) {
+                gridBtn.classList.add('text-blue-600', 'bg-blue-50');
+                gridBtn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+            } else {
+                gridBtn.classList.remove('text-blue-600', 'bg-blue-50');
+                gridBtn.classList.add('text-gray-600', 'hover:bg-gray-100');
+            }
             
             const eraserOpts = document.getElementById('eraser-options');
             if (ui.tool === 'eraser') {
@@ -533,6 +568,7 @@
         document.getElementById('btn-pen').onclick = () => { ui.tool = 'pen'; updateUI(); };
         document.getElementById('btn-eraser').onclick = () => { ui.tool = 'eraser'; updateUI(); };
         document.getElementById('btn-pan').onclick = () => { ui.tool = 'pan'; updateUI(); };
+        document.getElementById('btn-grid').onclick = () => { ui.showGrid = !ui.showGrid; isDirty = true; updateUI(); };
         document.getElementById('btn-erase-stroke').onclick = () => { ui.eraseMode = 'stroke'; updateUI(); };
         document.getElementById('btn-erase-partial').onclick = () => { ui.eraseMode = 'partial'; updateUI(); };
 
