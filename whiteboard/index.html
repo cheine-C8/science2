@@ -179,10 +179,29 @@
         // ----------------------------------------------------------------------
         // FIREBASE SETUP (Christian's Implementation)
         // ----------------------------------------------------------------------
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
-        let auth, db;
+        // --- Firebase Configuration ---
+        let firebaseConfig;
+
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            firebaseConfig = {
+                apiKey: "AIzaSyDDCSmDxGY0ltd3-KWsbbPKI_RvPQ2KIT0",
+                authDomain: "whiteboard-23ad5.firebaseapp.com",
+                projectId: "whiteboard-23ad5",
+                storageBucket: "whiteboard-23ad5.firebasestorage.app",
+                messagingSenderId: "1097713600229",
+                appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
+                measurementId: "G-MR9C9WYE9M"
+            };
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-whiteboard';
+        
         let user = null;
         let unsubStrokes = null;
 
@@ -198,62 +217,54 @@
             }
         }
 
-        if (firebaseConfig) {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-
-            const initAuth = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (e) {
-                    console.error("Auth error", e);
-                    updateStatus('offline', 'Offline (Auth Failed)');
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
                 }
-            };
-            
-            // Guarantee Auth initializes FIRST before binding listeners
-            initAuth().then(() => {
-                onAuthStateChanged(auth, u => {
-                    user = u;
-                    if (u) {
-                        updateStatus('online', `Live (${u.uid.substring(0, 5)}...)`);
-                        if (unsubStrokes) unsubStrokes();
-                        
-                        const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
-                        unsubStrokes = onSnapshot(q, snap => {
-                            strokes = snap.docs.map(d => {
-                                const data = d.data();
-                                let pts = [];
-                                try { 
-                                    pts = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; 
-                                } catch(e){
-                                    console.error("Failed to parse stroke", d.id);
-                                }
-                                // Backwards compatible normalization: handles legacy [x,y] arrays and native {x,y} objects
-                                const normalizedPts = Array.isArray(pts) ? pts.map(p => Array.isArray(p) ? {x: p[0], y: p[1]} : p) : [];
-                                return { id: d.id, ...data, points: normalizedPts };
-                            });
-                            // Sort by timestamp to ensure consistent layering
-                            strokes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                            isDirty = true;
-                        }, err => {
-                            console.error("Snapshot error:", err);
-                            updateStatus('offline', 'Sync Error');
+            } catch (e) {
+                console.error("Auth error", e);
+                updateStatus('offline', 'Offline (Auth Failed)');
+            }
+        };
+        
+        // Guarantee Auth initializes FIRST before binding listeners
+        initAuth().then(() => {
+            onAuthStateChanged(auth, u => {
+                user = u;
+                if (u) {
+                    updateStatus('online', `Live (${u.uid.substring(0, 5)}...)`);
+                    if (unsubStrokes) unsubStrokes();
+                    
+                    const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
+                    unsubStrokes = onSnapshot(q, snap => {
+                        strokes = snap.docs.map(d => {
+                            const data = d.data();
+                            let pts = [];
+                            try { 
+                                pts = typeof data.points === 'string' ? JSON.parse(data.points) : data.points; 
+                            } catch(e){
+                                console.error("Failed to parse stroke", d.id);
+                            }
+                            // Backwards compatible normalization: handles legacy [x,y] arrays and native {x,y} objects
+                            const normalizedPts = Array.isArray(pts) ? pts.map(p => Array.isArray(p) ? {x: p[0], y: p[1]} : p) : [];
+                            return { id: d.id, ...data, points: normalizedPts };
                         });
-                    } else {
-                        if (unsubStrokes) unsubStrokes();
-                        updateStatus('offline', 'Offline');
-                    }
-                });
+                        // Sort by timestamp to ensure consistent layering
+                        strokes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                        isDirty = true;
+                    }, err => {
+                        console.error("Snapshot error:", err);
+                        updateStatus('offline', 'Sync Error');
+                    });
+                } else {
+                    if (unsubStrokes) unsubStrokes();
+                    updateStatus('offline', 'Offline');
+                }
             });
-        } else {
-            updateStatus('offline', 'Local Mode');
-        }
+        });
 
         // ----------------------------------------------------------------------
         // HIGH PERFORMANCE RENDERING (Ken's Implementation)
