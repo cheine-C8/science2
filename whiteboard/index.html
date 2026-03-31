@@ -140,6 +140,9 @@ let initialPinchDistance = null;
 let initialView = null;
 let initialPinchCenter = null;
  
+// Minimum distance squared to add a new point during drawing (reduces micro-movements)
+const MIN_DRAW_DIST_SQ = 4; // 2px squared
+ 
 // Stroke-erase hit-test state
 let erasedThisGesture = new Set(); // ids erased so we don't double-erase
  
@@ -292,9 +295,8 @@ function drawEntity(ctx, stroke) {
 }
  
 // ─── OFFSCREEN / MAIN RENDER ──────────────────────────────────────────────────
-// We render all committed strokes to an offscreen canvas in WORLD SPACE (no view transform).
-// The main canvas composites offscreen → apply view transform → blit.
-// This avoids re-drawing all strokes every frame when only panning/zooming.
+// We render all committed strokes to an offscreen canvas.
+// The main canvas composites offscreen.
  
 function rebuildOffscreen() {
     offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
@@ -310,14 +312,16 @@ function rebuildOffscreen() {
 function redrawMain() {
     if (offscreenDirty) rebuildOffscreen();
  
-    // If view changed since last offscreen render, we need to re-render
-    if (offscreenView.x !== view.x || offscreenView.y !== view.y || offscreenView.zoom !== view.zoom) {
-        rebuildOffscreen();
-    }
- 
     mainCtx.fillStyle = '#f8fafc';
     mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+ 
+    // Blit offscreen with current view transform (no re-render of strokes!)
+    mainCtx.save();
+    mainCtx.translate(view.x, view.y);
+    mainCtx.scale(view.zoom, view.zoom);
+    mainCtx.translate(offscreenBounds.x, offscreenBounds.y);
     mainCtx.drawImage(offscreen, 0, 0);
+    mainCtx.restore();
  
     // Grid
     if (ui.showGrid) {
@@ -468,18 +472,19 @@ overlayCanvas.addEventListener('pointermove', e => {
  
     if (ui.tool === 'eraser' && ui.eraseMode === 'stroke' && isDrawing) {
         const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+        const lastEv = events[events.length - 1];
         for (const ev of events) {
             const pt = getCanvasPoint(ev.clientX, ev.clientY);
             eraseStrokesAtPoint(pt.x, pt.y);
-            // Draw eraser cursor on overlay
-            overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
-            const screenR = ui.thickness * 8;
-            overlayCtx.beginPath();
-            overlayCtx.arc(ev.clientX, ev.clientY, screenR, 0, Math.PI*2);
-            overlayCtx.strokeStyle = 'rgba(100,100,100,0.4)';
-            overlayCtx.lineWidth = 1.5;
-            overlayCtx.stroke();
         }
+        // Draw eraser cursor only for last position (avoid redundant clears)
+        overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+        const screenR = ui.thickness * 8;
+        overlayCtx.beginPath();
+        overlayCtx.arc(lastEv.clientX, lastEv.clientY, screenR, 0, Math.PI*2);
+        overlayCtx.strokeStyle = 'rgba(100,100,100,0.4)';
+        overlayCtx.lineWidth = 1.5;
+        overlayCtx.stroke();
         return;
     }
  
@@ -492,35 +497,47 @@ overlayCanvas.addEventListener('pointermove', e => {
             drawEntity(overlayCtx, currentStroke);
             overlayCtx.restore();
         } else {
+            // Use coalesced events for pen and partial eraser
             const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-            for (const ev of events) {
-                const pt = getCanvasPoint(ev.clientX, ev.clientY);
-                currentStroke.points.push(pt);
  
-                if (ui.tool === 'eraser') {
-                    // Partial eraser: draw on main canvas visually
-                    mainCtx.save();
-                    mainCtx.translate(view.x,view.y); mainCtx.scale(view.zoom,view.zoom);
-                    mainCtx.globalCompositeOperation = 'destination-out';
-                    mainCtx.beginPath();
-                    mainCtx.moveTo(lastPt.x, lastPt.y); mainCtx.lineTo(pt.x, pt.y);
-                    mainCtx.lineWidth = currentStroke.thickness;
-                    mainCtx.lineCap = mainCtx.lineJoin = 'round';
-                    mainCtx.stroke(); mainCtx.restore();
-                } else {
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(lastPt.x*view.zoom+view.x, lastPt.y*view.zoom+view.y);
-                    overlayCtx.lineTo(pt.x*view.zoom+view.x, pt.y*view.zoom+view.y);
-                    overlayCtx.strokeStyle = currentStroke.color;
-                    overlayCtx.lineWidth = currentStroke.thickness * view.zoom;
-                    overlayCtx.lineCap = overlayCtx.lineJoin = 'round';
-                    overlayCtx.stroke();
+            if (ui.tool === 'eraser') {
+                // Partial eraser: batch all coalesced points into one draw call
+                mainCtx.save();
+                mainCtx.translate(view.x,view.y); mainCtx.scale(view.zoom,view.zoom);
+                mainCtx.globalCompositeOperation = 'destination-out';
+                mainCtx.beginPath();
+                mainCtx.moveTo(lastPt.x, lastPt.y);
+                mainCtx.lineWidth = currentStroke.thickness;
+                mainCtx.lineCap = mainCtx.lineJoin = 'round';
+                for (const ev of events) {
+                    const pt = getCanvasPoint(ev.clientX, ev.clientY);
+                    currentStroke.points.push(pt);
+                    mainCtx.lineTo(pt.x, pt.y);
+                    lastPt = pt;
                 }
-                lastPt = { ...pt };
+                mainCtx.stroke();
+                mainCtx.restore();
+            } else {
+                // Pen: batch coalesced points into single path, skip micro-moves
+                overlayCtx.beginPath();
+                overlayCtx.strokeStyle = currentStroke.color;
+                overlayCtx.lineWidth = currentStroke.thickness * view.zoom;
+                overlayCtx.lineCap = overlayCtx.lineJoin = 'round';
+                overlayCtx.moveTo(lastPt.x*view.zoom+view.x, lastPt.y*view.zoom+view.y);
+                for (const ev of events) {
+                    const pt = getCanvasPoint(ev.clientX, ev.clientY);
+                    // Skip point if too close (reduces array size & draw calls)
+                    const dx = pt.x - lastPt.x, dy = pt.y - lastPt.y;
+                    if (dx*dx + dy*dy < MIN_DRAW_DIST_SQ) continue;
+                    currentStroke.points.push(pt);
+                    overlayCtx.lineTo(pt.x*view.zoom+view.x, pt.y*view.zoom+view.y);
+                    lastPt = pt;
+                }
+                overlayCtx.stroke();
             }
  
-            // Chunk long strokes
-            if (currentStroke.points.length >= 250) {
+            // Chunk long strokes (lower threshold for responsiveness)
+            if (currentStroke.points.length >= 150) {
                 const tail = currentStroke.points[currentStroke.points.length-1];
                 commitStroke(true);
                 currentStroke = { id: crypto.randomUUID(), type: ui.tool === 'eraser' ? 'eraser' : ui.tool, color: ui.color, thickness: ui.thickness, points: [{...tail}] };
