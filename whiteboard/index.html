@@ -312,16 +312,14 @@ function rebuildOffscreen() {
 function redrawMain() {
     if (offscreenDirty) rebuildOffscreen();
  
+    // If view changed since last offscreen render, we need to re-render
+    if (offscreenView.x !== view.x || offscreenView.y !== view.y || offscreenView.zoom !== view.zoom) {
+        rebuildOffscreen();
+    }
+ 
     mainCtx.fillStyle = '#f8fafc';
     mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
- 
-    // Blit offscreen with current view transform (no re-render of strokes!)
-    mainCtx.save();
-    mainCtx.translate(view.x, view.y);
-    mainCtx.scale(view.zoom, view.zoom);
-    mainCtx.translate(offscreenBounds.x, offscreenBounds.y);
     mainCtx.drawImage(offscreen, 0, 0);
-    mainCtx.restore();
  
     // Grid
     if (ui.showGrid) {
@@ -561,14 +559,18 @@ async function commitStroke(keepDrawing = false) {
         strokes.push(s);
         undoStack.push({ type: 'add', strokes: [s] }); // track for undo
         offscreenDirty = true; isDirty = true;
- 
+
         if (user) {
             const payload = {
                 type: s.type, color: s.color, thickness: s.thickness,
                 points: JSON.stringify(s.points.map(p => [+p.x.toFixed(1), +p.y.toFixed(1)])),
                 timestamp: Date.now()
             };
-            setDoc(doc(db,'artifacts',appId,'public','data','strokes',s.id), payload).catch(()=>{});
+            // Defer write with setTimeout to prevent blocking drawing thread (readded optimization)
+            setTimeout(() => {
+                setDoc(doc(db,'artifacts',appId,'public','data','strokes',s.id), payload)
+                    .catch(e => console.error("Firebase write error:", e));
+            }, 0);
         }
     }
     if (!keepDrawing) abortCurrentStroke();
