@@ -94,12 +94,15 @@
                     <div class="space-y-4">
                         <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-center">
                             <p class="text-sm mb-2 text-slate-600">Select Test Gas</p>
-                            <select id="gasSelect" class="w-full p-2 mb-4 rounded border border-slate-300 text-slate-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <select id="gasSelect" class="w-full p-2 mb-2 rounded border border-slate-300 text-slate-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                 <option value="CO2">Carbon Dioxide (CO2)</option>
                                 <option value="CH4">Methane (CH4)</option>
                                 <option value="N2O">Nitrous Oxide (N2O)</option>
                                 <option value="H2O">Water Vapor (H2O)</option>
                             </select>
+                            <div id="gasExplanation" class="text-xs text-left mb-4 text-slate-500 bg-white p-3 rounded-lg border border-slate-200 shadow-inner">
+                                CO2 is a greenhouse gas because its linear, triatomic structure allows it to bend and vibrate, absorbing infrared radiation (heat) and trapping it in the atmosphere.
+                            </div>
                             <p class="text-sm mb-4 text-slate-600">Automated Setup Sequence</p>
                             <button id="prepareLab" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-semibold shadow-md">
                                 Auto-Prepare Experiment
@@ -248,10 +251,22 @@
     <script>
         // Gas Properties
         const GAS_PROPERTIES = {
-            'CO2': { name: 'Carbon Dioxide', warmingPotential: 0.04, desc: 'CO2 Enriched' },
-            'CH4': { name: 'Methane', warmingPotential: 0.08, desc: 'CH4 Enriched' },
-            'N2O': { name: 'Nitrous Oxide', warmingPotential: 0.12, desc: 'N2O Enriched' },
-            'H2O': { name: 'Water Vapor', warmingPotential: 0.02, desc: 'H2O Enriched' }
+            'CO2': { 
+                name: 'Carbon Dioxide', warmingPotential: 0.04, desc: 'CO2 Enriched',
+                explanation: 'CO2 is a greenhouse gas because its linear, triatomic structure allows it to bend and vibrate, absorbing infrared radiation (heat) and trapping it in the atmosphere.' 
+            },
+            'CH4': { 
+                name: 'Methane', warmingPotential: 0.08, desc: 'CH4 Enriched',
+                explanation: 'Methane is a potent greenhouse gas because its tetrahedral structure gives it multiple modes of vibration, making it highly effective at absorbing thermal infrared radiation.'
+            },
+            'N2O': { 
+                name: 'Nitrous Oxide', warmingPotential: 0.12, desc: 'N2O Enriched',
+                explanation: 'Nitrous Oxide is a very strong greenhouse gas. Its asymmetrical, linear structure allows it to strongly absorb infrared radiation that would otherwise escape into space.'
+            },
+            'H2O': { 
+                name: 'Water Vapor', warmingPotential: 0.02, desc: 'H2O Enriched',
+                explanation: 'Water Vapor is the most abundant greenhouse gas. Its bent structure allows it to absorb a wide range of infrared frequencies, acting as a significant feedback mechanism for warming.'
+            }
         };
 
         // State Management
@@ -360,6 +375,7 @@
             state.selectedGas = e.target.value;
             const gas = GAS_PROPERTIES[state.selectedGas];
             document.getElementById('bottleB_gas_label').innerText = gas.desc;
+            document.getElementById('gasExplanation').innerText = gas.explanation;
             if (tempChart) {
                 tempChart.data.datasets[1].label = `Bottle B (${state.selectedGas})`;
                 tempChart.update();
