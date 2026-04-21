@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Spectrometer Lab</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for rendering the absorbance graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .cuvette { transition: all 0.3s ease; }
+        .cuvette:hover { transform: translateY(-5px); cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .software-screen { background: radial-gradient(circle, #1a202c 0%, #000000 100%); border: 8px solid #2d3748; }
+        
+        /* Custom Scrollbar for protocol */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Toast Animation */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-blue-800 text-white p-4 shadow-md flex justify-between items-center z-10">
+        <h1 class="text-2xl font-bold"><i class="fa-solid fa-flask text-blue-300 mr-2"></i> Virtual Spectrometer Lab</h1>
+        <div class="text-sm bg-blue-900 py-1 px-3 rounded-full">Status: <span id="status-badge" class="font-bold text-red-400">Unplugged</span></div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Left Panel: Protocol -->
+        <div class="w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg z-10">
+            <div class="p-4 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-clipboard-list mr-2"></i> Lab Protocol</h2>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 text-sm text-gray-600 space-y-4" id="protocol-list">
+                <div class="step font-bold text-blue-600" id="step-1">1. Plug the spectrometer into your computer.</div>
+                <div class="step opacity-50" id="step-2">2. Search for a program called "Spectrometry" and open it.</div>
+                <div class="step opacity-50" id="step-3">3. Note: All cuvettes must be placed with the cap up and the flat sides to the left and right.</div>
+                <div class="step opacity-50" id="step-4">4. Calibrate Dark by placing your hand over the opening and running calibration.</div>
+                <div class="step opacity-50" id="step-5">5. Calibrate Reference by placing the cuvette with water into the spectrometer and running calibration.</div>
+                <div class="step opacity-50" id="step-6">6. Place a sample in the spectrometer and record the absorbance.</div>
+                <div class="step opacity-50" id="step-7">7. Take a screenshot (Save Data) and repeat for each sample.</div>
+            </div>
+            <div class="p-4 bg-blue-50 border-t border-blue-100">
+                <p class="text-xs text-blue-800 font-semibold"><i class="fa-solid fa-circle-info mr-1"></i> Follow the highlighted step to proceed.</p>
+            </div>
+        </div>
+
+        <!-- Right Panel: Environment -->
+        <div class="flex-1 flex flex-col bg-gray-200 relative">
+            
+            <!-- Toast Notifications Container -->
+            <div id="toast-container" class="absolute top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+            <!-- Computer Monitor (Software UI) -->
+            <div class="h-3/5 p-6 flex justify-center items-center">
+                <div class="software-screen w-full max-w-4xl h-full rounded-xl shadow-2xl relative overflow-hidden flex flex-col">
+                    
+                    <!-- Screen Off State -->
+                    <div id="screen-off" class="absolute inset-0 bg-black z-20 flex flex-col items-center justify-center text-gray-600">
+                        <i class="fa-solid fa-desktop text-6xl mb-4"></i>
+                        <p>Computer Sleeping</p>
+                    </div>
+
+                    <!-- Desktop State -->
+                    <div id="desktop-view" class="absolute inset-0 bg-blue-900 z-10 hidden p-6 flex flex-col">
+                        <div class="flex-1">
+                            <button onclick="app.openSoftware()" class="flex flex-col items-center text-white hover:bg-blue-800 p-3 rounded cursor-pointer w-24 transition">
+                                <i class="fa-solid fa-chart-line text-4xl text-green-400 mb-2"></i>
+                                <span class="text-sm shadow-sm text-center">Spectrometry<br>App</span>
+                            </button>
+                        </div>
+                        <div class="h-10 bg-gray-800/80 rounded flex items-center px-4 text-white text-xs backdrop-blur-sm">
+                            <i class="fa-brands fa-windows mr-2"></i> Start
+                        </div>
+                    </div>
+
+                    <!-- Spectrometry App UI -->
+                    <div id="app-view" class="absolute inset-0 bg-gray-100 z-10 hidden flex flex-col">
+                        <!-- App Header -->
+                        <div class="bg-gray-800 text-white p-2 flex justify-between items-center text-sm shadow">
+                            <div class="font-bold"><i class="fa-solid fa-chart-line text-green-400 mr-2"></i> Spectrometry Pro v2.1</div>
+                            <div class="space-x-2">
+                                <span class="px-2 py-1 bg-red-500 rounded text-xs cursor-not-allowed">X</span>
+                            </div>
+                        </div>
+                        
+                        <!-- App Main -->
+                        <div class="flex-1 flex p-2 gap-2 h-full">
+                            <!-- Controls -->
+                            <div class="w-1/4 bg-white border border-gray-300 rounded p-3 flex flex-col gap-3 shadow-inner">
+                                <h3 class="font-bold text-gray-700 border-b pb-2 text-sm">Calibration</h3>
+                                <button id="btn-dark-cal" onclick="app.runDarkCalibration()" class="bg-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded text-sm transition shadow flex items-center justify-center">
+                                    <i class="fa-solid fa-moon mr-2"></i> Dark Calibrate
+                                </button>
+                                <button id="btn-ref-cal" onclick="app.runReferenceCalibration()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition shadow flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                                    <i class="fa-solid fa-droplet mr-2"></i> Reference Calibrate
+                                </button>
+                                
+                                <h3 class="font-bold text-gray-700 border-b pb-2 text-sm mt-4">Measurement</h3>
+                                <button id="btn-measure" onclick="app.measureSample()" class="bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded font-bold transition shadow flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                                    <i class="fa-solid fa-play mr-2"></i> Record Absorbance
+                                </button>
+
+                                <div class="mt-auto">
+                                    <button onclick="app.simulateScreenshot()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm transition shadow flex items-center justify-center">
+                                        <i class="fa-solid fa-camera mr-2"></i> Save Screenshot
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Graph Area -->
+                            <div class="w-3/4 bg-white border border-gray-300 rounded p-4 relative shadow-inner flex flex-col">
+                                <h3 class="text-center font-bold text-gray-600 mb-2">Absorbance Spectrum</h3>
+                                <div class="flex-1 relative w-full">
+                                    <canvas id="spectrometerChart"></canvas>
+                                </div>
+                                
+                                <!-- Loading overlay -->
+                                <div id="app-loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 hidden flex-col items-center justify-center rounded">
+                                    <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                                    <p class="font-bold text-gray-700" id="loading-text">Calibrating...</p>
+                                    <div class="w-64 h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                                        <div class="h-full bg-blue-600 transition-all duration-[2000ms] w-0" id="loading-bar"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Lab Bench (Physical Items) -->
+            <div class="h-2/5 bg-gradient-to-b from-slate-300 to-slate-400 border-t border-gray-400 p-6 flex flex-col relative shadow-inner">
+                <div class="absolute top-2 left-6 text-gray-500 font-bold uppercase tracking-wider text-sm"><i class="fa-solid fa-table"></i> Lab Bench</div>
+                
+                <div class="flex-1 flex items-end justify-around pb-4">
+                    
+                    <!-- Cable / Plug -->
+                    <div class="flex flex-col items-center gap-2">
+                        <button id="btn-plug" onclick="app.plugIn()" class="bg-gray-800 hover:bg-black text-white p-3 rounded-full shadow-lg transition flex items-center justify-center w-16 h-16 border-2 border-gray-600 group">
+                            <i class="fa-brands fa-usb text-2xl group-hover:text-blue-400 transition"></i>
+                        </button>
+                        <span class="text-xs font-bold text-gray-700">USB Cable</span>
+                    </div>
+
+                    <!-- Physical Spectrometer -->
+                    <div class="relative w-64 h-40 bg-gray-800 rounded-xl shadow-2xl border-b-8 border-gray-900 flex flex-col items-center justify-start pt-6">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded shadow">Spectrometer</div>
+                        <!-- Slot -->
+                        <div class="w-16 h-16 bg-black rounded-lg border-2 border-gray-700 shadow-inner relative flex justify-center items-end pb-1 overflow-hidden">
+                            <!-- Slot Content visual -->
+                            <div id="slot-content-visual" class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity">
+                                <!-- Hand or Cuvette will be injected here via JS -->
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" id="spec-led"></div>
+                            <span class="text-gray-400 text-[10px] font-mono">POWER</span>
+                        </div>
+                        
+                        <!-- Remove button -->
+                        <button id="btn-remove" onclick="app.emptySlot()" class="absolute bottom-4 right-4 bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 rounded py-1 px-2 text-xs shadow hidden transition">
+                            <i class="fa-solid fa-eject"></i> Eject
+                        </button>
+                    </div>
+
+                    <!-- Interactive Items (Hand, Cuvettes) -->
+                    <div class="flex gap-6 bg-white/50 p-4 rounded-xl border border-white/60 shadow-sm items-end backdrop-blur-sm">
+                        
+                        <!-- Hand for Dark Cal -->
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="app.placeHand()" class="cuvette w-16 h-16 bg-orange-100 hover:bg-orange-200 border-2 border-orange-300 rounded shadow flex items-center justify-center text-3xl">
+                                🖐️
+                            </button>
+                            <span class="text-xs font-bold text-gray-700">Your Hand</span>
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="w-px h-16 bg-gray-400 mx-2"></div>
+
+                        <!-- Water Cuvette -->
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="app.insertCuvette('water')" class="cuvette w-10 h-16 border-2 border-gray-300 bg-white/80 rounded-sm relative shadow-sm overflow-hidden flex flex-col justify-end">
+                                <div class="w-full h-1 bg-gray-300 absolute top-0"></div> <!-- Cap -->
+                                <div class="w-full h-3/4 bg-blue-50/50 border-t border-blue-100"></div> <!-- Liquid -->
+                            </button>
+                            <span class="text-xs font-bold text-gray-700 text-center">Water<br>(Ref)</span>
+                        </div>
+
+                        <!-- Sample 1 (Red) -->
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="app.insertCuvette('sample1')" class="cuvette w-10 h-16 border-2 border-gray-300 bg-white/80 rounded-sm relative shadow-sm overflow-hidden flex flex-col justify-end">
+                                <div class="w-full h-1 bg-gray-300 absolute top-0"></div>
+                                <div class="w-full h-3/4 bg-red-500/80 border-t border-red-400"></div>
+                            </button>
+                            <span class="text-xs font-bold text-gray-700 text-center">Sample<br>A</span>
+                        </div>
+
+                        <!-- Sample 2 (Blue) -->
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="app.insertCuvette('sample2')" class="cuvette w-10 h-16 border-2 border-gray-300 bg-white/80 rounded-sm relative shadow-sm overflow-hidden flex flex-col justify-end">
+                                <div class="w-full h-1 bg-gray-300 absolute top-0"></div>
+                                <div class="w-full h-3/4 bg-blue-600/80 border-t border-blue-400"></div>
+                            </button>
+                            <span class="text-xs font-bold text-gray-700 text-center">Sample<br>B</span>
+                        </div>
+                        
+                        <!-- Sample 3 (Green) -->
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="app.insertCuvette('sample3')" class="cuvette w-10 h-16 border-2 border-gray-300 bg-white/80 rounded-sm relative shadow-sm overflow-hidden flex flex-col justify-end">
+                                <div class="w-full h-1 bg-gray-300 absolute top-0"></div>
+                                <div class="w-full h-3/4 bg-green-500/80 border-t border-green-400"></div>
+                            </button>
+                            <span class="text-xs font-bold text-gray-700 text-center">Sample<br>C</span>
+                        </div>
+
+                        <!-- Sample 4 (Yellow) -->
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="app.insertCuvette('sample4')" class="cuvette w-10 h-16 border-2 border-gray-300 bg-white/80 rounded-sm relative shadow-sm overflow-hidden flex flex-col justify-end">
+                                <div class="w-full h-1 bg-gray-300 absolute top-0"></div>
+                                <div class="w-full h-3/4 bg-yellow-400/80 border-t border-yellow-300"></div>
+                            </button>
+                            <span class="text-xs font-bold text-gray-700 text-center">Sample<br>D</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Orientation Modal -->
+    <div id="modal-orientation" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-arrows-rotate text-blue-500 mr-2"></i> Cuvette Orientation</h2>
+            <p class="text-gray-600 mb-4 text-sm">Protocol requires specific orientation for accurate reading. How will you insert the cuvette into the slot?</p>
+            
+            <div class="space-y-3">
+                <button onclick="app.submitOrientation(true)" class="w-full text-left p-3 border border-gray-200 rounded hover:bg-blue-50 hover:border-blue-300 transition flex items-center">
+                    <i class="fa-regular fa-circle mr-3 text-gray-400"></i> Cap up, clear sides facing left and right
+                </button>
+                <button onclick="app.submitOrientation(false)" class="w-full text-left p-3 border border-gray-200 rounded hover:bg-gray-50 transition flex items-center">
+                    <i class="fa-regular fa-circle mr-3 text-gray-400"></i> Cap down, rough sides facing left and right
+                </button>
+            </div>
+            
+            <div class="mt-6 flex justify-end">
+                <button onclick="app.closeModal('modal-orientation')" class="text-gray-500 hover:text-gray-700 text-sm font-bold">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screenshot Modal -->
+    <div id="modal-screenshot" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full text-center">
+            <div class="text-green-500 text-5xl mb-4"><i class="fa-solid fa-camera-retro"></i></div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Data Saved!</h2>
+            <p class="text-gray-600 mb-6">A virtual screenshot of the absorbance graph has been saved for your lab report.</p>
+            <button onclick="app.closeModal('modal-screenshot')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition">Continue Lab</button>
+        </div>
+    </div>
+
+    <script>
+        // Custom Plugin to draw the visible spectrum background
+        const spectrumBackgroundPlugin = {
+            id: 'spectrumBackground',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return; // Wait until chart layout is ready
+                
+                const { top, bottom, left, right, width, height } = chartArea;
+                
+                ctx.save();
+                const gradient = ctx.createLinearGradient(left, 0, right, 0);
+                
+                // Map approximate visible spectrum colors to positions (400nm to 700nm -> span 300)
+                // Using 0.3 opacity to act as a soft overlay
+                gradient.addColorStop(0, 'rgba(120, 82, 255, 0.3)');     // 400nm Violet
+                gradient.addColorStop(0.166, 'rgba(0, 123, 255, 0.3)');  // 450nm Blue
+                gradient.addColorStop(0.283, 'rgba(0, 255, 255, 0.3)');  // 485nm Cyan
+                gradient.addColorStop(0.333, 'rgba(0, 255, 0, 0.3)');    // 500nm Green
+                gradient.addColorStop(0.550, 'rgba(255, 255, 0, 0.3)');  // 565nm Yellow
+                gradient.addColorStop(0.633, 'rgba(255, 165, 0, 0.3)');  // 590nm Orange
+                gradient.addColorStop(0.750, 'rgba(255, 0, 0, 0.3)');    // 625nm Red
+                gradient.addColorStop(1, 'rgba(150, 0, 0, 0.3)');        // 700nm Dark Red
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(left, top, width, height);
+                ctx.restore();
+            }
+        };
+
+        // Application Logic and State Management
+        const app = {
+            state: {
+                isPluggedIn: false,
+                isSoftwareOpen: false,
+                darkCalibrated: false,
+                referenceCalibrated: false,
+                slotItem: null, // null, 'hand', 'water', 'sample1', 'sample2', 'sample3'
+                currentStep: 1,
+                pendingCuvette: null
+            },
+            chart: null,
+
+            init() {
+                this.initChart();
+                this.updateUI();
+                this.showToast("Welcome to the Virtual Spectrometer Lab! Follow the protocol on the left.", "info");
+            },
+
+            // Notification System
+            showToast(message, type = 'error') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                
+                let icon = type === 'error' ? '<i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>' : 
+                           type === 'success' ? '<i class="fa-solid fa-circle-check text-green-500 mr-2"></i>' :
+                           '<i class="fa-solid fa-circle-info text-blue-500 mr-2"></i>';
+                
+                let borderClass = type === 'error' ? 'border-red-500' : type === 'success' ? 'border-green-500' : 'border-blue-500';
+
+                toast.className = `toast-enter bg-white px-4 py-3 rounded shadow-lg border-l-4 ${borderClass} flex items-center min-w-[300px]`;
+                toast.innerHTML = `${icon} <span class="text-gray-700 text-sm font-semibold">${message}</span>`;
+                
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    toast.style.transition = 'all 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            },
+
+            // Modal Management
+            openModal(id) { document.getElementById(id).classList.remove('hidden'); },
+            closeModal(id) { document.getElementById(id).classList.add('hidden'); this.state.pendingCuvette = null; },
+
+            // Chart Initialization
+            initChart() {
+                const ctx = document.getElementById('spectrometerChart').getContext('2d');
+                
+                // Create wavelength labels (400nm to 700nm)
+                const labels = Array.from({length: 31}, (_, i) => 400 + i * 10);
+                
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Absorbance',
+                            data: Array(31).fill(0), // Initial empty data
+                            borderColor: '#2563eb', // Blue-600
+                            borderWidth: 3, // Thicker line for better visibility
+                            pointRadius: 0,
+                            fill: false, // Changed to false so it doesn't clash with the spectrum background
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800 },
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Wavelength (nm)', font: {weight: 'bold'} },
+                                grid: { color: 'rgba(255, 255, 255, 0.5)' } // Lighter grid on colored background
+                            },
+                            y: {
+                                title: { display: true, text: 'Absorbance (A)', font: {weight: 'bold'} },
+                                min: 0,
+                                max: 2.0,
+                                grid: { color: 'rgba(255, 255, 255, 0.5)' }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    },
+                    plugins: [spectrumBackgroundPlugin] // Added custom plugin here
+                });
+            },
+
+            // Generate spectral data based on sample type
+            generateSpectrumData(type) {
+                const labels = this.chart.data.labels;
+                let data = [];
+                
+                labels.forEach(w => {
+                    let val = 0;
+                    // Add baseline noise
+                    let noise = Math.random() * 0.05;
+
+                    if (type === 'water') {
+                        // Very low absorbance across the board
+                        val = noise + 0.02; 
+                    } 
+                    else if (type === 'sample1') { // Red sample (absorbs blue/green)
+                        // Peak around 480nm
+                        val = 1.6 * Math.exp(-Math.pow(w - 480, 2) / 2500) + noise;
+                    }
+                    else if (type === 'sample2') { // Blue sample (absorbs red/yellow)
+                        // Peak around 620nm
+                        val = 1.4 * Math.exp(-Math.pow(w - 620, 2) / 2500) + noise;
+                    }
+                    else if (type === 'sample3') { // Green sample (absorbs blue and red)
+                        // Peaks around 430nm and 660nm
+                        let peak1 = 1.2 * Math.exp(-Math.pow(w - 430, 2) / 1500);
+                        let peak2 = 1.5 * Math.exp(-Math.pow(w - 660, 2) / 1500);
+                        val = peak1 + peak2 + noise;
+                    }
+                    else if (type === 'sample4') { // Yellow sample (absorbs blue/violet)
+                        // Peak around 440nm
+                        val = 1.3 * Math.exp(-Math.pow(w - 440, 2) / 2000) + noise;
+                    }
+                    data.push(val);
+                });
+                return data;
+            },
+
+            updateGraph(type) {
+                const newData = this.generateSpectrumData(type);
+                this.chart.data.datasets[0].data = newData;
+                
+                // Change line color based on sample visually
+                let color = '#000000'; // dark color by default so it shows over the spectrum
+                if(type === 'sample1') color = '#991b1b'; // dark red
+                if(type === 'sample2') color = '#1e3a8a'; // dark blue
+                if(type === 'sample3') color = '#14532d'; // dark green
+                if(type === 'sample4') color = '#854d0e'; // dark yellow/brown
+                if(type === 'water') color = '#4b5563'; // dark gray
+
+                this.chart.data.datasets[0].borderColor = color;
+                this.chart.update();
+            },
+
+            clearGraph() {
+                this.chart.data.datasets[0].data = Array(31).fill(0);
+                this.chart.update();
+            },
+
+            // --- Interactions ---
+
+            plugIn() {
+                if (this.state.isPluggedIn) return;
+                this.state.isPluggedIn = true;
+                this.setStep(2);
+                this.updateUI();
+                this.showToast("Spectrometer plugged in successfully.", "success");
+            },
+
+            openSoftware() {
+                if (!this.state.isPluggedIn) {
+                    this.showToast("You must plug in the spectrometer first.");
+                    return;
+                }
+                this.state.isSoftwareOpen = true;
+                this.setStep(4); // Skip 3 as it's an instruction
+                this.updateUI();
+                this.showToast("Spectrometry software initialized.", "success");
+            },
+
+            placeHand() {
+                if (this.state.slotItem !== null && this.state.slotItem !== 'hand') {
+                    this.showToast("Please remove the cuvette from the spectrometer first.");
+                    return;
+                }
+                
+                if (this.state.slotItem === 'hand') {
+                    this.emptySlot();
+                    return;
+                }
+
+                this.state.slotItem = 'hand';
+                this.updateSlotVisual();
+                this.showToast("Hand placed over opening.", "info");
+            },
+
+            insertCuvette(type) {
+                if (this.state.slotItem !== null) {
+                    this.showToast(`Spectrometer is currently occupied by ${this.state.slotItem === 'hand' ? 'your hand' : 'a cuvette'}. Remove it first.`);
+                    return;
+                }
+                
+                // Trigger orientation check
+                this.state.pendingCuvette = type;
+                this.openModal('modal-orientation');
+            },
+
+            submitOrientation(isCorrect) {
+                if (!isCorrect) {
+                    this.closeModal('modal-orientation');
+                    this.showToast("Incorrect orientation. Light passes left-to-right. It must pass through the clear sides.");
+                    return;
+                }
+                
+                // Correct
+                this.state.slotItem = this.state.pendingCuvette;
+                this.closeModal('modal-orientation');
+                this.updateSlotVisual();
+                
+                let names = { 'water': 'Water Reference', 'sample1': 'Sample A', 'sample2': 'Sample B', 'sample3': 'Sample C', 'sample4': 'Sample D' };
+                this.showToast(`${names[this.state.slotItem]} cuvette inserted correctly.`, "success");
+
+                // Update steps
+                if (this.state.slotItem === 'water' && this.state.darkCalibrated && !this.state.referenceCalibrated) {
+                    this.setStep(5);
+                } else if (this.state.slotItem.startsWith('sample') && this.state.referenceCalibrated) {
+                    this.setStep(6);
+                }
+            },
+
+            emptySlot() {
+                this.state.slotItem = null;
+                this.updateSlotVisual();
+                this.clearGraph(); // Clear graph when empty
+                this.showToast("Spectrometer slot cleared.", "info");
+            },
+
+            // --- Software Actions ---
+
+            runLoadingAnimation(text, callback) {
+                const loader = document.getElementById('app-loading');
+                const textEl = document.getElementById('loading-text');
+                const bar = document.getElementById('loading-bar');
+                
+                loader.classList.remove('hidden');
+                loader.classList.add('flex');
+                textEl.innerText = text;
+                
+                // Reset bar
+                bar.style.transition = 'none';
+                bar.style.width = '0%';
+                
+                // Trigger reflow
+                void bar.offsetWidth; 
+                
+                // Animate
+                bar.style.transition = 'width 2s linear';
+                bar.style.width = '100%';
+
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                    loader.classList.remove('flex');
+                    callback();
+                }, 2000);
+            },
+
+            runDarkCalibration() {
+                if (!this.state.isSoftwareOpen) return;
+                
+                if (this.state.slotItem !== 'hand') {
+                    this.showToast("Protocol requires placing your hand over the opening for Dark Calibration.");
+                    return;
+                }
+
+                this.runLoadingAnimation("Performing Dark Calibration...", () => {
+                    this.state.darkCalibrated = true;
+                    this.showToast("Dark Calibration Complete.", "success");
+                    this.setStep(5);
+                    this.updateUI();
+                });
+            },
+
+            runReferenceCalibration() {
+                if (!this.state.darkCalibrated) return;
+
+                if (this.state.slotItem !== 'water') {
+                    this.showToast("Protocol requires inserting the Water cuvette for Reference Calibration.");
+                    return;
+                }
+
+                this.runLoadingAnimation("Performing Reference Calibration...", () => {
+                    this.state.referenceCalibrated = true;
+                    this.showToast("Reference Calibration Complete. Ready for samples.", "success");
+                    this.setStep(6);
+                    this.updateUI();
+                });
+            },
+
+            measureSample() {
+                if (!this.state.referenceCalibrated) return;
+
+                if (!this.state.slotItem || this.state.slotItem === 'hand' || this.state.slotItem === 'water') {
+                    this.showToast("Please insert a Sample (A, B, or C) to measure.");
+                    return;
+                }
+
+                this.runLoadingAnimation("Scanning Sample...", () => {
+                    this.updateGraph(this.state.slotItem);
+                    this.showToast("Absorbance recorded successfully.", "success");
+                    this.setStep(7);
+                });
+            },
+
+            simulateScreenshot() {
+                if(this.state.currentStep !== 7) {
+                    this.showToast("Record a sample's absorbance first before saving.");
+                    return;
+                }
+                this.openModal('modal-screenshot');
+            },
+
+            // --- UI Updates ---
+
+            setStep(num) {
+                this.state.currentStep = num;
+                // Update protocol sidebar visual
+                document.querySelectorAll('.step').forEach(el => {
+                    el.classList.remove('font-bold', 'text-blue-600', 'opacity-50');
+                    el.classList.add('opacity-50');
+                });
+                
+                // Step 3 is just a note, highlight 4 instead if we are at 3 conceptually
+                let targetStep = num === 3 ? 4 : num;
+                const activeEl = document.getElementById(`step-${targetStep}`);
+                if(activeEl) {
+                    activeEl.classList.remove('opacity-50');
+                    activeEl.classList.add('font-bold', 'text-blue-600');
+                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            },
+
+            updateSlotVisual() {
+                const visual = document.getElementById('slot-content-visual');
+                const btnRemove = document.getElementById('btn-remove');
+                
+                visual.style.opacity = '0';
+                setTimeout(() => {
+                    if (this.state.slotItem === null) {
+                        visual.innerHTML = '';
+                        btnRemove.classList.add('hidden');
+                    } else if (this.state.slotItem === 'hand') {
+                        visual.innerHTML = '<div class="text-4xl">🖐️</div>';
+                        btnRemove.classList.remove('hidden');
+                    } else {
+                        // It's a cuvette
+                        let colorClass = 'bg-blue-50'; // water
+                        if(this.state.slotItem === 'sample1') colorClass = 'bg-red-500';
+                        if(this.state.slotItem === 'sample2') colorClass = 'bg-blue-600';
+                        if(this.state.slotItem === 'sample3') colorClass = 'bg-green-500';
+                        if(this.state.slotItem === 'sample4') colorClass = 'bg-yellow-400';
+
+                        visual.innerHTML = `
+                            <div class="w-8 h-8 border-2 border-gray-400 bg-white/50 flex flex-col justify-end absolute bottom-1">
+                                <div class="w-full h-3/4 ${colorClass}"></div>
+                            </div>
+                        `;
+                        btnRemove.classList.remove('hidden');
+                    }
+                    visual.style.opacity = '1';
+                }, 150);
+            },
+
+            updateUI() {
+                // Header Status
+                const badge = document.getElementById('status-badge');
+                const led = document.getElementById('spec-led');
+                if (this.state.isPluggedIn) {
+                    badge.innerText = "Connected";
+                    badge.className = "font-bold text-green-400";
+                    led.classList.remove('bg-red-500', 'shadow-[0_0_10px_rgba(239,68,68,0.8)]');
+                    led.classList.add('bg-green-500', 'shadow-[0_0_10px_rgba(34,197,94,0.8)]');
+                }
+
+                // Screens
+                if (!this.state.isPluggedIn) {
+                    document.getElementById('screen-off').classList.remove('hidden');
+                    document.getElementById('desktop-view').classList.add('hidden');
+                    document.getElementById('app-view').classList.add('hidden');
+                } else if (!this.state.isSoftwareOpen) {
+                    document.getElementById('screen-off').classList.add('hidden');
+                    document.getElementById('desktop-view').classList.remove('hidden');
+                    document.getElementById('app-view').classList.add('hidden');
+                } else {
+                    document.getElementById('screen-off').classList.add('hidden');
+                    document.getElementById('desktop-view').classList.add('hidden');
+                    document.getElementById('app-view').classList.remove('hidden');
+                }
+
+                // Software Buttons Logic
+                if (this.state.isSoftwareOpen) {
+                    const btnDark = document.getElementById('btn-dark-cal');
+                    const btnRef = document.getElementById('btn-ref-cal');
+                    const btnMeasure = document.getElementById('btn-measure');
+
+                    // Dark Cal
+                    if (this.state.darkCalibrated) {
+                        btnDark.classList.add('opacity-50', 'bg-green-700');
+                        btnDark.classList.remove('bg-gray-700', 'hover:bg-gray-800');
+                        btnDark.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Dark Calibrated';
+                    }
+
+                    // Ref Cal
+                    if (this.state.darkCalibrated && !this.state.referenceCalibrated) {
+                        btnRef.disabled = false;
+                        btnRef.classList.remove('opacity-50', 'cursor-not-allowed');
+                    } else if (this.state.referenceCalibrated) {
+                        btnRef.classList.add('opacity-50', 'bg-green-700');
+                        btnRef.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        btnRef.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Reference Calibrated';
+                    }
+
+                    // Measure
+                    if (this.state.referenceCalibrated) {
+                        btnMeasure.disabled = false;
+                        btnMeasure.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            }
+        };
+
+        // Initialize application on load
+        window.onload = () => {
+            app.init();
+        };
+
+    </script>
+</body>
+</html>
