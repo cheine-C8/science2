@@ -612,6 +612,13 @@
                     this.showToast("Record a sample's absorbance first before saving.");
                     return;
                 }
+                
+                const canvas = document.getElementById('spectrometerChart');
+                const link = document.createElement('a');
+                link.download = `absorbance_${this.state.slotItem || 'spectrum'}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
                 this.openModal('modal-screenshot');
             },
 
