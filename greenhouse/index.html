@@ -92,26 +92,11 @@
                     </h2>
                     
                     <div class="space-y-4">
-                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <p class="font-medium text-sm mb-2">Bottle A: Control (Normal Air)</p>
-                            <button id="prepA" class="w-full bg-slate-600 hover:bg-slate-700 text-white py-2 px-4 rounded-lg transition-colors text-sm">
-                                Insert Probe & Cap
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                            <p class="text-sm mb-4 text-slate-600">Automated Setup Sequence</p>
+                            <button id="prepareLab" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-semibold shadow-md">
+                                Auto-Prepare Experiment
                             </button>
-                        </div>
-
-                        <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                            <p class="font-medium text-sm mb-2 text-emerald-900">Bottle B: CO2 Treatment</p>
-                            <div class="space-y-2">
-                                <button id="addWaterB" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors text-sm">
-                                    Add 50mL Water
-                                </button>
-                                <button id="addAlkaB" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                                    Drop Alka-Seltzer Tablets
-                                </button>
-                                <button id="capB" disabled class="w-full bg-slate-600 hover:bg-slate-700 text-white py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                                    Insert Probe & Cap (Wait 30s)
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -227,10 +212,7 @@
 
         // UI Elements
         const buttons = {
-            prepA: document.getElementById('prepA'),
-            addWaterB: document.getElementById('addWaterB'),
-            addAlkaB: document.getElementById('addAlkaB'),
-            capB: document.getElementById('capB'),
+            prepareLab: document.getElementById('prepareLab'),
             startLab: document.getElementById('startLab')
         };
 
@@ -279,43 +261,41 @@
         }
 
         // Preparation Logic
-        buttons.prepA.onclick = () => {
+        buttons.prepareLab.onclick = () => {
+            buttons.prepareLab.disabled = true;
+            buttons.prepareLab.innerText = "Preparing Bottle A...";
+            
+            // Bottle A prep
             state.bottleAPrepared = true;
             document.getElementById('probeA').classList.remove('hidden');
             document.getElementById('capA_visual').classList.remove('hidden');
-            buttons.prepA.disabled = true;
-            buttons.prepA.innerText = "Ready ✓";
-            checkReadyToStart();
-            showMessage("Bottle A prepared with normal air and probe.");
-        };
-
-        buttons.addWaterB.onclick = () => {
-            state.bottleBWater = true;
-            document.getElementById('waterB').style.height = "20%";
-            buttons.addWaterB.disabled = true;
-            buttons.addAlkaB.disabled = false;
-            showMessage("50mL Water added to Bottle B.");
-        };
-
-        buttons.addAlkaB.onclick = () => {
-            state.bottleBAlka = true;
-            buttons.addAlkaB.disabled = true;
-            createBubbles();
-            showMessage("Alka-Seltzer reacting. CO2 gas is displacing oxygen. Wait 30s...", 'info');
             
+            // Bottle B prep sequence
             setTimeout(() => {
-                buttons.capB.disabled = false;
-                showMessage("30 seconds passed. You can now cap Bottle B.", 'success');
-            }, 5000); // Speeding up for simulation
-        };
+                state.bottleBWater = true;
+                document.getElementById('waterB').style.height = "20%";
+                buttons.prepareLab.innerText = "Adding Water to Bottle B...";
+                showMessage("Adding Water to Bottle B...");
+            }, 1000);
 
-        buttons.capB.onclick = () => {
-            state.bottleBCapped = true;
-            document.getElementById('probeB').classList.remove('hidden');
-            document.getElementById('capB_visual').classList.remove('hidden');
-            buttons.capB.disabled = true;
-            checkReadyToStart();
-            showMessage("Bottle B capped and ready.");
+            setTimeout(() => {
+                state.bottleBAlka = true;
+                createBubbles();
+                buttons.prepareLab.innerText = "Dropping Alka-Seltzer...";
+                showMessage("Alka-Seltzer reacting. CO2 gas is displacing oxygen...", 'info');
+            }, 2500);
+
+            setTimeout(() => {
+                state.bottleBCapped = true;
+                document.getElementById('probeB').classList.remove('hidden');
+                document.getElementById('capB_visual').classList.remove('hidden');
+                
+                buttons.prepareLab.innerText = "Setup Complete ✓";
+                buttons.prepareLab.classList.replace('bg-blue-600', 'bg-emerald-600');
+                buttons.prepareLab.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
+                checkReadyToStart();
+                showMessage("Bottles capped and ready! You can now start the lab.", 'success');
+            }, 5000);
         };
 
         function createBubbles() {
