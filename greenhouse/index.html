@@ -1,397 +1,397 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Virtual Lab: The Greenhouse Bottle Protocol</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .bottle-container {
-            position: relative;
-            width: 120px;
-            height: 250px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid #cbd5e1;
-            border-radius: 20px 20px 10px 10px;
-            overflow: hidden;
-        }
-        .water {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: rgba(59, 130, 246, 0.4);
-            transition: height 0.5s ease;
-        }
-        .bubbles {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 0;
-            background: transparent;
-        }
-        .bubble {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            animation: rise 2s infinite ease-in;
-        }
-        @keyframes rise {
-            0% { bottom: 0; opacity: 1; transform: translateX(0); }
-            100% { bottom: 100%; opacity: 0; transform: translateX(10px); }
-        }
-        .heat-lamp {
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, #fde047 0%, transparent 70%);
-            filter: blur(5px);
-            animation: pulse 2s infinite alternate;
-        }
-        @keyframes pulse {
-            from { opacity: 0.6; transform: scale(1); }
-            to { opacity: 1; transform: scale(1.1); }
-        }
-        .probe {
-            width: 4px;
-            height: 150px;
-            background: #475569;
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-        .probe-tip {
-            width: 8px;
-            height: 8px;
-            background: #ef4444;
-            border-radius: 50%;
-            position: absolute;
-            bottom: 0;
-            left: -2px;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Lab: The Greenhouse Bottle Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .bottle-container {
+            position: relative;
+            width: 120px;
+            height: 250px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid #cbd5e1;
+            border-radius: 20px 20px 10px 10px;
+            overflow: hidden;
+        }
+        .water {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(59, 130, 246, 0.4);
+            transition: height 0.5s ease;
+        }
+        .bubbles {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0;
+            background: transparent;
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: rise 2s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { bottom: 0; opacity: 1; transform: translateX(0); }
+            100% { bottom: 100%; opacity: 0; transform: translateX(10px); }
+        }
+        .heat-lamp {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #fde047 0%, transparent 70%);
+            filter: blur(5px);
+            animation: pulse 2s infinite alternate;
+        }
+        @keyframes pulse {
+            from { opacity: 0.6; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.1); }
+        }
+        .probe {
+            width: 4px;
+            height: 150px;
+            background: #475569;
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        .probe-tip {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            left: -2px;
+        }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
 
-    <div class="max-w-6xl mx-auto p-4 md:p-8">
-        <!-- Header -->
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl font-bold text-emerald-800 mb-2">The Greenhouse Bottle Protocol</h1>
-            <p class="text-lg text-slate-600 italic">Objective: Model how increased CO2 concentrations affect thermal energy in a closed system.</p>
-        </header>
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-emerald-800 mb-2">The Greenhouse Bottle Protocol</h1>
+            <p class="text-lg text-slate-600 italic">Objective: Model how increased CO2 concentrations affect thermal energy in a closed system.</p>
+        </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Left Column: Setup & Controls -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <span class="bg-emerald-100 text-emerald-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">1</span>
-                        Preparation
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                            <p class="text-sm mb-4 text-slate-600">Automated Setup Sequence</p>
-                            <button id="prepareLab" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-semibold shadow-md">
-                                Auto-Prepare Experiment
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Setup & Controls -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-emerald-100 text-emerald-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">1</span>
+                        Preparation
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                            <p class="text-sm mb-4 text-slate-600">Automated Setup Sequence</p>
+                            <button id="prepareLab" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-semibold shadow-md">
+                                Auto-Prepare Experiment
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <span class="bg-orange-100 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">2</span>
-                        Data Collection
-                    </h2>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                            <span class="font-medium">Heat Lamp:</span>
-                            <span id="lampStatus" class="text-red-600 font-bold">OFF</span>
-                        </div>
-                        <button id="startLab" disabled class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-xl font-bold transition-all transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-lg">
-                            START HEAT LAMP & LOGGING
-                        </button>
-                        <p id="timerDisplay" class="text-center text-2xl font-mono font-bold text-slate-700">00:00 / 10:00</p>
-                    </div>
-                </div>
-            </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-orange-100 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">2</span>
+                        Data Collection
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                            <span class="font-medium">Heat Lamp:</span>
+                            <span id="lampStatus" class="text-red-600 font-bold">OFF</span>
+                        </div>
+                        <button id="startLab" disabled class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-xl font-bold transition-all transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-lg">
+                            START HEAT LAMP & LOGGING
+                        </button>
+                        <p id="timerDisplay" class="text-center text-2xl font-mono font-bold text-slate-700">00:00 / 10:00</p>
+                    </div>
+                </div>
+            </div>
 
-            <!-- Middle Column: Visual Simulation -->
-            <div class="lg:col-span-2 space-y-6">
-                <div class="bg-slate-900 rounded-3xl p-8 relative min-h-[400px] flex items-end justify-around overflow-hidden shadow-2xl border-4 border-slate-800">
-                    <!-- Heat Lamp Visual -->
-                    <div id="lampVisual" class="absolute top-[-20px] left-1/2 -translate-x-1/2 hidden flex-col items-center">
-                        <div class="w-32 h-12 bg-slate-700 rounded-t-full"></div>
-                        <div class="heat-lamp"></div>
-                    </div>
+            <!-- Middle Column: Visual Simulation -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-slate-900 rounded-3xl p-8 relative min-h-[400px] flex items-end justify-around overflow-hidden shadow-2xl border-4 border-slate-800">
+                    <!-- Heat Lamp Visual -->
+                    <div id="lampVisual" class="absolute top-[-20px] left-1/2 -translate-x-1/2 hidden flex-col items-center">
+                        <div class="w-32 h-12 bg-slate-700 rounded-t-full"></div>
+                        <div class="heat-lamp"></div>
+                    </div>
 
-                    <!-- Bottle A -->
-                    <div class="flex flex-col items-center gap-4">
-                        <div class="bottle-container" id="bottleA">
-                            <div id="probeA" class="probe hidden"><div class="probe-tip"></div></div>
-                            <div id="capA_visual" class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded hidden"></div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-white font-bold">Bottle A</p>
-                            <p class="text-slate-400 text-xs">Control (Normal Air)</p>
-                            <p id="tempA_display" class="text-emerald-400 font-mono text-xl">--.-°C</p>
-                        </div>
-                    </div>
+                    <!-- Bottle A -->
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="bottle-container" id="bottleA">
+                            <div id="probeA" class="probe hidden"><div class="probe-tip"></div></div>
+                            <div id="capA_visual" class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded hidden"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white font-bold">Bottle A</p>
+                            <p class="text-slate-400 text-xs">Control (Normal Air)</p>
+                            <p id="tempA_display" class="text-emerald-400 font-mono text-xl">--.-°C</p>
+                        </div>
+                    </div>
 
-                    <!-- Bottle B -->
-                    <div class="flex flex-col items-center gap-4">
-                        <div class="bottle-container" id="bottleB">
-                            <div id="probeB" class="probe hidden"><div class="probe-tip"></div></div>
-                            <div id="capB_visual" class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded hidden"></div>
-                            <div id="waterB" class="water" style="height: 0%"></div>
-                            <div id="bubblesB" class="bubbles"></div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-white font-bold">Bottle B</p>
-                            <p class="text-emerald-400 text-xs">CO2 Enriched</p>
-                            <p id="tempB_display" class="text-emerald-400 font-mono text-xl">--.-°C</p>
-                        </div>
-                    </div>
+                    <!-- Bottle B -->
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="bottle-container" id="bottleB">
+                            <div id="probeB" class="probe hidden"><div class="probe-tip"></div></div>
+                            <div id="capB_visual" class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded hidden"></div>
+                            <div id="waterB" class="water" style="height: 0%"></div>
+                            <div id="bubblesB" class="bubbles"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white font-bold">Bottle B</p>
+                            <p class="text-emerald-400 text-xs">CO2 Enriched</p>
+                            <p id="tempB_display" class="text-emerald-400 font-mono text-xl">--.-°C</p>
+                        </div>
+                    </div>
 
-                    <!-- Floor -->
-                    <div class="absolute bottom-0 w-full h-4 bg-slate-800"></div>
-                </div>
+                    <!-- Floor -->
+                    <div class="absolute bottom-0 w-full h-4 bg-slate-800"></div>
+                </div>
 
-                <!-- Chart -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <canvas id="tempChart" height="150"></canvas>
-                </div>
-            </div>
-        </div>
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <canvas id="tempChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
 
-        <!-- Data Table -->
-        <div class="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
-            <h2 class="text-xl font-semibold mb-4">Laboratory Data Log</h2>
-            <table class="w-full text-left text-sm">
-                <thead>
-                    <tr class="border-b-2 border-slate-100">
-                        <th class="py-2 px-4">Time (min)</th>
-                        <th class="py-2 px-4 text-slate-600">Temp A (°C)</th>
-                        <th class="py-2 px-4 text-emerald-600">Temp B (°C)</th>
-                        <th class="py-2 px-4 font-bold text-red-500">Difference (ΔT)</th>
-                    </tr>
-                </thead>
-                <tbody id="dataTableBody">
-                    <!-- Rows injected via JS -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <!-- Data Table -->
+        <div class="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-4">Laboratory Data Log</h2>
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b-2 border-slate-100">
+                        <th class="py-2 px-4">Time (min)</th>
+                        <th class="py-2 px-4 text-slate-600">Temp A (°C)</th>
+                        <th class="py-2 px-4 text-emerald-600">Temp B (°C)</th>
+                        <th class="py-2 px-4 font-bold text-red-500">Difference (ΔT)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- Rows injected via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <!-- Modals/Alerts UI -->
-    <div id="messageBox" class="fixed bottom-4 right-4 max-w-sm w-full bg-white shadow-2xl rounded-xl border-l-4 border-emerald-500 p-4 transform translate-y-32 transition-transform duration-300 z-50">
-        <p id="messageText" class="text-slate-700 font-medium"></p>
-    </div>
+    <!-- Modals/Alerts UI -->
+    <div id="messageBox" class="fixed bottom-4 right-4 max-w-sm w-full bg-white shadow-2xl rounded-xl border-l-4 border-emerald-500 p-4 transform translate-y-32 transition-transform duration-300 z-50">
+        <p id="messageText" class="text-slate-700 font-medium"></p>
+    </div>
 
-    <script>
-        // State Management
-        let state = {
-            bottleAPrepared: false,
-            bottleBWater: false,
-            bottleBAlka: false,
-            bottleBCapped: false,
-            isRunning: false,
-            timeElapsed: 0, // in seconds
-            dataPoints: [],
-            tempA: 22.5,
-            tempB: 22.5,
-            interval: null
-        };
+    <script>
+        // State Management
+        let state = {
+            bottleAPrepared: false,
+            bottleBWater: false,
+            bottleBAlka: false,
+            bottleBCapped: false,
+            isRunning: false,
+            timeElapsed: 0, // in seconds
+            dataPoints: [],
+            tempA: 22.5,
+            tempB: 22.5,
+            interval: null
+        };
 
-        const MAX_TIME = 600; // 10 minutes
-        const CHART_CTX = document.getElementById('tempChart').getContext('2d');
-        let tempChart;
+        const MAX_TIME = 600; // 10 minutes
+        const CHART_CTX = document.getElementById('tempChart').getContext('2d');
+        let tempChart;
 
-        // UI Elements
-        const buttons = {
-            prepareLab: document.getElementById('prepareLab'),
-            startLab: document.getElementById('startLab')
-        };
+        // UI Elements
+        const buttons = {
+            prepareLab: document.getElementById('prepareLab'),
+            startLab: document.getElementById('startLab')
+        };
 
-        // Initialize Chart
-        function initChart() {
-            tempChart = new Chart(CHART_CTX, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Bottle A (Control)',
-                            borderColor: '#64748b',
-                            backgroundColor: 'rgba(100, 116, 139, 0.1)',
-                            data: [],
-                            tension: 0.3,
-                            borderWidth: 3
-                        },
-                        {
-                            label: 'Bottle B (CO2)',
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            data: [],
-                            tension: 0.3,
-                            borderWidth: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: { title: { display: true, text: 'Time (Minutes)' } },
-                        y: { title: { display: true, text: 'Temperature (°C)' }, suggestedMin: 20 }
-                    }
-                }
-            });
-        }
+        // Initialize Chart
+        function initChart() {
+            tempChart = new Chart(CHART_CTX, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Bottle A (Control)',
+                            borderColor: '#64748b',
+                            backgroundColor: 'rgba(100, 116, 139, 0.1)',
+                            data: [],
+                            tension: 0.3,
+                            borderWidth: 3
+                        },
+                        {
+                            label: 'Bottle B (CO2)',
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            data: [],
+                            tension: 0.3,
+                            borderWidth: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Time (Minutes)' } },
+                        y: { title: { display: true, text: 'Temperature (°C)' }, suggestedMin: 20 }
+                    }
+                }
+            });
+        }
 
-        function showMessage(text, type = 'success') {
-            const box = document.getElementById('messageBox');
-            const txt = document.getElementById('messageText');
-            box.className = `fixed bottom-4 right-4 max-w-sm w-full bg-white shadow-2xl rounded-xl border-l-4 p-4 transform transition-transform duration-300 z-50 ${type === 'success' ? 'border-emerald-500' : 'border-blue-500'}`;
-            txt.innerText = text;
-            box.classList.remove('translate-y-32');
-            setTimeout(() => box.classList.add('translate-y-32'), 4000);
-        }
+        function showMessage(text, type = 'success') {
+            const box = document.getElementById('messageBox');
+            const txt = document.getElementById('messageText');
+            box.className = `fixed bottom-4 right-4 max-w-sm w-full bg-white shadow-2xl rounded-xl border-l-4 p-4 transform transition-transform duration-300 z-50 ${type === 'success' ? 'border-emerald-500' : 'border-blue-500'}`;
+            txt.innerText = text;
+            box.classList.remove('translate-y-32');
+            setTimeout(() => box.classList.add('translate-y-32'), 4000);
+        }
 
-        // Preparation Logic
-        buttons.prepareLab.onclick = () => {
-            buttons.prepareLab.disabled = true;
-            buttons.prepareLab.innerText = "Preparing Bottle A...";
-            
-            // Bottle A prep
-            state.bottleAPrepared = true;
-            document.getElementById('probeA').classList.remove('hidden');
-            document.getElementById('capA_visual').classList.remove('hidden');
-            
-            // Bottle B prep sequence
-            setTimeout(() => {
-                state.bottleBWater = true;
-                document.getElementById('waterB').style.height = "20%";
-                buttons.prepareLab.innerText = "Adding Water to Bottle B...";
-                showMessage("Adding Water to Bottle B...");
-            }, 1000);
+        // Preparation Logic
+        buttons.prepareLab.onclick = () => {
+            buttons.prepareLab.disabled = true;
+            buttons.prepareLab.innerText = "Preparing Bottle A...";
+            
+            // Bottle A prep
+            state.bottleAPrepared = true;
+            document.getElementById('probeA').classList.remove('hidden');
+            document.getElementById('capA_visual').classList.remove('hidden');
+            
+            // Bottle B prep sequence
+            setTimeout(() => {
+                state.bottleBWater = true;
+                document.getElementById('waterB').style.height = "20%";
+                buttons.prepareLab.innerText = "Adding Water to Bottle B...";
+                showMessage("Adding Water to Bottle B...");
+            }, 1000);
 
-            setTimeout(() => {
-                state.bottleBAlka = true;
-                createBubbles();
-                buttons.prepareLab.innerText = "Dropping Alka-Seltzer...";
-                showMessage("Alka-Seltzer reacting. CO2 gas is displacing oxygen...", 'info');
-            }, 2500);
+            setTimeout(() => {
+                state.bottleBAlka = true;
+                createBubbles();
+                buttons.prepareLab.innerText = "Dropping Alka-Seltzer...";
+                showMessage("Alka-Seltzer reacting. CO2 gas is displacing oxygen...", 'info');
+            }, 2500);
 
-            setTimeout(() => {
-                state.bottleBCapped = true;
-                document.getElementById('probeB').classList.remove('hidden');
-                document.getElementById('capB_visual').classList.remove('hidden');
-                
-                buttons.prepareLab.innerText = "Setup Complete ✓";
-                buttons.prepareLab.classList.replace('bg-blue-600', 'bg-emerald-600');
-                buttons.prepareLab.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
-                checkReadyToStart();
-                showMessage("Bottles capped and ready! You can now start the lab.", 'success');
-            }, 5000);
-        };
+            setTimeout(() => {
+                state.bottleBCapped = true;
+                document.getElementById('probeB').classList.remove('hidden');
+                document.getElementById('capB_visual').classList.remove('hidden');
+                
+                buttons.prepareLab.innerText = "Setup Complete ✓";
+                buttons.prepareLab.classList.replace('bg-blue-600', 'bg-emerald-600');
+                buttons.prepareLab.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
+                checkReadyToStart();
+                showMessage("Bottles capped and ready! You can now start the lab.", 'success');
+            }, 5000);
+        };
 
-        function createBubbles() {
-            const container = document.getElementById('bubblesB');
-            for(let i=0; i<15; i++) {
-                const b = document.createElement('div');
-                b.className = 'bubble';
-                b.style.left = Math.random() * 100 + '%';
-                b.style.width = Math.random() * 8 + 4 + 'px';
-                b.style.height = b.style.width;
-                b.style.animationDelay = Math.random() * 2 + 's';
-                container.appendChild(b);
-            }
-        }
+        function createBubbles() {
+            const container = document.getElementById('bubblesB');
+            for(let i=0; i<15; i++) {
+                const b = document.createElement('div');
+                b.className = 'bubble';
+                b.style.left = Math.random() * 100 + '%';
+                b.style.width = Math.random() * 8 + 4 + 'px';
+                b.style.height = b.style.width;
+                b.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(b);
+            }
+        }
 
-        function checkReadyToStart() {
-            if(state.bottleAPrepared && state.bottleBCapped) {
-                buttons.startLab.disabled = false;
-            }
-        }
+        function checkReadyToStart() {
+            if(state.bottleAPrepared && state.bottleBCapped) {
+                buttons.startLab.disabled = false;
+            }
+        }
 
-        // Simulation Loop
-        buttons.startLab.onclick = () => {
-            state.isRunning = true;
-            buttons.startLab.disabled = true;
-            document.getElementById('lampStatus').innerText = "ON";
-            document.getElementById('lampVisual').classList.remove('hidden');
-            
-            state.interval = setInterval(tick, 1000); // 1 sec real time = 10 sec lab time for better experience
-        };
+        // Simulation Loop
+        buttons.startLab.onclick = () => {
+            state.isRunning = true;
+            buttons.startLab.disabled = true;
+            document.getElementById('lampStatus').innerText = "ON";
+            document.getElementById('lampVisual').classList.remove('hidden');
+            
+            state.interval = setInterval(tick, 1000); // 1 sec real time = 10 sec lab time for better experience
+        };
 
-        function tick() {
-            state.timeElapsed += 10; // Advancing 10 seconds per tick for demo speed
-            const minutes = (state.timeElapsed / 60).toFixed(1);
-            
-            // Physics logic: Bottle B warms faster due to CO2
-            // Greenhouse effect modeling
-            const baseRise = 0.05; // Base warming from lamp
-            const greenhouseEffect = 0.04; // Extra warming from CO2
-            
-            state.tempA += baseRise + (Math.random() * 0.02);
-            state.tempB += baseRise + greenhouseEffect + (Math.random() * 0.02);
+        function tick() {
+            state.timeElapsed += 10; // Advancing 10 seconds per tick for demo speed
+            const minutes = (state.timeElapsed / 60).toFixed(1);
+            
+            // Physics logic: Bottle B warms faster due to CO2
+            // Greenhouse effect modeling
+            const baseRise = 0.05; // Base warming from lamp
+            const greenhouseEffect = 0.04; // Extra warming from CO2
+            
+            state.tempA += baseRise + (Math.random() * 0.02);
+            state.tempB += baseRise + greenhouseEffect + (Math.random() * 0.02);
 
-            // Update UI
-            document.getElementById('tempA_display').innerText = state.tempA.toFixed(1) + "°C";
-            document.getElementById('tempB_display').innerText = state.tempB.toFixed(1) + "°C";
-            document.getElementById('timerDisplay').innerText = formatTime(state.timeElapsed) + " / 10:00";
+            // Update UI
+            document.getElementById('tempA_display').innerText = state.tempA.toFixed(1) + "°C";
+            document.getElementById('tempB_display').innerText = state.tempB.toFixed(1) + "°C";
+            document.getElementById('timerDisplay').innerText = formatTime(state.timeElapsed) + " / 10:00";
 
-            // Update Chart and Table every 60 "simulated" seconds
-            if (state.timeElapsed % 60 === 0) {
-                updateData(minutes);
-            }
+            // Update Chart and Table every 60 "simulated" seconds
+            if (state.timeElapsed % 60 === 0) {
+                updateData(minutes);
+            }
 
-            if (state.timeElapsed >= MAX_TIME) {
-                clearInterval(state.interval);
-                state.isRunning = false;
-                document.getElementById('lampStatus').innerText = "DONE";
-                document.getElementById('lampVisual').classList.add('hidden');
-                showMessage("Experiment Complete. Analyze your data points below.");
-            }
-        }
+            if (state.timeElapsed >= MAX_TIME) {
+                clearInterval(state.interval);
+                state.isRunning = false;
+                document.getElementById('lampStatus').innerText = "DONE";
+                document.getElementById('lampVisual').classList.add('hidden');
+                showMessage("Experiment Complete. Analyze your data points below.");
+            }
+        }
 
-        function formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = s % 60;
-            return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-        }
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
 
-        function updateData(min) {
-            // Update Chart
-            tempChart.data.labels.push(min);
-            tempChart.data.datasets[0].data.push(state.tempA.toFixed(2));
-            tempChart.data.datasets[1].data.push(state.tempB.toFixed(2));
-            tempChart.update();
+        function updateData(min) {
+            // Update Chart
+            tempChart.data.labels.push(min);
+            tempChart.data.datasets[0].data.push(state.tempA.toFixed(2));
+            tempChart.data.datasets[1].data.push(state.tempB.toFixed(2));
+            tempChart.update();
 
-            // Update Table
-            const tbody = document.getElementById('dataTableBody');
-            const row = document.createElement('tr');
-            row.className = "border-b border-slate-50 hover:bg-slate-50 transition-colors";
-            const diff = (state.tempB - state.tempA).toFixed(2);
-            
-            row.innerHTML = `
-                <td class="py-2 px-4">${min}</td>
-                <td class="py-2 px-4 text-slate-500">${state.tempA.toFixed(2)}°C</td>
-                <td class="py-2 px-4 text-emerald-500">${state.tempB.toFixed(2)}°C</td>
-                <td class="py-2 px-4 font-bold text-red-500">+${diff}°C</td>
-            `;
-            tbody.insertBefore(row, tbody.firstChild);
-        }
+            // Update Table
+            const tbody = document.getElementById('dataTableBody');
+            const row = document.createElement('tr');
+            row.className = "border-b border-slate-50 hover:bg-slate-50 transition-colors";
+            const diff = (state.tempB - state.tempA).toFixed(2);
+            
+            row.innerHTML = `
+                <td class="py-2 px-4">${min}</td>
+                <td class="py-2 px-4 text-slate-500">${state.tempA.toFixed(2)}°C</td>
+                <td class="py-2 px-4 text-emerald-500">${state.tempB.toFixed(2)}°C</td>
+                <td class="py-2 px-4 font-bold text-red-500">+${diff}°C</td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+        }
 
-        // Initialize on load
-        window.onload = () => {
-            initChart();
-            // Start with baseline data
-            updateData("0.0");
-        };
-    </script>
+        // Initialize on load
+        window.onload = () => {
+            initChart();
+            // Start with baseline data
+            updateData("0.0");
+        };
+    </script>
 </body>
 </html>
