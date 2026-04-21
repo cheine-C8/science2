@@ -110,7 +110,7 @@
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <span class="bg-orange-100 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">2</span>
+                        <span id="secretTrigger" class="bg-orange-100 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm cursor-pointer select-none">2</span>
                         Data Collection
                     </h2>
                     <div class="space-y-4">
@@ -118,9 +118,14 @@
                             <span class="font-medium">Heat Lamp:</span>
                             <span id="lampStatus" class="text-red-600 font-bold">OFF</span>
                         </div>
-                        <button id="startLab" disabled class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-xl font-bold transition-all transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-lg">
-                            START HEAT LAMP & LOGGING
-                        </button>
+                        <div class="flex gap-2">
+                            <button id="startLab" disabled class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-xl font-bold transition-all transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-lg">
+                                START
+                            </button>
+                            <button id="resetLab" class="flex-1 bg-slate-500 hover:bg-slate-600 text-white py-3 px-4 rounded-xl font-bold transition-all shadow-lg">
+                                RESET
+                            </button>
+                        </div>
                         <p id="timerDisplay" class="text-center text-2xl font-mono font-bold text-slate-700">00:00 / 10:00</p>
                     </div>
                 </div>
@@ -128,28 +133,28 @@
 
             <!-- Middle Column: Visual Simulation -->
             <div class="lg:col-span-2 space-y-6">
-                <div class="bg-slate-900 rounded-3xl p-8 relative min-h-[400px] flex items-end justify-around overflow-hidden shadow-2xl border-4 border-slate-800">
+                <div class="bg-slate-900 rounded-3xl p-8 relative min-h-[400px] flex flex-wrap items-end justify-around overflow-hidden shadow-2xl border-4 border-slate-800 gap-y-8">
                     <!-- Heat Lamp Visual -->
-                    <div id="lampVisual" class="absolute top-[-20px] left-1/2 -translate-x-1/2 hidden flex-col items-center">
+                    <div id="lampVisual" class="absolute top-[-20px] left-1/2 -translate-x-1/2 hidden flex-col items-center z-20">
                         <div class="w-32 h-12 bg-slate-700 rounded-t-full"></div>
                         <div class="heat-lamp"></div>
                     </div>
 
                     <!-- Bottle A -->
-                    <div class="flex flex-col items-center gap-4">
+                    <div class="flex flex-col items-center gap-4 z-10">
                         <div class="bottle-container" id="bottleA">
                             <div id="probeA" class="probe hidden"><div class="probe-tip"></div></div>
                             <div id="capA_visual" class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded hidden"></div>
                         </div>
                         <div class="text-center">
                             <p class="text-white font-bold">Bottle A</p>
-                            <p class="text-slate-400 text-xs">Control (Normal Air)</p>
+                            <p class="text-slate-400 text-xs">Control</p>
                             <p id="tempA_display" class="text-emerald-400 font-mono text-xl">--.-°C</p>
                         </div>
                     </div>
 
                     <!-- Bottle B -->
-                    <div class="flex flex-col items-center gap-4">
+                    <div class="flex flex-col items-center gap-4 z-10">
                         <div class="bottle-container" id="bottleB">
                             <div id="probeB" class="probe hidden"><div class="probe-tip"></div></div>
                             <div id="capB_visual" class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded hidden"></div>
@@ -160,6 +165,48 @@
                             <p class="text-white font-bold">Bottle B</p>
                             <p id="bottleB_gas_label" class="text-emerald-400 text-xs">CO2 Enriched</p>
                             <p id="tempB_display" class="text-emerald-400 font-mono text-xl">--.-°C</p>
+                        </div>
+                    </div>
+
+                    <!-- Bottle C (Teacher Mode) -->
+                    <div id="bottleC_col" class="flex flex-col items-center gap-4 z-10 hidden">
+                        <div class="bottle-container scale-75 transform origin-bottom">
+                            <div class="probe"><div class="probe-tip"></div></div>
+                            <div class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded"></div>
+                            <div class="water" style="height: 20%"></div><div class="bubbles"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white font-bold text-sm">Bottle C</p>
+                            <p class="text-emerald-400 text-[10px]">CH4 Enriched</p>
+                            <p id="tempC_display" class="text-emerald-400 font-mono text-lg">--.-°C</p>
+                        </div>
+                    </div>
+
+                    <!-- Bottle D (Teacher Mode) -->
+                    <div id="bottleD_col" class="flex flex-col items-center gap-4 z-10 hidden">
+                        <div class="bottle-container scale-75 transform origin-bottom">
+                            <div class="probe"><div class="probe-tip"></div></div>
+                            <div class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded"></div>
+                            <div class="water" style="height: 20%"></div><div class="bubbles"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white font-bold text-sm">Bottle D</p>
+                            <p class="text-emerald-400 text-[10px]">N2O Enriched</p>
+                            <p id="tempD_display" class="text-emerald-400 font-mono text-lg">--.-°C</p>
+                        </div>
+                    </div>
+
+                    <!-- Bottle E (Teacher Mode) -->
+                    <div id="bottleE_col" class="flex flex-col items-center gap-4 z-10 hidden">
+                        <div class="bottle-container scale-75 transform origin-bottom">
+                            <div class="probe"><div class="probe-tip"></div></div>
+                            <div class="absolute top-[-5px] w-full h-4 bg-slate-800 rounded"></div>
+                            <div class="water" style="height: 20%"></div><div class="bubbles"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white font-bold text-sm">Bottle E</p>
+                            <p class="text-emerald-400 text-[10px]">H2O Enriched</p>
+                            <p id="tempE_display" class="text-emerald-400 font-mono text-lg">--.-°C</p>
                         </div>
                     </div>
 
@@ -178,7 +225,7 @@
         <div class="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
             <h2 class="text-xl font-semibold mb-4">Laboratory Data Log</h2>
             <table class="w-full text-left text-sm">
-                <thead>
+                <thead id="tableHeader">
                     <tr class="border-b-2 border-slate-100">
                         <th class="py-2 px-4">Time (min)</th>
                         <th class="py-2 px-4 text-slate-600">Temp A (°C)</th>
@@ -209,6 +256,8 @@
 
         // State Management
         let state = {
+            teacherMode: false,
+            secretClicks: 0,
             selectedGas: 'CO2',
             bottleAPrepared: false,
             bottleBWater: false,
@@ -219,6 +268,9 @@
             dataPoints: [],
             tempA: 22.5,
             tempB: 22.5,
+            tempC: 22.5,
+            tempD: 22.5,
+            tempE: 22.5,
             interval: null
         };
 
@@ -229,10 +281,81 @@
         // UI Elements
         const buttons = {
             prepareLab: document.getElementById('prepareLab'),
-            startLab: document.getElementById('startLab')
+            startLab: document.getElementById('startLab'),
+            resetLab: document.getElementById('resetLab')
         };
         const gasSelect = document.getElementById('gasSelect');
+        const secretTrigger = document.getElementById('secretTrigger');
         
+        secretTrigger.addEventListener('click', () => {
+            state.secretClicks++;
+            if (state.secretClicks === 3) {
+                state.teacherMode = true;
+                showMessage("Teacher Mode Activated: All Gases Mode", 'success');
+                gasSelect.disabled = true;
+                gasSelect.value = "CO2";
+                state.selectedGas = "CO2";
+                document.getElementById('bottleB_gas_label').innerText = "CO2 Enriched";
+                
+                document.getElementById('bottleC_col').classList.remove('hidden');
+                document.getElementById('bottleD_col').classList.remove('hidden');
+                document.getElementById('bottleE_col').classList.remove('hidden');
+                
+                // Update table header
+                document.getElementById('tableHeader').innerHTML = `
+                    <tr class="border-b-2 border-slate-100 text-xs">
+                        <th class="py-2 px-2">Time</th>
+                        <th class="py-2 px-2 text-slate-600">A (Control)</th>
+                        <th class="py-2 px-2 text-emerald-600">B (CO2)</th>
+                        <th class="py-2 px-2 text-amber-500">C (CH4)</th>
+                        <th class="py-2 px-2 text-purple-500">D (N2O)</th>
+                        <th class="py-2 px-2 text-blue-500">E (H2O)</th>
+                    </tr>
+                `;
+                initChart();
+            }
+        });
+
+        buttons.resetLab.addEventListener('click', () => {
+            clearInterval(state.interval);
+            state.isRunning = false;
+            state.timeElapsed = 0;
+            state.tempA = 22.5; state.tempB = 22.5; state.tempC = 22.5; state.tempD = 22.5; state.tempE = 22.5;
+            state.bottleAPrepared = false; state.bottleBCapped = false;
+            
+            document.getElementById('lampStatus').innerText = "OFF";
+            document.getElementById('lampVisual').classList.add('hidden');
+            document.getElementById('timerDisplay').innerText = "00:00 / 10:00";
+            
+            document.getElementById('probeA').classList.add('hidden');
+            document.getElementById('capA_visual').classList.add('hidden');
+            document.getElementById('probeB').classList.add('hidden');
+            document.getElementById('capB_visual').classList.add('hidden');
+            document.getElementById('waterB').style.height = "0%";
+            document.getElementById('bubblesB').innerHTML = '';
+            
+            buttons.prepareLab.disabled = false;
+            if(!state.teacherMode) gasSelect.disabled = false;
+            buttons.prepareLab.innerText = "Auto-Prepare Experiment";
+            buttons.prepareLab.className = "w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-semibold shadow-md";
+            
+            buttons.startLab.disabled = true;
+            document.getElementById('dataTableBody').innerHTML = '';
+            
+            document.getElementById('tempA_display').innerText = "--.-°C";
+            document.getElementById('tempB_display').innerText = "--.-°C";
+            if (state.teacherMode) {
+                document.getElementById('tempC_display').innerText = "--.-°C";
+                document.getElementById('tempD_display').innerText = "--.-°C";
+                document.getElementById('tempE_display').innerText = "--.-°C";
+            }
+            
+            initChart();
+            // Start with baseline data again
+            updateData("0.0");
+            showMessage("Experiment reset.", "info");
+        });
+
         gasSelect.addEventListener('change', (e) => {
             state.selectedGas = e.target.value;
             const gas = GAS_PROPERTIES[state.selectedGas];
@@ -245,29 +368,36 @@
 
         // Initialize Chart
         function initChart() {
+            if (tempChart) tempChart.destroy();
+            let datasets = [
+                {
+                    label: 'Bottle A (Control)',
+                    borderColor: '#64748b',
+                    backgroundColor: 'rgba(100, 116, 139, 0.1)',
+                    data: [],
+                    tension: 0.3,
+                    borderWidth: 3
+                },
+                {
+                    label: `Bottle B (${state.selectedGas})`,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    data: [],
+                    tension: 0.3,
+                    borderWidth: 3
+                }
+            ];
+            
+            if (state.teacherMode) {
+                datasets[1].label = 'Bottle B (CO2)';
+                datasets.push({ label: 'Bottle C (CH4)', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', data: [], tension: 0.3, borderWidth: 3 });
+                datasets.push({ label: 'Bottle D (N2O)', borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', data: [], tension: 0.3, borderWidth: 3 });
+                datasets.push({ label: 'Bottle E (H2O)', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: [], tension: 0.3, borderWidth: 3 });
+            }
+
             tempChart = new Chart(CHART_CTX, {
                 type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Bottle A (Control)',
-                            borderColor: '#64748b',
-                            backgroundColor: 'rgba(100, 116, 139, 0.1)',
-                            data: [],
-                            tension: 0.3,
-                            borderWidth: 3
-                        },
-                        {
-                            label: 'Bottle B (CO2)',
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            data: [],
-                            tension: 0.3,
-                            borderWidth: 3
-                        }
-                    ]
-                },
+                data: { labels: [], datasets: datasets },
                 options: {
                     responsive: true,
                     scales: {
@@ -360,12 +490,22 @@
             state.timeElapsed += 10; // Advancing 10 seconds per tick for demo speed
             const minutes = (state.timeElapsed / 60).toFixed(1);
             
-            // Physics logic: Bottle B warms faster due to selected greenhouse gas
             const baseRise = 0.05; // Base warming from lamp
-            const greenhouseEffect = GAS_PROPERTIES[state.selectedGas].warmingPotential; // Extra warming from gas
-            
             state.tempA += baseRise + (Math.random() * 0.02);
-            state.tempB += baseRise + greenhouseEffect + (Math.random() * 0.02);
+            
+            if (state.teacherMode) {
+                state.tempB += baseRise + GAS_PROPERTIES['CO2'].warmingPotential + (Math.random() * 0.02);
+                state.tempC += baseRise + GAS_PROPERTIES['CH4'].warmingPotential + (Math.random() * 0.02);
+                state.tempD += baseRise + GAS_PROPERTIES['N2O'].warmingPotential + (Math.random() * 0.02);
+                state.tempE += baseRise + GAS_PROPERTIES['H2O'].warmingPotential + (Math.random() * 0.02);
+                
+                document.getElementById('tempC_display').innerText = state.tempC.toFixed(1) + "°C";
+                document.getElementById('tempD_display').innerText = state.tempD.toFixed(1) + "°C";
+                document.getElementById('tempE_display').innerText = state.tempE.toFixed(1) + "°C";
+            } else {
+                const greenhouseEffect = GAS_PROPERTIES[state.selectedGas].warmingPotential; // Extra warming from gas
+                state.tempB += baseRise + greenhouseEffect + (Math.random() * 0.02);
+            }
 
             // Update UI
             document.getElementById('tempA_display').innerText = state.tempA.toFixed(1) + "°C";
@@ -397,20 +537,36 @@
             tempChart.data.labels.push(min);
             tempChart.data.datasets[0].data.push(state.tempA.toFixed(2));
             tempChart.data.datasets[1].data.push(state.tempB.toFixed(2));
+            if (state.teacherMode) {
+                tempChart.data.datasets[2].data.push(state.tempC.toFixed(2));
+                tempChart.data.datasets[3].data.push(state.tempD.toFixed(2));
+                tempChart.data.datasets[4].data.push(state.tempE.toFixed(2));
+            }
             tempChart.update();
 
             // Update Table
             const tbody = document.getElementById('dataTableBody');
             const row = document.createElement('tr');
             row.className = "border-b border-slate-50 hover:bg-slate-50 transition-colors";
-            const diff = (state.tempB - state.tempA).toFixed(2);
             
-            row.innerHTML = `
-                <td class="py-2 px-4">${min}</td>
-                <td class="py-2 px-4 text-slate-500">${state.tempA.toFixed(2)}°C</td>
-                <td class="py-2 px-4 text-emerald-500">${state.tempB.toFixed(2)}°C</td>
-                <td class="py-2 px-4 font-bold text-red-500">+${diff}°C</td>
-            `;
+            if (state.teacherMode) {
+                row.innerHTML = `
+                    <td class="py-2 px-2 text-xs">${min}</td>
+                    <td class="py-2 px-2 text-slate-500 text-xs">${state.tempA.toFixed(2)}°C</td>
+                    <td class="py-2 px-2 text-emerald-500 text-xs">${state.tempB.toFixed(2)}°C</td>
+                    <td class="py-2 px-2 text-amber-500 text-xs">${state.tempC.toFixed(2)}°C</td>
+                    <td class="py-2 px-2 text-purple-500 text-xs">${state.tempD.toFixed(2)}°C</td>
+                    <td class="py-2 px-2 text-blue-500 text-xs">${state.tempE.toFixed(2)}°C</td>
+                `;
+            } else {
+                const diff = (state.tempB - state.tempA).toFixed(2);
+                row.innerHTML = `
+                    <td class="py-2 px-4">${min}</td>
+                    <td class="py-2 px-4 text-slate-500">${state.tempA.toFixed(2)}°C</td>
+                    <td class="py-2 px-4 text-emerald-500">${state.tempB.toFixed(2)}°C</td>
+                    <td class="py-2 px-4 font-bold text-red-500">+${diff}°C</td>
+                `;
+            }
             tbody.insertBefore(row, tbody.firstChild);
         }
 
