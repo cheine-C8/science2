@@ -31,9 +31,9 @@
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
 
     <!-- Header -->
-    <header class="bg-blue-800 text-white p-4 shadow-md flex justify-between items-center z-10">
-        <h1 class="text-2xl font-bold"><i class="fa-solid fa-flask text-blue-300 mr-2"></i> Virtual Spectrometer Lab</h1>
-        <div class="text-sm bg-blue-900 py-1 px-3 rounded-full">Status: <span id="status-badge" class="font-bold text-red-400">Unplugged</span></div>
+    <header class="bg-blue-800 text-white py-2 px-4 shadow-md flex justify-between items-center z-10">
+        <h1 class="text-xl font-bold"><i class="fa-solid fa-flask text-blue-300 mr-2"></i> Virtual Spectrometer Lab</h1>
+        <div class="text-xs bg-blue-900 py-1 px-3 rounded-full">Status: <span id="status-badge" class="font-bold text-red-400">Unplugged</span></div>
     </header>
 
     <!-- Main Workspace -->
@@ -65,7 +65,7 @@
             <div id="toast-container" class="absolute top-4 right-4 z-50 flex flex-col gap-2"></div>
 
             <!-- Computer Monitor (Software UI) -->
-            <div class="h-3/5 p-6 flex justify-center items-center">
+            <div class="h-[55%] p-2 sm:p-4 flex justify-center items-center">
                 <div class="software-screen w-full max-w-4xl h-full rounded-xl shadow-2xl relative overflow-hidden flex flex-col">
                     
                     <!-- Screen Off State -->
@@ -98,25 +98,25 @@
                         </div>
                         
                         <!-- App Main -->
-                        <div class="flex-1 flex p-2 gap-2 h-full">
+                        <div class="flex-1 flex p-1 sm:p-2 gap-2 h-full overflow-hidden">
                             <!-- Controls -->
-                            <div class="w-1/4 bg-white border border-gray-300 rounded p-3 flex flex-col gap-3 shadow-inner">
-                                <h3 class="font-bold text-gray-700 border-b pb-2 text-sm">Calibration</h3>
-                                <button id="btn-dark-cal" onclick="app.runDarkCalibration()" class="bg-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded text-sm transition shadow flex items-center justify-center">
-                                    <i class="fa-solid fa-moon mr-2"></i> Dark Calibrate
+                            <div class="w-1/4 bg-white border border-gray-300 rounded p-2 flex flex-col gap-2 shadow-inner overflow-y-auto">
+                                <h3 class="font-bold text-gray-700 border-b pb-1 text-xs sm:text-sm">Calibration</h3>
+                                <button id="btn-dark-cal" onclick="app.runDarkCalibration()" class="bg-gray-700 hover:bg-gray-800 text-white py-1 sm:py-2 px-2 rounded text-xs transition shadow flex items-center justify-center">
+                                    <i class="fa-solid fa-moon mr-1"></i> Dark Calibrate
                                 </button>
-                                <button id="btn-ref-cal" onclick="app.runReferenceCalibration()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition shadow flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
-                                    <i class="fa-solid fa-droplet mr-2"></i> Reference Calibrate
+                                <button id="btn-ref-cal" onclick="app.runReferenceCalibration()" class="bg-blue-600 hover:bg-blue-700 text-white py-1 sm:py-2 px-2 rounded text-xs transition shadow flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                                    <i class="fa-solid fa-droplet mr-1"></i> Ref Calibrate
                                 </button>
                                 
-                                <h3 class="font-bold text-gray-700 border-b pb-2 text-sm mt-4">Measurement</h3>
-                                <button id="btn-measure" onclick="app.measureSample()" class="bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded font-bold transition shadow flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
-                                    <i class="fa-solid fa-play mr-2"></i> Record Absorbance
+                                <h3 class="font-bold text-gray-700 border-b pb-1 text-xs sm:text-sm mt-2">Measurement</h3>
+                                <button id="btn-measure" onclick="app.measureSample()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-2 rounded text-xs font-bold transition shadow flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                                    <i class="fa-solid fa-play mr-1"></i> Record Absorbance
                                 </button>
 
-                                <div class="mt-auto">
-                                    <button onclick="app.simulateScreenshot()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm transition shadow flex items-center justify-center">
-                                        <i class="fa-solid fa-camera mr-2"></i> Save Screenshot
+                                <div class="mt-auto pt-2">
+                                    <button onclick="app.simulateScreenshot()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-1 px-2 rounded text-xs transition shadow flex items-center justify-center">
+                                        <i class="fa-solid fa-camera mr-1"></i> Save Screenshot
                                     </button>
                                 </div>
                             </div>
@@ -143,24 +143,24 @@
             </div>
 
             <!-- Lab Bench (Physical Items) -->
-            <div class="h-2/5 bg-gradient-to-b from-slate-300 to-slate-400 border-t border-gray-400 p-6 flex flex-col relative shadow-inner">
-                <div class="absolute top-2 left-6 text-gray-500 font-bold uppercase tracking-wider text-sm"><i class="fa-solid fa-table"></i> Lab Bench</div>
+            <div class="h-[45%] bg-gradient-to-b from-slate-300 to-slate-400 border-t border-gray-400 p-2 sm:p-4 flex flex-col relative shadow-inner">
+                <div class="absolute top-2 left-4 text-gray-500 font-bold uppercase tracking-wider text-xs sm:text-sm"><i class="fa-solid fa-table"></i> Lab Bench</div>
                 
                 <div class="flex-1 flex items-end justify-around pb-4">
                     
                     <!-- Cable / Plug -->
                     <div class="flex flex-col items-center gap-2">
-                        <button id="btn-plug" onclick="app.plugIn()" class="bg-gray-800 hover:bg-black text-white p-3 rounded-full shadow-lg transition flex items-center justify-center w-16 h-16 border-2 border-gray-600 group">
-                            <i class="fa-brands fa-usb text-2xl group-hover:text-blue-400 transition"></i>
+                        <button id="btn-plug" onclick="app.plugIn()" class="bg-gray-800 hover:bg-black text-white p-2 rounded-full shadow-lg transition flex items-center justify-center w-12 h-12 border-2 border-gray-600 group">
+                            <i class="fa-brands fa-usb text-xl group-hover:text-blue-400 transition"></i>
                         </button>
                         <span class="text-xs font-bold text-gray-700">USB Cable</span>
                     </div>
 
                     <!-- Physical Spectrometer -->
-                    <div class="relative w-64 h-40 bg-gray-800 rounded-xl shadow-2xl border-b-8 border-gray-900 flex flex-col items-center justify-start pt-6">
+                    <div class="relative w-48 sm:w-56 h-28 sm:h-32 bg-gray-800 rounded-xl shadow-2xl border-b-8 border-gray-900 flex flex-col items-center justify-start pt-4">
                         <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded shadow">Spectrometer</div>
                         <!-- Slot -->
-                        <div class="w-16 h-16 bg-black rounded-lg border-2 border-gray-700 shadow-inner relative flex justify-center items-end pb-1 overflow-hidden">
+                        <div class="w-12 h-12 bg-black rounded-lg border-2 border-gray-700 shadow-inner relative flex justify-center items-end pb-1 overflow-hidden">
                             <!-- Slot Content visual -->
                             <div id="slot-content-visual" class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity">
                                 <!-- Hand or Cuvette will be injected here via JS -->
@@ -178,11 +178,11 @@
                     </div>
 
                     <!-- Interactive Items (Hand, Cuvettes) -->
-                    <div class="flex gap-6 bg-white/50 p-4 rounded-xl border border-white/60 shadow-sm items-end backdrop-blur-sm">
+                    <div class="flex gap-2 sm:gap-4 bg-white/50 p-2 sm:p-3 rounded-xl border border-white/60 shadow-sm items-end backdrop-blur-sm scale-90 sm:scale-100 origin-bottom">
                         
                         <!-- Hand for Dark Cal -->
-                        <div class="flex flex-col items-center gap-2">
-                            <button onclick="app.placeHand()" class="cuvette w-16 h-16 bg-orange-100 hover:bg-orange-200 border-2 border-orange-300 rounded shadow flex items-center justify-center text-3xl">
+                        <div class="flex flex-col items-center gap-1">
+                            <button onclick="app.placeHand()" class="cuvette w-12 h-12 bg-orange-100 hover:bg-orange-200 border-2 border-orange-300 rounded shadow flex items-center justify-center text-2xl">
                                 🖐️
                             </button>
                             <span class="text-xs font-bold text-gray-700">Your Hand</span>
