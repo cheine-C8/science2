@@ -615,7 +615,9 @@
                 
                 const canvas = document.getElementById('spectrometerChart');
                 const link = document.createElement('a');
-                link.download = `absorbance_${this.state.slotItem || 'spectrum'}.png`;
+                const colors = { 'sample1': 'red', 'sample2': 'blue', 'sample3': 'green', 'sample4': 'yellow' };
+                const colorName = colors[this.state.slotItem] || this.state.slotItem || 'spectrum';
+                link.download = `absorbance_${colorName}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGO Color Filter Lab - Interactive Setup</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --accent: #3b82f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px;
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; color: var(--accent); }
+        p { margin: 5px 0; opacity: 0.8; }
+
+        /* Equipment Tray */
+        .equipment-tray {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .filter-storage {
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 8px;
+            min-height: 80px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+            border: 2px dashed #475569;
+        }
+
+        .filter-item {
+            width: 60px;
+            height: 60px;
+            border-radius: 4px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .filter-item:active { cursor: grabbing; }
+
+        .f-red { background: rgba(255, 0, 0, 0.9); }
+        .f-blue { background: rgba(0, 0, 255, 0.9); }
+        .f-yellow { background: rgba(255, 255, 0, 0.9); }
+        .f-green { background: rgba(0, 255, 0, 0.9); }
+
+        /* Simulation Bench */
+        .lab-bench {
+            background: #ffffff; /* White paper surface */
+            height: 350px;
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 100px;
+            overflow: hidden;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
+        }
+
+        /* Flashlight Visual */
+        .flashlight-housing {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 120px;
+            height: 60px;
+            background: #334155;
+            border-radius: 5px 20px 20px 5px;
+            z-index: 10;
+        }
+        
+        .flashlight-button {
+            position: absolute;
+            top: -10px;
+            left: 30px;
+            width: 30px;
+            height: 10px;
+            background: #ef4444;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        /* Light Beam */
+        .light-beam {
+            position: absolute;
+            left: 140px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 200px;
+            width: 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%);
+            transition: width 0.3s ease;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .flashlight-on .light-beam {
+            width: 600px;
+        }
+
+        /* Active Filter Slot */
+        .filter-slot {
+            position: absolute;
+            left: 200px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 120px;
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 11;
+            background: rgba(255,255,255,0.1);
+            color: #64748b;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .filter-slot.drag-over {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--accent);
+        }
+
+        /* The LEGOs */
+        .lego-row {
+            display: flex;
+            gap: 20px;
+            z-index: 5;
+        }
+
+        .lego-brick {
+            width: 70px;
+            height: 45px;
+            border-radius: 3px;
+            position: relative;
+            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.2);
+        }
+        .lego-brick::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 10px;
+            width: 15px;
+            height: 8px;
+            background: inherit;
+            filter: brightness(1.1);
+            border-radius: 2px;
+            box-shadow: 20px 0 0 inherit, 40px 0 0 inherit;
+        }
+
+        .brick-red { background-color: #ef4444; }
+        .brick-blue { background-color: #3b82f6; }
+        .brick-yellow { background-color: #facc15; }
+        .brick-green { background-color: #22c55e; }
+
+        /* The Resulting Color Filter Overlay */
+        .effect-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            z-index: 6;
+            transition: background-color 0.3s;
+        }
+
+        .instruction-box {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .reset-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body class="flashlight-off">
+
+<div class="container">
+    <header>
+        <h1>Interactive LEGO Lab</h1>
+        <p>Step 1: Turn on the flashlight. Step 2: Drag a filter into the slot.</p>
+    </header>
+
+    <div class="equipment-tray">
+        <div style="font-weight: bold; width: 100%;">Filter Storage:</div>
+        <div class="filter-storage" id="storage">
+            <div class="filter-item f-red" draggable="true" id="filter-red" data-color="rgba(255,0,0,0.85)">RED</div>
+            <div class="filter-item f-blue" draggable="true" id="filter-blue" data-color="rgba(0,0,255,0.85)">BLUE</div>
+            <div class="filter-item f-yellow" draggable="true" id="filter-yellow" data-color="rgba(255,255,0,0.85)">YELLOW</div>
+            <div class="filter-item f-green" draggable="true" id="filter-green" data-color="rgba(0,255,0,0.85)">GREEN</div>
+        </div>
+        <button class="reset-btn" onclick="resetLab()">Reset Lab Equipment</button>
+    </div>
+
+    <div class="lab-bench" id="bench">
+        <div class="effect-overlay" id="overlay"></div>
+        <div class="light-beam" id="beam"></div>
+        
+        <div class="flashlight-housing">
+            <div class="flashlight-button" title="Toggle Light" onclick="toggleLight()"></div>
+        </div>
+
+        <div class="filter-slot" id="dropSlot">
+            Place Filter Here
+        </div>
+
+        <div class="lego-row">
+            <div class="lego-brick brick-red"></div>
+            <div class="lego-brick brick-blue"></div>
+            <div class="lego-brick brick-yellow"></div>
+            <div class="lego-brick brick-green"></div>
+        </div>
+    </div>
+
+    <div class="instruction-box">
+        <strong>Lab Manual:</strong>
+        <ol>
+            <li>Click the red button on the flashlight to turn it on.</li>
+            <li>Drag a colored filter from the tray and drop it into the "Place Filter Here" slot.</li>
+            <li>Observe how the LEGO bricks change color based on the filter used.</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+    let isLightOn = false;
+    let activeFilterColor = null;
+
+    const body = document.body;
+    const dropSlot = document.getElementById('dropSlot');
+    const overlay = document.getElementById('overlay');
+    const storage = document.getElementById('storage');
+
+    function toggleLight() {
+        isLightOn = !isLightOn;
+        if (isLightOn) {
+            body.classList.remove('flashlight-off');
+            body.classList.add('flashlight-on');
+            updateEffect();
+        } else {
+            body.classList.remove('flashlight-on');
+            body.classList.add('flashlight-off');
+            overlay.style.backgroundColor = 'transparent';
+        }
+    }
+
+    function updateEffect() {
+        if (isLightOn && activeFilterColor) {
+            overlay.style.backgroundColor = activeFilterColor;
+        } else {
+            overlay.style.backgroundColor = 'transparent';
+        }
+    }
+
+    // Drag and Drop Logic
+    document.querySelectorAll('.filter-item').forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            e.dataTransfer.setData('color', e.target.dataset.color);
+        });
+    });
+
+    dropSlot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropSlot.classList.add('drag-over');
+    });
+
+    dropSlot.addEventListener('dragleave', () => {
+        dropSlot.classList.remove('drag-over');
+    });
+
+    dropSlot.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropSlot.classList.remove('drag-over');
+        
+        const filterId = e.dataTransfer.getData('text/plain');
+        const color = e.dataTransfer.getData('color');
+        const filterElement = document.getElementById(filterId);
+
+        // Clear existing filter in slot if any
+        if (dropSlot.children.length > 0) {
+            resetLab(); // Return current filter to storage before adding new one
+        }
+
+        // Move element to slot
+        dropSlot.innerHTML = '';
+        dropSlot.appendChild(filterElement);
+        
+        activeFilterColor = color;
+        updateEffect();
+    });
+
+    function resetLab() {
+        // Move all filters back to storage
+        const filters = ['filter-red', 'filter-blue', 'filter-yellow', 'filter-green'];
+        filters.forEach(id => {
+            const el = document.getElementById(id);
+            storage.appendChild(el);
+        });
+        
+        dropSlot.innerHTML = 'Place Filter Here';
+        activeFilterColor = null;
+        updateEffect();
+    }
+</script>
+
+</body>
+</html>
