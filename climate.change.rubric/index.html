@@ -58,6 +58,14 @@
         .score-badge {
             transition: opacity 0.2s;
         }
+
+        /* Toggle switch CSS */
+        input:checked ~ .toggle-bg {
+            background-color: #22c55e;
+        }
+        input:checked ~ .dot {
+            transform: translateX(100%);
+        }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen py-4 px-2 font-sans text-sm">
@@ -112,19 +120,33 @@
         </div>
 
         <!-- Actions -->
-        <div class="flex flex-col sm:flex-row justify-end gap-3 no-print border-t pt-4 relative">
-            <div id="exportMessage" class="absolute top-0 left-0 mt-4 text-xs font-bold opacity-0 transition-opacity pointer-events-none"></div>
-            <button id="resetBtn" class="px-4 py-2 text-slate-500 hover:text-red-600 font-bold transition-colors text-sm">
-                Reset Selections
-            </button>
-            <button id="exportSheetsBtn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition-all shadow-md hover:shadow-green-200 flex items-center justify-center gap-2 text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                Export to Sheets
-            </button>
-            <button id="exportBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition-all shadow-md hover:shadow-blue-200 flex items-center justify-center gap-2 text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                Export as PDF
-            </button>
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 no-print border-t pt-4 relative">
+            <div id="exportMessage" class="absolute top-0 left-0 -mt-6 text-xs font-bold opacity-0 transition-opacity pointer-events-none"></div>
+            
+            <label class="flex items-center cursor-pointer group">
+                <div class="relative">
+                    <input type="checkbox" id="skipConfirmToggle" class="sr-only">
+                    <div class="block bg-slate-300 w-10 h-6 rounded-full transition-colors toggle-bg shadow-inner"></div>
+                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform shadow-sm"></div>
+                </div>
+                <div class="ml-3 text-slate-500 group-hover:text-slate-700 text-xs font-bold uppercase tracking-wide transition-colors">
+                    Skip Reset Confirmation
+                </div>
+            </label>
+
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <button id="resetBtn" class="px-4 py-2 text-slate-500 hover:text-red-600 font-bold transition-colors text-sm">
+                    Reset Selections
+                </button>
+                <button id="exportSheetsBtn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition-all shadow-md hover:shadow-green-200 flex items-center justify-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Export to Sheets
+                </button>
+                <button id="exportBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition-all shadow-md hover:shadow-blue-200 flex items-center justify-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    Export as PDF
+                </button>
+            </div>
         </div>
     </div>
 
@@ -231,6 +253,14 @@
             document.getElementById('resetBtn').addEventListener('click', resetRubric);
             document.getElementById('exportBtn').addEventListener('click', exportToPDF);
             document.getElementById('exportSheetsBtn').addEventListener('click', exportToSheets);
+            
+            // Set up toggle listener and initial state
+            const skipConfirmToggle = document.getElementById('skipConfirmToggle');
+            const skipConfirm = localStorage.getItem('skipRubricConfirm') === 'true';
+            skipConfirmToggle.checked = skipConfirm;
+            skipConfirmToggle.addEventListener('change', (e) => {
+                localStorage.setItem('skipRubricConfirm', e.target.checked);
+            });
         }
 
         function handleCellClick(rowIndex, levelIndex, points, element) {
@@ -270,7 +300,8 @@
         }
 
         function resetRubric() {
-            if(confirm('Are you sure you want to clear all grade selections?')) {
+            const skipConfirm = document.getElementById('skipConfirmToggle').checked;
+            if(skipConfirm || confirm('Are you sure you want to clear all grade selections?')) {
                 scores = Array(rubricData.length).fill(0);
                 document.querySelectorAll('.rubric-cell').forEach(cell => {
                     cell.classList.remove('selected-cell');
