@@ -88,7 +88,7 @@
         </div>
 
         <!-- Rubric Table -->
-        <div class="overflow-hidden border border-slate-200 rounded-xl mb-6 shadow-sm">
+        <div class="overflow-hidden border border-slate-300 rounded-xl mb-6 shadow-sm">
             <table class="w-full border-collapse text-xs">
                 <thead>
                     <tr class="bg-slate-800 text-white">
@@ -205,17 +205,17 @@
 
             rubricData.forEach((row, rowIndex) => {
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-100 last:border-0";
+                tr.className = "border-b border-slate-300 last:border-0";
                 
                 const tdName = document.createElement('td');
-                tdName.className = 'criteria-header border-r border-slate-100 p-2 font-bold text-slate-800 bg-slate-50/50 transition-all text-xs';
+                tdName.className = 'criteria-header border-r border-slate-300 p-2 font-bold text-slate-800 bg-slate-50/50 transition-all text-xs';
                 tdName.innerText = row.criteria;
                 tr.appendChild(tdName);
 
                 row.levels.forEach((desc, levelIndex) => {
                     const points = 5 - levelIndex;
                     const td = document.createElement('td');
-                    td.className = 'border-r border-slate-100 last:border-0 p-2 rubric-cell align-top text-slate-600 leading-snug text-xs';
+                    td.className = 'border-r border-slate-300 last:border-0 p-2 rubric-cell align-top text-slate-600 leading-snug text-xs';
                     td.innerHTML = `
                         <div class="mb-1 opacity-0 score-badge text-[9px] font-black uppercase text-white/70">${points} Points Assigned</div>
                         <div class="cell-text">${desc}</div>
