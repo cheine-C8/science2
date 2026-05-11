@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Change Rubric</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: white !important;
+                padding: 0 !important;
+            }
+            .rubric-container {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 20px !important;
+            }
+            .selected-cell {
+                background-color: #2563eb !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        .selected-cell {
+            background-color: #2563eb !important;
+            color: white !important;
+            border: 2px solid #1d4ed8 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .rubric-cell {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .rubric-cell:hover:not(.selected-cell) {
+            background-color: #eff6ff;
+            color: #1e40af;
+        }
+
+        tr:has(.selected-cell) .criteria-header {
+            color: #2563eb;
+            border-left: 4px solid #2563eb;
+            background-color: #f8fafc;
+        }
+        
+        .score-badge {
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen py-8 px-4 font-sans">
+    <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-10 rubric-container">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b-2 border-slate-100 pb-8">
+            <div>
+                <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Climate Change Analysis</h1>
+                <p class="text-lg text-slate-500 font-medium mt-1">Project Grading Rubric</p>
+            </div>
+            <div class="mt-6 md:mt-0 bg-blue-50 border border-blue-200 rounded-lg p-4 text-center min-w-[200px] shadow-sm">
+                <div class="text-sm uppercase tracking-widest text-blue-600 font-bold mb-1">Current Score</div>
+                <div class="text-4xl font-black text-blue-700 transition-all duration-300" id="totalScore">0 <span class="text-xl text-blue-300 font-normal">/ 35</span></div>
+                <div class="text-xs text-slate-400 mt-2 italic" id="currentDate"></div>
+            </div>
+        </div>
+
+        <!-- Student Info Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide">Student Name</label>
+                <input type="text" id="studentName" placeholder="Enter full name" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide">Evaluator</label>
+                <input type="text" id="evaluatorName" placeholder="Enter your name" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all">
+            </div>
+        </div>
+
+        <!-- Rubric Table -->
+        <div class="overflow-hidden border border-slate-200 rounded-xl mb-10 shadow-sm">
+            <table class="w-full border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-800 text-white">
+                        <th class="p-4 text-left font-bold uppercase tracking-wider w-1/6">Criteria</th>
+                        <th class="p-4 text-center font-bold uppercase tracking-wider w-1/5 border-l border-slate-700">Nailed it! (5)</th>
+                        <th class="p-4 text-center font-bold uppercase tracking-wider w-1/5 border-l border-slate-700">Almost (4)</th>
+                        <th class="p-4 text-center font-bold uppercase tracking-wider w-1/5 border-l border-slate-700">Approaching (3)</th>
+                        <th class="p-4 text-center font-bold uppercase tracking-wider w-1/5 border-l border-slate-700 text-nowrap">Not Yet (2)</th>
+                    </tr>
+                </thead>
+                <tbody id="rubricBody">
+                    <!-- Dynamic Content Generated by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Feedback Section -->
+        <div class="mb-10">
+            <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">Evaluator Comments</label>
+            <textarea id="feedback" rows="4" class="w-full p-4 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all text-slate-700" placeholder="Provide specific feedback on strengths and areas for improvement..."></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row justify-end gap-4 no-print border-t pt-8">
+            <button id="resetBtn" class="px-8 py-3 text-slate-500 hover:text-red-600 font-bold transition-colors">
+                Reset Selections
+            </button>
+            <button id="exportBtn" class="px-10 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition-all shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Export as PDF
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const rubricData = [
+            {
+                criteria: "Introduction: Hook, Context, Background",
+                levels: [
+                    "Engaging hook; clearly introduces the climate change topic with a strong background and a clear thesis.",
+                    "Includes a hook and topic but needs more background or a clearer thesis.",
+                    "The topic is unclear or lacks sufficient background.",
+                    "Mentions topic but does not establish context or purpose."
+                ]
+            },
+            {
+                criteria: "Organization",
+                levels: [
+                    "Ideas are well-organized with clear paragraphs and smooth transitions; flows logically.",
+                    "Mostly organized, but some parts are out of order, or transitions are weak.",
+                    "Disorganized; ideas are difficult to follow.",
+                    "Lacks clear structure; sections are missing or confusing."
+                ]
+            },
+            {
+                criteria: "Content Development",
+                levels: [
+                    "Thorough use of accurate facts, data, and examples; explanations clearly support ideas.",
+                    "Some relevant evidence is included, but it needs more detail or a clearer explanation.",
+                    "Limited or unclear evidence; ideas are underdeveloped.",
+                    "Minimal or irrelevant information with little explanation."
+                ]
+            },
+            {
+                criteria: "Scientific Language",
+                levels: [
+                    "Uses precise and accurate climate change vocabulary effectively.",
+                    "Uses some appropriate vocabulary but could be more precise.",
+                    "Limited or incorrect use of scientific vocabulary.",
+                    "Scientific language is mostly absent or misused."
+                ]
+            },
+            {
+                criteria: "Creative & Visual Design",
+                levels: [
+                    "High-quality, original visuals (charts, models, or maps) that enhance understanding.",
+                    "Visuals are present and clear but may be generic or standard.",
+                    "Few visuals; layout is cluttered or difficult to read.",
+                    "No visuals or creative elements included."
+                ]
+            },
+            {
+                criteria: "Citations & Credibility",
+                levels: [
+                    "5+ reputable sources cited correctly (IPCC, IEA, etc.); works cited included.",
+                    "3-4 reputable sources; minor formatting errors.",
+                    "1-2 sources; relies on general/unverified websites.",
+                    "No citations or works cited provided."
+                ]
+            },
+            {
+                criteria: "Conclusion & Insight",
+                levels: [
+                    "A strong conclusion summarizes key ideas and provides insight or implications.",
+                    "Adequate summary, but lacks depth or clear insight.",
+                    "The conclusion is unclear or incomplete.",
+                    "The conclusion is missing or does not address the importance."
+                ]
+            }
+        ];
+
+        let scores = Array(rubricData.length).fill(0);
+
+        function initRubric() {
+            const tbody = document.getElementById('rubricBody');
+            document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+
+            rubricData.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 last:border-0";
+                
+                const tdName = document.createElement('td');
+                tdName.className = 'criteria-header border-r border-slate-100 p-4 font-bold text-slate-800 bg-slate-50/50 transition-all';
+                tdName.innerText = row.criteria;
+                tr.appendChild(tdName);
+
+                row.levels.forEach((desc, levelIndex) => {
+                    const points = 5 - levelIndex;
+                    const td = document.createElement('td');
+                    td.className = 'border-r border-slate-100 last:border-0 p-4 rubric-cell align-top text-slate-600 leading-relaxed';
+                    td.innerHTML = `
+                        <div class="mb-2 opacity-0 score-badge text-[10px] font-black uppercase text-white/70">${points} Points Assigned</div>
+                        <div class="cell-text">${desc}</div>
+                    `;
+                    td.onclick = () => handleCellClick(rowIndex, levelIndex, points, td);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Set up button listeners
+            document.getElementById('resetBtn').addEventListener('click', resetRubric);
+            document.getElementById('exportBtn').addEventListener('click', exportToPDF);
+        }
+
+        function handleCellClick(rowIndex, levelIndex, points, element) {
+            const isAlreadySelected = element.classList.contains('selected-cell');
+            
+            // Clear current selection visual in this row
+            const rowCells = element.parentElement.querySelectorAll('.rubric-cell');
+            rowCells.forEach(cell => {
+                cell.classList.remove('selected-cell');
+                const badge = cell.querySelector('.score-badge');
+                if (badge) badge.classList.add('opacity-0');
+            });
+
+            if (isAlreadySelected) {
+                // If it was already selected, we are deselecting (0 points)
+                scores[rowIndex] = 0;
+            } else {
+                // New selection logic
+                element.classList.add('selected-cell');
+                const badge = element.querySelector('.score-badge');
+                if (badge) badge.classList.remove('opacity-0');
+                scores[rowIndex] = points;
+            }
+            
+            updateTotal();
+        }
+
+        function updateTotal() {
+            const total = scores.reduce((a, b) => a + b, 0);
+            const totalDisplay = document.getElementById('totalScore');
+            totalDisplay.innerHTML = `${total} <span class="text-xl ${total === 0 ? 'text-blue-300' : 'text-blue-500'} font-normal">/ 35</span>`;
+            
+            totalDisplay.classList.add('scale-110', 'text-blue-500');
+            setTimeout(() => {
+                totalDisplay.classList.remove('scale-110', 'text-blue-500');
+            }, 200);
+        }
+
+        function resetRubric() {
+            if(confirm('Are you sure you want to clear all grade selections?')) {
+                scores = Array(rubricData.length).fill(0);
+                document.querySelectorAll('.rubric-cell').forEach(cell => {
+                    cell.classList.remove('selected-cell');
+                    const badge = cell.querySelector('.score-badge');
+                    if (badge) badge.classList.add('opacity-0');
+                });
+                updateTotal();
+            }
+        }
+
+        function exportToPDF() {
+            const studentName = document.getElementById('studentName').value.trim() || 'Student';
+            const originalTitle = document.title;
+            // Setting title helps name the PDF when using "Print to PDF"
+            document.title = `Climate_Rubric_${studentName.replace(/\s+/g, '_')}`;
+            window.print();
+            document.title = originalTitle;
+        }
+
+        window.onload = initRubric;
+    </script>
+</body>
+</html>
