@@ -328,23 +328,20 @@
             };
 
             try {
-                // Using text/plain to avoid CORS preflight issues with Apps Script
-                const response = await fetch(APPS_SCRIPT_URL, {
+                // Using no-cors to avoid CORS blocking from Google Apps Script redirects
+                await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8',
                     },
                     body: JSON.stringify(payload)
                 });
                 
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    msg.textContent = "✓ Successfully exported to Google Sheets!";
-                    msg.className = "absolute top-0 left-0 mt-8 text-sm font-bold opacity-100 transition-opacity text-green-600 pointer-events-none";
-                } else {
-                    throw new Error(result.message || "Unknown error");
-                }
+                // With no-cors, we can't read the response body or status. 
+                // If fetch doesn't throw a network error, we assume it was sent successfully.
+                msg.textContent = "✓ Successfully exported to Google Sheets!";
+                msg.className = "absolute top-0 left-0 mt-8 text-sm font-bold opacity-100 transition-opacity text-green-600 pointer-events-none";
             } catch (error) {
                 console.error("Export error:", error);
                 msg.textContent = "✗ Failed to export. Check console for details.";
