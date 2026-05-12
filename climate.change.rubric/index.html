@@ -351,6 +351,7 @@
         function resetRubric() {
             const skipConfirm = document.getElementById('skipConfirmToggle').checked;
             if(skipConfirm || confirm('Are you sure you want to clear all grade selections?')) {
+                // Clear scores
                 scores = Array(rubricData.length).fill(0);
                 document.querySelectorAll('.rubric-cell').forEach(cell => {
                     cell.classList.remove('selected-cell');
@@ -358,6 +359,13 @@
                     if (badge) badge.classList.add('opacity-0');
                 });
                 updateTotal();
+
+                // Clear student-specific fields
+                document.getElementById('studentName').value = '';
+                document.getElementById('feedback').value = '';
+                
+                // Note: We intentionally do NOT clear the Evaluator Name or Period, 
+                // as those usually stay the same when grading a stack of projects.
             }
         }
 
