@@ -121,7 +121,7 @@
 
         <!-- Actions -->
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 no-print border-t pt-4 relative">
-            <div id="exportMessage" class="absolute top-0 left-0 -mt-6 text-xs font-bold opacity-0 transition-opacity pointer-events-none"></div>
+            <div id="exportMessage" class="absolute top-0 right-0 -mt-6 text-xs font-bold opacity-0 transition-opacity pointer-events-none text-right"></div>
             
             <label class="flex items-center cursor-pointer group">
                 <div class="relative">
@@ -372,11 +372,11 @@
                 // With no-cors, we can't read the response body or status. 
                 // If fetch doesn't throw a network error, we assume it was sent successfully.
                 msg.textContent = "✓ Successfully exported to Google Sheets!";
-                msg.className = "absolute top-0 left-0 mt-8 text-sm font-bold opacity-100 transition-opacity text-green-600 pointer-events-none";
+                msg.className = "absolute top-0 right-0 -mt-6 text-xs font-bold opacity-100 transition-opacity text-green-600 pointer-events-none text-right";
             } catch (error) {
                 console.error("Export error:", error);
                 msg.textContent = "✗ Failed to export. Check console for details.";
-                msg.className = "absolute top-0 left-0 mt-8 text-sm font-bold opacity-100 transition-opacity text-red-600 pointer-events-none";
+                msg.className = "absolute top-0 right-0 -mt-6 text-xs font-bold opacity-100 transition-opacity text-red-600 pointer-events-none text-right";
                 alert("Error exporting to Sheets: " + error.message);
             } finally {
                 // Restore button state
