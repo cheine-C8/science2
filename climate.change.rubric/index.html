@@ -84,11 +84,23 @@
         </div>
 
         <!-- Student Info Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-start">
             <div class="space-y-1">
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Student Name</label>
                 <input type="text" id="studentName" placeholder="Enter full name" class="w-full p-2 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all text-sm">
             </div>
+            
+            <div class="space-y-1 flex flex-col items-center">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide w-full text-center">Period</label>
+                <div class="flex gap-2 justify-center pt-1" id="periodSelector">
+                    <button class="period-btn w-8 h-8 rounded-full border-2 border-slate-200 text-slate-500 font-bold hover:border-blue-400 focus:outline-none transition-colors text-xs flex items-center justify-center" data-period="1">1</button>
+                    <button class="period-btn w-8 h-8 rounded-full border-2 border-slate-200 text-slate-500 font-bold hover:border-blue-400 focus:outline-none transition-colors text-xs flex items-center justify-center" data-period="2">2</button>
+                    <button class="period-btn w-8 h-8 rounded-full border-2 border-slate-200 text-slate-500 font-bold hover:border-blue-400 focus:outline-none transition-colors text-xs flex items-center justify-center" data-period="4">4</button>
+                    <button class="period-btn w-8 h-8 rounded-full border-2 border-slate-200 text-slate-500 font-bold hover:border-blue-400 focus:outline-none transition-colors text-xs flex items-center justify-center" data-period="5">5</button>
+                    <button class="period-btn w-8 h-8 rounded-full border-2 border-slate-200 text-slate-500 font-bold hover:border-blue-400 focus:outline-none transition-colors text-xs flex items-center justify-center" data-period="8">8</button>
+                </div>
+            </div>
+
             <div class="space-y-1">
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Evaluator</label>
                 <input type="text" id="evaluatorName" placeholder="Enter your name" class="w-full p-2 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all text-sm">
@@ -218,6 +230,7 @@
         ];
 
         let scores = Array(rubricData.length).fill(0);
+        let selectedPeriod = null;
 
         function initRubric() {
             const tbody = document.getElementById('rubricBody');
@@ -260,6 +273,42 @@
             skipConfirmToggle.checked = skipConfirm;
             skipConfirmToggle.addEventListener('change', (e) => {
                 localStorage.setItem('skipRubricConfirm', e.target.checked);
+            });
+            
+            // Set up period selector listener and initial state
+            const savedPeriod = localStorage.getItem('selectedPeriod');
+            if (savedPeriod) {
+                setPeriod(savedPeriod);
+            }
+
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const p = e.target.getAttribute('data-period');
+                    if (selectedPeriod === p) {
+                        setPeriod(null); // toggle off
+                    } else {
+                        setPeriod(p);
+                    }
+                });
+            });
+        }
+
+        function setPeriod(p) {
+            selectedPeriod = p;
+            if (p) {
+                localStorage.setItem('selectedPeriod', p);
+            } else {
+                localStorage.removeItem('selectedPeriod');
+            }
+            
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                if (btn.getAttribute('data-period') === p) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                    btn.classList.remove('text-slate-500', 'border-slate-200');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                    btn.classList.add('text-slate-500', 'border-slate-200');
+                }
             });
         }
 
@@ -349,10 +398,17 @@
             btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Exporting...`;
             btn.classList.replace('bg-green-600', 'bg-green-400');
 
+            // Append period to student name so it shows up in Google Sheet without changing backend script
+            let finalStudentName = studentName || 'N/A';
+            if (selectedPeriod) {
+                finalStudentName += ` (Pd ${selectedPeriod})`;
+            }
+
             const payload = {
                 date: new Date().toISOString().split('T')[0],
-                studentName: studentName || 'N/A',
+                studentName: finalStudentName,
                 evaluatorName: evaluatorName || 'N/A',
+                period: selectedPeriod, // Extra field for completeness
                 totalScore: totalScore,
                 scores: scores,
                 feedback: feedback || 'No feedback provided'
