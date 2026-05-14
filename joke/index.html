@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,10 +13,11 @@
             right: 0;
             border-color: #3b82f6;
         }
-        .toggle-checkbox:checked + .toggle-label {
+
+        .toggle-checkbox:checked+.toggle-label {
             background-color: #3b82f6;
         }
-        
+
         .glass-panel {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
@@ -23,12 +25,15 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 font-sans text-slate-800">
+
+<body
+    class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 font-sans text-slate-800">
 
     <div class="max-w-md w-full glass-panel rounded-3xl shadow-2xl overflow-hidden transform transition-all">
         <!-- Header -->
         <div class="bg-white/50 px-8 py-6 border-b border-white/20">
-            <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center gap-3">
+            <h1
+                class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center gap-3">
                 <i class="fas fa-laugh-squint text-indigo-500"></i>
                 Joke Automator
             </h1>
@@ -37,16 +42,19 @@
 
         <!-- Content -->
         <div class="px-8 py-8 space-y-8">
-            
+
             <!-- Manual Trigger Section -->
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-bold text-slate-700">Manual Trigger</h2>
-                    <span id="statusBadge" class="px-2 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-500 uppercase tracking-wide">Ready</span>
+                    <span id="statusBadge"
+                        class="px-2 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-500 uppercase tracking-wide">Ready</span>
                 </div>
-                
-                <button id="insertBtn" onclick="triggerJokeInsertion()" class="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div class="absolute inset-0 w-full h-full bg-white/20 group-hover:bg-transparent transition-all"></div>
+
+                <button id="insertBtn" onclick="triggerJokeInsertion()"
+                    class="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="absolute inset-0 w-full h-full bg-white/20 group-hover:bg-transparent transition-all">
+                    </div>
                     <div class="px-6 py-4 flex items-center justify-center gap-3 font-bold text-lg">
                         <i id="btnIcon" class="fas fa-bolt"></i>
                         <span id="btnText">Insert Today's Joke Now</span>
@@ -55,7 +63,8 @@
 
                 <!-- Joke Display Area -->
                 <div id="jokeResult" class="hidden mt-4 p-5 bg-white/60 rounded-xl border border-white/40 shadow-inner">
-                    <h3 class="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-2">Successfully Inserted:</h3>
+                    <h3 class="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-2">Successfully Inserted:
+                    </h3>
                     <p id="setupText" class="font-medium text-slate-800 text-lg"></p>
                     <p id="punchlineText" class="mt-2 text-slate-600 italic"></p>
                 </div>
@@ -72,17 +81,22 @@
                         </h2>
                         <p class="text-xs text-slate-500 mt-1">Runs automatically at 6:00 AM every day.</p>
                     </div>
-                    
+
                     <!-- Toggle Switch -->
-                    <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="autoToggle" onchange="toggleAutoRun()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0"/>
-                        <label for="autoToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="autoToggle" onchange="toggleAutoRun()"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0" />
+                        <label for="autoToggle"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
             </div>
 
             <!-- Error Message Area -->
-            <div id="errorBox" class="hidden bg-red-100 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium"></div>
+            <div id="errorBox"
+                class="hidden bg-red-100 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
+            </div>
 
         </div>
     </div>
@@ -91,7 +105,7 @@
         // ==========================================
         // REPLACE THIS URL AFTER DEPLOYING APPS SCRIPT
         // ==========================================
-        const APPS_SCRIPT_URL = "YOUR_WEB_APP_URL_HERE";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_gv1943LtaJrFTXSNIiulgSQcuHHoULZDrWRxElQyte50KOSvBs5AJpcE1lKHsRw/exec";
 
         const insertBtn = document.getElementById('insertBtn');
         const btnText = document.getElementById('btnText');
@@ -114,13 +128,13 @@
                 // Using a trick: fetch with POST to get status to avoid CORS preflight issues
                 const formData = new URLSearchParams();
                 formData.append('action', 'getStatus');
-                
+
                 const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: formData.toString()
                 });
-                
+
                 const data = await response.json();
                 if (data.success) {
                     autoToggle.checked = data.autoEnabled;
@@ -161,7 +175,7 @@
                     // Success UI
                     statusBadge.innerText = "Success";
                     statusBadge.className = "px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-600 uppercase tracking-wide";
-                    
+
                     // Show joke
                     setupText.innerText = data.joke.setup;
                     punchlineText.innerText = data.joke.punchline;
@@ -204,7 +218,7 @@
                 });
 
                 const data = await response.json();
-                
+
                 if (!data.success) {
                     throw new Error(data.message);
                 }
@@ -226,4 +240,5 @@
         }
     </script>
 </body>
+
 </html>
