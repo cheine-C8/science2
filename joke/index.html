@@ -91,6 +91,24 @@
                             class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
+                
+                <div class="flex items-center justify-between pt-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                            <i class="fas fa-user-tag text-indigo-500"></i> Include Student Name
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">Appends the submitted by name to the punchline.</p>
+                    </div>
+
+                    <!-- Toggle Switch -->
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="studentToggle" id="studentToggle" onchange="toggleStudentName()"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0" checked />
+                        <label for="studentToggle"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                </div>
             </div>
 
             <!-- Error Message Area -->
@@ -116,6 +134,7 @@
         const setupText = document.getElementById('setupText');
         const punchlineText = document.getElementById('punchlineText');
         const autoToggle = document.getElementById('autoToggle');
+        const studentToggle = document.getElementById('studentToggle');
 
         // Check current toggle status on load
         window.addEventListener('DOMContentLoaded', async () => {
@@ -138,6 +157,9 @@
                 const data = await response.json();
                 if (data.success) {
                     autoToggle.checked = data.autoEnabled;
+                    if (data.studentNameEnabled !== undefined) {
+                        studentToggle.checked = data.studentNameEnabled;
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch initial status:", err);
@@ -227,6 +249,40 @@
                 showError("Failed to update auto-run setting: " + err.message);
             } finally {
                 autoToggle.disabled = false;
+            }
+        }
+
+        async function toggleStudentName() {
+            if (APPS_SCRIPT_URL === "YOUR_WEB_APP_URL_HERE") {
+                studentToggle.checked = !studentToggle.checked; // Revert
+                showError("Setup Required: Update the Apps Script URL in index.html first.");
+                return;
+            }
+
+            const isEnabled = studentToggle.checked;
+            studentToggle.disabled = true;
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'toggleStudentName');
+                formData.append('enable', isEnabled);
+
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                studentToggle.checked = !isEnabled; // Revert on failure
+                showError("Failed to update student name setting: " + err.message);
+            } finally {
+                studentToggle.disabled = false;
             }
         }
 
