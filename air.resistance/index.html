@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galileo's Drop: Gravity & Air Resistance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .layer-transition { transition: opacity 0.8s ease-in-out; }
+        .bg-grid {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.05'/%3E%3Cpath d='M 0 40 L 40 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.05'/%3E%3C/svg%3E");
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen w-screen overflow-hidden flex flex-col md:flex-row">
+
+    <!-- Control Panel (Sidebar) -->
+    <div class="w-full md:w-96 bg-white shadow-2xl flex flex-col z-40 relative h-[45vh] md:h-full shrink-0 border-b md:border-r border-gray-200">
+        <div class="p-6 flex-1 overflow-y-auto">
+            <h1 class="text-2xl font-black text-gray-900 tracking-tight mb-2">Galileo's Drop</h1>
+            <p class="text-sm text-gray-500 mb-6 leading-relaxed">
+                Observe gravity and drag. In a vacuum, mass and shape don't matter—everything falls at the same rate. Add air, and you can see aerodynamic displacement!
+            </p>
+
+            <!-- Environment Controls -->
+            <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Atmosphere</h3>
+                
+                <div class="flex gap-2 mb-4">
+                    <button id="btn-earth" class="flex-1 py-2 text-sm font-bold bg-white border border-gray-200 shadow-sm text-blue-600 rounded-lg transition-all">Earth</button>
+                    <button id="btn-mars" class="flex-1 py-2 text-sm font-bold bg-white border border-gray-200 text-gray-500 hover:text-orange-600 rounded-lg transition-all">Mars</button>
+                    <button id="btn-vacuum" class="flex-1 py-2 text-sm font-bold bg-white border border-gray-200 text-gray-500 hover:text-purple-600 rounded-lg transition-all">Vacuum</button>
+                </div>
+                
+                <label class="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                    <span>Air Density (ρ)</span>
+                    <span id="density-val" class="text-blue-600 font-mono">1.20 kg/m³</span>
+                </label>
+                <input type="range" id="density-slider" min="0" max="3" step="0.05" value="1.2" 
+                       class="w-full accent-blue-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Telemetry & Chart -->
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Velocity Telemetry</h3>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="bg-slate-800 text-white p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-xs text-slate-400 font-semibold mb-1">Bowling Ball</span>
+                        <span id="ball-vel" class="text-xl font-mono font-bold">0.0 <span class="text-xs font-normal">m/s</span></span>
+                    </div>
+                    <div class="bg-white border-2 border-slate-200 text-slate-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-xs text-slate-500 font-semibold mb-1">Feather</span>
+                        <span id="feather-vel" class="text-xl font-mono font-bold">0.0 <span class="text-xs font-normal">m/s</span></span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg border border-gray-200 h-32 relative w-full overflow-hidden shadow-inner">
+                    <canvas id="telemetry-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-auto">
+                <button id="btn-drop" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-all active:scale-95">
+                    Drop
+                </button>
+                <button id="btn-reset" class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition-all active:scale-95">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Viewport -->
+    <div id="viewport" class="flex-1 relative bg-black overflow-hidden shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] h-[55vh] md:h-full">
+        
+        <!-- Sky Layer -->
+        <div id="layer-sky" class="absolute inset-0 bg-gradient-to-b from-blue-300 to-blue-100 layer-transition z-0">
+            <!-- Clouds -->
+            <div class="absolute top-12 left-10 opacity-60 w-32 h-10 bg-white rounded-full blur-xl"></div>
+            <div class="absolute top-40 right-20 opacity-40 w-48 h-16 bg-white rounded-full blur-xl"></div>
+        </div>
+
+        <!-- Vacuum/Space Layer -->
+        <div id="layer-vacuum" class="absolute inset-0 bg-gradient-to-b from-gray-900 to-black layer-transition opacity-0 z-0">
+            <div class="absolute inset-0 bg-grid"></div>
+        </div>
+
+        <!-- Molecule Layer -->
+        <canvas id="molecule-canvas" class="absolute inset-0 z-[15] pointer-events-none opacity-80 mix-blend-overlay"></canvas>
+
+        <!-- Floor -->
+        <div id="floor" class="absolute bottom-0 w-full h-16 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-400 z-20 flex justify-center items-center shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+            <div class="absolute inset-0 opacity-20" style="background: repeating-linear-gradient(45deg, #000, #000 10px, transparent 10px, transparent 20px);"></div>
+        </div>
+
+        <!-- Falling Objects Container -->
+        <div class="absolute inset-0 z-10 flex justify-center gap-20 pt-10">
+            <!-- Ball -->
+            <div class="w-16 h-full relative flex justify-center">
+                <div id="ball" class="absolute top-0 w-16 h-16 rounded-full bg-gradient-to-br from-slate-500 to-slate-900 shadow-xl border border-slate-700 flex items-center justify-center will-change-transform">
+                    <div class="flex gap-1 -mt-2">
+                        <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60"></div>
+                        <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60"></div>
+                        <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60 mt-2 -ml-2.5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feather -->
+            <div class="w-16 h-full relative flex justify-center">
+                <div id="feather" class="absolute top-0 w-12 h-16 will-change-transform origin-center">
+                    <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                        <path d="M50 95 Q50 50 50 5" fill="none" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M50 10 C20 20 15 60 50 90 C85 60 80 20 50 10 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+                        <path d="M50 30 L30 20 M50 50 L25 35 M50 70 L35 60 M50 35 L70 25 M50 55 L75 40 M50 75 L65 65" fill="none" stroke="#f8fafc" stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // --- Physics Engine & State ---
+    const gravity = 0.15; // Scaled for screen viewing
+    let density = 1.2;    // Current Air Density
+    let isRunning = false;
+    let maxFallDistance = 0;
+    let chartHistory = { ball: [], feather: [] };
+
+    // Object Properties
+    const objs = {
+        ball: { 
+            el: document.getElementById('ball'), 
+            velEl: document.getElementById('ball-vel'),
+            mass: 10, k: 0.005, 
+            y: 0, v: 0, x: 0, rot: 0 
+        },
+        feather: { 
+            el: document.getElementById('feather'), 
+            velEl: document.getElementById('feather-vel'),
+            mass: 0.1, k: 0.15, 
+            y: 0, v: 0, x: 0, rot: 0 
+        }
+    };
+
+    // --- Chart & Molecule Setup ---
+    const canvas = document.getElementById('telemetry-chart');
+    const ctx = canvas.getContext('2d');
+    
+    const molCanvas = document.getElementById('molecule-canvas');
+    const molCtx = molCanvas.getContext('2d');
+    let molecules = [];
+
+    function initMolecules() {
+        molecules = [];
+        const maxMols = 1500; // Peak molecules for maximum density
+        for (let i = 0; i < maxMols; i++) {
+            molecules.push({
+                x: Math.random() * molCanvas.width,
+                y: Math.random() * molCanvas.height,
+                vx: 0, vy: 0
+            });
+        }
+    }
+
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+
+        // Resize Chart
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        // Resize Molecules
+        const vp = document.getElementById('viewport');
+        molCanvas.width = vp.clientWidth * dpr;
+        molCanvas.height = vp.clientHeight * dpr;
+        initMolecules();
+    }
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        calculateBounds();
+    });
+    
+    resizeCanvas();
+
+    function calculateBounds() {
+        const viewport = document.getElementById('viewport');
+        const floor = document.getElementById('floor');
+        // Subtract object height (approx 64px) and padding from total available height
+        maxFallDistance = viewport.clientHeight - floor.clientHeight - 64 - 40; 
+    }
+
+    // --- Core Simulation Loop ---
+    function tick() {
+        if (isRunning) {
+            updatePhysicsLogic();
+        }
+        render();
+        requestAnimationFrame(tick);
+    }
+
+    function updatePhysicsLogic() {
+        let allLanded = true;
+
+        ['ball', 'feather'].forEach(key => {
+            const obj = objs[key];
+            
+            if (obj.y < maxFallDistance) {
+                allLanded = false;
+                
+                // Drag Force = Density * Area/Shape (k) * Velocity^2
+                const dragForce = density * obj.k * (obj.v * obj.v);
+                let acceleration = gravity - (dragForce / obj.mass);
+                
+                // Terminal velocity guard
+                if (obj.v > 0 && obj.v + acceleration < 0) {
+                    obj.v = 0; 
+                } else {
+                    obj.v += acceleration;
+                }
+                
+                obj.y += obj.v;
+
+                // Feather flutter logic
+                if (key === 'feather' && density > 0 && obj.v > 0) {
+                    const flutterIntensity = Math.min(density, 1.5);
+                    obj.x = Math.sin(obj.y * 0.05) * (15 * flutterIntensity);
+                    obj.rot = Math.cos(obj.y * 0.05) * (20 * flutterIntensity);
+                } else {
+                    // Dampen x and rotation if in vacuum or stopped
+                    obj.x *= 0.9;
+                    obj.rot *= 0.9;
+                }
+
+                // Floor Collision Guard
+                if (obj.y >= maxFallDistance) {
+                    obj.y = maxFallDistance;
+                    obj.v = 0;
+                    obj.x = 0;
+                    obj.rot = 0;
+                }
+            }
+        });
+
+        // Record for chart 
+        if (!allLanded || chartHistory.ball.length === 0) {
+            chartHistory.ball.push(objs.ball.v * 5);
+            chartHistory.feather.push(objs.feather.v * 5);
+        }
+
+        if (allLanded) {
+            isRunning = false;
+            document.getElementById('btn-drop').innerText = "Finished";
+            document.getElementById('btn-drop').classList.replace('bg-blue-600', 'bg-slate-400');
+        }
+    }
+
+    function render() {
+        // Update DOM Elements
+        objs.ball.el.style.transform = `translateY(${objs.ball.y}px)`;
+        objs.feather.el.style.transform = `translate(${objs.feather.x}px, ${objs.feather.y}px) rotate(${objs.feather.rot}deg)`;
+
+        // Update Text
+        objs.ball.velEl.innerHTML = `${(objs.ball.v * 5).toFixed(1)} <span class="text-xs font-normal">m/s</span>`;
+        objs.feather.velEl.innerHTML = `${(objs.feather.v * 5).toFixed(1)} <span class="text-xs font-normal">m/s</span>`;
+
+        drawChart();
+        drawMolecules();
+    }
+
+    function drawMolecules() {
+        const width = molCanvas.width;
+        const height = molCanvas.height;
+        const dpr = window.devicePixelRatio || 1;
+
+        molCtx.clearRect(0, 0, width, height);
+        if (density <= 0) return;
+
+        // Number of active molecules scales with air density
+        const activeCount = Math.min(molecules.length, Math.floor(density * 500)); 
+        
+        const vpRect = document.getElementById('viewport').getBoundingClientRect();
+        const bRect = objs.ball.el.getBoundingClientRect();
+        const fRect = objs.feather.el.getBoundingClientRect();
+
+        // Calculate absolute center positions of objects mapping to canvas space
+        const bx = (bRect.left - vpRect.left + bRect.width / 2) * dpr;
+        const by = (bRect.top - vpRect.top + bRect.height / 2) * dpr;
+        const bRad = (bRect.width / 2) * dpr;
+
+        const fx = (fRect.left - vpRect.left + fRect.width / 2) * dpr;
+        const fy = (fRect.top - vpRect.top + fRect.height / 2) * dpr;
+        const fRad = (fRect.width / 2) * dpr; 
+
+        molCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        molCtx.beginPath();
+
+        for (let i = 0; i < activeCount; i++) {
+            let m = molecules[i];
+
+            // Natural Brownian motion (air vibration)
+            m.x += (Math.random() - 0.5) * 2 * dpr;
+            m.y += (Math.random() - 0.5) * 2 * dpr;
+
+            // Collision with Ball
+            let dx = m.x - bx;
+            let dy = m.y - by;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < bRad + (12 * dpr)) {
+                let force = (bRad + (12 * dpr) - dist) / (12 * dpr);
+                m.vx += (dx/dist) * force * (objs.ball.v * dpr + 3);
+                m.vy += (dy/dist) * force * (objs.ball.v * dpr + 3);
+            }
+
+            // Collision with Feather
+            let fdx = m.x - fx;
+            let fdy = m.y - fy;
+            let fDist = Math.sqrt(fdx*fdx + fdy*fdy);
+            if (fDist < fRad + (10 * dpr)) {
+                let force = (fRad + (10 * dpr) - fDist) / (10 * dpr);
+                m.vx += (fdx/fDist) * force * (objs.feather.v * dpr + 2);
+                m.vy += (fdy/fDist) * force * (objs.feather.v * dpr + 2);
+            }
+
+            m.x += m.vx;
+            m.y += m.vy;
+
+            // Friction / Air damping
+            m.vx *= 0.8;
+            m.vy *= 0.8;
+
+            // Wrap bounds
+            if (m.x < 0) m.x += width;
+            if (m.x > width) m.x -= width;
+            if (m.y < 0) m.y += height;
+            if (m.y > height) m.y -= height;
+
+            // Plot dot
+            molCtx.moveTo(m.x, m.y);
+            molCtx.arc(m.x, m.y, 1.2 * dpr, 0, Math.PI * 2);
+        }
+        molCtx.fill();
+    }
+
+    function drawChart() {
+        const width = canvas.width / window.devicePixelRatio;
+        const height = canvas.height / window.devicePixelRatio;
+        
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw Grid
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let i=1; i<4; i++) {
+            let y = height * (i/4);
+            ctx.moveTo(0, y); ctx.lineTo(width, y);
+        }
+        ctx.stroke();
+
+        if (chartHistory.ball.length === 0) return;
+
+        // Dynamic Scaling
+        const allPts = [...chartHistory.ball, ...chartHistory.feather];
+        const maxV = Math.max(10, ...allPts) * 1.1; 
+        const maxPts = Math.max(100, chartHistory.ball.length);
+
+        const drawLine = (data, color, isDashed = false) => {
+            ctx.beginPath();
+            ctx.setLineDash(isDashed ? [5, 5] : []);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            
+            data.forEach((val, idx) => {
+                const x = (idx / maxPts) * width;
+                const y = height - (val / maxV) * height;
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset
+        };
+
+        drawLine(chartHistory.feather, '#94a3b8', true); // Feather
+        drawLine(chartHistory.ball, '#1e293b', false);   // Ball
+    }
+
+    // --- Controls & Events ---
+
+    function resetSimulation() {
+        isRunning = false;
+        
+        ['ball', 'feather'].forEach(key => {
+            objs[key].y = 0; objs[key].v = 0; objs[key].x = 0; objs[key].rot = 0;
+            objs[key].el.style.transition = 'transform 0.3s ease-out';
+        });
+
+        chartHistory = { ball: [], feather: [] };
+
+        setTimeout(() => {
+            objs.ball.el.style.transition = 'none';
+            objs.feather.el.style.transition = 'none';
+        }, 300);
+
+        const btnDrop = document.getElementById('btn-drop');
+        btnDrop.innerText = "Drop";
+        btnDrop.disabled = false;
+        btnDrop.classList.remove('bg-slate-400', 'cursor-not-allowed');
+        btnDrop.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    }
+
+    function setDensity(newDensity) {
+        density = newDensity;
+        document.getElementById('density-slider').value = density;
+        document.getElementById('density-val').innerText = `${density.toFixed(2)} kg/m³`;
+
+        const isVacuum = density === 0;
+        const sky = document.getElementById('layer-sky');
+        const vacuum = document.getElementById('layer-vacuum');
+
+        if (isVacuum) {
+            sky.style.opacity = '0';
+            vacuum.style.opacity = '1';
+        } else {
+            sky.style.opacity = Math.min(1, 0.4 + (density * 0.5)).toString();
+            vacuum.style.opacity = '0';
+        }
+
+        // Button States
+        ['earth', 'mars', 'vacuum'].forEach(id => {
+            document.getElementById(`btn-${id}`).className = "flex-1 py-2 text-sm font-bold bg-white border border-gray-200 text-gray-400 hover:text-gray-600 rounded-lg transition-all";
+        });
+        
+        if (density === 1.2) {
+            document.getElementById('btn-earth').classList.add('text-blue-600', 'shadow-sm');
+        } else if (density === 0.05) {
+            document.getElementById('btn-mars').classList.add('text-orange-600', 'shadow-sm');
+        } else if (density === 0) {
+            document.getElementById('btn-vacuum').classList.add('text-purple-600', 'shadow-sm');
+        }
+    }
+
+    // Event Listeners
+    document.getElementById('btn-drop').addEventListener('click', (e) => {
+        if (isRunning) return;
+        isRunning = true;
+        e.target.innerText = "Dropping...";
+        e.target.disabled = true;
+        e.target.classList.replace('bg-blue-600', 'bg-blue-400');
+        e.target.classList.add('cursor-not-allowed');
+        calculateBounds();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+    
+    document.getElementById('density-slider').addEventListener('input', (e) => setDensity(parseFloat(e.target.value)));
+    document.getElementById('btn-earth').addEventListener('click', () => setDensity(1.2));
+    document.getElementById('btn-mars').addEventListener('click', () => setDensity(0.05));
+    document.getElementById('btn-vacuum').addEventListener('click', () => setDensity(0));
+
+    // Initialize
+    calculateBounds();
+    requestAnimationFrame(tick); // Start continuous animation loop
+});
+</script>
+</body>
+</html>
