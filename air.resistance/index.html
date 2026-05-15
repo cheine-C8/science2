@@ -8,7 +8,8 @@
     <style>
         .layer-transition { transition: opacity 0.8s ease-in-out; }
         .bg-grid {
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.05'/%3E%3Cpath d='M 0 40 L 40 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.05'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.1'%3E%3C/path%3E%3C/svg%3E");
+            background-size: 40px 40px;
         }
         canvas { width: 100%; height: 100%; display: block; }
     </style>
@@ -20,7 +21,7 @@
         <div class="p-6 flex-1 overflow-y-auto">
             <h1 class="text-2xl font-black text-gray-900 tracking-tight mb-2">Galileo's Drop</h1>
             <p class="text-sm text-gray-500 mb-6 leading-relaxed">
-                Observe gravity and drag. In a vacuum, mass and shape don't matter—everything falls at the same rate. Add air, and you can see aerodynamic displacement!
+                Watch air particles bounce off the feather, slowing it down! The bowling ball pushes them aside. In a vacuum, no particles = no resistance.
             </p>
 
             <!-- Environment Controls -->
@@ -88,11 +89,18 @@
             <div class="absolute inset-0 bg-grid"></div>
         </div>
 
+        <!-- Particle Trails Layer (behind objects) -->
+        <canvas id="trails-canvas" class="absolute inset-0 z-[8] pointer-events-none"></canvas>
+
         <!-- Molecule Layer -->
-        <canvas id="molecule-canvas" class="absolute inset-0 z-[15] pointer-events-none opacity-80 mix-blend-overlay"></canvas>
+        <canvas id="molecule-canvas" class="absolute inset-0 z-[15] pointer-events-none mix-blend-screen"></canvas>
+
+        <!-- Force Visualization Layer -->
+        <canvas id="force-canvas" class="absolute inset-0 z-[12] pointer-events-none opacity-70"></canvas>
 
         <!-- Floor -->
-        <div id="floor" class="absolute bottom-0 w-full h-16 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-400 z-20 flex justify-center items-center shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+        <div id="floor" class="absolute bottom-0 w-full h-16 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-400 z-20 flex justify-center items-center shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
+            <span class="text-gray-300 font-bold text-sm tracking-widest">GROUND</span>
             <div class="absolute inset-0 opacity-20" style="background: repeating-linear-gradient(45deg, #000, #000 10px, transparent 10px, transparent 20px);"></div>
         </div>
 
@@ -100,7 +108,7 @@
         <div class="absolute inset-0 z-10 flex justify-center gap-20 pt-10">
             <!-- Ball -->
             <div class="w-16 h-full relative flex justify-center">
-                <div id="ball" class="absolute top-0 w-16 h-16 rounded-full bg-gradient-to-br from-slate-500 to-slate-900 shadow-xl border border-slate-700 flex items-center justify-center will-change-transform">
+                <div id="ball" class="absolute top-0 w-16 h-16 rounded-full bg-gradient-to-br from-slate-500 to-slate-900 shadow-xl border border-slate-700 flex items-center justify-center will-change-transform" style="transform: translateZ(0);">
                     <div class="flex gap-1 -mt-2">
                         <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60"></div>
                         <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60"></div>
@@ -154,16 +162,26 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const molCanvas = document.getElementById('molecule-canvas');
     const molCtx = molCanvas.getContext('2d');
+    
+    const forceCanvas = document.getElementById('force-canvas');
+    const forceCtx = forceCanvas.getContext('2d');
+    
+    const trailsCanvas = document.getElementById('trails-canvas');
+    const trailsCtx = trailsCanvas.getContext('2d');
+    
     let molecules = [];
+    let trails = []; // Particle trails for visualization
 
     function initMolecules() {
         molecules = [];
-        const maxMols = 1500; // Peak molecules for maximum density
+        const maxMols = 2000; // Increased for better visual density
         for (let i = 0; i < maxMols; i++) {
             molecules.push({
                 x: Math.random() * molCanvas.width,
                 y: Math.random() * molCanvas.height,
-                vx: 0, vy: 0
+                vx: 0, vy: 0,
+                age: 0,
+                hasHitFeather: false
             });
         }
     }
@@ -181,6 +199,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const vp = document.getElementById('viewport');
         molCanvas.width = vp.clientWidth * dpr;
         molCanvas.height = vp.clientHeight * dpr;
+        
+        forceCanvas.width = vp.clientWidth * dpr;
+        forceCanvas.height = vp.clientHeight * dpr;
+        
+        trailsCanvas.width = vp.clientWidth * dpr;
+        trailsCanvas.height = vp.clientHeight * dpr;
+        
         initMolecules();
     }
 
@@ -194,7 +219,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function calculateBounds() {
         const viewport = document.getElementById('viewport');
         const floor = document.getElementById('floor');
-        // Subtract object height (approx 64px) and padding from total available height
         maxFallDistance = viewport.clientHeight - floor.clientHeight - 64 - 40; 
     }
 
@@ -229,13 +253,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 obj.y += obj.v;
 
-                // Feather flutter logic
+                // Feather flutter logic - AMPLIFIED
                 if (key === 'feather' && density > 0 && obj.v > 0) {
                     const flutterIntensity = Math.min(density, 1.5);
                     obj.x = Math.sin(obj.y * 0.05) * (15 * flutterIntensity);
                     obj.rot = Math.cos(obj.y * 0.05) * (20 * flutterIntensity);
                 } else {
-                    // Dampen x and rotation if in vacuum or stopped
                     obj.x *= 0.9;
                     obj.rot *= 0.9;
                 }
@@ -274,6 +297,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         drawChart();
         drawMolecules();
+        drawForceIndicators();
+        drawTrails();
     }
 
     function drawMolecules() {
@@ -285,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (density <= 0) return;
 
         // Number of active molecules scales with air density
-        const activeCount = Math.min(molecules.length, Math.floor(density * 500)); 
+        const activeCount = Math.min(molecules.length, Math.floor(density * 700)); 
         
         const vpRect = document.getElementById('viewport').getBoundingClientRect();
         const bRect = objs.ball.el.getBoundingClientRect();
@@ -300,42 +325,60 @@ document.addEventListener("DOMContentLoaded", () => {
         const fy = (fRect.top - vpRect.top + fRect.height / 2) * dpr;
         const fRad = (fRect.width / 2) * dpr; 
 
-        molCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        molCtx.beginPath();
-
         for (let i = 0; i < activeCount; i++) {
             let m = molecules[i];
+            let isNearFeather = false;
+            let isNearBall = false;
 
             // Natural Brownian motion (air vibration)
-            m.x += (Math.random() - 0.5) * 2 * dpr;
-            m.y += (Math.random() - 0.5) * 2 * dpr;
+            m.x += (Math.random() - 0.5) * 2.5 * dpr;
+            m.y += (Math.random() - 0.5) * 2.5 * dpr;
 
-            // Collision with Ball
+            // Collision with Ball - STRONG DEFLECTION
             let dx = m.x - bx;
             let dy = m.y - by;
             let dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < bRad + (12 * dpr)) {
-                let force = (bRad + (12 * dpr) - dist) / (12 * dpr);
-                m.vx += (dx/dist) * force * (objs.ball.v * dpr + 3);
-                m.vy += (dy/dist) * force * (objs.ball.v * dpr + 3);
+            if (dist < bRad + (15 * dpr)) {
+                isNearBall = true;
+                let force = Math.max(0, (bRad + (15 * dpr) - dist)) / (15 * dpr);
+                m.vx += (dx/dist) * force * (objs.ball.v * dpr * 1.5 + 4);
+                m.vy += (dy/dist) * force * (objs.ball.v * dpr * 1.5 + 4);
             }
 
-            // Collision with Feather
+            // Collision with Feather - EVEN STRONGER, creates visual effect
             let fdx = m.x - fx;
             let fdy = m.y - fy;
             let fDist = Math.sqrt(fdx*fdx + fdy*fdy);
-            if (fDist < fRad + (10 * dpr)) {
-                let force = (fRad + (10 * dpr) - fDist) / (10 * dpr);
-                m.vx += (fdx/fDist) * force * (objs.feather.v * dpr + 2);
-                m.vy += (fdy/fDist) * force * (objs.feather.v * dpr + 2);
+            if (fDist < fRad + (12 * dpr)) {
+                isNearFeather = true;
+                m.hasHitFeather = true;
+                let force = Math.max(0, (fRad + (12 * dpr) - fDist)) / (12 * dpr);
+                // Particles bounce back harder from feather
+                m.vx += (fdx/fDist) * force * (objs.feather.v * dpr * 2.5 + 5);
+                m.vy += (fdy/fDist) * force * (objs.feather.v * dpr * 2.5 + 5);
+                
+                // Create trail when hitting feather
+                if (Math.random() < 0.3) {
+                    trails.push({
+                        x: m.x, y: m.y,
+                        vx: m.vx * 0.5, vy: m.vy * 0.5,
+                        life: 1.0
+                    });
+                }
             }
 
             m.x += m.vx;
             m.y += m.vy;
 
-            // Friction / Air damping
-            m.vx *= 0.8;
-            m.vy *= 0.8;
+            // Friction / Air damping (stronger for feather collision)
+            if (m.hasHitFeather) {
+                m.vx *= 0.75;
+                m.vy *= 0.75;
+            } else {
+                m.vx *= 0.82;
+                m.vy *= 0.82;
+            }
+            m.hasHitFeather = false;
 
             // Wrap bounds
             if (m.x < 0) m.x += width;
@@ -343,11 +386,103 @@ document.addEventListener("DOMContentLoaded", () => {
             if (m.y < 0) m.y += height;
             if (m.y > height) m.y -= height;
 
-            // Plot dot
-            molCtx.moveTo(m.x, m.y);
-            molCtx.arc(m.x, m.y, 1.2 * dpr, 0, Math.PI * 2);
+            m.age++;
         }
-        molCtx.fill();
+
+        // Draw molecules with color based on interaction
+        molCtx.fillStyle = 'rgba(200, 220, 255, 0.8)';
+        molCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        molCtx.lineWidth = 0.5 * dpr;
+        
+        for (let i = 0; i < activeCount; i++) {
+            let m = molecules[i];
+            molCtx.beginPath();
+            molCtx.arc(m.x, m.y, 1.5 * dpr, 0, Math.PI * 2);
+            molCtx.fill();
+            
+            // Subtle velocity indication
+            if (m.vx * m.vx + m.vy * m.vy > 1) {
+                molCtx.beginPath();
+                molCtx.moveTo(m.x, m.y);
+                molCtx.lineTo(m.x + m.vx * 0.3, m.y + m.vy * 0.3);
+                molCtx.stroke();
+            }
+        }
+    }
+
+    function drawTrails() {
+        const width = trailsCanvas.width;
+        const height = trailsCanvas.height;
+        const dpr = window.devicePixelRatio || 1;
+
+        // Fade trails slightly
+        trailsCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        trailsCtx.fillRect(0, 0, width, height);
+
+        // Update and draw trails
+        trails = trails.filter(trail => trail.life > 0);
+        
+        trailsCtx.fillStyle = 'rgba(255, 150, 100, 0.6)';
+        trails.forEach(trail => {
+            trail.life -= 0.02;
+            trail.x += trail.vx;
+            trail.y += trail.vy;
+            trail.vy += 0.5 * dpr; // gravity on trails
+            
+            const alpha = trail.life * 0.6;
+            trailsCtx.fillStyle = `rgba(255, 150, 100, ${alpha})`;
+            trailsCtx.beginPath();
+            trailsCtx.arc(trail.x, trail.y, 2.5 * dpr, 0, Math.PI * 2);
+            trailsCtx.fill();
+        });
+    }
+
+    function drawForceIndicators() {
+        const width = forceCanvas.width;
+        const height = forceCanvas.height;
+        const dpr = window.devicePixelRatio || 1;
+
+        forceCtx.clearRect(0, 0, width, height);
+        
+        if (density <= 0) return;
+
+        const vpRect = document.getElementById('viewport').getBoundingClientRect();
+        const fRect = objs.feather.el.getBoundingClientRect();
+        
+        const fx = (fRect.left - vpRect.left + fRect.width / 2) * dpr;
+        const fy = (fRect.top - vpRect.top + fRect.height / 2) * dpr;
+        
+        // Draw drag force indicator around feather
+        const dragForce = density * objs.feather.k * (objs.feather.v * objs.feather.v);
+        const forceVisualization = Math.min(dragForce * 30, 25);
+        
+        // Upward force arrow indicating drag
+        if (objs.feather.v > 0.5) {
+            forceCtx.strokeStyle = `rgba(255, 150, 100, ${Math.min(dragForce * 0.5, 0.8)})`;
+            forceCtx.lineWidth = 3 * dpr;
+            forceCtx.lineCap = 'round';
+            forceCtx.lineJoin = 'round';
+            
+            // Draw upward arrow to show opposing force
+            const arrowLength = forceVisualization * dpr;
+            forceCtx.beginPath();
+            forceCtx.moveTo(fx, fy + 30 * dpr);
+            forceCtx.lineTo(fx, fy + 30 * dpr - arrowLength);
+            forceCtx.stroke();
+            
+            // Arrow head
+            forceCtx.beginPath();
+            forceCtx.moveTo(fx - 5 * dpr, fy + 30 * dpr - arrowLength + 8 * dpr);
+            forceCtx.lineTo(fx, fy + 30 * dpr - arrowLength);
+            forceCtx.lineTo(fx + 5 * dpr, fy + 30 * dpr - arrowLength + 8 * dpr);
+            forceCtx.stroke();
+            
+            // Drag force label
+            forceCtx.fillStyle = `rgba(255, 150, 100, 0.9)`;
+            forceCtx.font = `${12 * dpr}px monospace`;
+            forceCtx.textAlign = 'center';
+            forceCtx.fillText(`Drag: ${dragForce.toFixed(2)}`, fx, fy + 60 * dpr);
+        }
     }
 
     function drawChart() {
@@ -387,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 else ctx.lineTo(x, y);
             });
             ctx.stroke();
-            ctx.setLineDash([]); // Reset
+            ctx.setLineDash([]);
         };
 
         drawLine(chartHistory.feather, '#94a3b8', true); // Feather
@@ -398,6 +533,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function resetSimulation() {
         isRunning = false;
+        trails = [];
         
         ['ball', 'feather'].forEach(key => {
             objs[key].y = 0; objs[key].v = 0; objs[key].x = 0; objs[key].rot = 0;
