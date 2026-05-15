@@ -8,7 +8,7 @@
     <style>
         .layer-transition { transition: opacity 0.8s ease-in-out; }
         .bg-grid {
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.1'%3E%3C/path%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.1'/%3E%3C/svg%3E");
             background-size: 40px 40px;
         }
         canvas { width: 100%; height: 100%; display: block; }
@@ -99,7 +99,7 @@
         <canvas id="force-canvas" class="absolute inset-0 z-[12] pointer-events-none opacity-70"></canvas>
 
         <!-- Floor -->
-        <div id="floor" class="absolute bottom-0 w-full h-16 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-400 z-20 flex justify-center items-center shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
+        <div id="floor" class="absolute bottom-0 w-full h-16 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-400 z-20 flex justify-center items-center shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
             <span class="text-gray-300 font-bold text-sm tracking-widest">GROUND</span>
             <div class="absolute inset-0 opacity-20" style="background: repeating-linear-gradient(45deg, #000, #000 10px, transparent 10px, transparent 20px);"></div>
         </div>
@@ -108,7 +108,7 @@
         <div class="absolute inset-0 z-10 flex justify-center gap-20 pt-10">
             <!-- Ball -->
             <div class="w-16 h-full relative flex justify-center">
-                <div id="ball" class="absolute top-0 w-16 h-16 rounded-full bg-gradient-to-br from-slate-500 to-slate-900 shadow-xl border border-slate-700 flex items-center justify-center will-change-transform" style="transform: translateZ(0);">
+                <div id="ball" class="absolute top-0 w-16 h-16 rounded-full bg-gradient-to-br from-slate-500 to-slate-900 shadow-xl border border-slate-700 flex items-center justify-center will-change-transform">
                     <div class="flex gap-1 -mt-2">
                         <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60"></div>
                         <div class="w-1.5 h-1.5 bg-black rounded-full opacity-60"></div>
@@ -181,7 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 y: Math.random() * molCanvas.height,
                 vx: 0, vy: 0,
                 age: 0,
-                hasHitFeather: false
+                hitBall: false,
+                hitFeather: false
             });
         }
     }
@@ -340,6 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < bRad + (15 * dpr)) {
                 isNearBall = true;
+                m.hitBall = true;
                 let force = Math.max(0, (bRad + (15 * dpr) - dist)) / (15 * dpr);
                 m.vx += (dx/dist) * force * (objs.ball.v * dpr * 1.5 + 4);
                 m.vy += (dy/dist) * force * (objs.ball.v * dpr * 1.5 + 4);
@@ -351,7 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let fDist = Math.sqrt(fdx*fdx + fdy*fdy);
             if (fDist < fRad + (12 * dpr)) {
                 isNearFeather = true;
-                m.hasHitFeather = true;
+                m.hitFeather = true;
                 let force = Math.max(0, (fRad + (12 * dpr) - fDist)) / (12 * dpr);
                 // Particles bounce back harder from feather
                 m.vx += (fdx/fDist) * force * (objs.feather.v * dpr * 2.5 + 5);
@@ -370,15 +372,9 @@ document.addEventListener("DOMContentLoaded", () => {
             m.x += m.vx;
             m.y += m.vy;
 
-            // Friction / Air damping (stronger for feather collision)
-            if (m.hasHitFeather) {
-                m.vx *= 0.75;
-                m.vy *= 0.75;
-            } else {
-                m.vx *= 0.82;
-                m.vy *= 0.82;
-            }
-            m.hasHitFeather = false;
+            // Friction / Air damping
+            m.vx *= 0.82;
+            m.vy *= 0.82;
 
             // Wrap bounds
             if (m.x < 0) m.x += width;
@@ -390,18 +386,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Draw molecules with color based on interaction
-        molCtx.fillStyle = 'rgba(200, 220, 255, 0.8)';
-        molCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        molCtx.lineWidth = 0.5 * dpr;
-        
         for (let i = 0; i < activeCount; i++) {
             let m = molecules[i];
+            
+            // Determine color based on what the particle has hit
+            let fillColor = 'rgba(200, 220, 255, 0.8)'; // Default: light blue
+            
+            if (m.hitFeather && m.hitBall) {
+                // Hit both: mix colors - yellow/gold
+                fillColor = 'rgba(255, 200, 100, 0.8)';
+            } else if (m.hitFeather) {
+                // Hit feather: orange/coral
+                fillColor = 'rgba(255, 150, 100, 0.8)';
+            } else if (m.hitBall) {
+                // Hit ball: slate/gray
+                fillColor = 'rgba(150, 170, 200, 0.9)';
+            }
+            
+            molCtx.fillStyle = fillColor;
             molCtx.beginPath();
             molCtx.arc(m.x, m.y, 1.5 * dpr, 0, Math.PI * 2);
             molCtx.fill();
             
             // Subtle velocity indication
             if (m.vx * m.vx + m.vy * m.vy > 1) {
+                molCtx.strokeStyle = fillColor.replace(/0\.\d+\)/, '0.5)'); // Increase alpha for stroke
+                molCtx.lineWidth = 0.5 * dpr;
                 molCtx.beginPath();
                 molCtx.moveTo(m.x, m.y);
                 molCtx.lineTo(m.x + m.vx * 0.3, m.y + m.vy * 0.3);
@@ -422,7 +432,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update and draw trails
         trails = trails.filter(trail => trail.life > 0);
         
-        trailsCtx.fillStyle = 'rgba(255, 150, 100, 0.6)';
         trails.forEach(trail => {
             trail.life -= 0.02;
             trail.x += trail.vx;
