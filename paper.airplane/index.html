@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✈️ Paper Airplane Lab</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --stage: #1a1f35;
+    --floor: #12162a;
+    --audience: #0d1122;
+    --paper: #f5f0e8;
+    --yellow: #f7c948;
+    --red: #e84040;
+    --green: #3ddc84;
+    --blue: #4fa3ff;
+    --dim: #6b7280;
+    --text: #e8e4dc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 18px 20px 10px;
+    border-bottom: 2px solid #1e2540;
+  }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.8rem);
+    letter-spacing: 0.08em;
+    color: var(--yellow);
+    text-shadow: 0 0 30px rgba(247,201,72,0.4);
+  }
+
+  header p {
+    font-size: 0.7rem;
+    color: var(--dim);
+    margin-top: 4px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .lab-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+    height: calc(100vh - 100px);
+    min-height: 550px;
+  }
+
+  /* ── LEFT PANEL ── */
+  .design-panel {
+    background: #0f1326;
+    border-right: 2px solid #1e2540;
+    padding: 18px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+    color: var(--yellow);
+    border-bottom: 1px solid #1e2540;
+    padding-bottom: 6px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  select, input[type=range] {
+    width: 100%;
+    background: #141829;
+    border: 1px solid #2a3150;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  select:focus { outline: 1px solid var(--yellow); }
+
+  input[type=range] {
+    padding: 4px 0;
+    accent-color: var(--yellow);
+    border: none;
+    background: transparent;
+  }
+
+  .range-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.65rem;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+
+  .range-val {
+    color: var(--yellow);
+    font-weight: 700;
+  }
+
+  .plane-preview {
+    background: #141829;
+    border: 1px solid #2a3150;
+    border-radius: 6px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .plane-preview svg {
+    transition: transform 0.3s;
+  }
+
+  .throw-btn {
+    background: var(--yellow);
+    color: #0a0e1a;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.12em;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    margin-top: auto;
+  }
+
+  .throw-btn:hover:not(:disabled) { background: #ffd966; transform: translateY(-1px); }
+  .throw-btn:active:not(:disabled) { transform: translateY(1px); }
+  .throw-btn:disabled { background: #3a3e50; color: #555; cursor: not-allowed; }
+
+  .reset-btn {
+    background: transparent;
+    color: var(--dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    border: 1px solid #2a3150;
+    padding: 7px;
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .reset-btn:hover { color: var(--text); border-color: var(--dim); }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #141829;
+    border: 1px solid #2a3150;
+    border-radius: 4px;
+    padding: 7px 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s;
+  }
+  .toggle-row:hover { border-color: var(--yellow); }
+  .toggle-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .toggle-switch {
+    width: 32px; height: 17px;
+    background: #2a3150;
+    border-radius: 99px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--yellow); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 13px; height: 13px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .toggle-switch.on::after { left: 17px; }
+
+  /* ── RIGHT PANEL: AUDITORIUM ── */
+  .auditorium-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--audience);
+    overflow: hidden;
+  }
+
+  .scoreboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #0a0e1a;
+    border-bottom: 2px solid #1e2540;
+    font-size: 0.7rem;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+
+  .score-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .score-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    color: var(--yellow);
+    line-height: 1;
+  }
+
+  .hit-flash {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(61,220,132,0.18);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 50;
+    border-radius: 0;
+    transition: opacity 0.1s;
+  }
+
+  canvas {
+    flex: 1;
+    display: block;
+    width: 100%;
+  }
+
+  /* result toast */
+  .toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.1em;
+    padding: 18px 36px;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 60;
+    text-align: center;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .toast.hit {
+    background: rgba(61,220,132,0.92);
+    color: #0a0e1a;
+    border: 3px solid #3ddc84;
+  }
+
+  .toast.miss {
+    background: rgba(232,64,64,0.85);
+    color: #fff;
+    border: 3px solid #e84040;
+  }
+
+  .toast small {
+    display: block;
+    font-size: 1rem;
+    margin-top: 4px;
+    letter-spacing: 0.08em;
+  }
+
+  /* attempts log */
+  .log {
+    background: #0a0e1a;
+    border-top: 2px solid #1e2540;
+    padding: 6px 14px;
+    font-size: 0.6rem;
+    color: var(--dim);
+    height: 36px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.07em;
+  }
+
+  .log-entry { transition: color 0.3s; }
+  .log-entry.hit-log { color: var(--green); }
+  .log-entry.miss-log { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✈ Paper Airplane Lab</h1>
+  <p>Design · Throw · Score &nbsp;|&nbsp; Hit the teacher for +1 extra credit</p>
+</header>
+
+<div class="lab-container">
+
+  <!-- ── DESIGN PANEL ── -->
+  <div class="design-panel">
+    <div class="panel-title">✈ Design Your Plane</div>
+
+    <div>
+      <label>Wing Shape</label>
+      <select id="wingShape">
+        <option value="classic">Classic Dart</option>
+        <option value="wide">Wide Glider</option>
+        <option value="delta">Delta Wing</option>
+        <option value="stunt">Stunt Folder</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Paper Weight</label>
+      <select id="paperWeight">
+        <option value="light">Light (60gsm)</option>
+        <option value="standard" selected>Standard (80gsm)</option>
+        <option value="heavy">Heavy (120gsm)</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Throw Angle — <span class="range-val" id="angleVal">30</span>°</label>
+      <input type="range" id="throwAngle" min="5" max="55" value="30">
+      <div class="range-row"><span>5° (flat)</span><span>55° (steep)</span></div>
+    </div>
+
+    <div>
+      <label>Throw Power — <span class="range-val" id="powerVal">60</span>%</label>
+      <input type="range" id="throwPower" min="20" max="100" value="60">
+      <div class="range-row"><span>gentle</span><span>HURL</span></div>
+    </div>
+
+    <div>
+      <label>Fold Precision</label>
+      <select id="precision">
+        <option value="sloppy">Sloppy</option>
+        <option value="okay" selected>Okay</option>
+        <option value="crisp">Crisp</option>
+        <option value="perfect">Perfect</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Plane Preview</label>
+      <div class="plane-preview" id="planePreview"></div>
+    </div>
+
+    <button class="throw-btn" id="throwBtn" onclick="throwPlane()">🚀 THROW!</button>
+
+    <div class="toggle-row" onclick="toggleWander()" id="wanderToggle">
+      <span class="toggle-label">📌 Stationary Teacher</span>
+      <div class="toggle-switch" id="wanderSwitch"></div>
+    </div>
+
+    <button class="reset-btn" onclick="resetLab()">↺ Reset Lab</button>
+  </div>
+
+  <!-- ── AUDITORIUM ── -->
+  <div class="auditorium-wrap" id="auditoriumWrap">
+    <div class="scoreboard">
+      <div class="score-box">
+        <span>EXTRA CREDIT</span>
+        <span class="score-num" id="scoreDisplay">0</span>
+        <span>pts</span>
+      </div>
+      <div class="score-box">
+        <span>THROWS</span>
+        <span class="score-num" id="throwsDisplay">0</span>
+      </div>
+      <div class="score-box">
+        <span>HITS</span>
+        <span class="score-num" id="hitsDisplay">0</span>
+      </div>
+      <div style="font-size:0.6rem; color: #3ddc84; letter-spacing:0.1em" id="pctDisplay">— %</div>
+    </div>
+
+    <canvas id="scene"></canvas>
+
+    <div class="hit-flash" id="hitFlash"></div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="log" id="log"><span class="log-entry">Throw your plane from the stage!</span></div>
+  </div>
+</div>
+
+<script>
+  // ── STATE ──
+  let score = 0, throws = 0, hits = 0;
+  let animId = null;
+  let planeState = null;
+  let teacherX = 0.5, teacherY = 0.72; // fraction of canvas
+
+  // Wing shape configs
+  const WINGS = {
+    classic: { drag: 0.012, lift: 0.018, wobble: 0.3, color: '#f5f0e8' },
+    wide:    { drag: 0.018, lift: 0.025, wobble: 0.6, color: '#d8f0ff' },
+    delta:   { drag: 0.008, lift: 0.012, wobble: 0.15, color: '#fff0d8' },
+    stunt:   { drag: 0.022, lift: 0.014, wobble: 1.2,  color: '#ffd8e8' },
+  };
+
+  const PAPER_MASS = { light: 0.7, standard: 1.0, heavy: 1.5 };
+  const PRECISION_BONUS = { sloppy: 0.5, okay: 0.8, crisp: 1.0, perfect: 1.1 };
+
+  // ── CANVAS SETUP ──
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const wrap = document.getElementById('auditoriumWrap');
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight - 72; // minus scoreboard+log
+    if (!planeState) drawScene();
+  }
+
+  window.addEventListener('resize', resize);
+  setTimeout(resize, 100);
+
+  // ── DRAW SCENE (static) ──
+  function drawScene(plane) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Sky gradient behind stage
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+    sky.addColorStop(0, '#08101f');
+    sky.addColorStop(1, '#111a35');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.45);
+
+    // Audience area gradient
+    const audience = ctx.createLinearGradient(0, H * 0.45, 0, H);
+    audience.addColorStop(0, '#0d1530');
+    audience.addColorStop(1, '#060a18');
+    ctx.fillStyle = audience;
+    ctx.fillRect(0, H * 0.45, W, H * 0.55);
+
+    // Stage floor
+    ctx.fillStyle = '#1e2540';
+    ctx.fillRect(0, H * 0.38, W, H * 0.07);
+
+    // Stage edge highlight
+    ctx.fillStyle = '#2a3258';
+    ctx.fillRect(0, H * 0.38, W, 3);
+
+    // Stage lip / front edge
+    ctx.fillStyle = '#111830';
+    ctx.fillRect(0, H * 0.44, W, 4);
+
+    // Stage lights (cones)
+    for (let i = 0; i < 5; i++) {
+      const lx = W * (0.1 + i * 0.2);
+      const ly = H * 0.1;
+      const grd = ctx.createRadialGradient(lx, ly, 0, lx, ly + H*0.3, H * 0.3);
+      grd.addColorStop(0, 'rgba(255,220,100,0.18)');
+      grd.addColorStop(1, 'rgba(255,220,100,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(lx - W*0.07, ly + H*0.38);
+      ctx.lineTo(lx + W*0.07, ly + H*0.38);
+      ctx.closePath();
+      ctx.fill();
+
+      // Lamp housing
+      ctx.fillStyle = '#ffd050';
+      ctx.beginPath();
+      ctx.arc(lx, ly - 4, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Curtains
+    drawCurtain(ctx, 0, 0, W * 0.12, H * 0.44, '#1a0a0a', '#2d1010');
+    drawCurtain(ctx, W * 0.88, 0, W * 0.12, H * 0.44, '#1a0a0a', '#2d1010');
+
+    // Audience rows (seats)
+    drawSeats(W, H);
+
+    // Teacher (target)
+    const tx = W * teacherX, ty = H * teacherY;
+    drawTeacher(tx, ty, plane);
+
+    // ── Plane ──
+    if (plane && plane.active) {
+      drawPlane(plane);
+    }
+
+    // Flight trail
+    if (plane && plane.trail && plane.trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(plane.trail[0].x, plane.trail[0].y);
+      for (let i = 1; i < plane.trail.length; i++) {
+        ctx.lineTo(plane.trail[i].x, plane.trail[i].y);
+      }
+      ctx.strokeStyle = 'rgba(247,201,72,0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function drawCurtain(ctx, x, y, w, h, c1, c2) {
+    const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+    grad.addColorStop(0, c1);
+    grad.addColorStop(0.4, c2);
+    grad.addColorStop(1, c1);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, h);
+
+    // Folds
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + w * (i / 5), y);
+      ctx.lineTo(x + w * (i / 5), y + h);
+      ctx.stroke();
+    }
+  }
+
+  function drawSeats(W, H) {
+    const rows = 6;
+    for (let r = 0; r < rows; r++) {
+      const rowY = H * (0.52 + r * 0.075);
+      const cols = Math.floor(W / 28);
+      for (let c = 0; c < cols; c++) {
+        const sx = c * 28 + 14;
+        const seatColor = (r + c) % 7 === 0 ? '#1e2d4a' : '#141e36';
+        ctx.fillStyle = seatColor;
+        ctx.beginPath();
+        ctx.roundRect(sx - 9, rowY, 18, 12, 3);
+        ctx.fill();
+        // Head
+        ctx.fillStyle = r < 3 ? '#2a3550' : '#1a2540';
+        ctx.beginPath();
+        ctx.arc(sx, rowY - 4, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawTeacher(tx, ty, plane) {
+    // Glow ring when plane is close
+    if (plane && plane.active) {
+      const dx = plane.x - tx, dy = plane.y - ty;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const glow = Math.max(0, 1 - dist / 120);
+      if (glow > 0) {
+        ctx.beginPath();
+        ctx.arc(tx, ty, 30 + glow * 15, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(247,201,72,${glow * 0.7})`;
+        ctx.lineWidth = 2 + glow * 3;
+        ctx.stroke();
+      }
+    }
+
+    // Body
+    ctx.fillStyle = '#2a3a6a';
+    ctx.beginPath();
+    ctx.roundRect(tx - 13, ty - 12, 26, 34, 4);
+    ctx.fill();
+
+    // Arms
+    ctx.fillStyle = '#2a3a6a';
+    ctx.fillRect(tx - 22, ty - 8, 10, 7);
+    ctx.fillRect(tx + 12, ty - 8, 10, 7);
+
+    // Head
+    ctx.fillStyle = '#c8a882';
+    ctx.beginPath();
+    ctx.arc(tx, ty - 20, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = '#3a2a1a';
+    ctx.beginPath();
+    ctx.arc(tx, ty - 24, 11, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#1a1a2a';
+    ctx.beginPath(); ctx.arc(tx - 4, ty - 21, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(tx + 4, ty - 21, 2, 0, Math.PI*2); ctx.fill();
+
+    // Glasses
+    ctx.strokeStyle = '#c8a020';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(tx - 4, ty - 21, 4, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(tx + 4, ty - 21, 4, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx - 8, ty - 21); ctx.lineTo(tx - 13, ty - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx + 8, ty - 21); ctx.lineTo(tx + 13, ty - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, ty - 21); ctx.lineTo(tx, ty - 21); ctx.stroke();
+
+    // "Teacher" label
+    ctx.fillStyle = '#4fa3ff';
+    ctx.font = 'bold 9px Space Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⭐ TEACHER', tx, ty + 28);
+    ctx.fillStyle = '#ffd050';
+    ctx.font = '8px Space Mono, monospace';
+    ctx.fillText('+1 EC', tx, ty + 38);
+    ctx.textAlign = 'left';
+  }
+
+  function drawPlane(plane) {
+    ctx.save();
+    ctx.translate(plane.x, plane.y);
+    ctx.rotate(plane.angle);
+    const wingCfg = WINGS[plane.wing] || WINGS.classic;
+    const scale = 0.85;
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = wingCfg.color;
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 0.8;
+
+    if (plane.wing === 'classic') {
+      ctx.beginPath();
+      ctx.moveTo(18, 0); ctx.lineTo(-10, -7); ctx.lineTo(-6, 0); ctx.lineTo(-10, 7); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(2, 0); ctx.lineTo(-10, -7); ctx.lineTo(-10, 0); ctx.closePath();
+      ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fill();
+    } else if (plane.wing === 'wide') {
+      ctx.beginPath();
+      ctx.moveTo(16, 0); ctx.lineTo(-8, -14); ctx.lineTo(-4, 0); ctx.lineTo(-8, 14); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    } else if (plane.wing === 'delta') {
+      ctx.beginPath();
+      ctx.moveTo(20, 0); ctx.lineTo(-12, -8); ctx.lineTo(-4, 0); ctx.lineTo(-12, 8); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,180,50,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(20, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5); ctx.closePath();
+      ctx.fill();
+    } else if (plane.wing === 'stunt') {
+      ctx.beginPath();
+      ctx.moveTo(14, 0); ctx.lineTo(-6, -16); ctx.lineTo(-2, 0); ctx.lineTo(-6, 16); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,100,100,0.3)';
+      ctx.fillRect(-6, -2, 12, 4);
+    }
+    ctx.restore();
+  }
+
+  // ── PREVIEW ──
+  function updatePreview() {
+    const wing = document.getElementById('wingShape').value;
+    const paper = document.getElementById('paperWeight').value;
+    const preview = document.getElementById('planePreview');
+    const colors = { classic:'#f5f0e8', wide:'#d8f0ff', delta:'#fff0d8', stunt:'#ffd8e8' };
+    const paperBg = { light:'rgba(200,230,255,0.08)', standard:'rgba(255,255,255,0.04)', heavy:'rgba(255,200,100,0.08)' };
+
+    preview.style.background = `#141829 ${paperBg[paper]}`;
+    preview.innerHTML = `
+      <svg width="90" height="60" viewBox="-25 -25 90 50" xmlns="http://www.w3.org/2000/svg">
+        ${wingPath(wing, colors[wing])}
+      </svg>
+    `;
+  }
+
+  function wingPath(wing, color) {
+    if (wing === 'classic') return `<polygon points="28,0 -15,-11 -9,0 -15,11" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>`;
+    if (wing === 'wide') return `<polygon points="24,0 -12,-21 -6,0 -12,21" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>`;
+    if (wing === 'delta') return `<polygon points="32,0 -18,-12 -6,0 -18,12" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>`;
+    if (wing === 'stunt') return `<polygon points="22,0 -10,-24 -3,0 -10,24" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>`;
+  }
+
+  // ── RANGE LABELS ──
+  document.getElementById('throwAngle').addEventListener('input', function() {
+    document.getElementById('angleVal').textContent = this.value;
+  });
+  document.getElementById('throwPower').addEventListener('input', function() {
+    document.getElementById('powerVal').textContent = this.value;
+  });
+  ['wingShape','paperWeight','precision'].forEach(id => {
+    document.getElementById(id).addEventListener('change', updatePreview);
+  });
+
+  // ── THROW ──
+  function throwPlane() {
+    if (animId) return;
+
+    const wing = document.getElementById('wingShape').value;
+    const paper = document.getElementById('paperWeight').value;
+    const angle = parseFloat(document.getElementById('throwAngle').value);
+    const power = parseFloat(document.getElementById('throwPower').value);
+    const precision = document.getElementById('precision').value;
+
+    document.getElementById('throwBtn').disabled = true;
+
+    const W = canvas.width, H = canvas.height;
+    const cfg = WINGS[wing];
+    const mass = PAPER_MASS[paper];
+    const precMult = PRECISION_BONUS[precision];
+
+    // Randomness based on precision
+    const randomFactor = { sloppy: 0.5, okay: 0.25, crisp: 0.1, perfect: 0.03 }[precision];
+    const randAngle = (Math.random() - 0.5) * 30 * randomFactor;
+    const randPower = 1 + (Math.random() - 0.5) * 0.3 * (1/precMult);
+
+    const radAngle = ((angle + randAngle) * Math.PI) / 180;
+    const speed = (power / 100) * 14 * precMult * randPower / mass;
+
+    planeState = {
+      x: W * 0.05,
+      y: H * 0.40,
+      vx: Math.cos(radAngle) * speed,
+      vy: -Math.sin(radAngle) * speed,
+      angle: -radAngle,
+      wing,
+      active: true,
+      trail: [],
+      cfg,
+      mass,
+    };
+
+    throws++;
+    updateScoreboard();
+    animate();
+  }
+
+  function animate() {
+    const W = canvas.width, H = canvas.height;
+    const p = planeState;
+    const cfg = p.cfg;
+
+    // Physics
+    const gravity = 0.18;
+    const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+    const lift = cfg.lift * speed * speed / p.mass;
+    const drag = cfg.drag * speed * speed / p.mass;
+    const wobble = (Math.random() - 0.5) * cfg.wobble * 0.15;
+
+    p.vy += gravity - lift * 0.3;
+    p.vx -= (p.vx / speed) * drag;
+    p.vy -= (p.vy / speed) * drag * 0.5;
+    p.vx += wobble;
+    p.vy += wobble * 0.5;
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.angle = Math.atan2(p.vy, p.vx);
+
+    p.trail.push({ x: p.x, y: p.y });
+    if (p.trail.length > 40) p.trail.shift();
+
+    // Hit detection
+    const tx = W * teacherX, ty = H * teacherY;
+    const dx = p.x - tx, dy = p.y - ty;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    drawScene(p);
+
+    if (dist < 28) {
+      // HIT!
+      p.active = false;
+      score++;
+      hits++;
+      updateScoreboard();
+      showToast(true);
+      flashScreen(true);
+      logResult(true, p.wing, p.x, p.y);
+      endThrow();
+      return;
+    }
+
+    // Out of bounds
+    if (p.x > W + 40 || p.y > H + 40 || p.x < -40) {
+      p.active = false;
+      showToast(false);
+      logResult(false, p.wing, p.x, p.y);
+      endThrow();
+      return;
+    }
+
+    animId = requestAnimationFrame(animate);
+  }
+
+  function endThrow() {
+    cancelAnimationFrame(animId);
+    animId = null;
+    setTimeout(() => {
+      planeState = null;
+      drawScene();
+      document.getElementById('throwBtn').disabled = false;
+    }, 1800);
+  }
+
+  function showToast(hit) {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast ' + (hit ? 'hit' : 'miss');
+    toast.innerHTML = hit
+      ? '🎯 HIT!<small>+1 EXTRA CREDIT</small>'
+      : '✈ MISS<small>Try different settings!</small>';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1600);
+  }
+
+  function flashScreen(hit) {
+    const el = document.getElementById('hitFlash');
+    el.style.background = hit ? 'rgba(61,220,132,0.22)' : 'rgba(232,64,64,0.15)';
+    el.style.opacity = '1';
+    setTimeout(() => el.style.opacity = '0', 350);
+  }
+
+  function logResult(hit, wing, x, y) {
+    const log = document.getElementById('log');
+    const entry = document.createElement('span');
+    entry.className = 'log-entry ' + (hit ? 'hit-log' : 'miss-log');
+    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    entry.textContent = `[${ts}] ${hit ? '✓ HIT' : '✗ MISS'} · ${wing} · x:${Math.round(x)} y:${Math.round(y)}`;
+    log.innerHTML = '';
+    log.appendChild(entry);
+  }
+
+  function updateScoreboard() {
+    document.getElementById('scoreDisplay').textContent = score;
+    document.getElementById('throwsDisplay').textContent = throws;
+    document.getElementById('hitsDisplay').textContent = hits;
+    const pct = throws > 0 ? Math.round((hits / throws) * 100) : 0;
+    document.getElementById('pctDisplay').textContent = `${pct}% accuracy`;
+  }
+
+  function resetLab() {
+    cancelAnimationFrame(animId);
+    animId = null;
+    planeState = null;
+    score = 0; throws = 0; hits = 0;
+    updateScoreboard();
+    document.getElementById('throwBtn').disabled = false;
+    document.getElementById('log').innerHTML = '<span class="log-entry">Lab reset. Throw your plane!</span>';
+    drawScene();
+  }
+
+  // ── TEACHER WANDERS a bit ──
+  let wanderT = 0;
+  let isStationary = false;
+  const TEACHER_HOME_X = 0.5, TEACHER_HOME_Y = 0.72;
+
+  function toggleWander() {
+    isStationary = !isStationary;
+    document.getElementById('wanderSwitch').classList.toggle('on', isStationary);
+    if (isStationary) {
+      teacherX = TEACHER_HOME_X;
+      teacherY = TEACHER_HOME_Y;
+      if (!planeState) drawScene();
+    }
+  }
+
+  function wander() {
+    if (!isStationary) {
+      wanderT += 0.008;
+      teacherX = 0.5 + Math.sin(wanderT * 1.3) * 0.22;
+      teacherY = 0.72 + Math.cos(wanderT) * 0.04;
+      if (!planeState) drawScene();
+    }
+    requestAnimationFrame(wander);
+  }
+
+  // ── INIT ──
+  updatePreview();
+  updateScoreboard();
+  setTimeout(() => { resize(); wander(); }, 150);
+</script>
+</body>
+</html>
