@@ -8,6 +8,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- MathJax for rendering LaTeX-style Math formulas and variables -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
         body {
@@ -169,7 +182,7 @@
                 <!-- Environmental Forces -->
                 <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                     <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                        <i data-lucide="globe-2" class="w-3 h-3 text-emerald-400"></i> Atmosphere & Wind
+                        <i data-lucide="globe-2" class="w-3.5 h-3.5 text-emerald-400"></i> Atmosphere & Wind
                     </h3>
                     
                     <!-- Wind Speed -->
@@ -1182,6 +1195,17 @@
         let lastTime = 0;
         const TARGET_DT = 1 / 60; // 60 FPS target stepping rate
 
+        // Set up MathJax automatic math compilation triggering for dynamically rendered content updates
+        let mathJaxTimer = null;
+        function triggerMathUpdate() {
+            if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                clearTimeout(mathJaxTimer);
+                mathJaxTimer = setTimeout(() => {
+                    MathJax.typesetPromise();
+                }, 200);
+            }
+        }
+
         function simulationLoop(timestamp) {
             if (!lastTime) lastTime = timestamp;
             let elapsed = (timestamp - lastTime) / 1000;
@@ -1205,6 +1229,7 @@
             updateWindBadge();
             resizeCanvas();
             resetSimulation();
+            triggerMathUpdate();
             
             requestAnimationFrame(simulationLoop);
         }
