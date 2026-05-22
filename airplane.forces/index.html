@@ -36,385 +36,283 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-sky-500/30">
 
     <!-- Top Navigation Header -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-            <div class="bg-sky-500/10 p-2.5 rounded-xl border border-sky-500/20 text-sky-400">
-                <i data-lucide="plane-takeoff" class="w-6 h-6 animate-pulse"></i>
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-2">
+        <div class="flex items-center gap-2">
+            <div class="bg-sky-500/10 p-2 rounded-lg border border-sky-500/20 text-sky-400">
+                <i data-lucide="plane-takeoff" class="w-5 h-5 animate-pulse"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                    Aerofoil paper flight lab
+                <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    Aerofoil Lab
                 </h1>
-                <p class="text-xs text-slate-400">Interactive Paper Airplane Aerodynamics & Physics Modeling</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-                Aerodynamic Engine v2.9
+        <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-semibold px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 flex items-center gap-1">
+                <span class="w-1 h-1 rounded-full bg-indigo-400 animate-ping"></span>
+                v2.9
             </span>
-            <button onclick="toggleHelpModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
-                <i data-lucide="help-circle" class="w-4 h-4"></i> Help & Theory
+            <button onclick="toggleHelpModal()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-2 py-1 rounded transition-all flex items-center gap-1">
+                <i data-lucide="help-circle" class="w-3 h-3"></i> Help
             </button>
         </div>
     </header>
 
     <!-- Main Workspace Dashboard Grid -->
-    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-4 md:p-6 max-w-[1800px] mx-auto w-full">
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 max-w-[1600px] mx-auto w-full">
         
-        <!-- LEFT PANEL: Controls & Configuration (xl:col-span-3) -->
-        <section class="xl:col-span-3 flex flex-col gap-5 bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 backdrop-blur-sm h-fit">
-            <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider text-slate-400">
-                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i> Configurations
+        <!-- LEFT PANEL: Controls & Configuration (lg:col-span-2.5) -->
+        <section class="lg:col-span-3 flex flex-col gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800/60 backdrop-blur-sm h-fit max-h-[calc(100vh-120px)] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <h2 class="font-semibold text-slate-200 flex items-center gap-1.5 text-xs uppercase tracking-wider text-slate-400">
+                    <i data-lucide="sliders" class="w-3 h-3 text-sky-400"></i> Setup
                 </h2>
-                <button onclick="resetToDefaults()" class="text-xs text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+                <button onclick="resetToDefaults()" class="text-[10px] text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-0.5">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
                 </button>
             </div>
 
             <!-- Presets Grid -->
             <div>
-                <label class="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">Preset Models</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="loadPreset('dart')" id="btn-preset-dart" class="preset-btn active py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-sky-500/30 bg-sky-950/40 text-sky-300 hover:bg-sky-900/20 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Dart</span>
-                        <span class="text-[10px] text-slate-500 font-normal">Fast, Low Drag</span>
+                <label class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Presets</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="loadPreset('dart')" id="btn-preset-dart" class="preset-btn active py-1.5 px-2 text-left rounded-lg text-[10px] font-medium transition-all border border-sky-500/30 bg-sky-950/40">
+                        <span class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Dart</span>
                     </button>
-                    <button onclick="loadPreset('glider')" id="btn-preset-glider" class="preset-btn py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="wind" class="w-3.5 h-3.5"></i> Long Glider</span>
-                        <span class="text-[10px] text-slate-500 font-normal">High Lift, Stable</span>
+                    <button onclick="loadPreset('glider')" id="btn-preset-glider" class="preset-btn py-1.5 px-2 text-left rounded-lg text-[10px] font-medium transition-all border border-slate-800 bg-slate-900/50">
+                        <span class="flex items-center gap-1"><i data-lucide="wind" class="w-3 h-3"></i> Glider</span>
                     </button>
-                    <button onclick="loadPreset('heavy')" id="btn-preset-heavy" class="preset-btn py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="anchor" class="w-3.5 h-3.5"></i> Heavy Nose</span>
-                        <span class="text-[10px] text-slate-500 font-normal">Steep Glide Path</span>
+                    <button onclick="loadPreset('heavy')" id="btn-preset-heavy" class="preset-btn py-1.5 px-2 text-left rounded-lg text-[10px] font-medium transition-all border border-slate-800 bg-slate-900/50">
+                        <span class="flex items-center gap-1"><i data-lucide="anchor" class="w-3 h-3"></i> Heavy</span>
                     </button>
-                    <button onclick="loadPreset('stunt')" id="btn-preset-stunt" class="preset-btn py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Stunt Plane</span>
-                        <span class="text-[10px] text-slate-500 font-normal">High AoA, Dynamic</span>
+                    <button onclick="loadPreset('stunt')" id="btn-preset-stunt" class="preset-btn py-1.5 px-2 text-left rounded-lg text-[10px] font-medium transition-all border border-slate-800 bg-slate-900/50">
+                        <span class="flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Stunt</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Parameters Sliders Accordion -->
-            <div class="flex flex-col gap-4">
+            <!-- Parameters Sliders -->
+            <div class="flex flex-col gap-2.5">
                 <!-- Launch Parameters -->
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-3">
-                        <i data-lucide="rocket" class="w-3.5 h-3.5 text-orange-400"></i> Launch Variables
+                <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                    <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1 mb-2">
+                        <i data-lucide="rocket" class="w-3 h-3 text-orange-400"></i> Launch
                     </h3>
-                    
-                    <!-- Launch Velocity -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Throw Velocity</span>
-                            <span class="text-xs font-semibold text-sky-400 mono" id="val-launchSpeed">12.0 m/s</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Speed</span>
+                            <span class="text-[10px] font-semibold text-sky-400 mono" id="val-launchSpeed">12.0 m/s</span>
                         </div>
-                        <input type="range" id="param-launchSpeed" min="3" max="25" step="0.5" value="12" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                        <input type="range" id="param-launchSpeed" min="3" max="25" step="0.5" value="12" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-sky-500">
                     </div>
-
-                    <!-- Launch Angle -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Throw Angle</span>
-                            <span class="text-xs font-semibold text-sky-400 mono" id="val-launchAngle">15°</span>
-                        </div>
-                        <input type="range" id="param-launchAngle" min="-45" max="60" step="1" value="15" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
-                        <span class="text-[10px] text-slate-500 block mt-1">Positive is upward tilt</span>
-                    </div>
-
-                    <!-- Simulation Speed Multiplier -->
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Simulation Speed</span>
-                            <span class="text-xs font-semibold text-amber-400 mono" id="val-simSpeed">0.25x</span>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Angle</span>
+                            <span class="text-[10px] font-semibold text-sky-400 mono" id="val-launchAngle">15°</span>
                         </div>
-                        <input type="range" id="param-simSpeed" min="0.10" max="2.00" step="0.05" value="0.25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
-                        <span class="text-[10px] text-slate-500 block mt-1">Use slider to speed up timeline (up to 2.0x)</span>
+                        <input type="range" id="param-launchAngle" min="-45" max="60" step="1" value="15" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-sky-500">
                     </div>
                 </div>
 
                 <!-- Aircraft Aerodynamics -->
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-3">
-                        <i data-lucide="feather" class="w-3.5 h-3.5 text-teal-400"></i> Aircraft Physics
+                <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                    <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1 mb-2">
+                        <i data-lucide="feather" class="w-3 h-3 text-teal-400"></i> Aircraft
                     </h3>
-                    
-                    <!-- Mass -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Plane Mass</span>
-                            <span class="text-xs font-semibold text-teal-400 mono" id="val-mass">4.5 g</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Mass</span>
+                            <span class="text-[10px] font-semibold text-teal-400 mono" id="val-mass">4.5 g</span>
                         </div>
-                        <input type="range" id="param-mass" min="1.5" max="15.0" step="0.1" value="4.5" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                        <input type="range" id="param-mass" min="1.5" max="15.0" step="0.1" value="4.5" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-teal-500">
                     </div>
-
-                    <!-- Wing Area -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Wing Surface Area</span>
-                            <span class="text-xs font-semibold text-teal-400 mono" id="val-wingArea">120 cm²</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Wing Area</span>
+                            <span class="text-[10px] font-semibold text-teal-400 mono" id="val-wingArea">120 cm²</span>
                         </div>
-                        <input type="range" id="param-wingArea" min="40" max="300" step="5" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                        <input type="range" id="param-wingArea" min="40" max="300" step="5" value="120" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-teal-500">
                     </div>
-
-                    <!-- Parasitic Drag Coefficient -->
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Drag Coeff. ($C_{D0}$)</span>
-                            <span class="text-xs font-semibold text-teal-400 mono" id="val-dragCoeff">0.08</span>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Drag Coeff</span>
+                            <span class="text-[10px] font-semibold text-teal-400 mono" id="val-dragCoeff">0.08</span>
                         </div>
-                        <input type="range" id="param-dragCoeff" min="0.02" max="0.30" step="0.01" value="0.08" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                        <input type="range" id="param-dragCoeff" min="0.02" max="0.30" step="0.01" value="0.08" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-teal-500">
                     </div>
                 </div>
 
                 <!-- Environmental Forces -->
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-3">
-                        <i data-lucide="globe-2" class="w-3.5 h-3.5 text-emerald-400"></i> Atmosphere & Wind
+                <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                    <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1 mb-2">
+                        <i data-lucide="globe-2" class="w-3 h-3 text-emerald-400"></i> Wind & Atmosphere
                     </h3>
-                    
-                    <!-- Wind Speed -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Horizontal Wind</span>
-                            <span class="text-xs font-semibold text-emerald-400 mono" id="val-windSpeed">0.0 m/s</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Wind</span>
+                            <span class="text-[10px] font-semibold text-emerald-400 mono" id="val-windSpeed">0.0 m/s</span>
                         </div>
-                        <input type="range" id="param-windSpeed" min="-12" max="12" step="0.5" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-                        <span class="text-[10px] text-slate-500 block mt-1">(-) Headwind, (+) Tailwind</span>
+                        <input type="range" id="param-windSpeed" min="-12" max="12" step="0.5" value="0" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-emerald-500">
                     </div>
-
-                    <!-- Air Density -->
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Air Density ($\rho$)</span>
-                            <span class="text-xs font-semibold text-emerald-400 mono" id="val-density">1.225 kg/m³</span>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] text-slate-400">Air Density</span>
+                            <span class="text-[10px] font-semibold text-emerald-400 mono" id="val-density">1.225 kg/m³</span>
                         </div>
-                        <input type="range" id="param-density" min="0.800" max="1.500" step="0.025" value="1.225" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                        <input type="range" id="param-density" min="0.800" max="1.500" step="0.025" value="1.225" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-emerald-500">
                     </div>
+                </div>
+
+                <!-- Simulation Speed -->
+                <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <span class="text-[10px] text-slate-400">Sim Speed</span>
+                        <span class="text-[10px] font-semibold text-amber-400 mono" id="val-simSpeed">0.25x</span>
+                    </div>
+                    <input type="range" id="param-simSpeed" min="0.10" max="2.00" step="0.05" value="0.25" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-amber-500">
                 </div>
             </div>
         </section>
 
-        <!-- MIDDLE PANEL: Simulation Visualizer & Real-time Graph (xl:col-span-6) -->
-        <section class="xl:col-span-6 flex flex-col gap-5">
+        <!-- MIDDLE & RIGHT PANELS: Simulation + Theory (lg:col-span-9) -->
+        <section class="lg:col-span-9 flex flex-col gap-3">
             
-            <!-- Dynamic Flight Simulation Display (Unified Container) -->
-            <div class="bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl flex-1 min-h-[420px] md:min-h-[500px] flex flex-col">
-                
-                <!-- Sky Background Canvas & Absolute Elements Wrapper -->
+            <!-- Dynamic Flight Simulation Display -->
+            <div class="bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden shadow-2xl flex-1 min-h-[350px] flex flex-col">
                 <div class="relative flex-1 flex flex-col min-h-0">
-                    <!-- Canvas -->
                     <canvas id="flightCanvas" class="w-full flex-1 block cursor-grab active:cursor-grabbing"></canvas>
 
-                    <!-- UI Overlays inside Canvas -->
-                    <div class="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
-                        <span class="px-3 py-1.5 bg-slate-900/90 border border-slate-800 text-xs font-medium rounded-lg text-slate-300 backdrop-blur-md flex items-center gap-1.5">
-                            <i data-lucide="activity" class="w-3.5 h-3.5 text-sky-400"></i> Status: 
-                            <span id="txt-status" class="text-sky-400 font-bold">Ready to Launch</span>
+                    <div class="absolute top-2 left-2 flex flex-wrap gap-1.5 pointer-events-none">
+                        <span class="px-2 py-1 bg-slate-900/90 border border-slate-800 text-[10px] font-medium rounded text-slate-300 backdrop-blur-md flex items-center gap-1">
+                            <i data-lucide="activity" class="w-3 h-3 text-sky-400"></i> Status: 
+                            <span id="txt-status" class="text-sky-400 font-bold">Ready</span>
                         </span>
-                        <span id="badge-wind" class="px-3 py-1.5 bg-slate-900/90 border border-slate-800 text-xs font-medium rounded-lg text-slate-300 backdrop-blur-md hidden items-center gap-1.5">
-                            <i data-lucide="wind" class="w-3.5 h-3.5 text-emerald-400 animate-pulse"></i>
+                        <span id="badge-wind" class="px-2 py-1 bg-slate-900/90 border border-slate-800 text-[10px] font-medium rounded text-slate-300 backdrop-blur-md hidden items-center gap-1">
+                            <i data-lucide="wind" class="w-3 h-3 text-emerald-400 animate-pulse"></i>
                             <span id="txt-wind-display" class="text-emerald-400 font-bold"></span>
                         </span>
                     </div>
 
-                    <div class="absolute top-4 right-4 flex gap-2">
-                        <button onclick="toggleVectors()" id="btn-vectors" class="p-2.5 bg-sky-950/60 hover:bg-sky-900/60 border border-sky-500/30 text-sky-400 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Toggle Force Vectors Visualizer">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
+                    <div class="absolute top-2 right-2 flex gap-1">
+                        <button onclick="toggleVectors()" id="btn-vectors" class="p-1.5 bg-sky-950/60 hover:bg-sky-900/60 border border-sky-500/30 text-sky-400 rounded transition-all" title="Show Forces">
+                            <i data-lucide="eye" class="w-3 h-3"></i>
                         </button>
-                        <button onclick="toggleSlowMo()" id="btn-slowmo" class="p-2.5 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Toggle Slow Motion (0.25x)">
-                            <i data-lucide="hourglass" class="w-4 h-4"></i>
+                        <button onclick="toggleSlowMo()" id="btn-slowmo" class="p-1.5 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded transition-all" title="Slow Motion">
+                            <i data-lucide="hourglass" class="w-3 h-3"></i>
                         </button>
-                        <button onclick="cameraReset()" class="p-2.5 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Reset Camera Lock">
-                            <i data-lucide="maximize" class="w-4 h-4"></i>
+                        <button onclick="cameraReset()" class="p-1.5 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded transition-all" title="Reset Camera">
+                            <i data-lucide="maximize" class="w-3 h-3"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Simulation Interactive Playback Bar -->
-                <div class="px-4 py-3.5 bg-slate-900 border-t border-slate-800/90 shadow-inner flex items-center gap-3 w-full">
-                    <button onclick="triggerLaunch()" class="flex-1 py-3 px-4 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2">
-                        <i data-lucide="navigation" class="w-4 h-4 rotate-45"></i>
-                        <span>LAUNCH PAPER AIRPLANE</span>
+                <!-- Playback Bar -->
+                <div class="px-3 py-2 bg-slate-900 border-t border-slate-800/90 flex items-center gap-2 w-full">
+                    <button onclick="triggerLaunch()" class="flex-1 py-2 px-3 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-95 text-white text-[10px] font-semibold rounded transition-all flex items-center justify-center gap-1">
+                        <i data-lucide="navigation" class="w-3 h-3 rotate-45"></i> LAUNCH
                     </button>
-                    <button onclick="togglePlayPause()" id="btn-pause" class="p-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all" title="Pause / Play Simulation">
-                        <i data-lucide="pause" id="icon-pause" class="w-4 h-4"></i>
+                    <button onclick="togglePlayPause()" id="btn-pause" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition-all" title="Pause">
+                        <i data-lucide="pause" id="icon-pause" class="w-3 h-3"></i>
                     </button>
-                    <button onclick="resetSimulation()" class="p-3 bg-slate-800 hover:bg-red-950/40 hover:text-red-400 hover:border-red-500/20 text-slate-400 border border-transparent rounded-xl transition-all" title="Reset Simulation">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <button onclick="resetSimulation()" class="p-2 bg-slate-800 hover:bg-red-950/40 hover:text-red-400 text-slate-400 rounded transition-all" title="Reset">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Lower Diagnostics Panel: Real-time Telemetry plots -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Real-time Altitude & Speed Metrics -->
-                <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <i data-lucide="gauge" class="w-4 h-4 text-sky-400"></i> Performance Metrics
+            <!-- Lower Telemetry & Theory Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <!-- Metrics Panel -->
+                <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-3 flex flex-col">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <i data-lucide="gauge" class="w-3 h-3 text-sky-400"></i> Metrics
                         </span>
-                        <span class="text-[10px] text-slate-500">Live flight computers</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Max Altitude</span>
-                            <span class="text-lg font-bold text-sky-400 mono" id="tel-maxHeight">0.00 m</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-slate-950/80 p-2 rounded border border-slate-800">
+                            <span class="text-[9px] text-slate-400 block mb-0.5 uppercase">Max Alt</span>
+                            <span class="text-sm font-bold text-sky-400 mono" id="tel-maxHeight">0.00 m</span>
                         </div>
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Max Distance</span>
-                            <span class="text-lg font-bold text-emerald-400 mono" id="tel-maxDist">0.00 m</span>
+                        <div class="bg-slate-950/80 p-2 rounded border border-slate-800">
+                            <span class="text-[9px] text-slate-400 block mb-0.5 uppercase">Max Dist</span>
+                            <span class="text-sm font-bold text-emerald-400 mono" id="tel-maxDist">0.00 m</span>
                         </div>
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Flight Duration</span>
-                            <span class="text-lg font-bold text-indigo-400 mono" id="tel-duration">0.00 s</span>
+                        <div class="bg-slate-950/80 p-2 rounded border border-slate-800">
+                            <span class="text-[9px] text-slate-400 block mb-0.5 uppercase">Duration</span>
+                            <span class="text-sm font-bold text-indigo-400 mono" id="tel-duration">0.00 s</span>
                         </div>
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Glide Efficiency (L/D)</span>
-                            <span class="text-lg font-bold text-amber-400 mono" id="tel-glideEfficiency">0.00</span>
+                        <div class="bg-slate-950/80 p-2 rounded border border-slate-800">
+                            <span class="text-[9px] text-slate-400 block mb-0.5 uppercase">L/D Ratio</span>
+                            <span class="text-sm font-bold text-amber-400 mono" id="tel-glideEfficiency">0.00</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Live Vector Magnitudes Chart Canvas -->
-                <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-teal-400"></i> Dynamic Force Balances (mN)
+                <!-- Force Bars Panel -->
+                <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-3 flex flex-col">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <i data-lucide="bar-chart-2" class="w-3 h-3 text-teal-400"></i> Forces (mN)
                         </span>
                     </div>
-                    <div class="flex-1 flex flex-col justify-around gap-2.5">
-                        <!-- Lift Force Bar -->
+                    <div class="flex-1 flex flex-col justify-around gap-1.5">
                         <div>
-                            <div class="flex justify-between text-[11px] mb-1">
-                                <span class="text-cyan-400 font-semibold flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></span> Lift ($L$)
-                                </span>
+                            <div class="flex justify-between text-[9px] mb-0.5">
+                                <span class="text-cyan-400 font-semibold">Lift</span>
                                 <span class="mono text-slate-300" id="mN-lift">0.0 mN</span>
                             </div>
-                            <div class="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                            <div class="h-1.5 w-full bg-slate-800/80 rounded overflow-hidden">
                                 <div id="bar-lift" class="h-full bg-cyan-400 transition-all duration-75" style="width: 0%"></div>
                             </div>
                         </div>
-
-                        <!-- Drag Force Bar -->
                         <div>
-                            <div class="flex justify-between text-[11px] mb-1">
-                                <span class="text-rose-400 font-semibold flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span> Drag ($D$)
-                                </span>
+                            <div class="flex justify-between text-[9px] mb-0.5">
+                                <span class="text-rose-400 font-semibold">Drag</span>
                                 <span class="mono text-slate-300" id="mN-drag">0.0 mN</span>
                             </div>
-                            <div class="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                            <div class="h-1.5 w-full bg-slate-800/80 rounded overflow-hidden">
                                 <div id="bar-drag" class="h-full bg-rose-400 transition-all duration-75" style="width: 0%"></div>
                             </div>
                         </div>
-
-                        <!-- Gravity Bar -->
                         <div>
-                            <div class="flex justify-between text-[11px] mb-1">
-                                <span class="text-emerald-400 font-semibold flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Gravity ($F_g$)
-                                </span>
+                            <div class="flex justify-between text-[9px] mb-0.5">
+                                <span class="text-emerald-400 font-semibold">Weight</span>
                                 <span class="mono text-slate-300" id="mN-weight">0.0 mN</span>
                             </div>
-                            <div class="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                            <div class="h-1.5 w-full bg-slate-800/80 rounded overflow-hidden">
                                 <div id="bar-weight" class="h-full bg-emerald-400 transition-all duration-75" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- RIGHT PANEL: Aerodynamics Theory & Math Models (xl:col-span-3) -->
-        <section class="xl:col-span-3 flex flex-col gap-5 bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 backdrop-blur-sm">
-            <div class="border-b border-slate-800/80 pb-3">
-                <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider text-slate-400">
-                    <i data-lucide="book-open" class="w-4 h-4 text-purple-400"></i> Physics & Science
-                </h2>
-            </div>
-
-            <!-- The Four Forces Visual Diagram -->
-            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/60 flex flex-col items-center">
-                <span class="text-xs font-bold text-slate-400 uppercase self-start mb-3">The Balance of Flight</span>
-                
-                <!-- Dynamic SVG Demonstration -->
-                <div class="w-full h-36 relative flex items-center justify-center bg-slate-900/40 rounded-lg border border-slate-800 overflow-hidden">
-                    <!-- Stylized wind patterns background -->
-                    <div class="absolute inset-0 opacity-10 flex flex-col justify-around pointer-events-none px-4">
-                        <div class="h-0.5 bg-sky-200 w-full animate-pulse"></div>
-                        <div class="h-0.5 bg-sky-200 w-2/3 delay-75 animate-pulse"></div>
-                        <div class="h-0.5 bg-sky-200 w-3/4 delay-150 animate-pulse"></div>
-                    </div>
-
-                    <!-- Dynamic SVG plane with arrows -->
+            <!-- Four Forces Diagram -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-3">
+                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-2">The Four Forces of Flight</span>
+                <div class="w-full h-32 relative flex items-center justify-center bg-slate-950/60 rounded border border-slate-800 overflow-hidden">
                     <svg viewBox="0 0 200 120" class="w-full h-full">
-                        <!-- Plane Nose pointing right -->
                         <g transform="translate(100,60)">
-                            <!-- Fold lines styling -->
-                            <polygon points="-40,10 35,0 -15,-25" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
-                            <polygon points="-40,10 35,0 -40,-15" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-                            <polygon points="-40,-15 35,0 -15,-25" fill="#38bdf8" fill-opacity="0.35" stroke="#0ea5e9" stroke-width="1" />
+                            <polygon points="-40,10 35,0 -15,-25" fill="#1e293b" stroke="#475569" stroke-width="1" />
+                            <polygon points="-40,10 35,0 -40,-15" fill="#0f172a" stroke="#334155" stroke-width="1" />
+                            <polygon points="-40,-15 35,0 -15,-25" fill="#38bdf8" fill-opacity="0.35" stroke="#0ea5e9" stroke-width="0.5" />
                             
-                            <!-- Static dynamic illustration arrows of the 4 forces -->
-                            <!-- LIFT (Up) -->
-                            <line x1="0" y1="0" x2="0" y2="-45" stroke="#22d3ee" stroke-width="2.5" marker-end="url(#arrow)" />
-                            <text x="8" y="-38" fill="#22d3ee" class="text-[10px] font-bold">Lift (L)</text>
+                            <line x1="0" y1="0" x2="0" y2="-40" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+                            <text x="5" y="-35" fill="#22d3ee" font-size="9" font-weight="bold">Lift</text>
                             
-                            <!-- DRAG (Left) -->
-                            <line x1="0" y1="0" x2="-45" y2="0" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow)" />
-                            <text x="-58" y="14" fill="#f43f5e" class="text-[10px] font-bold">Drag (D)</text>
+                            <line x1="0" y1="0" x2="-40" y2="0" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow)" />
+                            <text x="-50" y="10" fill="#f43f5e" font-size="9" font-weight="bold">Drag</text>
                             
-                            <!-- GRAVITY (Down) -->
-                            <line x1="0" y1="0" x2="0" y2="45" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrow)" />
-                            <text x="8" y="44" fill="#34d399" class="text-[10px] font-bold">Gravity (Fg)</text>
-
-                            <!-- THRUST (Right) - Hand Launch initial thrust -->
-                            <line x1="0" y1="0" x2="35" y2="0" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="2,2" marker-end="url(#arrow)" />
-                            <text x="25" y="-6" fill="#f59e0b" class="text-[9px] font-bold opacity-60">Thrust</text>
+                            <line x1="0" y1="0" x2="0" y2="40" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" />
+                            <text x="5" y="40" fill="#34d399" font-size="9" font-weight="bold">Weight</text>
                         </g>
-                        <!-- Markers for arrows -->
                         <defs>
-                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
                                 <path d="M 0 2 L 10 5 L 0 8 z" fill="context-fill" />
                             </marker>
                         </defs>
                     </svg>
-                </div>
-            </div>
-
-            <!-- Mathematical Modeling Details -->
-            <div class="flex-1 flex flex-col gap-4 text-xs text-slate-300">
-                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
-                    <h4 class="font-bold text-sky-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
-                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Lift Equation
-                    </h4>
-                    <p class="mb-2 leading-relaxed">
-                        Generated by aerodynamic pressure differences between top and bottom surfaces:
-                    </p>
-                    <div class="bg-slate-950 py-2 px-3 rounded border border-slate-900 text-center text-slate-200 font-semibold mb-2">
-                        $L = \frac{1}{2} \cdot \rho \cdot V^2 \cdot S \cdot C_L$
-                    </div>
-                    <p class="text-[11px] text-slate-400 leading-relaxed">
-                        Where $\rho$ is air density, $V$ is flight velocity relative to the air, $S$ is wing surface area, and $C_L$ represents the lift coefficient dictated by the angle of attack ($\alpha$).
-                    </p>
-                </div>
-
-                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
-                    <h4 class="font-bold text-rose-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Drag Force
-                    </h4>
-                    <p class="mb-2 leading-relaxed">
-                        Opposes aircraft movement and comprises friction ($C_{D0}$) and lift-induced drag:
-                    </p>
-                    <div class="bg-slate-950 py-2 px-3 rounded border border-slate-900 text-center text-slate-200 font-semibold mb-2">
-                        $D = \frac{1}{2} \cdot \rho \cdot V^2 \cdot S \cdot C_D$
-                    </div>
-                    <p class="text-[11px] text-slate-400 leading-relaxed">
-                        Where $C_D = C_{D0} + k \cdot C_L^2$. This shows why lifting harder also creates more aerodynamic resistance, pulling the glider back!
-                    </p>
                 </div>
             </div>
         </section>
@@ -422,53 +320,53 @@
 
     <!-- HELP & SYSTEM MODELING EXPLANATIONS MODAL -->
     <div id="helpModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 max-w-2xl w-full rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+        <div class="bg-slate-900 border border-slate-800 max-w-2xl w-full rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
                 <div class="flex items-center gap-2 text-sky-400">
-                    <i data-lucide="info" class="w-6 h-6"></i>
-                    <h3 class="text-lg font-bold">Aerodynamics & Phugoid Modeling Guide</h3>
+                    <i data-lucide="info" class="w-5 h-5"></i>
+                    <h3 class="font-bold text-sm">Aerodynamics Guide</h3>
                 </div>
                 <button onclick="toggleHelpModal()" class="text-slate-400 hover:text-white transition-colors">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             
-            <div class="p-6 overflow-y-auto space-y-4 text-sm text-slate-300 leading-relaxed">
-                <h4 class="font-bold text-white text-base">What are we modeling?</h4>
+            <div class="p-4 overflow-y-auto space-y-3 text-xs text-slate-300 leading-relaxed">
+                <h4 class="font-bold text-white text-sm">What are we modeling?</h4>
                 <p>
-                    Unlike a heavy commercial jet, a paper airplane operates in a regime of very low speeds, high drag, and is a **pure glider** once thrown. This simulation features a complete 2D translation and rotation engine.
+                    A paper airplane is a pure glider once thrown. This simulation models 2D aerodynamics with lift, drag, and gravity forces acting on the aircraft.
                 </p>
 
-                <h4 class="font-bold text-white text-base">Phugoid Oscillations (Glide Cycles)</h4>
+                <h4 class="font-bold text-white text-sm">Phugoid Oscillations</h4>
                 <p>
-                    Ever wondered why a paper airplane climbs, stalls, dips, and sweeps up again repeatedly? That is the classic **Phugoid Mode**:
+                    Watch how your airplane climbs, slows, dips, and rises again—the classic phugoid mode:
                 </p>
-                <ol class="list-decimal pl-5 space-y-2 text-slate-300">
-                    <li>When thrown fast, the excess speed creates high **Lift ($L > W$)**, causing the plane to climb.</li>
-                    <li>As it climbs, kinetic energy transforms into potential energy (altitude). It slows down.</li>
-                    <li>As the velocity drops, the lift collapses. The nose dips under the force of gravity.</li>
-                    <li>As it dives, gravity accelerates the aircraft, building up speed and starting the loop all over again.</li>
+                <ol class="list-decimal pl-4 space-y-1 text-slate-300 text-xs">
+                    <li>Thrown fast → high lift → plane climbs</li>
+                    <li>Climbs → slows down → kinetic → potential energy</li>
+                    <li>Slows → lift drops → nose dips under gravity</li>
+                    <li>Dive accelerates → rebuilds speed → cycle repeats</li>
                 </ol>
 
-                <h4 class="font-bold text-white text-base">Key Parameter Relationships</h4>
-                <ul class="list-disc pl-5 space-y-2 text-slate-300">
-                    <li><strong class="text-teal-300">Wing Surface Area ($S$):</strong> Increasing this will produce dramatic lift, enabling slow glides, but increases overall drag.</li>
-                    <li><strong class="text-teal-300">Drag Coefficient ($C_{D0}$):</strong> A "Dart" profile has an ultra-low $C_{D0}$ (~0.04), allowing high speed pierce, whereas wide-winged aircraft struggle with higher air friction (~0.15).</li>
-                    <li><strong class="text-emerald-300">Atmospheric Wind:</strong> Headwinds increase the *relative air velocity*, meaning throwing your plane directly into the wind can produce highly dramatic initial climbs.</li>
+                <h4 class="font-bold text-white text-sm">Key Parameters</h4>
+                <ul class="list-disc pl-4 space-y-1 text-slate-300 text-xs">
+                    <li><strong>Wing Area:</strong> More lift, but also more drag</li>
+                    <li><strong>Drag Coefficient:</strong> Low = dart (fast), High = glider (slow)</li>
+                    <li><strong>Wind:</strong> Headwind increases relative velocity and lift</li>
                 </ul>
             </div>
             
-            <div class="p-4 bg-slate-950 border-t border-slate-800 text-center">
-                <button onclick="toggleHelpModal()" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold transition-all">
-                    Got it, Let's Fly!
+            <div class="p-3 bg-slate-950 border-t border-slate-800 text-center">
+                <button onclick="toggleHelpModal()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold transition-all">
+                    Got it!
                 </button>
             </div>
         </div>
     </div>
 
     <!-- FOOTER -->
-    <footer class="border-t border-slate-900 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
-        Interactive Aerofoil Lab. Built for aerodynamic science education. Fully physically consistent simulation environment.
+    <footer class="border-t border-slate-900 bg-slate-950/80 py-2 text-center text-[10px] text-slate-500">
+        Interactive Aerofoil Lab • Physically consistent simulation
     </footer>
 
     <!-- SIMULATION ENGINE CORE CODE -->
@@ -745,7 +643,7 @@
             state.forces.drag = 0;
             state.forces.weight = (params.mass / 1000) * GRAVITY;
 
-            document.getElementById('txt-status').innerText = "Ready to Launch";
+            document.getElementById('txt-status').innerText = "Ready";
             document.getElementById('txt-status').className = "text-sky-400 font-bold";
             
             const icon = document.getElementById('icon-pause');
@@ -998,288 +896,101 @@
                 const cx = toCanvasX(x);
                 ctx.moveTo(cx, 0);
                 ctx.lineTo(cx, canvas.height);
-                ctx.stroke();
-
-                // Draw numeric axis marker text on grid ground
-                if (x % 5 === 0) {
-                    ctx.fillStyle = '#64748b';
-                    ctx.font = '10px JetBrains Mono';
-                    ctx.fillText(`${x}m`, cx + 4, yGround - 8);
-                }
             }
-
-            // Draw Launch Pad / Human Anchor silhouette at (0, 1.8)
-            const originX = toCanvasX(0);
-            const originY = toCanvasY(1.8);
-            ctx.save();
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath();
-            ctx.arc(originX, originY, 18, 0, Math.PI * 2);
-            ctx.moveTo(originX, originY);
-            ctx.lineTo(originX, yGround);
             ctx.stroke();
-            // Platform anchor plate
-            ctx.fillStyle = 'rgba(148, 163, 184, 0.15)';
+            
+            // Horizon ground line
+            ctx.strokeStyle = '#0f6a3b';
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(originX, originY, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
+            ctx.moveTo(0, yGround);
+            ctx.lineTo(canvas.width, yGround);
+            ctx.stroke();
 
-            // 2. Draw Ground styling (Grass and Runway turf)
-            if (yGround < canvas.height) {
-                // Underground deep earth soil fill
-                ctx.fillStyle = '#050b14';
-                ctx.fillRect(0, yGround, canvas.width, canvas.height - yGround);
+            // Ground fill
+            ctx.fillStyle = '#051423';
+            ctx.fillRect(0, yGround, canvas.width, canvas.height - yGround);
 
-                // Turf grass green belt
-                ctx.fillStyle = '#10b981';
-                ctx.fillRect(0, yGround, canvas.width, 6);
-
-                // Sub-layer grass soil
-                ctx.fillStyle = '#047857';
-                ctx.fillRect(0, yGround + 6, canvas.width, 10);
-            }
-
-            // 3. Draw Stylized Clouds in background sky
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            const cloudPositions = [
-                {x: 5, y: 15, r: 80}, {x: 25, y: 12, r: 120}, {x: 50, y: 22, r: 90},
-                {x: 75, y: 8, r: 110}, {x: 110, y: 18, r: 140}, {x: 160, y: 20, r: 100}
-            ];
-            cloudPositions.forEach(c => {
-                ctx.beginPath();
-                ctx.arc(toCanvasX(c.x), toCanvasY(c.y), c.r * (scale / 30), 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // 4. Draw Trajectory Line trail behind paper airplane
+            // Draw trail
             if (state.trail.length > 1) {
+                ctx.strokeStyle = 'rgba(30, 144, 255, 0.4)';
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)'; 
-                ctx.lineWidth = 3.5;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                
                 ctx.moveTo(toCanvasX(state.trail[0].x), toCanvasY(state.trail[0].y));
                 for (let i = 1; i < state.trail.length; i++) {
                     ctx.lineTo(toCanvasX(state.trail[i].x), toCanvasY(state.trail[i].y));
                 }
                 ctx.stroke();
-
-                // Dotted trailing edge vector line connects actual plane to path tail
-                ctx.beginPath();
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([3, 4]);
-                ctx.moveTo(toCanvasX(state.trail[state.trail.length - 1].x), toCanvasY(state.trail[state.trail.length - 1].y));
-                ctx.lineTo(toCanvasX(state.x), toCanvasY(state.y));
-                ctx.stroke();
-                ctx.setLineDash([]); // Reset
             }
 
-            // Size factor to make paper airplane visual size represent physical chord ~0.35m
-            const planeScale = (scale * 0.42); 
-
-            // 5. Draw dynamic drop shadow on the ground (y = 0)
-            if (state.y > 0 && yGround < canvas.height) {
-                const shadowX = toCanvasX(state.x);
-                const heightOverGround = state.y;
-                // Calculate size expansion and opacity degradation based on altitude
-                const shadowWidth = Math.max(6, planeScale * (1.2 + heightOverGround * 0.1));
-                const shadowHeight = shadowWidth * 0.22;
-                const shadowOpacity = Math.max(0.08, 0.65 * (1.0 / (1.0 + heightOverGround * 0.35)));
-
-                ctx.save();
-                ctx.fillStyle = `rgba(2, 6, 23, ${shadowOpacity})`;
-                ctx.shadowColor = 'rgba(2, 6, 23, 0.8)';
-                ctx.shadowBlur = Math.min(20, heightOverGround * 3);
-                ctx.beginPath();
-                ctx.ellipse(shadowX, yGround, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-
-            // 6. Draw the Animated Paper Airplane
-            const planeCX = toCanvasX(state.x);
-            const planeCY = toCanvasY(state.y);
+            // Draw aircraft
+            const planeX = toCanvasX(state.x);
+            const planeY = toCanvasY(state.y);
+            const planeSize = 12;
 
             ctx.save();
-            ctx.translate(planeCX, planeCY);
-            ctx.rotate(-state.pitch); // Canvas rotation goes opposite directions
+            ctx.translate(planeX, planeY);
+            ctx.rotate(state.pitch);
 
-            // Dynamic 3D shading gradients for origami paper wings
-            const gradientHighlight = ctx.createLinearGradient(-planeScale * 0.5, -planeScale * 0.35, planeScale * 0.8, 0);
-            gradientHighlight.addColorStop(0, '#7dd3fc'); // Sky-blue highlight
-            gradientHighlight.addColorStop(0.5, '#bae6fd');
-            gradientHighlight.addColorStop(1, '#f0f9ff'); // Glinting white paper edge
+            // Fuselage
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(-planeSize / 2, -2, planeSize, 4);
 
-            const gradientShadowLeft = ctx.createLinearGradient(-planeScale * 0.5, 0, planeScale * 0.8, planeScale * 0.22);
-            gradientShadowLeft.addColorStop(0, '#0284c7'); // Rich blue shade
-            gradientShadowLeft.addColorStop(1, '#0369a1');
-
-            const gradientShadowCrease = ctx.createLinearGradient(-planeScale * 0.5, 0, planeScale * 0.8, planeScale * 0.12);
-            gradientShadowCrease.addColorStop(0, '#0f172a'); // Extreme fold shadow
-            gradientShadowCrease.addColorStop(1, '#1e293b');
-
-            // Fold A: Main body shadow keel
-            ctx.beginPath();
-            ctx.moveTo(planeScale * 0.8, 0); // nose
-            ctx.lineTo(-planeScale * 0.5, planeScale * 0.12); // lower tail
-            ctx.lineTo(-planeScale * 0.2, 0); // inner fold
-            ctx.closePath();
-            ctx.fillStyle = gradientShadowCrease;
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 1;
-            ctx.fill();
-            ctx.stroke();
-
-            // Fold B: Left Under-wing panel folding (underneath/top fold shadow blend)
-            ctx.beginPath();
-            ctx.moveTo(planeScale * 0.8, 0);
-            ctx.lineTo(-planeScale * 0.4, planeScale * 0.22);
-            ctx.lineTo(-planeScale * 0.2, 0);
-            ctx.closePath();
-            ctx.fillStyle = gradientShadowLeft;
-            ctx.strokeStyle = '#025a87';
-            ctx.lineWidth = 1;
-            ctx.fill();
-            ctx.stroke();
-
-            // Fold C: Main Right Wing Sheet
-            ctx.beginPath();
-            ctx.moveTo(planeScale * 0.8, 0); // nose
-            ctx.lineTo(-planeScale * 0.4, -planeScale * 0.35); // outer wingtip
-            ctx.lineTo(-planeScale * 0.2, 0); // keel root
-            ctx.closePath();
-            ctx.fillStyle = gradientHighlight;
-            ctx.strokeStyle = '#0284c7';
-            ctx.lineWidth = 1.2;
-            ctx.fill();
-            ctx.stroke();
-
-            // Origami internal crease decoration lines
-            ctx.beginPath();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-            ctx.lineWidth = 0.8;
-            ctx.moveTo(planeScale * 0.8, 0);
-            ctx.lineTo(-planeScale * 0.3, -planeScale * 0.12);
-            ctx.stroke();
+            // Wings
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
+            ctx.fillRect(-planeSize * 0.7, -0.5, planeSize * 1.4, 1);
 
             ctx.restore();
 
-            // 7. Draw Interactive Force Vector Arrows from Center of Mass
-            if (showForcesVectors) {
-                const fLift = state.forces.lift;
-                const fDrag = state.forces.drag;
-                const fWeight = state.forces.weight;
+            // Draw force vectors if enabled
+            if (showForcesVectors && state.active) {
+                const vectorScale = 1.5;
 
-                // Dynamically scale vectors so they are always perfectly visible and never shoot off-screen
-                const maxForce = Math.max(fLift, fDrag, fWeight, 0.005); // Avoid division by zero
-                // Set a responsive max pixel length relative to the current canvas zoom scale, capped at 75px
-                const maxVectorLength = Math.min(75, scale * 2.2); 
-                const forceVisualScale = maxVectorLength / maxForce;
+                // Lift (cyan)
+                const Lx = -state.forces.lift * Math.sin(state.pitch) * vectorScale;
+                const Ly = state.forces.lift * Math.cos(state.pitch) * vectorScale;
+                ctx.strokeStyle = '#22d3ee';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(planeX, planeY);
+                ctx.lineTo(planeX + Lx, planeY - Ly);
+                ctx.stroke();
 
+                // Drag (red)
                 const vRelX = state.vx - params.windSpeed;
                 const vRelY = state.vy;
-                const gammaRel = Math.atan2(vRelY, vRelX);
+                const vRel = Math.sqrt(vRelX * vRelX + vRelY * vRelY) || 1;
+                const Dx = -(state.forces.drag / vRel) * vRelX * vectorScale;
+                const Dy = -(state.forces.drag / vRel) * vRelY * vectorScale;
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(planeX, planeY);
+                ctx.lineTo(planeX + Dx, planeY - Dy);
+                ctx.stroke();
 
-                // Vectors coordinate components
-                const lxVec = -fLift * Math.sin(gammaRel) * forceVisualScale;
-                const lyVec = fLift * Math.cos(gammaRel) * forceVisualScale;
-
-                const dxVec = -fDrag * Math.cos(gammaRel) * forceVisualScale;
-                const dyVec = -fDrag * Math.sin(gammaRel) * forceVisualScale;
-
-                const wxVec = 0;
-                const wyVec = -fWeight * forceVisualScale;
-
-                // LIFT ARROW (CYAN)
-                drawArrow(planeCX, planeCY, planeCX + lxVec, planeCY - lyVec, '#22d3ee', 2.5, 'Lift (L)');
-                
-                // DRAG ARROW (ROSE)
-                drawArrow(planeCX, planeCY, planeCX + dxVec, planeCY - dyVec, '#f43f5e', 2.5, 'Drag (D)');
-
-                // GRAVITY ARROW (EMERALD GREEN)
-                drawArrow(planeCX, planeCY, planeCX + wxVec, planeCY - wyVec, '#34d399', 2.5, 'Gravity (Fg)');
-            }
-        }
-
-        // Draw reusable arrow stroke utility
-        function drawArrow(fromx, fromy, tox, toy, color, thickness, label) {
-            const length = Math.hypot(tox - fromx, toy - fromy);
-            if (length < 3) return;
-
-            ctx.save();
-            ctx.strokeStyle = color;
-            ctx.fillStyle = color;
-            ctx.lineWidth = thickness;
-            
-            // Draw shaft line
-            ctx.beginPath();
-            ctx.moveTo(fromx, fromy);
-            ctx.lineTo(tox, toy);
-            ctx.stroke();
-
-            // Draw arrow head triangle tip
-            const angle = Math.atan2(toy - fromy, tox - fromx);
-            const headlen = 8; // length of head in pixels
-            ctx.beginPath();
-            ctx.moveTo(tox, toy);
-            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
-            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
-            ctx.closePath();
-            ctx.fill();
-
-            // Render force label tag at arrow end tip
-            if (label) {
-                ctx.font = 'bold 10px Inter';
-                ctx.fillStyle = '#f1f5f9';
-                ctx.strokeStyle = '#020617';
-                ctx.lineWidth = 2.5;
-                ctx.strokeText(label, tox + 10 * Math.cos(angle), toy + 10 * Math.sin(angle));
-                ctx.fillText(label, tox + 10 * Math.cos(angle), toy + 10 * Math.sin(angle));
-            }
-            ctx.restore();
-        }
-
-        // Real-time animation loop ticking 60 FPS
-        let lastTime = 0;
-        const TARGET_DT = 1 / 60; // 60 FPS target stepping rate
-
-        function simulationLoop(timestamp) {
-            if (!lastTime) lastTime = timestamp;
-            let elapsed = (timestamp - lastTime) / 1000;
-            lastTime = timestamp;
-
-            // Prevent spiral-of-death time jumps when switching tabs
-            if (elapsed > 0.1) elapsed = 0.1;
-
-            // Advance physical state integration step
-            const substeps = 4;
-            const subDt = elapsed / substeps;
-            for (let i = 0; i < substeps; i++) {
-                updatePhysics(subDt);
+                // Weight (green)
+                const Wy = state.forces.weight * vectorScale;
+                ctx.strokeStyle = '#34d399';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(planeX, planeY);
+                ctx.lineTo(planeX, planeY + Wy);
+                ctx.stroke();
             }
 
-            // Redraw everything
-            drawSimulation();
-
-            // Frame requesting
-            requestAnimationFrame(simulationLoop);
+            requestAnimationFrame(() => {
+                updatePhysics(1 / 60); // 60 FPS
+                drawSimulation();
+            });
         }
 
-        // Start initialization sequence
-        window.onload = function() {
-            initInputs();
-            updateWindBadge();
+        // Initialize on load
+        window.addEventListener('load', () => {
             resizeCanvas();
+            initInputs();
             resetSimulation();
-            
-            // Initiate loops
-            requestAnimationFrame(simulationLoop);
-        }
+        });
     </script>
 </body>
 </html>
