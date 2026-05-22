@@ -35,173 +35,170 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-sky-500/30">
 
-    <!-- Top Navigation Header -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+    <!-- Top Navigation Header (More Compact) -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-2">
         <div class="flex items-center gap-3">
-            <div class="bg-sky-500/10 p-2.5 rounded-xl border border-sky-500/20 text-sky-400">
-                <i data-lucide="plane-takeoff" class="w-6 h-6 animate-pulse"></i>
+            <div class="bg-sky-500/10 p-2 rounded-xl border border-sky-500/20 text-sky-400">
+                <i data-lucide="plane-takeoff" class="w-5 h-5 animate-pulse"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                     Aerofoil paper flight lab
                 </h1>
-                <p class="text-xs text-slate-400">Interactive Paper Airplane Aerodynamics & Physics Modeling</p>
+                <p class="text-[11px] text-slate-400">Interactive Paper Airplane Aerodynamics & Physics Modeling</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 flex items-center gap-1.5">
+            <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-                Aerodynamic Engine v3.0
+                Aerodynamic Engine v3.1
             </span>
-            <button onclick="toggleHelpModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
-                <i data-lucide="help-circle" class="w-4 h-4"></i> Help & Theory
+            <button onclick="toggleHelpModal()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
+                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Help & Theory
             </button>
         </div>
     </header>
 
-    <!-- Main Workspace Dashboard Grid (Optimized 2-Column Structure) -->
-    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-4 md:p-6 max-w-[1800px] mx-auto w-full">
+    <!-- Main Workspace Dashboard Grid (Optimized 2-Column Structure with Height Constraints) -->
+    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 p-3 md:p-4 max-w-[1800px] mx-auto w-full">
         
-        <!-- LEFT PANEL: Controls, Presets & Force Diagram (xl:col-span-4) -->
-        <section class="xl:col-span-4 flex flex-col gap-5 bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 backdrop-blur-sm h-fit">
-            <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider text-slate-400">
-                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i> Configurations
+        <!-- LEFT PANEL: Controls, Presets & Force Diagram (xl:col-span-4, Scroll-contained to prevent overflow) -->
+        <section class="xl:col-span-4 flex flex-col gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/60 backdrop-blur-sm max-h-[calc(100vh-100px)] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5 text-sky-400"></i> Configurations
                 </h2>
-                <button onclick="resetToDefaults()" class="text-xs text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Defaults
+                <button onclick="resetToDefaults()" class="text-[11px] text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Defaults
                 </button>
             </div>
 
             <!-- Presets Grid -->
             <div>
-                <label class="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">Preset Models</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="loadPreset('dart')" id="btn-preset-dart" class="preset-btn active py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-sky-500/30 bg-sky-950/40 text-sky-300 hover:bg-sky-900/20 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Dart</span>
-                        <span class="text-[10px] text-slate-500 font-normal">Fast, Low Drag</span>
+                <label class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Preset Models</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="loadPreset('dart')" id="btn-preset-dart" class="preset-btn active py-1.5 px-2.5 text-left rounded-xl text-xs font-medium transition-all border border-sky-500/30 bg-sky-950/40 text-sky-300 hover:bg-sky-900/20 flex flex-col">
+                        <span class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Dart</span>
+                        <span class="text-[9px] text-slate-500 font-normal">Fast, Low Drag</span>
                     </button>
-                    <button onclick="loadPreset('glider')" id="btn-preset-glider" class="preset-btn py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="wind" class="w-3.5 h-3.5"></i> Long Glider</span>
-                        <span class="text-[10px] text-slate-500 font-normal">High Lift, Stable</span>
+                    <button onclick="loadPreset('glider')" id="btn-preset-glider" class="preset-btn py-1.5 px-2.5 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col">
+                        <span class="flex items-center gap-1"><i data-lucide="wind" class="w-3 h-3"></i> Long Glider</span>
+                        <span class="text-[9px] text-slate-500 font-normal">High Lift, Stable</span>
                     </button>
-                    <button onclick="loadPreset('heavy')" id="btn-preset-heavy" class="preset-btn py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="anchor" class="w-3.5 h-3.5"></i> Heavy Nose</span>
-                        <span class="text-[10px] text-slate-500 font-normal">Steep Glide Path</span>
+                    <button onclick="loadPreset('heavy')" id="btn-preset-heavy" class="preset-btn py-1.5 px-2.5 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col">
+                        <span class="flex items-center gap-1"><i data-lucide="anchor" class="w-3 h-3"></i> Heavy Nose</span>
+                        <span class="text-[9px] text-slate-500 font-normal">Steep Glide Path</span>
                     </button>
-                    <button onclick="loadPreset('stunt')" id="btn-preset-stunt" class="preset-btn py-2 px-3 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col gap-0.5">
-                        <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Stunt Plane</span>
-                        <span class="text-[10px] text-slate-500 font-normal">High AoA, Dynamic</span>
+                    <button onclick="loadPreset('stunt')" id="btn-preset-stunt" class="preset-btn py-1.5 px-2.5 text-left rounded-xl text-xs font-medium transition-all border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 flex flex-col">
+                        <span class="flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Stunt Plane</span>
+                        <span class="text-[9px] text-slate-500 font-normal">High AoA, Dynamic</span>
                     </button>
                 </div>
             </div>
 
             <!-- Parameters Sliders Accordion -->
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3">
                 <!-- Launch Parameters -->
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-3">
-                        <i data-lucide="rocket" class="w-3.5 h-3.5 text-orange-400"></i> Launch Variables
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                    <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <i data-lucide="rocket" class="w-3 h-3 text-orange-400"></i> Launch Variables
                     </h3>
                     
                     <!-- Launch Velocity -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Throw Velocity</span>
-                            <span class="text-xs font-semibold text-sky-400 mono" id="val-launchSpeed">12.0 m/s</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Throw Velocity</span>
+                            <span class="text-[11px] font-semibold text-sky-400 mono" id="val-launchSpeed">12.0 m/s</span>
                         </div>
-                        <input type="range" id="param-launchSpeed" min="3" max="25" step="0.5" value="12" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                        <input type="range" id="param-launchSpeed" min="3" max="25" step="0.5" value="12" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
                     </div>
 
                     <!-- Launch Angle -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Throw Angle</span>
-                            <span class="text-xs font-semibold text-sky-400 mono" id="val-launchAngle">15°</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Throw Angle</span>
+                            <span class="text-[11px] font-semibold text-sky-400 mono" id="val-launchAngle">15°</span>
                         </div>
-                        <input type="range" id="param-launchAngle" min="-45" max="60" step="1" value="15" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
-                        <span class="text-[10px] text-slate-500 block mt-1">Positive is upward tilt</span>
+                        <input type="range" id="param-launchAngle" min="-45" max="60" step="1" value="15" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
                     </div>
 
                     <!-- Simulation Speed Multiplier -->
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Simulation Speed</span>
-                            <span class="text-xs font-semibold text-amber-400 mono" id="val-simSpeed">0.25x</span>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Simulation Speed</span>
+                            <span class="text-[11px] font-semibold text-amber-400 mono" id="val-simSpeed">0.25x</span>
                         </div>
-                        <input type="range" id="param-simSpeed" min="0.10" max="2.00" step="0.05" value="0.25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
-                        <span class="text-[10px] text-slate-500 block mt-1">Slower rates make forces easier to observe</span>
+                        <input type="range" id="param-simSpeed" min="0.10" max="2.00" step="0.05" value="0.25" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
                     </div>
                 </div>
 
                 <!-- Aircraft Aerodynamics -->
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-3">
-                        <i data-lucide="feather" class="w-3.5 h-3.5 text-teal-400"></i> Aircraft Physics
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                    <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <i data-lucide="feather" class="w-3 h-3 text-teal-400"></i> Aircraft Physics
                     </h3>
                     
                     <!-- Mass -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Plane Mass</span>
-                            <span class="text-xs font-semibold text-teal-400 mono" id="val-mass">4.5 g</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Plane Mass</span>
+                            <span class="text-[11px] font-semibold text-teal-400 mono" id="val-mass">4.5 g</span>
                         </div>
-                        <input type="range" id="param-mass" min="1.5" max="15.0" step="0.1" value="4.5" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                        <input type="range" id="param-mass" min="1.5" max="15.0" step="0.1" value="4.5" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
                     </div>
 
                     <!-- Wing Area -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Wing Surface Area</span>
-                            <span class="text-xs font-semibold text-teal-400 mono" id="val-wingArea">120 cm²</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Wing Surface Area</span>
+                            <span class="text-[11px] font-semibold text-teal-400 mono" id="val-wingArea">120 cm²</span>
                         </div>
-                        <input type="range" id="param-wingArea" min="40" max="300" step="5" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                        <input type="range" id="param-wingArea" min="40" max="300" step="5" value="120" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
                     </div>
 
                     <!-- Parasitic Drag Coefficient -->
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Parasitic Drag ($C_{D0}$)</span>
-                            <span class="text-xs font-semibold text-teal-400 mono" id="val-dragCoeff">0.08</span>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Parasitic Drag ($C_{D0}$)</span>
+                            <span class="text-[11px] font-semibold text-teal-400 mono" id="val-dragCoeff">0.08</span>
                         </div>
-                        <input type="range" id="param-dragCoeff" min="0.02" max="0.30" step="0.01" value="0.08" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                        <input type="range" id="param-dragCoeff" min="0.02" max="0.30" step="0.01" value="0.08" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
                     </div>
                 </div>
 
                 <!-- Environmental Forces -->
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-3">
-                        <i data-lucide="globe-2" class="w-3.5 h-3.5 text-emerald-400"></i> Atmosphere & Wind
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                    <h3 class="text-[10px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <i data-lucide="globe-2" class="w-3 h-3 text-emerald-400"></i> Atmosphere & Wind
                     </h3>
                     
                     <!-- Wind Speed -->
-                    <div class="mb-3.5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Horizontal Wind</span>
-                            <span class="text-xs font-semibold text-emerald-400 mono" id="val-windSpeed">0.0 m/s</span>
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Horizontal Wind</span>
+                            <span class="text-[11px] font-semibold text-emerald-400 mono" id="val-windSpeed">0.0 m/s</span>
                         </div>
-                        <input type="range" id="param-windSpeed" min="-12" max="12" step="0.5" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-                        <span class="text-[10px] text-slate-500 block mt-1">(-) Headwind, (+) Tailwind</span>
+                        <input type="range" id="param-windSpeed" min="-12" max="12" step="0.5" value="0" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                     </div>
 
                     <!-- Air Density -->
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-slate-400">Air Density ($\rho$)</span>
-                            <span class="text-xs font-semibold text-emerald-400 mono" id="val-density">1.225 kg/m³</span>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-400">Air Density ($\rho$)</span>
+                            <span class="text-[11px] font-semibold text-emerald-400 mono" id="val-density">1.225 kg/m³</span>
                         </div>
-                        <input type="range" id="param-density" min="0.800" max="1.500" step="0.025" value="1.225" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                        <input type="range" id="param-density" min="0.800" max="1.500" step="0.025" value="1.225" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                     </div>
                 </div>
             </div>
 
             <!-- Consolidated Aerodynamic Forces Diagram -->
-            <div class="bg-slate-950/50 p-4 rounded-xl border border-slate-800/60 flex flex-col items-center">
-                <span class="text-[11px] font-bold text-slate-400 uppercase self-start mb-2 tracking-wider flex items-center gap-1.5">
-                    <i data-lucide="compass" class="w-4 h-4 text-purple-400"></i> The Balance of Flight
+            <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/60 flex flex-col items-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase self-start mb-1.5 tracking-wider flex items-center gap-1">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 text-purple-400"></i> The Balance of Flight
                 </span>
                 
-                <div class="w-full h-32 relative flex items-center justify-center bg-slate-900/20 rounded-lg border border-slate-800/40 overflow-hidden">
+                <div class="w-full h-24 relative flex items-center justify-center bg-slate-900/20 rounded-lg border border-slate-800/40 overflow-hidden">
                     <svg viewBox="0 0 200 120" class="w-full h-full">
                         <g transform="translate(100,60)">
                             <!-- Origami plane representation -->
@@ -211,16 +208,16 @@
                             
                             <!-- Force Vectors labels -->
                             <!-- LIFT (Up) -->
-                            <line x1="0" y1="0" x2="0" y2="-35" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
-                            <text x="6" y="-30" fill="#22d3ee" class="text-[9px] font-semibold">Lift (L)</text>
+                            <line x1="0" y1="0" x2="0" y2="-30" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+                            <text x="6" y="-25" fill="#22d3ee" class="text-[9px] font-semibold">Lift (L)</text>
                             
                             <!-- DRAG (Left) -->
-                            <line x1="0" y1="0" x2="-35" y2="0" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow)" />
-                            <text x="-48" y="10" fill="#f43f5e" class="text-[9px] font-semibold">Drag (D)</text>
+                            <line x1="0" y1="0" x2="-30" y2="0" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow)" />
+                            <text x="-44" y="10" fill="#f43f5e" class="text-[9px] font-semibold">Drag (D)</text>
                             
                             <!-- GRAVITY (Down) -->
-                            <line x1="0" y1="0" x2="0" y2="35" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" />
-                            <text x="6" y="34" fill="#34d399" class="text-[9px] font-semibold">Gravity (Fg)</text>
+                            <line x1="0" y1="0" x2="0" y2="30" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" />
+                            <text x="6" y="29" fill="#34d399" class="text-[9px] font-semibold">Gravity (Fg)</text>
                         </g>
                         <defs>
                             <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -232,130 +229,129 @@
             </div>
         </section>
 
-        <!-- RIGHT PANEL: Simulation Visualizer & Real-time Telemetry (xl:col-span-8) -->
-        <section class="xl:col-span-8 flex flex-col gap-5">
+        <!-- RIGHT PANEL: Simulation Visualizer & Real-time Telemetry (xl:col-span-8, Reduced height to fit graphs) -->
+        <section class="xl:col-span-8 flex flex-col gap-4">
             
-            <!-- Dynamic Flight Simulation Display (Unified Container) -->
-            <div class="bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl flex-1 min-h-[460px] md:min-h-[540px] flex flex-col">
+            <!-- Dynamic Flight Simulation Display (Unified Container with Optimized Heights) -->
+            <div class="bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl flex flex-col">
                 
                 <!-- Sky Background Canvas & Absolute Elements Wrapper -->
-                <div class="relative flex-1 flex flex-col min-h-0">
+                <div class="relative h-[320px] md:h-[380px] flex flex-col min-h-0">
                     <!-- Canvas -->
                     <canvas id="flightCanvas" class="w-full flex-1 block cursor-grab active:cursor-grabbing"></canvas>
 
                     <!-- UI Overlays inside Canvas -->
-                    <div class="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
-                        <span class="px-3 py-1.5 bg-slate-900/90 border border-slate-800 text-xs font-medium rounded-lg text-slate-300 backdrop-blur-md flex items-center gap-1.5">
-                            <i data-lucide="activity" class="w-3.5 h-3.5 text-sky-400"></i> Status: 
+                    <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+                        <span class="px-2.5 py-1 bg-slate-900/90 border border-slate-800 text-[11px] font-medium rounded-lg text-slate-300 backdrop-blur-md flex items-center gap-1">
+                            <i data-lucide="activity" class="w-3 h-3 text-sky-400"></i> Status: 
                             <span id="txt-status" class="text-sky-400 font-bold">Ready to Launch</span>
                         </span>
-                        <span id="badge-wind" class="px-3 py-1.5 bg-slate-900/90 border border-slate-800 text-xs font-medium rounded-lg text-slate-300 backdrop-blur-md hidden items-center gap-1.5">
-                            <i data-lucide="wind" class="w-3.5 h-3.5 text-emerald-400 animate-pulse"></i>
+                        <span id="badge-wind" class="px-2.5 py-1 bg-slate-900/90 border border-slate-800 text-[11px] font-medium rounded-lg text-slate-300 backdrop-blur-md hidden items-center gap-1">
+                            <i data-lucide="wind" class="w-3 h-3 text-emerald-400 animate-pulse"></i>
                             <span id="txt-wind-display" class="text-emerald-400 font-bold"></span>
                         </span>
                     </div>
 
-                    <div class="absolute top-4 right-4 flex gap-2">
-                        <button onclick="toggleVectors()" id="btn-vectors" class="p-2.5 bg-sky-950/60 hover:bg-sky-900/60 border border-sky-500/30 text-sky-400 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Toggle Force Vectors Visualizer">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
+                    <div class="absolute top-3 right-3 flex gap-1.5">
+                        <button onclick="toggleVectors()" id="btn-vectors" class="p-2 bg-sky-950/60 hover:bg-sky-900/60 border border-sky-500/30 text-sky-400 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Toggle Force Vectors Visualizer">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button onclick="toggleSlowMo()" id="btn-slowmo" class="p-2.5 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Toggle Slow Motion (0.25x)">
-                            <i data-lucide="hourglass" class="w-4 h-4"></i>
+                        <button onclick="toggleSlowMo()" id="btn-slowmo" class="p-2 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Toggle Slow Motion (0.25x)">
+                            <i data-lucide="hourglass" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button onclick="cameraReset()" class="p-2.5 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Reset Camera Lock">
-                            <i data-lucide="maximize" class="w-4 h-4"></i>
+                        <button onclick="cameraReset()" class="p-2 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition-all shadow-lg backdrop-blur-md" title="Reset Camera Lock">
+                            <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Simulation Interactive Playback Bar -->
-                <div class="px-4 py-3.5 bg-slate-900 border-t border-slate-800/90 shadow-inner flex items-center gap-3 w-full">
-                    <button onclick="triggerLaunch()" class="flex-1 py-3 px-4 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2">
-                        <i data-lucide="navigation" class="w-4 h-4 rotate-45"></i>
+                <div class="px-4 py-2.5 bg-slate-900 border-t border-slate-800/90 shadow-inner flex items-center gap-3 w-full">
+                    <button onclick="triggerLaunch()" class="flex-1 py-2 px-4 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2">
+                        <i data-lucide="navigation" class="w-3.5 h-3.5 rotate-45"></i>
                         <span>LAUNCH PAPER AIRPLANE</span>
                     </button>
-                    <button onclick="togglePlayPause()" id="btn-pause" class="p-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all" title="Pause / Play Simulation">
-                        <i data-lucide="pause" id="icon-pause" class="w-4 h-4"></i>
+                    <button onclick="togglePlayPause()" id="btn-pause" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all" title="Pause / Play Simulation">
+                        <i data-lucide="pause" id="icon-pause" class="w-3.5 h-3.5"></i>
                     </button>
-                    <button onclick="resetSimulation()" class="p-3 bg-slate-800 hover:bg-red-950/40 hover:text-red-400 hover:border-red-500/20 text-slate-400 border border-transparent rounded-xl transition-all" title="Reset Simulation">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <button onclick="resetSimulation()" class="p-2 bg-slate-800 hover:bg-red-950/40 hover:text-red-400 hover:border-red-500/20 text-slate-400 border border-transparent rounded-xl transition-all" title="Reset Simulation">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Lower Diagnostics Panel: Real-time Telemetry plots -->
+            <!-- Lower Diagnostics Panel: Real-time Telemetry plots (Brought up into view) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Real-time Altitude & Speed Metrics -->
                 <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2.5">
                         <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <i data-lucide="gauge" class="w-4 h-4 text-sky-400"></i> Performance Metrics
+                            <i data-lucide="gauge" class="w-3.5 h-3.5 text-sky-400"></i> Performance Metrics
                         </span>
-                        <span class="text-[10px] text-slate-500">Live flight computers</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 flex-1">
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Max Altitude</span>
-                            <span class="text-lg font-bold text-sky-400 mono" id="tel-maxHeight">0.00 m</span>
+                    <div class="grid grid-cols-2 gap-2 flex-1">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-center">
+                            <span class="text-[9px] text-slate-400 block uppercase">Max Altitude</span>
+                            <span class="text-base font-bold text-sky-400 mono animate-pulse" id="tel-maxHeight">0.00 m</span>
                         </div>
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Max Distance</span>
-                            <span class="text-lg font-bold text-emerald-400 mono" id="tel-maxDist">0.00 m</span>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-center">
+                            <span class="text-[9px] text-slate-400 block uppercase">Max Distance</span>
+                            <span class="text-base font-bold text-emerald-400 mono animate-pulse" id="tel-maxDist">0.00 m</span>
                         </div>
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Flight Duration</span>
-                            <span class="text-lg font-bold text-indigo-400 mono" id="tel-duration">0.00 s</span>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-center">
+                            <span class="text-[9px] text-slate-400 block uppercase">Flight Duration</span>
+                            <span class="text-base font-bold text-indigo-400 mono" id="tel-duration">0.00 s</span>
                         </div>
-                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
-                            <span class="text-[10px] text-slate-400 block mb-0.5 uppercase">Glide Efficiency (L/D)</span>
-                            <span class="text-lg font-bold text-amber-400 mono" id="tel-glideEfficiency">0.00</span>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-center">
+                            <span class="text-[9px] text-slate-400 block uppercase">Glide Efficiency (L/D)</span>
+                            <span class="text-base font-bold text-amber-400 mono" id="tel-glideEfficiency">0.00</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Live Vector Magnitudes Chart Canvas -->
                 <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2.5">
                         <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-teal-400"></i> Dynamic Force Balances (mN)
+                            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-teal-400"></i> Dynamic Force Balances (mN)
                         </span>
                     </div>
-                    <div class="flex-1 flex flex-col justify-around gap-2.5">
+                    <div class="flex-1 flex flex-col justify-around gap-2">
                         <!-- Lift Force Bar -->
                         <div>
-                            <div class="flex justify-between text-[11px] mb-1">
+                            <div class="flex justify-between text-[10px] mb-0.5">
                                 <span class="text-cyan-400 font-semibold flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></span> Lift ($L$)
+                                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block"></span> Lift ($L$)
                                 </span>
-                                <span class="mono text-slate-300" id="mN-lift">0.0 mN</span>
+                                <span class="mono text-slate-300 text-[10px]" id="mN-lift">0.0 mN</span>
                             </div>
-                            <div class="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                            <div class="h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
                                 <div id="bar-lift" class="h-full bg-cyan-400 transition-all duration-75" style="width: 0%"></div>
                             </div>
                         </div>
 
                         <!-- Drag Force Bar -->
                         <div>
-                            <div class="flex justify-between text-[11px] mb-1">
+                            <div class="flex justify-between text-[10px] mb-0.5">
                                 <span class="text-rose-400 font-semibold flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span> Drag ($D$)
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block"></span> Drag ($D$)
                                 </span>
-                                <span class="mono text-slate-300" id="mN-drag">0.0 mN</span>
+                                <span class="mono text-slate-300 text-[10px]" id="mN-drag">0.0 mN</span>
                             </div>
-                            <div class="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                            <div class="h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
                                 <div id="bar-drag" class="h-full bg-rose-400 transition-all duration-75" style="width: 0%"></div>
                             </div>
                         </div>
 
                         <!-- Gravity Bar -->
                         <div>
-                            <div class="flex justify-between text-[11px] mb-1">
+                            <div class="flex justify-between text-[10px] mb-0.5">
                                 <span class="text-emerald-400 font-semibold flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Gravity ($F_g$)
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Gravity ($F_g$)
                                 </span>
-                                <span class="mono text-slate-300" id="mN-weight">0.0 mN</span>
+                                <span class="mono text-slate-300 text-[10px]" id="mN-weight">0.0 mN</span>
                             </div>
-                            <div class="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                            <div class="h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
                                 <div id="bar-weight" class="h-full bg-emerald-400 transition-all duration-75" style="width: 0%"></div>
                             </div>
                         </div>
@@ -412,7 +408,7 @@
     </div>
 
     <!-- FOOTER -->
-    <footer class="border-t border-slate-900 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
+    <footer class="border-t border-slate-900 bg-slate-950/80 py-3 text-center text-xs text-slate-500">
         Interactive Aerofoil Lab. Built for aerodynamic science education. Fully physically consistent simulation environment.
     </footer>
 
@@ -639,6 +635,7 @@
             }
         }
 
+        // Slow motion profile multiplier selector
         function toggleSlowMo() {
             isSlowMo = !isSlowMo;
             const btn = document.getElementById('btn-slowmo');
