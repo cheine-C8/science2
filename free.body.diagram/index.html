@@ -100,10 +100,20 @@
 
             <!-- Force Controls -->
             <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex-grow flex flex-col">
-                <h3 class="font-semibold text-slate-200 mb-3 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                    Forces List & Input
-                </h3>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-slate-200 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        Forces List & Input
+                    </h3>
+                    <button id="clearAllBtn" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded transition-colors flex items-center gap-1" title="Clear all applied forces">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                        Clear All
+                    </button>
+                </div>
                 
                 <!-- Add Force Manual Form -->
                 <div class="grid grid-cols-2 gap-3 mb-4">
@@ -184,6 +194,7 @@
         const magInput = document.getElementById('magInput');
         const angleInput = document.getElementById('angleInput');
         const addForceBtn = document.getElementById('addForceBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
         const forceListEl = document.getElementById('forceList');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const playIcon = document.getElementById('playIcon');
@@ -597,6 +608,12 @@
 
         addForceBtn.addEventListener('click', () => {
             addForce(magInput.value, angleInput.value);
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            state.forces = [];
+            renderForceList();
+            calculateNetForce();
         });
 
         angleInput.addEventListener('keypress', (e) => {
