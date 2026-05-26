@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Free Body Diagram & Motion Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            touch-action: none; /* Prevents scrolling while drawing forces on mobile */
+        }
+        
+        /* Custom Scrollbar for force list */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen">
+
+    <!-- Simulation Canvas Area -->
+    <div class="flex-grow relative h-1/2 md:h-full border-b-2 md:border-b-0 md:border-r-2 border-slate-700 bg-slate-900 select-none">
+        <canvas id="simCanvas" class="w-full h-full cursor-crosshair"></canvas>
+        
+        <!-- On-Screen Display (HUD) -->
+        <div class="absolute top-4 left-4 bg-slate-800/90 backdrop-blur p-4 rounded-xl border border-slate-600 shadow-lg pointer-events-none text-sm max-w-[280px]">
+            <h2 class="text-lg font-bold text-white mb-2 border-b border-slate-600 pb-1">Telemetry</h2>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span class="text-slate-400">Position (x, y):</span>
+                <span id="hudPos" class="font-mono text-emerald-400">0.0, 0.0 m</span>
+                
+                <span class="text-slate-400">Velocity:</span>
+                <span id="hudVel" class="font-mono text-cyan-400">0.0 m/s</span>
+                
+                <span class="text-slate-400">Acceleration:</span>
+                <span id="hudAcc" class="font-mono text-purple-400">0.0 m/s²</span>
+                
+                <span class="text-slate-400 mt-2">Net Force:</span>
+                <span id="hudNet" class="font-mono text-green-400 font-bold mt-2">0.0 N</span>
+            </div>
+            
+            <div class="mt-4 text-xs text-slate-500">
+                <div class="flex items-center gap-2"><div class="w-3 h-0.5 bg-red-500"></div> Individual Forces</div>
+                <div class="flex items-center gap-2"><div class="w-3 h-1 bg-green-500"></div> Net Force</div>
+                <div class="flex items-center gap-2"><div class="w-3 h-0.5 border-t border-dashed border-cyan-400"></div> Velocity Vector</div>
+            </div>
+        </div>
+
+        <!-- Drawing Guide Instructions Overlay -->
+        <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-700 text-xs text-slate-300 pointer-events-none flex items-center gap-2">
+            <svg class="animate-pulse text-amber-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m12 8-4 4 4 4"/><path d="M16 12H8"/></svg>
+            <span>Click & drag from the center blue block to draw a force!</span>
+        </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="w-full md:w-96 flex flex-col h-1/2 md:h-full bg-slate-800 shadow-2xl z-10 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="p-4 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                Interactive FBD
+            </h1>
+        </div>
+
+        <div class="p-4 overflow-y-auto custom-scrollbar flex-grow flex flex-col gap-6">
+            
+            <!-- Global Properties -->
+            <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
+                <h3 class="font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><path d="m21 16-9 5-9-5"/><path d="m21 8-9 5-9-5"/><path d="m3 8 9-5 9 5"/></svg>
+                    Object Properties
+                </h3>
+                <div class="flex items-center justify-between">
+                    <label for="massInput" class="text-sm text-slate-300">Mass (kg):</label>
+                    <input type="number" id="massInput" value="10" min="0.1" step="0.1" class="w-24 bg-slate-900 border border-slate-500 rounded px-2 py-1 text-right text-white focus:outline-none focus:border-blue-400 transition-colors">
+                </div>
+            </div>
+
+            <!-- Force Controls -->
+            <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex-grow flex flex-col">
+                <h3 class="font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    Forces List & Input
+                </h3>
+                
+                <!-- Add Force Manual Form -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Magnitude (N)</label>
+                        <input type="number" id="magInput" value="50" min="1" class="w-full bg-slate-900 border border-slate-500 rounded px-2 py-1.5 text-white focus:outline-none focus:border-red-400 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Angle (°)</label>
+                        <input type="number" id="angleInput" value="0" class="w-full bg-slate-900 border border-slate-500 rounded px-2 py-1.5 text-white focus:outline-none focus:border-red-400 transition-colors" placeholder="0 = Right">
+                    </div>
+                </div>
+                <button id="addForceBtn" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 py-2 rounded-lg font-medium transition-all active:scale-95 mb-4 text-sm">
+                    + Add Force Vector
+                </button>
+
+                <!-- Force List -->
+                <div class="flex-grow relative">
+                    <div class="absolute inset-0 overflow-y-auto custom-scrollbar pr-2" id="forceList">
+                        <!-- Forces injected here via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Controls -->
+            <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
+                <h3 class="font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                    Simulation Controls
+                </h3>
+                <div class="flex gap-2">
+                    <button id="playPauseBtn" class="flex-grow bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-lg font-bold transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <svg id="pauseIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        <span id="playPauseText">Play</span>
+                    </button>
+                    <button id="resetBtn" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2.5 rounded-lg font-medium transition-all active:scale-95 flex items-center justify-center" title="Reset Motion">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            mass: 10,       // kg
+            pos: {x: 0, y: 0}, // meters
+            vel: {x: 0, y: 0}, // m/s
+            acc: {x: 0, y: 0}, // m/s^2
+            netForce: {x: 0, y: 0, mag: 0, angle: 0},
+            forces: [],     // Array of {id, mag, angle}
+            isPlaying: false,
+            nextForceId: 1,
+            // Drag-to-draw state variables
+            drag: {
+                isDrawing: false,
+                startX: 0,
+                startY: 0,
+                currentX: 0,
+                currentY: 0,
+                activeAngle: 0,
+                activeMagnitude: 0
+            }
+        };
+
+        // --- Physics & Canvas Constants ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const PX_PER_METER = 50; // Visual scale for motion
+        const FORCE_VISUAL_SCALE = 1.5; // 1.5 pixels on screen per 1 Newton of Force
+        const OBJECT_HIT_RADIUS = 30; // Radius around center to trigger a draw action
+        
+        // --- DOM Elements ---
+        const massInput = document.getElementById('massInput');
+        const magInput = document.getElementById('magInput');
+        const angleInput = document.getElementById('angleInput');
+        const addForceBtn = document.getElementById('addForceBtn');
+        const forceListEl = document.getElementById('forceList');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const playPauseText = document.getElementById('playPauseText');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        // HUD Elements
+        const hudPos = document.getElementById('hudPos');
+        const hudVel = document.getElementById('hudVel');
+        const hudAcc = document.getElementById('hudAcc');
+        const hudNet = document.getElementById('hudNet');
+
+        // --- Core Functions ---
+
+        // Degrees to Radians conversion helpers
+        const deg2rad = (deg) => deg * (Math.PI / 180);
+        const rad2deg = (rad) => rad * (180 / Math.PI);
+
+        // Update Physics logic
+        function calculateNetForce() {
+            let fx = 0;
+            let fy = 0; // Note: standard physics math, +y is UP
+
+            state.forces.forEach(f => {
+                const rad = deg2rad(f.angle);
+                fx += f.mag * Math.cos(rad);
+                fy += f.mag * Math.sin(rad);
+            });
+
+            state.netForce.x = fx;
+            state.netForce.y = fy;
+            state.netForce.mag = Math.sqrt(fx*fx + fy*fy);
+            state.netForce.angle = rad2deg(Math.atan2(fy, fx));
+            
+            // Calculate instantaneous acceleration (F = ma => a = F/m)
+            state.acc.x = state.netForce.x / state.mass;
+            state.acc.y = state.netForce.y / state.mass;
+        }
+
+        function stepPhysics(dt) {
+            calculateNetForce();
+            
+            if (state.isPlaying) {
+                // Update velocity (v = v0 + at)
+                state.vel.x += state.acc.x * dt;
+                state.vel.y += state.acc.y * dt;
+                
+                // Update position (p = p0 + vt)
+                state.pos.x += state.vel.x * dt;
+                state.pos.y += state.vel.y * dt;
+            }
+        }
+
+        // Add a force
+        function addForce(mag, angle) {
+            if (mag <= 0) return;
+            state.forces.push({
+                id: state.nextForceId++,
+                mag: parseFloat(mag),
+                angle: parseFloat(angle)
+            });
+            renderForceList();
+            calculateNetForce();
+        }
+
+        // Add a force in the opposite direction (Newton's 3rd Law / Reciprocal)
+        function addOppositeForce(mag, angle) {
+            let oppAngle = (parseFloat(angle) + 180) % 360;
+            if (oppAngle < 0) oppAngle += 360;
+            addForce(mag, oppAngle);
+        }
+
+        // Remove a force
+        function removeForce(id) {
+            state.forces = state.forces.filter(f => f.id !== id);
+            renderForceList();
+            calculateNetForce();
+        }
+
+        // UI Updates
+        function renderForceList() {
+            forceListEl.innerHTML = '';
+            
+            if (state.forces.length === 0) {
+                forceListEl.innerHTML = `<div class="text-sm text-slate-500 italic text-center mt-4">No forces applied. Click & drag on the blue block to draw a force.</div>`;
+                return;
+            }
+
+            state.forces.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-slate-800 p-2 rounded-lg border border-slate-600 mb-2 group';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <div class="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"></div>
+                        <span class="font-mono text-sm text-slate-200 truncate">
+                            ${f.mag.toFixed(1)} N <span class="text-slate-500">@</span> ${f.angle.toFixed(1)}°
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <!-- Opposite Force Trigger Button -->
+                        <button class="text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 rounded p-1 transition-all" 
+                                onclick="addOppositeForce(${f.mag}, ${f.angle})" 
+                                title="Add Equal and Opposite Force (Newton's 3rd Law)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m3 16 4 4 4-4"/>
+                                <path d="M7 20V4"/>
+                                <path d="m21 8-4-4-4 4"/>
+                                <path d="M17 4v16"/>
+                            </svg>
+                        </button>
+                        <!-- Delete Button -->
+                        <button class="text-slate-500 hover:text-red-400 hover:bg-slate-700/50 rounded p-1 transition-all" 
+                                onclick="removeForce(${f.id})" 
+                                title="Remove Force">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 6 6 18"/>
+                                <path d="m6 6 12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                forceListEl.appendChild(item);
+            });
+        }
+
+        function updateHUD() {
+            hudPos.innerText = `${state.pos.x.toFixed(1)}, ${state.pos.y.toFixed(1)} m`;
+            
+            const velMag = Math.sqrt(state.vel.x**2 + state.vel.y**2);
+            hudVel.innerText = `${velMag.toFixed(2)} m/s`;
+            
+            const accMag = Math.sqrt(state.acc.x**2 + state.acc.y**2);
+            hudAcc.innerText = `${accMag.toFixed(2)} m/s²`;
+            
+            hudNet.innerText = `${state.netForce.mag.toFixed(2)} N @ ${state.netForce.angle.toFixed(1)}°`;
+        }
+
+        // --- Canvas Rendering ---
+        function resizeCanvas() {
+            const parent = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = parent.clientWidth * dpr;
+            canvas.height = parent.clientHeight * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${parent.clientWidth}px`;
+            canvas.style.height = `${parent.clientHeight}px`;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawArrow(x, y, length, angleRad, color, lineWidth = 2, dashed = false) {
+            if (length <= 0) return;
+            ctx.save();
+            ctx.translate(x, y);
+            // Canvas +Y is down, Math +Y is up. Invert standard math angle for rendering.
+            ctx.rotate(-angleRad); 
+            
+            // Proportional head dimensions based on line thickness
+            const headLength = 7 + (lineWidth * 1.5); 
+            const headWidth = 4 + (lineWidth * 1.0);   
+            
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            if (dashed) ctx.setLineDash([5, 5]);
+            
+            // Draw main shaft ONLY up to the base of the arrowhead to avoid overlap/overshoot
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.max(0, length - headLength + 2), 0); // Faint overlap ensures seamless join
+            ctx.stroke();
+            
+            // Draw arrowhead cleanly centered right at the end of the specified length
+            ctx.setLineDash([]);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(length, 0); // Sharp tip exactly at end of length
+            ctx.lineTo(length - headLength, -headWidth); // Corner 1
+            ctx.lineTo(length - headLength, headWidth);  // Corner 2
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawGrid(cx, cy, width, height) {
+            ctx.save();
+            ctx.strokeStyle = '#1e293b'; // Slate 800
+            ctx.lineWidth = 1;
+            
+            // Calculate grid offsets based on relative camera position (follows object)
+            const offsetX = -(state.pos.x * PX_PER_METER) % PX_PER_METER;
+            const offsetY = (state.pos.y * PX_PER_METER) % PX_PER_METER; 
+
+            // Vertical lines
+            for (let x = offsetX; x < width; x += PX_PER_METER) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+            }
+            for (let x = offsetX - PX_PER_METER; x > 0; x -= PX_PER_METER) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let y = offsetY; y < height; y += PX_PER_METER) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+            for (let y = offsetY - PX_PER_METER; y > 0; y -= PX_PER_METER) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+            
+            // Draw origin guide lines
+            const screenOriginX = cx - (state.pos.x * PX_PER_METER);
+            const screenOriginY = cy + (state.pos.y * PX_PER_METER);
+            
+            ctx.strokeStyle = '#334155'; // Slate 700
+            ctx.lineWidth = 2;
+            if (screenOriginX >= 0 && screenOriginX <= width) {
+                ctx.beginPath(); ctx.moveTo(screenOriginX, 0); ctx.lineTo(screenOriginX, height); ctx.stroke();
+            }
+            if (screenOriginY >= 0 && screenOriginY <= height) {
+                ctx.beginPath(); ctx.moveTo(0, screenOriginY); ctx.lineTo(width, screenOriginY); ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function draw() {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            // Clear screen
+            ctx.clearRect(0, 0, width, height);
+
+            // Object remains locked in the visual center
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Draw scrolling grid
+            drawGrid(cx, cy, width, height);
+
+            // Draw Object (Box)
+            const boxSize = 40;
+            ctx.fillStyle = '#3b82f6'; // Blue 500
+            ctx.strokeStyle = '#60a5fa'; // Blue 400
+            ctx.lineWidth = 2;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 10;
+            
+            ctx.beginPath();
+            ctx.roundRect(cx - boxSize/2, cy - boxSize/2, boxSize, boxSize, 8);
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset shadow
+
+            // Draw Center of Mass indicator
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Velocity Vector (Light Blue, Dashed)
+            const velMag = Math.sqrt(state.vel.x**2 + state.vel.y**2);
+            if (velMag > 0.1) {
+                const velAngleRad = Math.atan2(state.vel.y, state.vel.x);
+                drawArrow(cx, cy, velMag * 5, velAngleRad, '#22d3ee', 2, true); 
+            }
+
+            // Draw Individual Applied Forces (Red)
+            state.forces.forEach(f => {
+                const rad = deg2rad(f.angle);
+                const visualLength = f.mag * FORCE_VISUAL_SCALE;
+                drawArrow(cx, cy, visualLength, rad, '#ef4444', 3);
+            });
+
+            // Draw Active Drag Vector if drawing in progress (Amber color)
+            if (state.drag.isDrawing) {
+                const rad = deg2rad(state.drag.activeAngle);
+                const visualLength = state.drag.activeMagnitude * FORCE_VISUAL_SCALE;
+                
+                // Active force arrow being dragged
+                drawArrow(cx, cy, visualLength, rad, '#f59e0b', 3);
+                
+                // Label with real-time stats
+                ctx.save();
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+                ctx.fillText(
+                    `${state.drag.activeMagnitude.toFixed(1)} N @ ${state.drag.activeAngle.toFixed(0)}°`,
+                    cx + (Math.cos(-rad) * (visualLength + 15)),
+                    cy + (Math.sin(-rad) * (visualLength + 15))
+                );
+                ctx.restore();
+            }
+
+            // Draw Net Force Resultant Vector (Green, Thicker)
+            if (state.netForce.mag > 0.1) {
+                const rad = deg2rad(state.netForce.angle);
+                const visualLength = state.netForce.mag * FORCE_VISUAL_SCALE;
+                drawArrow(cx, cy, visualLength, rad, '#22c55e', 5);
+            }
+
+            updateHUD();
+        }
+
+        // --- Mouse/Touch Interactive Drawing Logic ---
+
+        // Helper to convert screen coordinates to local canvas pixel values
+        function getCanvasMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Supports both touches and mouse clicks
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handleDragStart(e) {
+            const pos = getCanvasMousePos(e);
+            const rect = canvas.getBoundingClientRect();
+            const cx = rect.width / 2;
+            const cy = rect.height / 2;
+
+            // Check if user initiated drag near the centered mass object
+            const distanceToCenter = Math.sqrt((pos.x - cx)**2 + (pos.y - cy)**2);
+            if (distanceToCenter <= OBJECT_HIT_RADIUS) {
+                state.drag.isDrawing = true;
+                state.drag.startX = cx;
+                state.drag.startY = cy;
+                state.drag.currentX = pos.x;
+                state.drag.currentY = pos.y;
+                updateDragCalculations(pos.x, pos.y, cx, cy);
+            }
+        }
+
+        function handleDragMove(e) {
+            if (!state.drag.isDrawing) return;
+            // Prevent default zooming/scrolling behavior on mobile
+            if (e.cancelable) e.preventDefault();
+            
+            const pos = getCanvasMousePos(e);
+            state.drag.currentX = pos.x;
+            state.drag.currentY = pos.y;
+            updateDragCalculations(pos.x, pos.y, state.drag.startX, state.drag.startY);
+        }
+
+        function handleDragEnd(e) {
+            if (!state.drag.isDrawing) return;
+            state.drag.isDrawing = false;
+            
+            // Apply the force only if it has a noticeable magnitude
+            if (state.drag.activeMagnitude >= 1) {
+                // Keep the angle positive bounded between [0-360]
+                let angle = Math.round(state.drag.activeAngle);
+                if (angle < 0) angle += 360;
+                
+                addForce(state.drag.activeMagnitude, angle);
+            }
+        }
+
+        function updateDragCalculations(currX, currY, startX, startY) {
+            const dx = currX - startX;
+            const dy = currY - startY;
+            
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            // Convert pixel length back to Newton magnitude
+            state.drag.activeMagnitude = distance / FORCE_VISUAL_SCALE;
+            
+            // standard trigonometry (invert dy because canvas coordinates increase downwards)
+            const rad = Math.atan2(-dy, dx);
+            let degrees = rad2deg(rad);
+            if (degrees < 0) degrees += 360;
+            state.drag.activeAngle = degrees;
+        }
+
+        // Bind interactive drawing events
+        canvas.addEventListener('mousedown', handleDragStart);
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragEnd);
+
+        canvas.addEventListener('touchstart', handleDragStart, { passive: false });
+        window.addEventListener('touchmove', handleDragMove, { passive: false });
+        window.addEventListener('touchend', handleDragEnd);
+
+        // --- Main Simulation Loop ---
+        let lastTime = performance.now();
+        function loop(timestamp) {
+            let dt = (timestamp - lastTime) / 1000; 
+            if (dt > 0.1) dt = 0.1; // Limit delta steps during inactive frame states
+            lastTime = timestamp;
+
+            stepPhysics(dt);
+            draw();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- Form Event Listeners ---
+        massInput.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value);
+            if (val > 0) {
+                state.mass = val;
+                calculateNetForce();
+            } else {
+                e.target.value = state.mass; 
+            }
+        });
+
+        addForceBtn.addEventListener('click', () => {
+            addForce(magInput.value, angleInput.value);
+        });
+
+        angleInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') addForce(magInput.value, angleInput.value);
+        });
+        magInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') addForce(magInput.value, angleInput.value);
+        });
+
+        // Play/Pause State Control
+        playPauseBtn.addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                playPauseText.innerText = "Pause";
+                playPauseBtn.classList.replace('bg-emerald-500', 'bg-amber-500');
+                playPauseBtn.classList.replace('hover:bg-emerald-600', 'hover:bg-amber-600');
+                playPauseBtn.classList.replace('shadow-emerald-500/20', 'shadow-amber-500/20');
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                playPauseText.innerText = "Play";
+                playPauseBtn.classList.replace('bg-amber-500', 'bg-emerald-500');
+                playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-emerald-600');
+                playPauseBtn.classList.replace('shadow-amber-500/20', 'shadow-emerald-500/20');
+            }
+        });
+
+        // Reset positions
+        resetBtn.addEventListener('click', () => {
+            state.pos = {x: 0, y: 0};
+            state.vel = {x: 0, y: 0};
+            if (state.isPlaying) playPauseBtn.click(); // Pause simulation
+            calculateNetForce();
+        });
+
+        // --- Initialization ---
+        resizeCanvas();
+        renderForceList();
+        calculateNetForce();
+        requestAnimationFrame(loop);
+
+        // Preload default educational forces
+        addForce(30, 0);   // 30N Right
+        addForce(15, 90);  // 15N Up
+
+    </script>
+</body>
+</html>
