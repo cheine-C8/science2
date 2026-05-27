@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sector 46: The Physics Scavenger Hunt</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX for beautiful math equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script>
+        // Define renderMath globally in the head with a guard check for document.body
+        function renderMath() {
+            if (typeof renderMathInElement !== 'undefined' && document.body) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+        }
+        // Run math rendering automatically once the DOM is fully parsed and body exists
+        document.addEventListener('DOMContentLoaded', renderMath);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMath()"></script>
+    
+    <style>
+        /* Custom neon sci-fi accents */
+        .neon-border {
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5), inset 0 0 5px rgba(99, 102, 241, 0.2);
+        }
+        .neon-text {
+            text-shadow: 0 0 8px rgba(99, 102, 241, 0.8);
+        }
+        .neon-border-green {
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5), inset 0 0 5px rgba(34, 197, 94, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e1b4b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 3px;
+        }
+        /* Hidden items styles for virtual search */
+        .scavenger-item {
+            transition: all 0.2s ease-in-out;
+        }
+        .scavenger-item:hover {
+            filter: brightness(1.3) drop-shadow(0 0 4px #818cf8);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white antialiased">
+
+    <!-- Top Navigation and Live Stats -->
+    <header class="border-b border-indigo-900 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-600 rounded-lg text-white font-bold animate-pulse">
+                    ⚡ SECTOR 46
+                </div>
+                <div>
+                    <h1 class="font-black text-lg tracking-wider text-indigo-400 uppercase">Physics Escape Facility</h1>
+                    <p class="text-xs text-slate-400">8th Grade Scavenger Hunt &bull; 46-Minute Challenge</p>
+                </div>
+            </div>
+
+            <!-- Global Timer and Progress Bar -->
+            <div class="flex items-center gap-6 w-full sm:w-auto justify-end">
+                <div class="text-right">
+                    <div class="text-xs text-slate-400 uppercase font-semibold">Time Remaining</div>
+                    <div id="countdown-timer" class="text-2xl font-mono font-bold text-rose-500 neon-text">46:00</div>
+                </div>
+                <div class="w-32 md:w-48">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-400 font-medium">Progress</span>
+                        <span id="progress-percent" class="text-indigo-400 font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                        <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Column: Navigation Sidebar & Clue Tracker -->
+        <aside class="w-full lg:w-80 flex flex-col gap-4">
+            <!-- Team Info Box -->
+            <div class="bg-slate-900 border border-indigo-950 rounded-xl p-4 shadow-xl">
+                <label class="block text-xs uppercase text-slate-400 font-semibold mb-1">Squad / Student Name</label>
+                <input type="text" id="student-name" placeholder="Enter name to start..." class="w-full bg-slate-950 border border-indigo-800 rounded px-3 py-2 text-indigo-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                <div class="mt-2 flex justify-between items-center text-xs text-slate-500">
+                    <span>Rank: <strong id="student-rank" class="text-indigo-300">Novice Recipient</strong></span>
+                    <span>Keys: <strong id="keys-count" class="text-emerald-400">0/4</strong></span>
+                </div>
+            </div>
+
+            <!-- Zone Selector list -->
+            <div class="bg-slate-900 border border-indigo-950 rounded-xl p-4 shadow-xl flex-grow">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3 border-b border-slate-800 pb-2">FACILITY SECTORS</h3>
+                <nav class="space-y-2" id="sector-nav">
+                    <!-- Zone Buttons dynamically built or updated in JS -->
+                    <button onclick="switchZone(1)" id="nav-zone-1" class="w-full text-left p-3 rounded-lg flex items-center justify-between border border-indigo-500/30 bg-indigo-950/20 hover:bg-indigo-950/40 transition-all">
+                        <div class="flex flex-col">
+                            <span class="text-xs text-indigo-400 font-bold uppercase tracking-wider">Sector 1</span>
+                            <span class="text-sm font-semibold">Velocity Valley</span>
+                        </div>
+                        <span id="badge-zone-1" class="text-yellow-500">🔒 Locked</span>
+                    </button>
+
+                    <button onclick="switchZone(2)" id="nav-zone-2" class="w-full text-left p-3 rounded-lg flex items-center justify-between border border-slate-800 bg-slate-950/50 opacity-60 cursor-not-allowed transition-all" disabled>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Sector 2</span>
+                            <span class="text-sm font-semibold">The Force Fields</span>
+                        </div>
+                        <span id="badge-zone-2" class="text-slate-500">🔒 Locked</span>
+                    </button>
+
+                    <button onclick="switchZone(3)" id="nav-zone-3" class="w-full text-left p-3 rounded-lg flex items-center justify-between border border-slate-800 bg-slate-950/50 opacity-60 cursor-not-allowed transition-all" disabled>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Sector 3</span>
+                            <span class="text-sm font-semibold">Kinetic Reactor</span>
+                        </div>
+                        <span id="badge-zone-3" class="text-slate-500">🔒 Locked</span>
+                    </button>
+
+                    <button onclick="switchZone(4)" id="nav-zone-4" class="w-full text-left p-3 rounded-lg flex items-center justify-between border border-slate-800 bg-slate-950/50 opacity-60 cursor-not-allowed transition-all" disabled>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Sector 4</span>
+                            <span class="text-sm font-semibold">Newton's Assembly</span>
+                        </div>
+                        <span id="badge-zone-4" class="text-slate-500">🔒 Locked</span>
+                    </button>
+
+                    <button onclick="switchZone(5)" id="nav-zone-5" class="w-full text-left p-3 rounded-lg flex items-center justify-between border border-slate-800 bg-slate-950/50 opacity-60 cursor-not-allowed transition-all" disabled>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Sector 5</span>
+                            <span class="text-sm font-semibold">Escape Terminal</span>
+                        </div>
+                        <span id="badge-zone-5" class="text-slate-500">🔒 Locked</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Custom Synthesized Sound Control -->
+            <div class="bg-slate-900 border border-indigo-950 rounded-xl p-3 flex justify-between items-center text-xs text-slate-400">
+                <span>Audio Engine Active</span>
+                <button onclick="toggleMute()" id="mute-btn" class="px-2 py-1 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 rounded text-indigo-300 font-medium">🔊 Unmuted</button>
+            </div>
+        </aside>
+
+        <!-- Right Column: Interactive Zone Workspace -->
+        <section class="flex-grow flex flex-col bg-slate-900 border border-indigo-950 rounded-2xl shadow-2xl relative overflow-hidden min-h-[600px]">
+            
+            <!-- Instructions and Welcome Banner -->
+            <div id="intro-overlay" class="absolute inset-0 bg-slate-950/95 z-40 flex flex-col items-center justify-center p-8 text-center transition-all duration-500 overflow-y-auto">
+                <div class="max-w-2xl bg-slate-900 border-2 border-indigo-500 p-8 rounded-2xl shadow-indigo-500/10 shadow-2xl text-left relative">
+                    <span class="absolute top-4 right-4 bg-indigo-950 border border-indigo-700 text-indigo-400 text-xs px-2.5 py-1 rounded-full font-mono font-bold animate-pulse">FACILITY EMERGENCY INITIALIZED</span>
+                    <h2 class="text-3xl font-black text-white tracking-tight mb-2 flex items-center gap-2">
+                        <span>🚀</span> SYSTEM RECOVERY OPERATION
+                    </h2>
+                    <p class="text-sm text-indigo-300 font-mono mb-4">TO: 8TH GRADE PHYSICS CORPS</p>
+                    
+                    <div class="space-y-3 text-slate-300 text-sm mb-6">
+                        <p>An anomalous gravitational warp has triggered the facility lockouts. To restore power and escape, you must decipher the structural physics puzzles securing our five primary command sectors.</p>
+                        <p class="border-l-2 border-amber-500 pl-3 italic text-amber-300">"You have exactly 46 minutes before system failsafes permanently clamp down. Cooperate, think logically, and inspect your surroundings."</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-xs font-mono bg-slate-950 p-3 rounded-lg border border-slate-800">
+                            <div>🎯 <strong>Topics Included:</strong> Velocity/Speed, Newton's 3 Laws, Net Force, Kinetic Energy, &amp; Mass/Acceleration.</div>
+                            <div>🗺️ <strong>Instructions:</strong> Use clues hidden in interactive workspaces to solve mechanics problems and earn keys.</div>
+                        </div>
+                    </div>
+
+                    <button onclick="startScavengerHunt()" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all transform active:scale-95 text-lg flex items-center justify-center gap-2">
+                        <span>Initialize System Recall (Start 46:00 Timer)</span> ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game-over or Completion Screen -->
+            <div id="victory-overlay" class="absolute inset-0 bg-slate-950/95 z-45 hidden flex-col items-center justify-center p-8 text-center">
+                <div class="max-w-xl bg-slate-900 border-2 border-emerald-500 p-8 rounded-2xl shadow-emerald-500/10 shadow-2xl text-center">
+                    <div class="text-6xl mb-4">🏆</div>
+                    <h2 id="victory-title" class="text-3xl font-black text-emerald-400 mb-2 tracking-tight">SECTOR LOCKOUT BYPASSED!</h2>
+                    <p class="text-slate-300 text-sm mb-6">Excellent mechanical calibration and analytical processing. You saved Sector 46 with time to spare.</p>
+                    
+                    <!-- Dynamic Stats -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left space-y-2 mb-6 font-mono text-sm">
+                        <p>👨‍🎓 <span class="text-slate-400">Scholar Name:</span> <strong id="end-student-name" class="text-indigo-400">Anonymous Pioneer</strong></p>
+                        <p>⏱️ <span class="text-slate-400">Time Taken:</span> <strong id="end-time-taken" class="text-emerald-400">00:00</strong></p>
+                        <p>⭐ <span class="text-slate-400">Sectors Unlocked:</span> <strong id="end-sectors-count" class="text-indigo-400">5/5</strong></p>
+                        <p>🎓 <span class="text-slate-400">Rank Achieved:</span> <strong id="end-rank" class="text-yellow-400">Master of Mechanics</strong></p>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button onclick="window.print()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-lg text-slate-300 font-bold transition-all text-sm">🖨️ Print Certificate</button>
+                        <button onclick="location.reload()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-white font-bold transition-all text-sm">Restart Challenge</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lockout / Failure Screen -->
+            <div id="failure-overlay" class="absolute inset-0 bg-slate-950/95 z-45 hidden flex-col items-center justify-center p-8 text-center">
+                <div class="max-w-xl bg-slate-900 border-2 border-rose-600 p-8 rounded-2xl shadow-rose-900/20 shadow-2xl">
+                    <div class="text-6xl mb-4">🚨</div>
+                    <h2 class="text-3xl font-black text-rose-500 mb-2 tracking-tight">SYSTEM LOCKED DOWN</h2>
+                    <p class="text-slate-300 text-sm mb-6">The 46 minutes have expired. Heavy safety vaults have clamped down on the experimental facility. Time to regroup and coordinate another test team!</p>
+                    <button onclick="location.reload()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-lg transition-all">Retry Mission</button>
+                </div>
+            </div>
+
+            <!-- Sector Workspaces -->
+            <div class="flex-grow p-6 flex flex-col relative h-full">
+
+                <!-- SECTOR 1: VELOCITY VALLEY -->
+                <div id="zone-workspace-1" class="zone-pane flex flex-col h-full gap-4">
+                    <div class="flex justify-between items-center border-b border-indigo-950 pb-3">
+                        <div>
+                            <span class="bg-indigo-950 border border-indigo-800 text-indigo-400 text-xs px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">Velocity Dynamics</span>
+                            <h2 class="text-2xl font-extrabold text-white mt-1">Sector 1: Velocity Vector Valley</h2>
+                        </div>
+                        <span class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs px-2.5 py-1 rounded font-bold">Key Card: 1</span>
+                    </div>
+
+                    <div class="text-sm text-slate-300 bg-slate-950/40 border border-indigo-950 p-3 rounded-lg">
+                        🎯 <strong>Mission Checkpoint:</strong> 8th graders often mistake <em>speed</em> for <em>velocity</em>. Remember, speed is just how fast you are going ($s = \frac{d}{t}$), but <strong>velocity is speed with a specific direction!</strong> Find the velocity tracking sensors and navigate our survey drone through the canyon path.
+                    </div>
+
+                    <!-- Layout: Find clues vs interactive lab grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow items-stretch">
+                        <!-- Clue Finding Box (4 cols) -->
+                        <div class="lg:col-span-5 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-3">🔍 Virtual Field Scan: Find clues</h3>
+                                <p class="text-xs text-slate-400 mb-3">Click on the hotzones in the digital diagram below to extract forgotten data pads.</p>
+                                
+                                <div class="bg-slate-900 aspect-[16/10] relative rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+                                    <!-- Simple SVG background simulating virtual layout -->
+                                    <svg class="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 200 100">
+                                        <polygon points="10,90 40,30 70,90" fill="#4f46e5" />
+                                        <polygon points="60,90 100,20 140,90" fill="#312e81" />
+                                        <line x1="0" y1="90" x2="200" y2="90" stroke="#4f46e5" stroke-width="2" />
+                                        <circle cx="170" cy="30" r="12" fill="#eab308" />
+                                    </svg>
+                                    
+                                    <!-- Interactive Scavenger Items -->
+                                    <button onclick="revealClue('v1')" id="item-v1" class="scavenger-item absolute left-8 top-12 bg-indigo-500/80 hover:bg-indigo-400 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold text-white shadow-lg">🛸 Sat Probe</button>
+                                    <button onclick="revealClue('v2')" id="item-v2" class="scavenger-item absolute left-20 top-20 bg-indigo-500/80 hover:bg-indigo-400 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold text-white shadow-lg">📁 Harddrive</button>
+                                    <button onclick="revealClue('v3')" id="item-v3" class="scavenger-item absolute right-6 top-8 bg-indigo-500/80 hover:bg-indigo-400 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold text-white shadow-lg">📡 Beacon</button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <div id="clue-log-1" class="text-xs bg-slate-900 border border-slate-800 p-2.5 rounded font-mono text-indigo-300">
+                                    Click items on the virtual field scan above to inspect clues.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Drone Vector Simulation (7 cols) -->
+                        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col">
+                            <h3 class="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest mb-2">🕹️ Drone Navigation Grid</h3>
+                            <p class="text-xs text-slate-400 mb-3">Adjust the drone's horizontal velocity ($v_x$) and vertical velocity ($v_y$) to reach the extraction coordinates precisely.</p>
+
+                            <!-- Mini Simulation canvas/display -->
+                            <div class="flex-grow bg-slate-900 rounded-lg relative overflow-hidden border border-slate-800 flex flex-col justify-between p-3 min-h-[220px]">
+                                <div class="relative w-full h-40 bg-slate-950 rounded border border-indigo-900/40">
+                                    <!-- Drone -->
+                                    <div id="drone" class="absolute w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-xs shadow-lg transition-all duration-700 ease-out" style="left: 10%; bottom: 10%;">🛸</div>
+                                    <!-- Target -->
+                                    <div class="absolute w-8 h-8 border-2 border-dashed border-emerald-400 rounded-full flex items-center justify-center animate-pulse" style="right: 15%; top: 15%;">🎯</div>
+                                    
+                                    <!-- Simple vector representation arrow -->
+                                    <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                                        <defs>
+                                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                                <path d="M 0 2 L 10 5 L 0 8 z" fill="#34d399" />
+                                            </marker>
+                                        </defs>
+                                        <line id="vector-arrow" x1="10%" y1="90%" x2="40%" y2="60%" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" class="transition-all duration-300" />
+                                    </svg>
+                                </div>
+
+                                <!-- Vector Controls -->
+                                <div class="grid grid-cols-2 gap-3 mt-3">
+                                    <div>
+                                        <label class="block text-[10px] text-slate-400 font-mono">Horizontal Speed ($v_x$): <span id="v_x_val" class="text-indigo-400 font-bold">10 m/s</span></label>
+                                        <input type="range" id="v_x_input" min="0" max="30" value="10" class="w-full accent-indigo-500" oninput="updateVectorSim()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-slate-400 font-mono">Vertical Speed ($v_y$): <span id="v_y_val" class="text-emerald-400 font-bold">5 m/s</span></label>
+                                        <input type="range" id="v_y_input" min="0" max="30" value="5" class="w-full accent-emerald-400" oninput="updateVectorSim()">
+                                    </div>
+                                </div>
+                                <button onclick="launchDrone()" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded font-bold uppercase transition-all">Launch Test Flight</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sector Verification Quiz -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-indigo-950">
+                        <h3 class="text-sm font-semibold mb-3">Verification Phase: Sector Security Codes</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">1. If a research car travels $240\text{ meters}$ directly North in $12\text{ seconds}$, what is its velocity?</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="checkSec1Answer(1)" class="s1-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">20 m/s</button>
+                                    <button onclick="checkSec1Answer(2)" class="s1-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">20 m/s North</button>
+                                    <button onclick="checkSec1Answer(3)" class="s1-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">2880 m</button>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">2. What is the fundamental difference between speed and velocity?</p>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <button onclick="checkSec1Answer(4)" class="s1-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs text-left transition-all">A. Speed is constant, velocity always changes.</button>
+                                    <button onclick="checkSec1Answer(5)" class="s1-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs text-left transition-all">B. Velocity includes direction, while speed does not.</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTOR 2: THE FORCE FIELDS -->
+                <div id="zone-workspace-2" class="zone-pane flex flex-col h-full gap-4 hidden">
+                    <div class="flex justify-between items-center border-b border-indigo-950 pb-3">
+                        <div>
+                            <span class="bg-indigo-950 border border-indigo-800 text-indigo-400 text-xs px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">Mechanics &amp; Forces</span>
+                            <h2 class="text-2xl font-extrabold text-white mt-1">Sector 2: Unbalanced Forces &amp; Friction</h2>
+                        </div>
+                        <span class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs px-2.5 py-1 rounded font-bold">Key Card: 2</span>
+                    </div>
+
+                    <div class="text-sm text-slate-300 bg-slate-950/40 border border-indigo-950 p-3 rounded-lg">
+                        🎯 <strong>Mission Checkpoint:</strong> To move stationary objects, you must create an <strong>unbalanced force</strong>. Forces have both magnitude (Newtons) and direction. Static friction actively resists your push! Inspect the lab and balance the vector forces.
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow items-stretch">
+                        <!-- Cabinet Search (5 cols) -->
+                        <div class="lg:col-span-5 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-3">🔍 Storage Locker: Search the Cabinets</h3>
+                                <p class="text-xs text-slate-400 mb-3">Click on the testing equipment storage slots to retrieve critical mechanics metrics.</p>
+                                
+                                <div class="bg-slate-900 p-4 rounded-lg border border-slate-800 grid grid-cols-3 gap-2 aspect-[16/10]">
+                                    <button onclick="revealForceClue(1)" id="f-clue-1" class="scavenger-item bg-indigo-950/40 border border-indigo-900 rounded-lg flex flex-col items-center justify-center p-2 text-center text-xs hover:bg-indigo-900/30">
+                                        <span class="text-xl mb-1">⚖️</span> Spring Scale
+                                    </button>
+                                    <button onclick="revealForceClue(2)" id="f-clue-2" class="scavenger-item bg-indigo-950/40 border border-indigo-900 rounded-lg flex flex-col items-center justify-center p-2 text-center text-xs hover:bg-indigo-900/30">
+                                        <span class="text-xl mb-1">📦</span> Crate Weight
+                                    </button>
+                                    <button onclick="revealForceClue(3)" id="f-clue-3" class="scavenger-item bg-indigo-950/40 border border-indigo-900 rounded-lg flex flex-col items-center justify-center p-2 text-center text-xs hover:bg-indigo-900/30">
+                                        <span class="text-xl mb-1">🪵</span> Friction Pad
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div id="clue-log-2" class="text-xs bg-slate-900 border border-slate-800 p-2.5 rounded font-mono text-indigo-300">
+                                    Unlock locker components to study surface coefficients.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Force Balance Simulator (7 cols) -->
+                        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col">
+                            <h3 class="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest mb-2">🕹️ Force Vector Lab</h3>
+                            <p class="text-xs text-slate-400 mb-3">Add left or right force vectors to overcome friction. Calculate Net Force ($F_{net}$) to push the research cart precisely.</p>
+
+                            <div class="flex-grow bg-slate-900 rounded-lg border border-slate-800 p-3 flex flex-col justify-between min-h-[220px]">
+                                <div class="relative bg-slate-950 border border-indigo-900/40 rounded h-24 overflow-hidden flex items-center justify-center">
+                                    <span class="absolute left-2 text-[10px] text-slate-500 font-mono">Friction: <span id="friction-display">12N Left</span></span>
+                                    
+                                    <!-- Block -->
+                                    <div id="physics-block" class="bg-indigo-950 border-2 border-indigo-500 rounded p-2 text-center z-10 w-28 font-mono text-xs shadow-lg transition-transform duration-300">
+                                        <div class="font-bold text-indigo-300">Crate (5 kg)</div>
+                                        <div id="net-force-lbl" class="text-[9px] text-emerald-400">Net F: 0 N</div>
+                                    </div>
+                                    
+                                    <!-- Force Arrows -->
+                                    <div id="force-left-arrow" class="absolute left-8 h-1 w-10 bg-rose-500 hidden items-center justify-end">
+                                        <span class="text-[9px] text-rose-400 font-bold -mt-4 mr-2" id="force-left-val">0N</span>
+                                    </div>
+                                    <div id="force-right-arrow" class="absolute right-8 h-1 w-10 bg-emerald-500 hidden items-center justify-start">
+                                        <span class="text-[9px] text-emerald-400 font-bold -mt-4 ml-2" id="force-right-val">0N</span>
+                                    </div>
+                                </div>
+
+                                <!-- Adjusters -->
+                                <div class="grid grid-cols-2 gap-4 mt-2">
+                                    <div>
+                                        <label class="block text-[10px] text-slate-400 font-mono">Force Left (Newtons):</label>
+                                        <div class="flex gap-2 mt-1">
+                                            <button onclick="adjustForce('left', -5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1 rounded">-5</button>
+                                            <span id="fl-val" class="font-bold text-rose-400 font-mono text-sm self-center">0 N</span>
+                                            <button onclick="adjustForce('left', 5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1 rounded">+5</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-slate-400 font-mono">Force Right (Newtons):</label>
+                                        <div class="flex gap-2 mt-1">
+                                            <button onclick="adjustForce('right', -5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1 rounded">-5</button>
+                                            <span id="fr-val" class="font-bold text-emerald-400 font-mono text-sm self-center">0 N</span>
+                                            <button onclick="adjustForce('right', 5)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1 rounded">+5</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2 mt-2">
+                                    <button onclick="resetForces()" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-400 px-3 py-1.5 rounded font-mono">Reset</button>
+                                    <button onclick="testNetForce()" class="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-1.5 rounded font-bold uppercase transition-all">Apply Force</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sector Verification Quiz -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-indigo-950">
+                        <h3 class="text-sm font-semibold mb-3">Verification Phase: Force Laws</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">1. If you push a cart to the right with $50\text{ N}$ of force, and static friction pulls left with $20\text{ N}$, what is the Net Force?</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="checkSec2Answer(1)" class="s2-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">70 N right</button>
+                                    <button onclick="checkSec2Answer(2)" class="s2-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">30 N right</button>
+                                    <button onclick="checkSec2Answer(3)" class="s2-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">30 N left</button>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">2. What happens to an object when forces acting on it are balanced ($F_{net} = 0\text{ N}$)?</p>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <button onclick="checkSec2Answer(4)" class="s2-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs text-left transition-all">A. It must immediately slow down and stop.</button>
+                                    <button onclick="checkSec2Answer(5)" class="s2-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs text-left transition-all">B. It remains at rest or continues at a constant velocity.</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTOR 3: KINETIC REACTOR -->
+                <div id="zone-workspace-3" class="zone-pane flex flex-col h-full gap-4 hidden">
+                    <div class="flex justify-between items-center border-b border-indigo-950 pb-3">
+                        <div>
+                            <span class="bg-indigo-950 border border-indigo-800 text-indigo-400 text-xs px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">Energy &amp; Mass</span>
+                            <h2 class="text-2xl font-extrabold text-white mt-1">Sector 3: Kinetic Energy Reactor Calibration</h2>
+                        </div>
+                        <span class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs px-2.5 py-1 rounded font-bold">Key Card: 3</span>
+                    </div>
+
+                    <div class="text-sm text-slate-300 bg-slate-950/40 border border-indigo-950 p-3 rounded-lg">
+                        🎯 <strong>Mission Checkpoint:</strong> Kinetic Energy is the energy of motion. The formula is $KE = \frac{1}{2} m v^2$. Notice how doubling the mass doubles the kinetic energy, but **doubling the velocity quadruples it**! 
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow items-stretch">
+                        <!-- Find equations / clues (5 cols) -->
+                        <div class="lg:col-span-5 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-3">🔍 Reactor Dashboard: Gather Data Logs</h3>
+                                <p class="text-xs text-slate-400 mb-3">Inspect files or sensor monitors to find the correct math definitions.</p>
+                                
+                                <div class="bg-slate-900 rounded-lg p-3 border border-slate-800 flex flex-col gap-3 aspect-[16/10] justify-center">
+                                    <button onclick="revealKEClue(1)" id="ke-clue-1" class="scavenger-item bg-slate-950 border border-indigo-900/60 p-2 rounded text-left text-xs">
+                                        📄 <strong>Log File:</strong> Mass/Energy Ratio Specs
+                                    </button>
+                                    <button onclick="revealKEClue(2)" id="ke-clue-2" class="scavenger-item bg-slate-950 border border-indigo-900/60 p-2 rounded text-left text-xs">
+                                        📊 <strong>Power Monitor:</strong> Core Velocity Graphs
+                                    </button>
+                                    <button onclick="revealKEClue(3)" id="ke-clue-3" class="scavenger-item bg-slate-950 border border-indigo-900/60 p-2 rounded text-left text-xs">
+                                        💡 <strong>Equation Guide:</strong> Kinetic Energy Constants
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div id="clue-log-3" class="text-xs bg-slate-900 border border-slate-800 p-2.5 rounded font-mono text-indigo-300">
+                                    Click items inside the dashboard panel to retrieve energy ratios.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kinetic Energy Sim (7 cols) -->
+                        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col">
+                            <h3 class="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest mb-2">🕹️ Reactor Tuning Module</h3>
+                            <p class="text-xs text-slate-400 mb-3">Adjust the Mass ($m$) and Velocity ($v$) slider values until the total Kinetic Energy equals exactly <strong class="text-amber-400">400 Joules</strong>.</p>
+
+                            <div class="flex-grow bg-slate-900 rounded-lg border border-slate-800 p-4 flex flex-col justify-between min-h-[220px]">
+                                <!-- Display -->
+                                <div class="bg-slate-950 p-3 rounded border border-indigo-900/40 text-center flex flex-col justify-center">
+                                    <span class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Calculated Kinetic Energy</span>
+                                    <span id="ke-calc-display" class="text-3xl font-black text-rose-500 font-mono tracking-tight my-1">0 J</span>
+                                    <span class="text-[9px] text-slate-500 font-mono">Formula: $KE = \frac{1}{2} \cdot \text{mass} \cdot \text{velocity}^2$</span>
+                                </div>
+
+                                <!-- Sliders -->
+                                <div class="space-y-3 mt-2">
+                                    <div>
+                                        <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                                            <span>Mass ($m$):</span>
+                                            <span id="ke-mass-val" class="font-bold text-indigo-400">2 kg</span>
+                                        </div>
+                                        <input type="range" id="ke-mass-input" min="1" max="20" step="1" value="2" class="w-full accent-indigo-500" oninput="updateKESim()">
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                                            <span>Velocity ($v$):</span>
+                                            <span id="ke-vel-val" class="font-bold text-emerald-400">5 m/s</span>
+                                        </div>
+                                        <input type="range" id="ke-vel-input" min="1" max="30" step="1" value="5" class="w-full accent-emerald-500" oninput="updateKESim()">
+                                    </div>
+                                </div>
+
+                                <button onclick="stabilizeReactor()" class="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded font-bold uppercase transition-all">Lock In Settings</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sector Verification Quiz -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-indigo-950">
+                        <h3 class="text-sm font-semibold mb-3">Verification Phase: Kinetic Energy Laws</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">1. If you double the velocity of an object, its kinetic energy increases by:</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="checkSec3Answer(1)" class="s3-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">2 times</button>
+                                    <button onclick="checkSec3Answer(2)" class="s3-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">4 times</button>
+                                    <button onclick="checkSec3Answer(3)" class="s3-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">Stay Same</button>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">2. Find the kinetic energy of a $10\text{ kg}$ object moving at a velocity of $4\text{ m/s}$:</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="checkSec3Answer(4)" class="s3-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">40 J</button>
+                                    <button onclick="checkSec3Answer(5)" class="s3-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">80 J</button>
+                                    <button onclick="checkSec3Answer(6)" class="s3-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">160 J</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTOR 4: NEWTON'S ASSEMBLY -->
+                <div id="zone-workspace-4" class="zone-pane flex flex-col h-full gap-4 hidden">
+                    <div class="flex justify-between items-center border-b border-indigo-950 pb-3">
+                        <div>
+                            <span class="bg-indigo-950 border border-indigo-800 text-indigo-400 text-xs px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">Fundamental Principles</span>
+                            <h2 class="text-2xl font-extrabold text-white mt-1">Sector 4: Newton's Three Laws of Motion</h2>
+                        </div>
+                        <span class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs px-2.5 py-1 rounded font-bold">Key Card: 4</span>
+                    </div>
+
+                    <div class="text-sm text-slate-300 bg-slate-950/40 border border-indigo-950 p-3 rounded-lg">
+                        🎯 <strong>Mission Checkpoint:</strong> Let's summarize the rules of physics! 
+                        <ul class="list-disc list-inside mt-1 space-y-1 text-slate-400 text-xs">
+                            <li><strong>1st Law (Inertia):</strong> Objects keep doing what they are doing unless a net force acts.</li>
+                            <li><strong>2nd Law ($F = m a$):</strong> Force equals mass times acceleration.</li>
+                            <li><strong>3rd Law (Action/Reaction):</strong> Every force has an equal and opposite reaction force.</li>
+                        </ul>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow items-stretch">
+                        <!-- Find clues (5 cols) -->
+                        <div class="lg:col-span-5 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-3">🔍 Lab Lab-Benches: Inspect the Setup</h3>
+                                <p class="text-xs text-slate-400 mb-3">Scan these physical experiment drawings. Find the clues for the Newton puzzles.</p>
+                                
+                                <div class="bg-slate-900 rounded-lg p-3 border border-slate-800 grid grid-cols-2 gap-2 aspect-[16/10]">
+                                    <button onclick="revealNewtonClue(1)" id="newt-clue-1" class="scavenger-item bg-slate-950 border border-slate-800 rounded p-2 text-center text-xs">
+                                        🎈 Balloon Rocket
+                                    </button>
+                                    <button onclick="revealNewtonClue(2)" id="newt-clue-2" class="scavenger-item bg-slate-950 border border-slate-800 rounded p-2 text-center text-xs">
+                                        🍎 Falling Fruit
+                                    </button>
+                                    <button onclick="revealNewtonClue(3)" id="newt-clue-3" class="scavenger-item bg-slate-950 border border-slate-800 rounded p-2 text-center text-xs col-span-2">
+                                        🛒 Massive Pushing Cart
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div id="clue-log-4" class="text-xs bg-slate-900 border border-slate-800 p-2.5 rounded font-mono text-indigo-300">
+                                    Click setup models to view acceleration coefficients.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Match/Interactive Drag Lab (7 cols) -->
+                        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-indigo-950 flex flex-col">
+                            <h3 class="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest mb-2">🕹️ Interactive Laws Match</h3>
+                            <p class="text-xs text-slate-400 mb-3">Connect the everyday scenario to the correct Newton's Law of Motion below.</p>
+
+                            <div class="flex-grow bg-slate-900 rounded-lg border border-slate-800 p-4 flex flex-col justify-between min-h-[220px]">
+                                <div class="space-y-3">
+                                    <!-- Card 1 -->
+                                    <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded border border-slate-800">
+                                        <span class="text-xs font-semibold text-slate-300">"A skateboarder pushes backward on the pavement to slide forward."</span>
+                                        <select id="newt-match-1" class="bg-indigo-950 border border-indigo-800 text-indigo-300 text-xs rounded px-2 py-1 focus:outline-none">
+                                            <option value="">Select Law</option>
+                                            <option value="1">1st Law (Inertia)</option>
+                                            <option value="2">2nd Law (F = ma)</option>
+                                            <option value="3">3rd Law (Opposite)</option>
+                                        </select>
+                                    </div>
+                                    <!-- Card 2 -->
+                                    <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded border border-slate-800">
+                                        <span class="text-xs font-semibold text-slate-300">"It takes much more force to accelerate a heavy school bus than a light bicycle."</span>
+                                        <select id="newt-match-2" class="bg-indigo-950 border border-indigo-800 text-indigo-300 text-xs rounded px-2 py-1 focus:outline-none">
+                                            <option value="">Select Law</option>
+                                            <option value="1">1st Law (Inertia)</option>
+                                            <option value="2">2nd Law (F = ma)</option>
+                                            <option value="3">3rd Law (Opposite)</option>
+                                        </select>
+                                    </div>
+                                    <!-- Card 3 -->
+                                    <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded border border-slate-800">
+                                        <span class="text-xs font-semibold text-slate-300">"A textbook sits completely still on a table until pulled off."</span>
+                                        <select id="newt-match-3" class="bg-indigo-950 border border-indigo-800 text-indigo-300 text-xs rounded px-2 py-1 focus:outline-none">
+                                            <option value="">Select Law</option>
+                                            <option value="1">1st Law (Inertia)</option>
+                                            <option value="2">2nd Law (F = ma)</option>
+                                            <option value="3">3rd Law (Opposite)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button onclick="verifyNewtonMatch()" class="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded font-bold uppercase transition-all">Submit Pairings</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sector Verification Quiz -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-indigo-950">
+                        <h3 class="text-sm font-semibold mb-3">Verification Phase: Force Calculation ($F = ma$)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">1. How much force is required to accelerate a $3\text{ kg}$ block at $4\text{ m/s}^2$?</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="checkSec4Answer(1)" class="s4-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">1.33 N</button>
+                                    <button onclick="checkSec4Answer(2)" class="s4-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">7 N</button>
+                                    <button onclick="checkSec4Answer(3)" class="s4-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">12 N</button>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 mb-2">2. What property of matter makes it resist changes to its state of motion?</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="checkSec4Answer(4)" class="s4-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">Inertia</button>
+                                    <button onclick="checkSec4Answer(5)" class="s4-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">Velocity</button>
+                                    <button onclick="checkSec4Answer(6)" class="s4-ans bg-slate-900 hover:bg-indigo-950 border border-slate-800 rounded p-2 text-xs font-mono transition-all">Gravity</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTOR 5: ESCAPE TERMINAL -->
+                <div id="zone-workspace-5" class="zone-pane flex flex-col h-full gap-4 hidden">
+                    <div class="flex justify-between items-center border-b border-indigo-950 pb-3">
+                        <div>
+                            <span class="bg-indigo-950 border border-indigo-800 text-indigo-400 text-xs px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">Final Integration</span>
+                            <h2 class="text-2xl font-extrabold text-white mt-1">Sector 5: Core Master Escape Code</h2>
+                        </div>
+                        <span class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs px-2.5 py-1 rounded font-bold">Terminal Gate</span>
+                    </div>
+
+                    <div class="text-sm text-slate-300 bg-slate-950/40 border border-indigo-950 p-3 rounded-lg">
+                        🎯 <strong>Final Task:</strong> Congratulations on collecting all four authorization keys! You must now enter each of the four sector validation codes we uncovered to disengage the main facility clamp.
+                    </div>
+
+                    <div class="max-w-xl mx-auto w-full bg-slate-950 border border-indigo-950 p-6 rounded-2xl shadow-xl space-y-4">
+                        <h3 class="text-md font-bold text-center text-indigo-400 uppercase tracking-widest border-b border-indigo-950/50 pb-2">Facility Unlock Override</h3>
+                        
+                        <div class="space-y-3 font-mono">
+                            <!-- Sector 1 key -->
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs text-slate-400">Sector 1 Code (Velocity Valley):</label>
+                                <input type="text" id="final-code-1" placeholder="####" class="w-24 bg-slate-900 border border-indigo-800 text-center text-xs py-1 rounded uppercase font-bold text-emerald-400">
+                            </div>
+                            <!-- Sector 2 key -->
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs text-slate-400">Sector 2 Code (Forces &amp; Friction):</label>
+                                <input type="text" id="final-code-2" placeholder="####" class="w-24 bg-slate-900 border border-indigo-800 text-center text-xs py-1 rounded uppercase font-bold text-emerald-400">
+                            </div>
+                            <!-- Sector 3 key -->
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs text-slate-400">Sector 3 Code (Kinetic Reactor):</label>
+                                <input type="text" id="final-code-3" placeholder="####" class="w-24 bg-slate-900 border border-indigo-800 text-center text-xs py-1 rounded uppercase font-bold text-emerald-400">
+                            </div>
+                            <!-- Sector 4 key -->
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs text-slate-400">Sector 4 Code (Newton's Laws):</label>
+                                <input type="text" id="final-code-4" placeholder="####" class="w-24 bg-slate-900 border border-indigo-800 text-center text-xs py-1 rounded uppercase font-bold text-emerald-400">
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <button onclick="triggerFacilityEscape()" class="w-full bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all text-center">
+                                🔑 DISENGAGE LOCKOUT ALARM
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Page Footer -->
+    <footer class="border-t border-indigo-950 bg-slate-950/80 py-4 px-4 text-center text-xs text-slate-500">
+        <p>&copy; Sector 46 Physics Facility Escape. For Classroom &amp; Interactive Learning Labs.</p>
+    </footer>
+
+    <!-- Interactive Logic and Game State Script -->
+    <script>
+        // Synthesizer Web Audio Framework
+        let audioCtx = null;
+        let isMuted = false;
+
+        function playSound(frequency, type, duration) {
+            if (isMuted) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (err) {
+                console.log("Audio not supported yet.");
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "🔇 Muted" : "🔊 Unmuted";
+            document.getElementById('mute-btn').classList.toggle('bg-rose-950');
+            document.getElementById('mute-btn').classList.toggle('text-rose-300');
+        }
+
+        // Play positive beep
+        function playSuccessBeep() {
+            playSound(523.25, 'triangle', 0.15); // C5
+            setTimeout(() => playSound(659.25, 'triangle', 0.15), 100); // E5
+            setTimeout(() => playSound(783.99, 'triangle', 0.3), 200); // G5
+        }
+
+        // Play error sound
+        function playErrorBeep() {
+            playSound(150, 'sawtooth', 0.25);
+        }
+
+        // Play general select beep
+        function playSelectBeep() {
+            playSound(330, 'sine', 0.08);
+        }
+
+        // Game State Variables
+        let timer = null;
+        let secondsLeft = 46 * 60; // 46 minutes
+        let currentZone = 1;
+        let keysFound = 0;
+
+        // Code and answers system
+        // Standard sector validation answers
+        let s1Completed = false;
+        let s1Code = "VELO";
+        let droneTargetX = 25; // Target calculations
+        let droneTargetY = 15;
+        let vectorCompleted = false;
+        let quiz1Completed = false;
+
+        let s2Completed = false;
+        let s2Code = "NWTN";
+        let forceLeft = 0;
+        let forceRight = 0;
+        let forceCompleted = false;
+        let quiz2Completed = false;
+
+        let s3Completed = false;
+        let s3Code = "JOULE";
+        let keCompleted = false;
+        let quiz3Completed = false;
+
+        let s4Completed = false;
+        let s4Code = "MASS";
+        let newtonMatchCompleted = false;
+        let quiz4Completed = false;
+
+        function startScavengerHunt() {
+            // Initiate audio
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            playSuccessBeep();
+            
+            // Hide entry overlay
+            document.getElementById('intro-overlay').classList.add('hidden');
+            
+            // Start timer countdown
+            timer = setInterval(updateTimer, 1000);
+            updateProgressBar();
+        }
+
+        function updateTimer() {
+            if (secondsLeft <= 0) {
+                clearInterval(timer);
+                document.getElementById('failure-overlay').classList.remove('hidden');
+                playErrorBeep();
+                return;
+            }
+            secondsLeft--;
+            const mins = Math.floor(secondsLeft / 60);
+            const secs = secondsLeft % 60;
+            document.getElementById('countdown-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Navigation between sectors
+        function switchZone(zoneNumber) {
+            playSelectBeep();
+            currentZone = zoneNumber;
+            
+            // Hide all workspaces
+            document.querySelectorAll('.zone-pane').forEach(pane => pane.classList.add('hidden'));
+            
+            // Show selected workspace
+            document.getElementById(`zone-workspace-${zoneNumber}`).classList.remove('hidden');
+            
+            // Highlighting menu button
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`nav-zone-${i}`);
+                if (i === zoneNumber) {
+                    btn.classList.add('bg-indigo-950/20', 'border-indigo-500/30');
+                    btn.classList.remove('opacity-60');
+                } else {
+                    btn.classList.remove('bg-indigo-950/20', 'border-indigo-500/30');
+                }
+            }
+        }
+
+        function updateProgressBar() {
+            let percentage = 0;
+            if (s1Completed) percentage += 20;
+            if (s2Completed) percentage += 20;
+            if (s3Completed) percentage += 20;
+            if (s4Completed) percentage += 20;
+            
+            // Update UI elements
+            document.getElementById('progress-percent').innerText = `${percentage}%`;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+            document.getElementById('keys-count').innerText = `${keysFound}/4`;
+        }
+
+        // ================= SECTOR 1 LOGIC =================
+        function revealClue(itemId) {
+            playSelectBeep();
+            const log = document.getElementById('clue-log-1');
+            if (itemId === 'v1') {
+                log.innerHTML = "🛰️ <strong>Probe Decrypted:</strong> 'Our velocity drone is calibrated for target coordinates: $v_x = 25\\text{ m/s}$, $v_y = 15\\text{ m/s}$'";
+            } else if (itemId === 'v2') {
+                log.innerHTML = "📁 <strong>Recovered Log:</strong> 'Direction matters! Velocity is speed with structural orientation. Code prefix is <strong>V-E</strong>.'";
+            } else if (itemId === 'v3') {
+                log.innerHTML = "📡 <strong>Beacon Scan:</strong> 'Total target vector code length is 4 letters. The pattern begins with <strong>VEL...</strong>'";
+            }
+            renderMath();
+        }
+
+        function updateVectorSim() {
+            const vx = document.getElementById('v_x_input').value;
+            const vy = document.getElementById('v_y_input').value;
+            document.getElementById('v_x_val').innerText = `${vx} m/s`;
+            document.getElementById('v_y_val').innerText = `${vy} m/s`;
+            
+            // Dynamically adjust visual direction arrow coordinate endpoints
+            const arrow = document.getElementById('vector-arrow');
+            const endX = 10 + (vx * 2);
+            const endY = 90 - (vy * 2);
+            arrow.setAttribute('x2', `${endX}%`);
+            arrow.setAttribute('y2', `${endY}%`);
+        }
+
+        function launchDrone() {
+            const vx = parseInt(document.getElementById('v_x_input').value);
+            const vy = parseInt(document.getElementById('v_y_input').value);
+            const drone = document.getElementById('drone');
+            
+            // Move drone visually on dashboard screen
+            drone.style.left = `${10 + (vx * 2.3)}%`;
+            drone.style.bottom = `${10 + (vy * 2.3)}%`;
+            
+            if (vx === droneTargetX && vy === droneTargetY) {
+                setTimeout(() => {
+                    playSuccessBeep();
+                    alert("🎯 DRONE DOCKED IN Extraction zone! Calibration sequence verified. Target data extracted: Sector Code: VELO");
+                    vectorCompleted = true;
+                    checkSector1Status();
+                }, 800);
+            } else {
+                setTimeout(() => {
+                    playErrorBeep();
+                    alert(`Drone drifted off target! Adjust vector values to match Sector coordinates. Target: $v_x = ${droneTargetX}\\text{ m/s}$, $v_y = ${droneTargetY}\\text{ m/s}$.`);
+                }, 800);
+            }
+        }
+
+        function checkSec1Answer(ansId) {
+            playSelectBeep();
+            // Highlight selected
+            const buttons = document.querySelectorAll('.s1-ans');
+            
+            if (ansId === 2) {
+                alert("Correct! Velocity is 20 m/s North (it requires direction, not just magnitude!)");
+                quiz1Completed = true;
+                checkSector1Status();
+            } else if (ansId === 5) {
+                alert("Correct! Speed measures magnitude; velocity includes vector direction!");
+                quiz1Completed = true;
+                checkSector1Status();
+            } else {
+                playErrorBeep();
+                alert("Incorrect calculation or concept. Try again!");
+            }
+        }
+
+        function checkSector1Status() {
+            if (vectorCompleted && quiz1Completed && !s1Completed) {
+                s1Completed = true;
+                keysFound++;
+                updateProgressBar();
+                playSuccessBeep();
+                
+                // Unlock Sector 2
+                document.getElementById('badge-zone-1').innerText = "✅ Unlocked";
+                document.getElementById('badge-zone-1').classList.replace('text-yellow-500', 'text-emerald-400');
+                
+                const s2Nav = document.getElementById('nav-zone-2');
+                s2Nav.classList.remove('opacity-60', 'cursor-not-allowed');
+                s2Nav.removeAttribute('disabled');
+                document.getElementById('badge-zone-2').innerText = "🔓 Active";
+                document.getElementById('badge-zone-2').classList.replace('text-slate-500', 'text-yellow-500');
+                
+                alert("🔒 SECTOR 1 BYPASSED! You collected Key Card 1! Sector Code: VELO. Proceed to Sector 2.");
+            }
+        }
+
+        // ================= SECTOR 2 LOGIC =================
+        function revealForceClue(index) {
+            playSelectBeep();
+            const log = document.getElementById('clue-log-2');
+            if (index === 1) {
+                log.innerHTML = "⚖️ <strong>Spring Scale:</strong> Measuring unit: Newtons (N). Friction resisting force coefficient measured at exactly <strong class='text-amber-300'>15 N Left</strong>.";
+            } else if (index === 2) {
+                log.innerHTML = "📦 <strong>Crate Data:</strong> 'To reach stable forward speed, the net accelerating force must equal exactly <strong class='text-amber-300'>15 N Right</strong>.'";
+            } else if (index === 3) {
+                log.innerHTML = "🪵 <strong>Friction Pad:</strong> 'The friction formula: $f = \\mu N$. Code string is: <strong>NWTN</strong>.'";
+            }
+            renderMath();
+        }
+
+        function adjustForce(dir, amt) {
+            playSelectBeep();
+            if (dir === 'left') {
+                forceLeft = Math.max(0, forceLeft + amt);
+                document.getElementById('fl-val').innerText = `${forceLeft} N`;
+            } else {
+                forceRight = Math.max(0, forceRight + amt);
+                document.getElementById('fr-val').innerText = `${forceRight} N`;
+            }
+        }
+
+        function resetForces() {
+            playSelectBeep();
+            forceLeft = 0;
+            forceRight = 0;
+            document.getElementById('fl-val').innerText = "0 N";
+            document.getElementById('fr-val').innerText = "0 N";
+            document.getElementById('physics-block').style.transform = `translateX(0px)`;
+            document.getElementById('net-force-lbl').innerText = `Net F: 0 N`;
+        }
+
+        function testNetForce() {
+            // Net force calculation: Right force minus Left force minus Friction
+            const friction = 15; // 15N left
+            const netRight = forceRight - forceLeft;
+            const netTotal = netRight - friction;
+            
+            document.getElementById('net-force-lbl').innerText = `Net F: ${netTotal} N`;
+            
+            if (netTotal > 0) {
+                // Move visually to the right
+                document.getElementById('physics-block').style.transform = `translateX(100px)`;
+            } else if (netTotal < 0) {
+                document.getElementById('physics-block').style.transform = `translateX(-100px)`;
+            }
+
+            if (netTotal === 15) { // Net force should be 15N Right
+                setTimeout(() => {
+                    playSuccessBeep();
+                    alert("🎉 Balanced Dynamic Solved! Block accelerating perfectly. Net force matches design specifications. Code verified: NWTN");
+                    forceCompleted = true;
+                    checkSector2Status();
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    playErrorBeep();
+                    alert(`System warning: Net force is currently ${netTotal}N. To bypass system locking, net force must equal exactly 15N to the right.`);
+                    resetForces();
+                }, 500);
+            }
+        }
+
+        function checkSec2Answer(ansId) {
+            playSelectBeep();
+            if (ansId === 2) {
+                alert("Correct! Net Force = 50 N right - 20 N left = 30 N right!");
+                quiz2Completed = true;
+                checkSector2Status();
+            } else if (ansId === 5) {
+                alert("Correct! A net force of 0 means no change in motion (inertia holds)!");
+                quiz2Completed = true;
+                checkSector2Status();
+            } else {
+                playErrorBeep();
+                alert("Unbalanced answer. Try again!");
+            }
+        }
+
+        function checkSector2Status() {
+            if (forceCompleted && quiz2Completed && !s2Completed) {
+                s2Completed = true;
+                keysFound++;
+                updateProgressBar();
+                playSuccessBeep();
+                
+                // Unlock Sector 3
+                document.getElementById('badge-zone-2').innerText = "✅ Unlocked";
+                document.getElementById('badge-zone-2').classList.replace('text-yellow-500', 'text-emerald-400');
+                
+                const s3Nav = document.getElementById('nav-zone-3');
+                s3Nav.classList.remove('opacity-60', 'cursor-not-allowed');
+                s3Nav.removeAttribute('disabled');
+                document.getElementById('badge-zone-3').innerText = "🔓 Active";
+                document.getElementById('badge-zone-3').classList.replace('text-slate-500', 'text-yellow-500');
+                
+                alert("🔒 SECTOR 2 BYPASSED! You collected Key Card 2! Sector Code: NWTN. Proceed to Sector 3.");
+            }
+        }
+
+        // ================= SECTOR 3 LOGIC =================
+        function revealKEClue(index) {
+            playSelectBeep();
+            const log = document.getElementById('clue-log-3');
+            if (index === 1) {
+                log.innerHTML = "📄 <strong>Mass Specifications:</strong> 'To balance, keep the testing weight to a clean integer value like <strong class='text-amber-300'>8 kg</strong>.'";
+            } else if (index === 2) {
+                log.innerHTML = "📊 <strong>Power Monitor:</strong> 'The kinetic core runs at $v = 10\\text{ m/s}$ when stabilizing operations.'";
+            } else if (index === 3) {
+                log.innerHTML = "💡 <strong>Equation Constants:</strong> 'At balanced energy density ($400\\text{ J}$), the code is <strong>JOULE</strong>.'";
+            }
+            renderMath();
+        }
+
+        function updateKESim() {
+            const m = parseFloat(document.getElementById('ke-mass-input').value);
+            const v = parseFloat(document.getElementById('ke-vel-input').value);
+            
+            document.getElementById('ke-mass-val').innerText = `${m} kg`;
+            document.getElementById('ke-vel-val').innerText = `${v} m/s`;
+            
+            // Formula calculation: KE = 0.5 * m * v^2
+            const ke = 0.5 * m * Math.pow(v, 2);
+            document.getElementById('ke-calc-display').innerText = `${ke.toFixed(1)} J`;
+        }
+
+        function stabilizeReactor() {
+            const m = parseFloat(document.getElementById('ke-mass-input').value);
+            const v = parseFloat(document.getElementById('ke-vel-input').value);
+            const ke = 0.5 * m * Math.pow(v, 2);
+            
+            if (ke === 400) {
+                playSuccessBeep();
+                alert(`💥 CORE RESONANCE ALIGNED! Kinetic energy output is precisely 400 J! Code collected: JOULE.`);
+                keCompleted = true;
+                checkSector3Status();
+            } else {
+                playErrorBeep();
+                alert(`Reaction alert: Energy output is currently ${ke.toFixed(1)} J. Modify Mass and Velocity to calibrate reactor to exactly 400 J!`);
+            }
+        }
+
+        function checkSec3Answer(ansId) {
+            playSelectBeep();
+            if (ansId === 2) {
+                alert("Correct! Since velocity is squared in $KE = \\frac{1}{2} m v^2$, doubling velocity results in $2^2 = 4$ times kinetic energy!");
+                quiz3Completed = true;
+                checkSector3Status();
+            } else if (ansId === 5) {
+                alert("Correct! $KE = 0.5 \\times 10 \\times 4^2 = 5 \\times 16 = 80\\text{ J}$!");
+                quiz3Completed = true;
+                checkSector3Status();
+            } else {
+                playErrorBeep();
+                alert("Recalculate. Try checking your exponents!");
+            }
+        }
+
+        function checkSector3Status() {
+            if (keCompleted && quiz3Completed && !s3Completed) {
+                s3Completed = true;
+                keysFound++;
+                updateProgressBar();
+                playSuccessBeep();
+                
+                // Unlock Sector 4
+                document.getElementById('badge-zone-3').innerText = "✅ Unlocked";
+                document.getElementById('badge-zone-3').classList.replace('text-yellow-500', 'text-emerald-400');
+                
+                const s4Nav = document.getElementById('nav-zone-4');
+                s4Nav.classList.remove('opacity-60', 'cursor-not-allowed');
+                s4Nav.removeAttribute('disabled');
+                document.getElementById('badge-zone-4').innerText = "🔓 Active";
+                document.getElementById('badge-zone-4').classList.replace('text-slate-500', 'text-yellow-500');
+                
+                alert("🔒 SECTOR 3 BYPASSED! You collected Key Card 3! Sector Code: JOULE. Proceed to Sector 4.");
+            }
+        }
+
+        // ================= SECTOR 4 LOGIC =================
+        function revealNewtonClue(index) {
+            playSelectBeep();
+            const log = document.getElementById('clue-log-4');
+            if (index === 1) {
+                log.innerHTML = "🎈 <strong>Balloon Rocket:</strong> Air rushing backward pushes the balloon forward. This is Newton's <strong class='text-amber-300'>3rd Law</strong> (Action/Reaction)!";
+            } else if (index === 2) {
+                log.innerHTML = "🍎 <strong>Falling Fruit:</strong> Gravitational force acting unbalanced accelerates the mass downward. Newton's <strong class='text-amber-300'>2nd Law</strong> ($F = ma$).";
+            } else if (index === 3) {
+                log.innerHTML = "🛒 <strong>Massive Cart:</strong> A heavy cart resists change of movement, highlighting structural <strong class='text-amber-300'>Inertia</strong> (Newton's 1st Law). Sector Code: <strong>MASS</strong>.";
+            }
+            renderMath();
+        }
+
+        function verifyNewtonMatch() {
+            const m1 = document.getElementById('newt-match-1').value;
+            const m2 = document.getElementById('newt-match-2').value;
+            const m3 = document.getElementById('newt-match-3').value;
+            
+            if (m1 === "3" && m2 === "2" && m3 === "1") {
+                playSuccessBeep();
+                alert("🎉 Physical dynamics matching verified! You successfully linked the scenarios. Sector Code: MASS.");
+                newtonMatchCompleted = true;
+                checkSector4Status();
+            } else {
+                playErrorBeep();
+                alert("Mismatch detected! Review the 1st, 2nd, and 3rd laws and try again.");
+            }
+        }
+
+        function checkSec4Answer(ansId) {
+            playSelectBeep();
+            if (ansId === 3) {
+                alert("Correct! Force = Mass x Acceleration ($F = 3 \\times 4 = 12\\text{ N}$)");
+                quiz4Completed = true;
+                checkSector4Status();
+            } else if (ansId === 4) {
+                alert("Correct! Inertia is the property of mass to resist acceleration changes!");
+                quiz4Completed = true;
+                checkSector4Status();
+            } else {
+                playErrorBeep();
+                alert("Formula calculation failed. Try again!");
+            }
+        }
+
+        function checkSector4Status() {
+            if (newtonMatchCompleted && quiz4Completed && !s4Completed) {
+                s4Completed = true;
+                keysFound++;
+                updateProgressBar();
+                playSuccessBeep();
+                
+                // Unlock Sector 5
+                document.getElementById('badge-zone-4').innerText = "✅ Unlocked";
+                document.getElementById('badge-zone-4').classList.replace('text-yellow-500', 'text-emerald-400');
+                
+                const s5Nav = document.getElementById('nav-zone-5');
+                s5Nav.classList.remove('opacity-60', 'cursor-not-allowed');
+                s5Nav.removeAttribute('disabled');
+                document.getElementById('badge-zone-5').innerText = "🔓 Active";
+                document.getElementById('badge-zone-5').classList.replace('text-slate-500', 'text-yellow-500');
+                
+                alert("🔒 SECTOR 4 BYPASSED! You collected Key Card 4! Sector Code: MASS. Now go to Sector 5 for Final Override!");
+            }
+        }
+
+        // ================= SECTOR 5 LOGIC =================
+        function triggerFacilityEscape() {
+            const code1 = document.getElementById('final-code-1').value.trim().toUpperCase();
+            const code2 = document.getElementById('final-code-2').value.trim().toUpperCase();
+            const code3 = document.getElementById('final-code-3').value.trim().toUpperCase();
+            const code4 = document.getElementById('final-code-4').value.trim().toUpperCase();
+            
+            if (code1 === s1Code && code2 === s2Code && code3 === s3Code && code4 === s4Code) {
+                clearInterval(timer);
+                playSuccessBeep();
+                
+                // Show completion screen
+                const studentName = document.getElementById('student-name').value || "Anonymous Physics Hero";
+                const minsLeft = Math.floor(secondsLeft / 60);
+                const secsLeft = secondsLeft % 60;
+                const timeTakenMins = 45 - minsLeft;
+                const timeTakenSecs = 60 - secsLeft;
+                
+                document.getElementById('end-student-name').innerText = studentName;
+                document.getElementById('end-time-taken').innerText = `${timeTakenMins} minutes and ${timeTakenSecs} seconds`;
+                
+                // Determine rank based on remaining time
+                let rank = "Apprentice Engineer";
+                if (secondsLeft > 25 * 60) {
+                    rank = "Elite Physicist Master";
+                } else if (secondsLeft > 10 * 60) {
+                    rank = "Structural Mechanics Specialist";
+                }
+                document.getElementById('end-rank').innerText = rank;
+                
+                document.getElementById('victory-overlay').classList.remove('hidden');
+            } else {
+                playErrorBeep();
+                alert("Warning: Override parameters reject entered passwords. Check your clues, confirm spelling, and ensure you solved all 4 precursor sectors!");
+            }
+        }
+    </script>
+</body>
+</html>
