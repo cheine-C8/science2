@@ -274,11 +274,11 @@
 
                             <!-- Mini Simulation canvas/display -->
                             <div class="flex-grow bg-slate-900 rounded-lg relative overflow-hidden border border-slate-800 flex flex-col justify-between p-3 min-h-[220px]">
-                                <div class="relative w-full h-40 bg-slate-950 rounded border border-indigo-900/40">
+                                <div class="relative w-full h-40 bg-slate-950 rounded border border-indigo-900/40 font-mono">
                                     <!-- Drone -->
-                                    <div id="drone" class="absolute w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-xs shadow-lg transition-all duration-700 ease-out" style="left: 10%; bottom: 10%;">🛸</div>
-                                    <!-- Target -->
-                                    <div class="absolute w-8 h-8 border-2 border-dashed border-emerald-400 rounded-full flex items-center justify-center animate-pulse" style="right: 15%; top: 15%;">🎯</div>
+                                    <div id="drone" class="absolute w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-xs shadow-lg transition-all duration-700 ease-out" style="left: 34%; bottom: 30%;">🛸</div>
+                                    <!-- Target aligned to center of coords (25, 15) -->
+                                    <div class="absolute w-8 h-8 border-2 border-dashed border-emerald-400 rounded-full flex items-center justify-center animate-pulse" style="left: 70%; bottom: 70%; margin-left: -4px; margin-bottom: -4px;">🎯</div>
                                     
                                     <!-- Simple vector representation arrow -->
                                     <svg class="absolute inset-0 w-full h-full pointer-events-none">
@@ -287,7 +287,7 @@
                                                 <path d="M 0 2 L 10 5 L 0 8 z" fill="#34d399" />
                                             </marker>
                                         </defs>
-                                        <line id="vector-arrow" x1="10%" y1="90%" x2="40%" y2="60%" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" class="transition-all duration-300" />
+                                        <line id="vector-arrow" x1="10%" y1="90%" x2="34%" y2="70%" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" class="transition-all duration-300" />
                                     </svg>
                                 </div>
 
@@ -302,7 +302,10 @@
                                         <input type="range" id="v_y_input" min="0" max="30" value="5" class="w-full accent-emerald-400" oninput="updateVectorSim()">
                                     </div>
                                 </div>
-                                <button onclick="launchDrone()" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded font-bold uppercase transition-all">Launch Test Flight</button>
+                                <div class="flex gap-2 mt-2">
+                                    <button onclick="resetDrone()" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-400 px-3 py-2 rounded font-mono transition-all">Reset</button>
+                                    <button onclick="launchDrone()" class="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded font-bold uppercase transition-all">Launch Test Flight</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -885,17 +888,27 @@
         }
 
         function updateVectorSim() {
-            const vx = document.getElementById('v_x_input').value;
-            const vy = document.getElementById('v_y_input').value;
+            const vx = parseFloat(document.getElementById('v_x_input').value);
+            const vy = parseFloat(document.getElementById('v_y_input').value);
             document.getElementById('v_x_val').innerText = `${vx} m/s`;
             document.getElementById('v_y_val').innerText = `${vy} m/s`;
             
             // Dynamically adjust visual direction arrow coordinate endpoints
             const arrow = document.getElementById('vector-arrow');
-            const endX = 10 + (vx * 2);
-            const endY = 90 - (vy * 2);
+            const endX = 10 + (vx * 2.4);
+            const endY = 90 - (vy * 4.0);
             arrow.setAttribute('x2', `${endX}%`);
             arrow.setAttribute('y2', `${endY}%`);
+        }
+
+        function resetDrone() {
+            playSelectBeep();
+            document.getElementById('v_x_input').value = 10;
+            document.getElementById('v_y_input').value = 5;
+            updateVectorSim();
+            const drone = document.getElementById('drone');
+            drone.style.left = "34%";
+            drone.style.bottom = "30%";
         }
 
         function launchDrone() {
@@ -903,9 +916,9 @@
             const vy = parseInt(document.getElementById('v_y_input').value);
             const drone = document.getElementById('drone');
             
-            // Move drone visually on dashboard screen
-            drone.style.left = `${10 + (vx * 2.3)}%`;
-            drone.style.bottom = `${10 + (vy * 2.3)}%`;
+            // Move drone visually on dashboard screen using adjusted coordinates mapping
+            drone.style.left = `${10 + (vx * 2.4)}%`;
+            drone.style.bottom = `${10 + (vy * 4.0)}%`;
             
             if (vx === droneTargetX && vy === droneTargetY) {
                 setTimeout(() => {
