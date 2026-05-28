@@ -13,61 +13,22 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    /* Splash Screen CSS Keyframe Animations */
-    .crs-splash-outer-circle {
-      animation: outer-circle ease 6s infinite;
-      stroke: #8082ff;
+    /* Splash Screen Cat Animations */
+    @keyframes cat-walk-across {
+      0% { left: -150px; }
+      100% { left: 100vw; }
     }
-    .crs-splash-outer-circle-up {
-      animation: outer-circle-up ease 6s infinite;
-      stroke: #abf263;
+    @keyframes cat-bob {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-8px) rotate(-3deg); }
+      50% { transform: translateY(0) rotate(0deg); }
+      75% { transform: translateY(-8px) rotate(3deg); }
     }
-    .crs-splash-inner-circle {
-      animation: inner-circle ease 6s infinite;
-      stroke: #ff668f;
+    .cat-wrapper {
+      animation: cat-walk-across 3.5s linear infinite;
     }
-    .crs-splash-inner-circle-up {
-      animation: inner-circle-up ease 6s infinite;
-      stroke: #047857;
-    }
-    .crs-splash-outer-circle,
-    .crs-splash-outer-circle-up,
-    .crs-splash-inner-circle,
-    .crs-splash-inner-circle-up {
-      transform-origin: center center;
-      stroke-linecap: round;
-      stroke-dasharray: 1400;
-      stroke-width: 16;
-    }
-    @keyframes inner-circle {
-      0% { stroke-dashoffset: 1399; transform: rotate(330deg); }
-      35% { stroke-dashoffset: 1358; transform: rotate(756deg); }
-      52% { stroke-dashoffset: 1358; transform: rotate(756deg); }
-      96% { stroke-dashoffset: 1399; transform: rotate(1050deg); }
-      100% { stroke-dashoffset: 1399; transform: rotate(1050deg); }
-    }
-    @keyframes inner-circle-up {
-      0% { stroke-dashoffset: 1399; transform: rotate(330deg); }
-      28% { stroke-dashoffset: 1358; transform: rotate(756deg); }
-      35% { stroke-dashoffset: 1358; transform: rotate(756deg); }
-      52% { stroke-dashoffset: 1358; transform: rotate(755deg); }
-      96% { stroke-dashoffset: 1399; transform: rotate(1410deg); }
-      100% { stroke-dashoffset: 1399; transform: rotate(1410deg); }
-    }
-    @keyframes outer-circle-up {
-      0% { stroke-dashoffset: 1399; transform: rotate(150deg); }
-      28% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
-      35% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
-      52% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
-      88% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
-      100% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
-    }
-    @keyframes outer-circle {
-      0% { stroke-dashoffset: 1399; transform: rotate(150deg); }
-      35% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
-      52% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
-      96% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
-      100% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
+    .cat-sprite {
+      animation: cat-bob 0.5s ease-in-out infinite;
     }
 
     /* Custom Scrollbar Styling */
@@ -98,17 +59,27 @@
   <!-- ========================================== -->
   <!--   SPLASH SCREEN                            -->
   <!-- ========================================== -->
-  <div id="app-splash" class="fixed inset-0 z-[99999] bg-white flex flex-col justify-center items-center transition-all duration-700 ease-in-out">
-    <svg width="116" height="116" viewBox="0 0 116 116" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-8">
-      <path class="crs-splash-outer-circle" d="M108 58C108 85.6142 85.6142 108 58 108C30.3858 108 8 85.6142 8 58C8 30.3858 30.3858 8 58 8C85.6142 8 108 30.3858 108 58Z" />
-      <path class="crs-splash-outer-circle-up" d="M108 58C108 85.6142 85.6142 108 58 108C30.3858 108 8 85.6142 8 58C8 30.3858 30.3858 8 58 8C85.6142 8 108 30.3858 108 58Z" />
-      <path class="crs-splash-inner-circle" d="M81 58C81 70.7025 70.7025 81 58 81C45.2975 81 35 70.7025 35 58C35 45.2975 45.2975 35 58 35C70.7025 35 81 45.2975 81 58Z" />
-      <path class="crs-splash-inner-circle-up" d="M81 58C81 70.7025 70.7025 81 58 81C45.2975 81 35 70.7025 35 58C35 45.2975 45.2975 35 58 35C70.7025 35 81 45.2975 81 58Z" />
-    </svg>
-    <p id="splash-text" class="text-zinc-800 font-medium tracking-wide text-sm animate-pulse">
-      Loading classroom resources...
-    </p>
-    <p class="absolute bottom-6 text-xs text-zinc-400">Canvas Sync Pro</p>
+  <div id="app-splash" class="fixed inset-0 z-[99999] bg-slate-50 flex flex-col justify-center items-center transition-all duration-700 ease-in-out overflow-hidden relative">
+    
+    <!-- Cat Walking Animation -->
+    <div class="cat-wrapper absolute top-[40%] pointer-events-none">
+      <div class="cat-sprite text-indigo-500">
+        <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.82-6.42-.42-7 1.39-.58 4.64.26 6.42 2.26A7.9 7.9 0 0 1 12 5z"/>
+          <path d="M8 14v.5"/>
+          <path d="M16 14v.5"/>
+          <path d="M11.25 16.25h1.5L12 17l-.75-.75z"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="z-10 mt-40 bg-white/60 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-200 shadow-sm flex flex-col items-center">
+      <p id="splash-text" class="text-slate-800 font-semibold tracking-wide text-sm animate-pulse flex items-center gap-2">
+        <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-500"></i> Loading classroom resources...
+      </p>
+    </div>
+    
+    <p class="absolute bottom-6 text-xs text-slate-400 font-medium tracking-widest uppercase">Canvas Sync Pro</p>
   </div>
 
   <!-- ========================================== -->
