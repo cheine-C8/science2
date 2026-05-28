@@ -1185,7 +1185,7 @@
           hours = hours ? hours : 12;
           const mins = now.getMinutes().toString().padStart(2, '0');
           const timeEl = widget.querySelector('.clock-time');
-          if (timeEl) timeEl.innerText = \`\${hours}:\${mins} \${ampm}\`;
+          if (timeEl) timeEl.innerText = `${hours}:${mins} ${ampm}`;
           
           const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
           const dateEl = widget.querySelector('.clock-date');
@@ -1298,7 +1298,7 @@
               for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
               const avg = sum / dataArray.length;
               const percent = Math.min(100, Math.max(0, (avg / 128) * 100));
-              if (bar) bar.style.width = \`\${percent}%\`;
+              if (bar) bar.style.width = `${percent}%`;
               requestAnimationFrame(updateSound);
             };
             updateSound();
