@@ -1126,6 +1126,7 @@
       updateTimerDisplay(id);
     }
 
+    // --- PAUSE/PLAY TOGGLES ---
     function toggleTimer(id) {
       const widget = document.getElementById(id);
       const isAct = widget.dataset.isActive === "true";
@@ -1560,16 +1561,30 @@
     // --- INIT APP LAUNCHER ---
     window.onload = function () {
       buildThemeSelectorMenu();
-      setBackground('gradient', 'from-indigo-950 via-slate-900 to-blue-950');
+      
+      // Select a random backdrop type and choice on boot
+      const backdropTypes = ['gradient', 'image', 'color'];
+      const randomType = backdropTypes[Math.floor(Math.random() * backdropTypes.length)];
+      let randomValue = '';
 
-      // Spawn initial clean workspace widgets
-      createWidget('clock');
-      createWidget('work');
-      createWidget('schedule');
+      if (randomType === 'gradient') {
+        const choice = gradients[Math.floor(Math.random() * gradients.length)];
+        randomValue = choice.value;
+      } else if (randomType === 'image') {
+        const choice = images[Math.floor(Math.random() * images.length)];
+        randomValue = choice.url;
+      } else if (randomType === 'color') {
+        const choice = colors[Math.floor(Math.random() * colors.length)];
+        randomValue = choice.value;
+      }
+
+      setBackground(randomType, randomValue);
+
+      // Start with a completely blank screen (no initial widgets spawned)
 
       // Fade splash screen out safely
       setTimeout(() => {
-        document.getElementById('splash-text').innerText = "Preparing chalkboard and canvases...";
+        document.getElementById('splash-text').innerText = "Preparing blank interactive workspace...";
       }, 1200);
 
       setTimeout(() => {
