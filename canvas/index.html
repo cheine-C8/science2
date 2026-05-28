@@ -1,0 +1,1738 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Clock, Timer, Play, Pause, RotateCcw, Volume2, VolumeX,
+  Type, Edit3, Trash2, Maximize2, Minimize2, Sparkles,
+  Settings, Image, Grid, Radio, AlertTriangle, Check, Plus, Minus,
+  Shuffle, HelpCircle, Palette, CheckCircle, RefreshCw, Mic, MicOff,
+  QrCode, MoreHorizontal, Move, X, ChevronUp, ChevronDown, Bell
+} from 'lucide-react';
+
+// --- CUSTOM TRAFFIC LIGHT SVG ICON ---
+function TrafficLightIcon({ className = "w-6 h-6" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Traffic light backing / body */}
+      <rect 
+        x="7" 
+        y="2" 
+        width="10" 
+        height="20" 
+        rx="3" 
+        className="fill-slate-800 stroke-slate-600" 
+        strokeWidth="1.5" 
+      />
+      {/* Red light */}
+      <circle 
+        cx="12" 
+        cy="6" 
+        r="2.2" 
+        className="fill-red-500" 
+      />
+      {/* Yellow light */}
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="2.2" 
+        className="fill-yellow-400" 
+      />
+      {/* Green light */}
+      <circle 
+        cx="12" 
+        cy="18" 
+        r="2.2" 
+        className="fill-emerald-500" 
+      />
+    </svg>
+  );
+}
+
+export default function App() {
+  // --- SPLASH SCREEN STATE ---
+  const [loading, setLoading] = useState(true);
+  const [loadingText, setLoadingText] = useState("Loading classroom resources...");
+
+  // --- WORKSPACE STATE ---
+  const [widgets, setWidgets] = useState([
+    { id: 'initial-clock', type: 'clock', x: 50, y: 50, width: 320, height: 180, zIndex: 10 },
+    { id: 'initial-work', type: 'work', x: 420, y: 50, width: 280, height: 200, zIndex: 5 },
+    { id: 'initial-schedule', type: 'schedule', x: 50, y: 250, width: 340, height: 320, zIndex: 8 }
+  ]);
+  const [activeWidgetId, setActiveWidgetId] = useState(null);
+  const [bgType, setBgType] = useState('gradient'); // 'gradient' | 'color' | 'image'
+  const [bgColor, setBgColor] = useState('#0f172a'); // Dark slate default
+  const [bgGradient, setBgGradient] = useState('from-indigo-950 via-slate-900 to-blue-950');
+  const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1920&q=80'); // Abstract star sky
+  const [showBgSelector, setShowBgSelector] = useState(false);
+  const [maxZIndex, setMaxZIndex] = useState(10);
+
+  // Sound / Audio Context for synthesized buzzer
+  const audioContextRef = useRef(null);
+
+  // Fade out splash screen after resources "load"
+  useEffect(() => {
+    const textTimer1 = setTimeout(() => setLoadingText("Initializing interactive widgets..."), 1000);
+    const textTimer2 = setTimeout(() => setLoadingText("Preparing chalkboard and canvases..."), 1800);
+    const finishTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2800);
+
+    return () => {
+      clearTimeout(textTimer1);
+      clearTimeout(textTimer2);
+      clearTimeout(finishTimer);
+    };
+  }, []);
+
+  // Play a beautiful synthesized alert tone (bell/buzzer)
+  const playSynthesizedSound = (type = 'bell') => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioContextRef.current;
+      
+      if (type === 'bell') {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(440, ctx.currentTime); // A4
+
+        gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        osc1.start();
+        osc2.start();
+        osc1.stop(ctx.currentTime + 1.2);
+        osc2.stop(ctx.currentTime + 1.2);
+      } else {
+        // Buzzer/Alarm
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(330, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.8);
+      }
+    } catch (e) {
+      console.warn("Audio context not allowed or failed to initialize", e);
+    }
+  };
+
+  // Background choices
+  const gradients = [
+    { name: 'Midnight Aurora', value: 'from-slate-900 via-indigo-950 to-slate-900' },
+    { name: 'Warm Classroom', value: 'from-amber-950 via-stone-900 to-amber-950' },
+    { name: 'Ocean Depths', value: 'from-cyan-950 via-blue-950 to-slate-950' },
+    { name: 'Forest Moss', value: 'from-emerald-950 via-zinc-900 to-green-950' },
+    { name: 'Retro Sunset', value: 'from-violet-950 via-fuchsia-950 to-rose-950' },
+  ];
+
+  const colors = [
+    { name: 'Pure White', value: '#ffffff' },
+    { name: 'Soft Cream', value: '#fdfbf7' },
+    { name: 'Slate Gray', value: '#1e293b' },
+    { name: 'Classic Blackboard', value: '#14532d' },
+    { name: 'Deep Burgundy', value: '#4c0519' },
+    { name: 'Royal Indigo', value: '#1e1b4b' },
+    { name: 'True Dark', value: '#09090b' },
+  ];
+
+  const images = [
+    { name: 'Abstract Sparks', url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1920&q=80' },
+    { name: 'Cozy Library', url: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80' },
+    { name: 'Bright Bokeh', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1920&q=80' },
+    { name: 'Chalkboard Texture', url: 'https://images.unsplash.com/photo-1571844307560-f17ab2ec17c2?auto=format&fit=crop&w=1920&q=80' },
+    { name: 'Calming Nature', url: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1920&q=80' },
+  ];
+
+  // Helper to spawn widgets
+  const addWidget = (type) => {
+    const id = `${type}-${Date.now()}`;
+    const newZ = maxZIndex + 1;
+    setMaxZIndex(newZ);
+
+    // Initial sizes & offsets
+    let width = 280;
+    let height = 240;
+    if (type === 'clock') { width = 320; height = 180; }
+    if (type === 'timer') { width = 300; height = 260; }
+    if (type === 'traffic') { width = 160; height = 300; }
+    if (type === 'work') { width = 260; height = 200; }
+    if (type === 'note') { width = 350; height = 280; }
+    if (type === 'draw') { width = 450; height = 350; }
+    if (type === 'dice') { width = 250; height = 200; }
+    if (type === 'picker') { width = 300; height = 320; }
+    if (type === 'sound') { width = 280; height = 250; }
+    if (type === 'qr') { width = 280; height = 300; }
+    if (type === 'schedule') { width = 340; height = 320; }
+
+    // Spawn near the center of the viewport with a random offset
+    const randomOffset = Math.floor(Math.random() * 40) - 20;
+    const x = Math.max(20, (window.innerWidth / 2) - (width / 2) + randomOffset);
+    const y = Math.max(20, (window.innerHeight / 2) - (height / 2) + randomOffset - 80);
+
+    const newWidget = { id, type, x, y, width, height, zIndex: newZ };
+    setWidgets([...widgets, newWidget]);
+    setActiveWidgetId(id);
+  };
+
+  const removeWidget = (id) => {
+    setWidgets(widgets.filter(w => w.id !== id));
+  };
+
+  const updateWidgetPosition = (id, x, y) => {
+    setWidgets(widgets.map(w => w.id === id ? { ...w, x, y } : w));
+  };
+
+  const updateWidgetSize = (id, width, height) => {
+    setWidgets(widgets.map(w => w.id === id ? { ...w, width, height } : w));
+  };
+
+  const bringToFront = (id) => {
+    const newZ = maxZIndex + 1;
+    setMaxZIndex(newZ);
+    setWidgets(widgets.map(w => w.id === id ? { ...w, zIndex: newZ } : w));
+    setActiveWidgetId(id);
+  };
+
+  const clearAllWidgets = () => {
+    if (window.confirm("Are you sure you want to clear all tools from the screen?")) {
+      setWidgets([]);
+    }
+  };
+
+  // Dynamically adapt main text based on backdrop brightness
+  const isLightBg = bgType === 'color' && (bgColor === '#ffffff' || bgColor === '#fdfbf7');
+
+  return (
+    <div className="relative w-screen h-screen overflow-hidden select-none font-sans">
+      {/* --- USER-PROVIDED CUSTOM SPLASH SCREEN ANIMATIONS --- */}
+      <style>{`
+        .crs-splash-outer-circle {
+          animation: outer-circle ease 6s infinite;
+          stroke: #8082ff;
+        }
+        .crs-splash-outer-circle-up {
+          animation: outer-circle-up ease 6s infinite;
+          stroke: #abf263;
+        }
+        .crs-splash-inner-circle {
+          animation: inner-circle ease 6s infinite;
+          stroke: #ff668f;
+        }
+        .crs-splash-inner-circle-up {
+          animation: inner-circle-up ease 6s infinite;
+          stroke: #047857;
+        }
+        .crs-splash-outer-circle,
+        .crs-splash-outer-circle-up,
+        .crs-splash-inner-circle,
+        .crs-splash-inner-circle-up {
+          transform-origin: center center;
+          stroke-linecap: round;
+          stroke-dasharray: 1400;
+          stroke-width: 16;
+        }
+        @keyframes inner-circle {
+          0% { stroke-dashoffset: 1399; transform: rotate(330deg); }
+          35% { stroke-dashoffset: 1358; transform: rotate(756deg); }
+          52% { stroke-dashoffset: 1358; transform: rotate(756deg); }
+          96% { stroke-dashoffset: 1399; transform: rotate(1050deg); }
+          100% { stroke-dashoffset: 1399; transform: rotate(1050deg); }
+        }
+        @keyframes inner-circle-up {
+          0% { stroke-dashoffset: 1399; transform: rotate(330deg); }
+          28% { stroke-dashoffset: 1358; transform: rotate(756deg); }
+          35% { stroke-dashoffset: 1358; transform: rotate(756deg); }
+          52% { stroke-dashoffset: 1358; transform: rotate(755deg); }
+          96% { stroke-dashoffset: 1399; transform: rotate(1410deg); }
+          100% { stroke-dashoffset: 1399; transform: rotate(1410deg); }
+        }
+        @keyframes outer-circle-up {
+          0% { stroke-dashoffset: 1399; transform: rotate(150deg); }
+          28% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
+          35% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
+          52% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
+          88% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
+          100% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
+        }
+        @keyframes outer-circle {
+          0% { stroke-dashoffset: 1399; transform: rotate(150deg); }
+          35% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
+          52% { stroke-dashoffset: 1150; transform: rotate(-323deg); }
+          96% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
+          100% { stroke-dashoffset: 1399; transform: rotate(-570deg); }
+        }
+      `}</style>
+
+      {/* --- LOADING/SPLASH COMPONENT --- */}
+      {loading && (
+        <div className="fixed inset-0 z-[99999] bg-white flex flex-col justify-center items-center transition-all duration-700 ease-in-out">
+          <svg
+            width="116"
+            height="116"
+            viewBox="0 0 116 116"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="mb-8"
+          >
+            <path
+              className="crs-splash-outer-circle"
+              d="M108 58C108 85.6142 85.6142 108 58 108C30.3858 108 8 85.6142 8 58C8 30.3858 30.3858 8 58 8C85.6142 8 108 30.3858 108 58Z"
+            />
+            <path
+              className="crs-splash-outer-circle-up"
+              d="M108 58C108 85.6142 85.6142 108 58 108C30.3858 108 8 85.6142 8 58C8 30.3858 30.3858 8 58 8C85.6142 8 108 30.3858 108 58Z"
+            />
+            <path
+              className="crs-splash-inner-circle"
+              d="M81 58C81 70.7025 70.7025 81 58 81C45.2975 81 35 70.7025 35 58C35 45.2975 45.2975 35 58 35C70.7025 35 81 45.2975 81 58Z"
+            />
+            <path
+              className="crs-splash-inner-circle-up"
+              d="M81 58C81 70.7025 70.7025 81 58 81C45.2975 81 35 70.7025 35 58C35 45.2975 45.2975 35 58 35C70.7025 35 81 45.2975 81 58Z"
+            />
+          </svg>
+          <p className="text-zinc-800 font-medium tracking-wide text-sm animate-pulse">
+            {loadingText}
+          </p>
+          <p className="absolute bottom-6 text-xs text-zinc-400">Classroom Screen v4.5 Pro</p>
+        </div>
+      )}
+
+      {/* --- DESKTOP CANVAS BACKGROUND --- */}
+      <div 
+        className="absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out"
+        style={{
+          backgroundColor: bgType === 'color' ? bgColor : undefined,
+          backgroundImage: bgType === 'image' ? `url(${bgImage})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {bgType === 'gradient' && (
+          <div className={`w-full h-full bg-gradient-to-tr ${bgGradient}`} />
+        )}
+
+        {/* Grid Overlay for premium aesthetic (dark lines on white background, light lines on dark background) */}
+        <div className={`absolute inset-0 bg-repeat bg-[linear-gradient(to_right,var(--grid-color)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid-color)_1px,transparent_1px)] bg-[size:24px_24px]`}
+             style={{ '--grid-color': isLightBg ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)' }} />
+      </div>
+
+      {/* --- TOP BRANDING & OPTIONS BAR --- */}
+      <div className="absolute top-4 left-6 right-6 z-20 flex justify-between items-center pointer-events-none">
+        <div className={`flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 ${
+          isLightBg 
+            ? 'bg-white/80 border-slate-200 text-slate-800 shadow-sm' 
+            : 'bg-slate-900/60 border-slate-700/50 text-white'
+        }`}>
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-semibold text-sm tracking-wide">Classroom Canvas</span>
+          <span className="text-[10px] uppercase bg-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded">Interactive</span>
+        </div>
+
+        <div className="flex space-x-2 pointer-events-auto">
+          {/* Custom Background Toggle */}
+          <button 
+            onClick={() => setShowBgSelector(!showBgSelector)}
+            className={`flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm ${
+              isLightBg
+                ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                : 'bg-slate-900/80 hover:bg-slate-800 border-slate-700 text-slate-200'
+            }`}
+          >
+            <Palette className="w-4 h-4 text-pink-500" />
+            <span>Theme & Colors</span>
+          </button>
+          
+          <button 
+            onClick={clearAllWidgets}
+            className="flex items-center space-x-1.5 bg-rose-950/80 hover:bg-rose-900 backdrop-blur-md border border-rose-800 text-rose-200 px-3 py-1.5 rounded-lg text-sm transition font-medium"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Clear Screen</span>
+          </button>
+        </div>
+      </div>
+
+      {/* --- BACKGROUND SELECTOR DRAWER (SCROLLABLE & CLAMPED) --- */}
+      {showBgSelector && (
+        <div className="absolute top-16 right-6 z-[100] w-80 max-h-[80vh] bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl p-4 text-white animate-in slide-in-from-top duration-200 flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
+            <h3 className="font-semibold text-slate-100 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-indigo-400" /> Choose Canvas Backdrop
+            </h3>
+            <button onClick={() => setShowBgSelector(false)} className="text-slate-400 hover:text-slate-200">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Scrollable Container */}
+          <div className="flex-1 overflow-y-auto pr-1 space-y-5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+            {/* Gradients */}
+            <div>
+              <p className="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">Dynamic Gradients</p>
+              <div className="grid grid-cols-2 gap-2">
+                {gradients.map((grad, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setBgType('gradient'); setBgGradient(grad.value); }}
+                    className="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition text-left w-full"
+                  >
+                    <div className={`w-full h-10 rounded bg-gradient-to-tr ${grad.value}`} />
+                    <span className="text-[10px] text-slate-300 mt-1 truncate w-full text-center">{grad.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Images */}
+            <div>
+              <p className="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">HD Scenes</p>
+              <div className="grid grid-cols-2 gap-2">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setBgType('image'); setBgImage(img.url); }}
+                    className="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full"
+                  >
+                    <img src={img.url} className="w-full h-10 object-cover rounded" alt={img.name} />
+                    <span className="text-[10px] text-slate-300 mt-1 truncate w-full text-center">{img.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Solid Colors */}
+            <div>
+              <p className="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">Solid Chalkboard Colors</p>
+              <div className="flex gap-2 flex-wrap">
+                {colors.map((color, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setBgType('color'); setBgColor(color.value); }}
+                    className="w-8 h-8 rounded-full border border-slate-700 relative group transition transform hover:scale-110"
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  >
+                    <span className="absolute hidden group-hover:block bottom-10 left-1/2 -translate-x-1/2 bg-slate-950 text-[10px] px-1 rounded text-nowrap z-50">
+                      {color.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- ACTIVE WIDGET DISPLAY ZONE --- */}
+      <div className="absolute inset-0 pt-16 pb-28 px-4 overflow-hidden pointer-events-none">
+        {widgets.map(widget => (
+          <WidgetWrapper
+            key={widget.id}
+            widget={widget}
+            activeWidgetId={activeWidgetId}
+            bringToFront={bringToFront}
+            onClose={() => removeWidget(widget.id)}
+            updatePosition={updateWidgetPosition}
+            updateSize={updateWidgetSize}
+            playTone={playSynthesizedSound}
+          />
+        ))}
+      </div>
+
+      {/* --- BOTTOM FLOATING TOOLBAR (DOCK) --- */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center space-y-2 max-w-full px-4">
+        {/* Helper Tip */}
+        <div className={`text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 ${
+          isLightBg
+            ? 'bg-white/80 border-slate-200 text-slate-600 shadow-sm'
+            : 'bg-black/40 border-white/5 text-white/55'
+        }`}>
+          ✨ Tip: Drag headers to move, drag bottom-right corner to resize!
+        </div>
+        
+        {/* The Dock */}
+        <div className={`flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 ${
+          isLightBg
+            ? 'bg-white/95 border-slate-200 shadow-slate-300/50'
+            : 'bg-slate-900/90 border-slate-700/80'
+        }`}>
+          <DockButton icon={<Clock />} label="Clock" onClick={() => addWidget('clock')} color="text-sky-500 hover:bg-sky-500/20" />
+          <DockButton icon={<Timer />} label="Timer" onClick={() => addWidget('timer')} color="text-amber-500 hover:bg-amber-500/20" />
+          <DockButton icon={<RefreshCw />} label="Stopwatch" onClick={() => addWidget('stopwatch')} color="text-emerald-500 hover:bg-emerald-500/20" />
+          <DockButton icon={<Bell />} label="Bell Schedule" onClick={() => addWidget('schedule')} color="text-amber-400 hover:bg-amber-500/20" />
+          <div className="h-6 w-[1px] bg-slate-700/30 mx-2" />
+          <DockButton icon={<TrafficLightIcon />} label="Traffic Light" onClick={() => addWidget('traffic')} color="text-rose-500 hover:bg-rose-500/20" />
+          <DockButton icon={<HelpCircle />} label="Work Symbol" onClick={() => addWidget('work')} color="text-fuchsia-500 hover:bg-fuchsia-500/20" />
+          <DockButton icon={<Type />} label="Text Note" onClick={() => addWidget('note')} color="text-indigo-500 hover:bg-indigo-500/20" />
+          <DockButton icon={<Edit3 />} label="Draw Board" onClick={() => addWidget('draw')} color="text-violet-500 hover:bg-violet-500/20" />
+          <div className="h-6 w-[1px] bg-slate-700/30 mx-2" />
+          <DockButton icon={<Shuffle />} label="Dice" onClick={() => addWidget('dice')} color="text-pink-500 hover:bg-pink-500/20" />
+          <DockButton icon={<Sparkles />} label="Name Picker" onClick={() => addWidget('picker')} color="text-yellow-500 hover:bg-yellow-500/20" />
+          <DockButton icon={<Mic />} label="Sound Meter" onClick={() => addWidget('sound')} color="text-teal-500 hover:bg-teal-500/20" />
+          <DockButton icon={<QrCode />} label="QR Code" onClick={() => addWidget('qr')} color="text-cyan-500 hover:bg-cyan-500/20" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- FLOATING TOOLBAR ICON BUTTON ---
+function DockButton({ icon, label, onClick, color }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group relative flex flex-col items-center justify-center p-2.5 rounded-xl transition duration-150 text-slate-400 ${color}`}
+    >
+      <div className="transition duration-200 transform group-hover:scale-110">
+        {icon}
+      </div>
+      <span className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-950 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap font-medium border border-slate-800">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// --- DRAGGABLE & RESIZABLE WIDGET CONTAINER ---
+function WidgetWrapper({ widget, activeWidgetId, bringToFront, onClose, updatePosition, updateSize, playTone }) {
+  const containerRef = useRef(null);
+  const dragRef = useRef(null);
+  const resizeRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Bring to front on pointer down
+  const handlePointerDown = (e) => {
+    bringToFront(widget.id);
+  };
+
+  // Custom Mouse/Touch drag
+  const startDrag = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    bringToFront(widget.id);
+
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+    const startX = clientX - widget.x;
+    const startY = clientY - widget.y;
+
+    const handleMove = (moveEvent) => {
+      const currentX = moveEvent.clientX || (moveEvent.touches && moveEvent.touches[0].clientX);
+      const currentY = moveEvent.clientY || (moveEvent.touches && moveEvent.touches[0].clientY);
+
+      // Clamp so widget doesn't get completely dragged offscreen
+      const nextX = Math.min(Math.max(0, currentX - startX), window.innerWidth - 80);
+      const nextY = Math.min(Math.max(0, currentY - startY), window.innerHeight - 80);
+      updatePosition(widget.id, nextX, nextY);
+    };
+
+    const handleEnd = () => {
+      setIsDragging(false);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+  };
+
+  // Custom Mouse/Touch resize
+  const startResize = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+    const startWidth = widget.width;
+    const startHeight = widget.height;
+    const startX = clientX;
+    const startY = clientY;
+
+    const handleResizeMove = (moveEvent) => {
+      const currentX = moveEvent.clientX || (moveEvent.touches && moveEvent.touches[0].clientX);
+      const currentY = moveEvent.clientY || (moveEvent.touches && moveEvent.touches[0].clientY);
+
+      const deltaX = currentX - startX;
+      const deltaY = currentY - startY;
+
+      const newWidth = Math.max(160, startWidth + deltaX);
+      const newHeight = Math.max(120, startHeight + deltaY);
+
+      updateSize(widget.id, newWidth, newHeight);
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+      window.removeEventListener('touchmove', handleResizeMove);
+      window.removeEventListener('touchend', handleResizeEnd);
+    };
+
+    window.addEventListener('mousemove', handleResizeMove);
+    window.addEventListener('mouseup', handleResizeEnd);
+    window.addEventListener('touchmove', handleResizeMove, { passive: false });
+    window.addEventListener('touchend', handleResizeEnd);
+  };
+
+  // Define styling dynamically based on active status
+  const isActive = activeWidgetId === widget.id;
+  const borderClass = isActive 
+    ? 'border-indigo-500 shadow-indigo-500/20' 
+    : 'border-slate-700 shadow-black/40';
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseDown={handlePointerDown}
+      onTouchStart={handlePointerDown}
+      className={`absolute pointer-events-auto rounded-xl border bg-slate-900/90 backdrop-blur-md shadow-2xl flex flex-col transition-shadow duration-150 group overflow-hidden ${borderClass}`}
+      style={{
+        left: `${widget.x}px`,
+        top: `${widget.y}px`,
+        width: `${widget.width}px`,
+        height: `${widget.height}px`,
+        zIndex: widget.zIndex,
+      }}
+    >
+      {/* --- WIDGET HEADER / DRAG HANDLE --- */}
+      <div
+        ref={dragRef}
+        onMouseDown={startDrag}
+        onTouchStart={startDrag}
+        className="h-10 px-3 bg-slate-950/80 flex justify-between items-center cursor-move text-slate-300 border-b border-slate-800"
+      >
+        <div className="flex items-center space-x-2">
+          <Move className="w-3.5 h-3.5 opacity-60 text-indigo-400" />
+          <span className="text-xs font-semibold capitalize tracking-wide select-none">
+            {widget.type === 'qr' ? 'QR Generator' : widget.type === 'schedule' ? 'Bell Schedule' : widget.type} Tool
+          </span>
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="p-1 rounded-full hover:bg-rose-500/20 hover:text-rose-400 transition"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* --- WIDGET CONTENT INNER ROUTER --- */}
+      <div className="flex-1 p-3 overflow-y-auto overflow-x-hidden text-white scrollbar-thin">
+        {widget.type === 'clock' && <ClockWidget />}
+        {widget.type === 'timer' && <TimerWidget playTone={playTone} />}
+        {widget.type === 'stopwatch' && <StopwatchWidget />}
+        {widget.type === 'traffic' && <TrafficWidget />}
+        {widget.type === 'work' && <WorkWidget />}
+        {widget.type === 'note' && <NoteWidget />}
+        {widget.type === 'draw' && <DrawWidget containerSize={{ width: widget.width, height: widget.height }} />}
+        {widget.type === 'dice' && <DiceWidget />}
+        {widget.type === 'picker' && <PickerWidget />}
+        {widget.type === 'sound' && <SoundMeterWidget />}
+        {widget.type === 'qr' && <QrWidget />}
+        {widget.type === 'schedule' && <ScheduleWidget />}
+      </div>
+
+      {/* --- WIDGET CORNER RESIZE HANDLE --- */}
+      <div
+        ref={resizeRef}
+        onMouseDown={startResize}
+        onTouchStart={startResize}
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-end justify-end p-0.5"
+      >
+        <div className="w-2.5 h-2.5 border-r-2 border-b-2 border-slate-500/60 rounded-br" />
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   1. CLOCK & CALENDAR WIDGET
+// ==========================================
+function ClockWidget() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatDigits = (val) => String(val).padStart(2, '0');
+
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  return (
+    <div className="h-full flex flex-col justify-center items-center">
+      {/* Time Display */}
+      <div className="text-4xl font-mono font-bold tracking-widest text-slate-50 flex items-center justify-center space-x-1">
+        <span>{formatDigits(time.getHours())}</span>
+        <span className="animate-pulse">:</span>
+        <span>{formatDigits(time.getMinutes())}</span>
+        <span className="text-xs text-indigo-400 self-end mb-1 ml-1 font-semibold">{formatDigits(time.getSeconds())}</span>
+      </div>
+
+      {/* Date Display */}
+      <div className="mt-2.5 text-center">
+        <p className="text-xs text-indigo-300 font-semibold tracking-wide uppercase">
+          {days[time.getDay()]}
+        </p>
+        <p className="text-sm text-slate-300 font-medium">
+          {months[time.getMonth()]} {time.getDate()}, {time.getFullYear()}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   2. COUNTDOWN TIMER WIDGET (WITH UP & DOWN)
+// ==========================================
+function TimerWidget({ playTone }) {
+  const [secondsLeft, setSecondsLeft] = useState(300); // Default: 5 mins
+  const [isActive, setIsActive] = useState(false);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (isActive && secondsLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setSecondsLeft(prev => prev - 1);
+      }, 1000);
+    } else if (secondsLeft === 0 && isActive) {
+      setIsActive(false);
+      playTone('bell');
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isActive, secondsLeft, playTone]);
+
+  const addTime = (secs) => {
+    setSecondsLeft(prev => Math.max(0, prev + secs));
+  };
+
+  const adjustMinutes = (amount) => {
+    if (isActive) return;
+    setSecondsLeft(prev => {
+      const mins = Math.floor(prev / 60);
+      const secs = prev % 60;
+      const newMins = Math.max(0, Math.min(99, mins + amount));
+      return newMins * 60 + secs;
+    });
+  };
+
+  const adjustSeconds = (amount) => {
+    if (isActive) return;
+    setSecondsLeft(prev => {
+      const mins = Math.floor(prev / 60);
+      const secs = prev % 60;
+      let newSecs = secs + amount;
+      let newMins = mins;
+
+      if (newSecs >= 60) {
+        newSecs = 0;
+        newMins = Math.min(99, mins + 1);
+      } else if (newSecs < 0) {
+        newSecs = 59;
+        newMins = Math.max(0, mins - 1);
+      }
+      return newMins * 60 + newSecs;
+    });
+  };
+
+  const resetTimer = () => {
+    setIsActive(false);
+    setSecondsLeft(300); // Reset back to 5 mins default
+  };
+
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+
+  return (
+    <div className="h-full flex flex-col justify-between py-1">
+      {/* Preset increments */}
+      <div className="flex justify-center space-x-1.5 flex-wrap gap-y-1">
+        <button onClick={() => addTime(60)} className="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs text-slate-300 border border-slate-700">+1m</button>
+        <button onClick={() => addTime(300)} className="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs text-slate-300 border border-slate-700">+5m</button>
+        <button onClick={() => addTime(600)} className="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs text-slate-300 border border-slate-700">+10m</button>
+      </div>
+
+      {/* Up-Down Selectors + Core Readout */}
+      <div className="flex items-center justify-center space-x-4 my-2.5">
+        {/* Minutes Adjuster */}
+        <div className="flex flex-col items-center">
+          <button 
+            onClick={() => adjustMinutes(1)} 
+            disabled={isActive}
+            className="p-1 text-slate-400 hover:text-indigo-400 disabled:opacity-30 disabled:hover:text-slate-400 transition"
+          >
+            <ChevronUp className="w-5 h-5" />
+          </button>
+          <span className={`text-5xl font-mono font-bold tracking-widest ${secondsLeft < 30 && isActive ? 'text-red-400 animate-pulse' : 'text-slate-100'}`}>
+            {String(mins).padStart(2, '0')}
+          </span>
+          <button 
+            onClick={() => adjustMinutes(-1)} 
+            disabled={isActive}
+            className="p-1 text-slate-400 hover:text-indigo-400 disabled:opacity-30 disabled:hover:text-slate-400 transition"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Separator colon */}
+        <span className={`text-4xl font-bold self-center mb-4 ${secondsLeft < 30 && isActive ? 'text-red-400' : 'text-slate-400'}`}>:</span>
+
+        {/* Seconds Adjuster */}
+        <div className="flex flex-col items-center">
+          <button 
+            onClick={() => adjustSeconds(1)} 
+            disabled={isActive}
+            className="p-1 text-slate-400 hover:text-indigo-400 disabled:opacity-30 disabled:hover:text-slate-400 transition"
+          >
+            <ChevronUp className="w-5 h-5" />
+          </button>
+          <span className={`text-5xl font-mono font-bold tracking-widest ${secondsLeft < 30 && isActive ? 'text-red-400 animate-pulse' : 'text-slate-100'}`}>
+            {String(secs).padStart(2, '0')}
+          </span>
+          <button 
+            onClick={() => adjustSeconds(-1)} 
+            disabled={isActive}
+            className="p-1 text-slate-400 hover:text-indigo-400 disabled:opacity-30 disabled:hover:text-slate-400 transition"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Control Buttons */}
+      <div className="flex justify-center space-x-2">
+        <button
+          onClick={() => setIsActive(!isActive)}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            isActive ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'
+          }`}
+        >
+          {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+          <span>{isActive ? 'Pause' : 'Start'}</span>
+        </button>
+
+        <button
+          onClick={resetTimer}
+          className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-300"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Reset</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   3. STOPWATCH WIDGET
+// ==========================================
+function StopwatchWidget() {
+  const [time, setTime] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (isActive) {
+      const startTime = Date.now() - time;
+      intervalRef.current = setInterval(() => {
+        setTime(Date.now() - startTime);
+      }, 10);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isActive]);
+
+  const handleReset = () => {
+    setIsActive(false);
+    setTime(0);
+  };
+
+  const minutes = Math.floor((time / 60000) % 60);
+  const seconds = Math.floor((time / 1000) % 60);
+  const milliseconds = Math.floor((time / 10) % 100);
+
+  return (
+    <div className="h-full flex flex-col justify-center space-y-4">
+      <div className="text-4xl font-mono font-bold text-center text-slate-100 tracking-wider">
+        {String(minutes).padStart(2, '0')}:
+        {String(seconds).padStart(2, '0')}.
+        <span className="text-xl text-emerald-400">{String(milliseconds).padStart(2, '0')}</span>
+      </div>
+
+      <div className="flex justify-center space-x-2">
+        <button
+          onClick={() => setIsActive(!isActive)}
+          className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            isActive ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'
+          }`}
+        >
+          {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+          <span>{isActive ? 'Stop' : 'Start'}</span>
+        </button>
+
+        <button
+          onClick={handleReset}
+          className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-300"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Clear</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   4. TRAFFIC LIGHT WIDGET
+// ==========================================
+function TrafficWidget() {
+  const [activeColor, setActiveColor] = useState('red'); // 'red' | 'yellow' | 'green'
+
+  return (
+    <div className="h-full flex flex-col justify-center items-center py-2">
+      <div className="w-20 bg-slate-950 p-3 rounded-2xl flex flex-col items-center justify-around border-2 border-slate-800 gap-y-3.5 shadow-inner">
+        {/* Red Light */}
+        <button
+          onClick={() => setActiveColor('red')}
+          className={`w-12 h-12 rounded-full transition-all duration-300 relative ${
+            activeColor === 'red' 
+              ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] scale-110' 
+              : 'bg-red-950/70 hover:bg-red-900/40'
+          }`}
+        >
+          <div className="absolute inset-0.5 rounded-full bg-gradient-to-tr from-transparent to-white/20" />
+        </button>
+
+        {/* Yellow Light */}
+        <button
+          onClick={() => setActiveColor('yellow')}
+          className={`w-12 h-12 rounded-full transition-all duration-300 relative ${
+            activeColor === 'yellow' 
+              ? 'bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)] scale-110' 
+              : 'bg-yellow-950/70 hover:bg-yellow-900/40'
+          }`}
+        >
+          <div className="absolute inset-0.5 rounded-full bg-gradient-to-tr from-transparent to-white/20" />
+        </button>
+
+        {/* Green Light */}
+        <button
+          onClick={() => setActiveColor('green')}
+          className={`w-12 h-12 rounded-full transition-all duration-300 relative ${
+            activeColor === 'green' 
+              ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] scale-110' 
+              : 'bg-emerald-950/70 hover:bg-emerald-900/40'
+          }`}
+        >
+          <div className="absolute inset-0.5 rounded-full bg-gradient-to-tr from-transparent to-white/20" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   5. WORK SYMBOL WIDGET
+// ==========================================
+function WorkWidget() {
+  const [symbol, setSymbol] = useState('whisper'); // 'silence' | 'whisper' | 'ask' | 'collab'
+
+  const symbols = [
+    { id: 'silence', label: 'Silence', icon: '🤫', desc: 'No talking allowed.', color: 'border-rose-500 bg-rose-500/10 text-rose-300' },
+    { id: 'whisper', label: 'Whisper', icon: '🗣️', desc: 'Speak in a very low voice.', color: 'border-blue-500 bg-blue-500/10 text-blue-300' },
+    { id: 'ask', label: 'Ask Neighbor', icon: '👥', desc: 'Ask a teammate near you.', color: 'border-yellow-500 bg-yellow-500/10 text-yellow-300' },
+    { id: 'collab', label: 'Work Together', icon: '🤝', desc: 'Collaborate as groups.', color: 'border-emerald-500 bg-emerald-500/10 text-emerald-300' },
+  ];
+
+  const current = symbols.find(s => s.id === symbol);
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      {/* Large visual */}
+      <div className={`p-3 rounded-xl border flex items-center space-x-3.5 transition duration-300 ${current.color}`}>
+        <span className="text-4xl">{current.icon}</span>
+        <div>
+          <h4 className="font-bold text-lg leading-tight">{current.label}</h4>
+          <p className="text-[11px] opacity-80 leading-snug">{current.desc}</p>
+        </div>
+      </div>
+
+      {/* Button selectors */}
+      <div className="grid grid-cols-2 gap-1.5 mt-2">
+        {symbols.map(s => (
+          <button
+            key={s.id}
+            onClick={() => setSymbol(s.id)}
+            className={`py-1.5 px-2 rounded-lg text-xs font-semibold text-center transition ${
+              symbol === s.id ? 'bg-indigo-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+            }`}
+          >
+            {s.icon} {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   6. TEXT NOTE WIDGET
+// ==========================================
+function NoteWidget() {
+  const [text, setText] = useState("");
+
+  return (
+    <div className="h-full flex flex-col">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Type important assignment details, teacher notes, or morning plans here..."
+        className="w-full flex-1 p-2 bg-slate-950/60 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 resize-none font-sans leading-relaxed"
+      />
+    </div>
+  );
+}
+
+
+// ==========================================
+//   7. CANVAS DRAWING BOARD WIDGET (ROBUST RESIZING & RELIABLE CLEAR)
+// ==========================================
+function DrawWidget({ containerSize }) {
+  const canvasRef = useRef(null);
+  const contextRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState('#abf263'); // neon lime green
+  const [brushSize, setBrushSize] = useState(4);
+
+  // Sync color & size changes
+  useEffect(() => {
+    if (contextRef.current) {
+      contextRef.current.strokeStyle = color;
+      contextRef.current.lineWidth = brushSize;
+    }
+  }, [color, brushSize]);
+
+  // Handle redraw / resize safely with primitive dimension dependencies
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    // Save current drawings
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempContext = tempCanvas.getContext('2d');
+    tempContext.drawImage(canvas, 0, 0);
+
+    // Resize canvas
+    canvas.width = Math.max(100, containerSize.width - 24); // margin padding adjustments
+    canvas.height = Math.max(80, containerSize.height - 84); 
+
+    // Restore drawings
+    const context = canvas.getContext('2d');
+    context.lineCap = 'round';
+    context.strokeStyle = color;
+    context.lineWidth = brushSize;
+    context.drawImage(tempCanvas, 0, 0);
+    contextRef.current = context;
+  }, [containerSize.width, containerSize.height]);
+
+  // Mouse Event handlers
+  const startDrawing = ({ nativeEvent }) => {
+    const { offsetX, offsetY } = nativeEvent;
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(offsetX, offsetY);
+    setIsDrawing(true);
+  };
+
+  const draw = ({ nativeEvent }) => {
+    if (!isDrawing) return;
+    const { offsetX, offsetY } = nativeEvent;
+    contextRef.current.lineTo(offsetX, offsetY);
+    contextRef.current.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (contextRef.current) {
+      contextRef.current.closePath();
+    }
+    setIsDrawing(false);
+  };
+
+  // Touch Event handlers (Responsive for mobile)
+  const getTouchPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const touch = e.touches[0];
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    };
+  };
+
+  const startTouchDrawing = (e) => {
+    e.preventDefault();
+    const pos = getTouchPos(e);
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(pos.x, pos.y);
+    setIsDrawing(true);
+  };
+
+  const touchDraw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getTouchPos(e);
+    contextRef.current.lineTo(pos.x, pos.y);
+    contextRef.current.stroke();
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas && contextRef.current) {
+      contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
+      contextRef.current.beginPath(); // clear path buffer to avoid ghost redrawing
+    }
+  };
+
+  const colorOptions = [
+    '#ffffff', // White
+    '#ff668f', // Red-pink
+    '#abf263', // Neon lime
+    '#38bdf8', // Blue sky
+    '#fbbf24', // Yellow sun
+    '#a78bfa'  // Lavender
+  ];
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      {/* Control Tools bar */}
+      <div className="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg border border-slate-800 mb-1.5">
+        <div className="flex space-x-1.5">
+          {colorOptions.map((c) => (
+            <button
+              key={c}
+              onClick={() => setColor(c)}
+              className={`w-4 h-4 rounded-full border transition transform ${
+                color === c ? 'scale-125 border-white ring-1 ring-indigo-500' : 'border-transparent'
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {/* Brush Sizes */}
+          <div className="flex space-x-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+            <button onClick={() => setBrushSize(Math.max(2, brushSize - 2))} className="text-[10px] hover:text-indigo-400 font-bold px-1">-</button>
+            <span className="text-[10px] font-mono text-slate-400 px-1">{brushSize}px</span>
+            <button onClick={() => setBrushSize(Math.min(16, brushSize + 2))} className="text-[10px] hover:text-indigo-400 font-bold px-1">+</button>
+          </div>
+
+          <button
+            onClick={clearCanvas}
+            className="text-[10px] bg-rose-950/60 text-rose-300 px-2 py-1 rounded hover:bg-rose-900 font-bold border border-rose-800 transition"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      {/* The Interactive Canvas */}
+      <div className="flex-1 bg-slate-950/80 rounded-lg overflow-hidden border border-slate-800 relative">
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startTouchDrawing}
+          onTouchMove={touchDraw}
+          onTouchEnd={stopDrawing}
+          className="cursor-crosshair absolute inset-0 w-full h-full"
+        />
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   8. INTERACTIVE DICE ROLLER WIDGET
+// ==========================================
+function DiceWidget() {
+  const [diceCount, setDiceCount] = useState(1);
+  const [rolls, setRolls] = useState([1]);
+  const [rolling, setRolling] = useState(false);
+
+  const rollDice = () => {
+    setRolling(true);
+    let counts = 0;
+    
+    // Quick interval rolling animation
+    const interval = setInterval(() => {
+      setRolls(Array.from({ length: diceCount }, () => Math.floor(Math.random() * 6) + 1));
+      counts++;
+      if (counts > 8) {
+        clearInterval(interval);
+        setRolling(false);
+      }
+    }, 60);
+  };
+
+  const total = rolls.reduce((acc, curr) => acc + curr, 0);
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      {/* Selection Control */}
+      <div className="flex justify-between items-center bg-slate-950/50 p-1.5 rounded-lg border border-slate-800">
+        <span className="text-xs text-slate-400">Number of dice:</span>
+        <div className="flex space-x-1">
+          {[1, 2, 3].map(num => (
+            <button
+              key={num}
+              onClick={() => { setDiceCount(num); setRolls(Array(num).fill(1)); }}
+              className={`w-6 h-6 rounded text-xs font-bold transition ${
+                diceCount === num ? 'bg-indigo-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dice Visualized */}
+      <div className="flex justify-center items-center space-x-4 my-2">
+        {rolls.map((val, idx) => (
+          <div
+            key={idx}
+            className={`w-14 h-14 bg-white text-slate-950 rounded-xl flex items-center justify-center font-bold text-2xl shadow-xl transition-all duration-150 transform border-2 border-slate-300 ${
+              rolling ? 'rotate-[360deg] scale-95 opacity-80' : 'rotate-0 scale-100'
+            }`}
+          >
+            {/* Simple CSS-rendered pips or numbers for maximum readability */}
+            {val}
+          </div>
+        ))}
+      </div>
+
+      {/* Trigger */}
+      <div className="flex items-center space-x-3">
+        <button
+          onClick={rollDice}
+          disabled={rolling}
+          className="flex-1 bg-pink-600 hover:bg-pink-500 disabled:bg-pink-800 py-1.5 px-3 rounded-lg text-xs font-bold tracking-wider uppercase transition flex justify-center items-center gap-1.5"
+        >
+          <Shuffle className="w-3.5 h-3.5" /> {rolling ? 'Rolling...' : 'Roll Dice'}
+        </button>
+        {diceCount > 1 && (
+          <div className="text-xs text-slate-300 font-mono bg-slate-950/80 border border-slate-800 px-2 py-1.5 rounded-lg">
+            Sum: <span className="text-emerald-400 font-bold">{total}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   9. RANDOM STUDENT NAME PICKER
+// ==========================================
+function PickerWidget() {
+  const [namesText, setNamesText] = useState("Alex\nEmma\nLiam\nSophia\nJackson\nOliver\nMia\nNoah");
+  const [winner, setWinner] = useState(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  const pickRandom = () => {
+    const list = namesText.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+    if (list.length === 0) {
+      alert("Please add some student names first!");
+      return;
+    }
+
+    setIsSpinning(true);
+    setWinner(null);
+
+    let counter = 0;
+    const interval = setInterval(() => {
+      const tempWinner = list[Math.floor(Math.random() * list.length)];
+      setWinner(tempWinner);
+      counter++;
+
+      if (counter > 15) {
+        clearInterval(interval);
+        setIsSpinning(false);
+        // Final select
+        const finalWinner = list[Math.floor(Math.random() * list.length)];
+        setWinner(finalWinner);
+      }
+    }, 100);
+  };
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      {/* Names Box input / Output area */}
+      <div className="flex-1 min-h-0 flex flex-col gap-y-2 mb-2">
+        {!winner && !isSpinning ? (
+          <textarea
+            value={namesText}
+            onChange={(e) => setNamesText(e.target.value)}
+            placeholder="Add one name per line..."
+            className="w-full flex-1 p-2 bg-slate-950/60 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-yellow-500/80 resize-none font-mono"
+          />
+        ) : (
+          <div className="flex-1 bg-slate-950/70 border border-slate-800 rounded-lg flex flex-col justify-center items-center p-4 relative overflow-hidden">
+            <span className="text-[10px] text-yellow-400 font-bold uppercase tracking-widest animate-pulse mb-1">
+              {isSpinning ? 'Selecting...' : '🎉 Selected Student 🎉'}
+            </span>
+            <span className={`text-2xl font-extrabold text-white text-center leading-tight transition transform duration-150 ${
+              isSpinning ? 'scale-90 opacity-60' : 'scale-110'
+            }`}>
+              {winner}
+            </span>
+            {!isSpinning && (
+              <button 
+                onClick={() => setWinner(null)} 
+                className="absolute top-2 right-2 text-[10px] text-slate-400 hover:text-slate-200"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Button to Trigger */}
+      <button
+        onClick={pickRandom}
+        disabled={isSpinning}
+        className="w-full bg-yellow-500 text-slate-950 hover:bg-yellow-400 disabled:bg-yellow-700 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition flex justify-center items-center gap-1.5"
+      >
+        <Sparkles className="w-4 h-4 text-slate-950" /> {isSpinning ? 'Picking Winner...' : 'Pick a Name'}
+      </button>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   10. INTERACTIVE SOUND METER WIDGET
+// ==========================================
+function SoundMeterWidget() {
+  const [micActive, setMicActive] = useState(false);
+  const [volume, setVolume] = useState(0);
+  const [limit, setLimit] = useState(70); // adjustable threshold
+  const [alertState, setAlertState] = useState(false);
+  
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const sourceRef = useRef(null);
+  const rafRef = useRef(null);
+
+  const startMic = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      audioContextRef.current = audioCtx;
+      analyserRef.current = analyser;
+      sourceRef.current = source;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      dataArrayRef.current = dataArray;
+
+      setMicActive(true);
+
+      const checkVolume = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+        
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArrayRef.current[i];
+        }
+        
+        const average = sum / bufferLength;
+        const normalized = Math.min(Math.round((average / 128) * 100), 100);
+        setVolume(normalized);
+
+        // Alert state trigger check
+        if (normalized > limit) {
+          setAlertState(true);
+        } else {
+          setAlertState(false);
+        }
+
+        rafRef.current = requestAnimationFrame(checkVolume);
+      };
+
+      checkVolume();
+    } catch (err) {
+      console.error("Microphone access denied or error", err);
+      alert("Unable to access mic. Please grant microphone permission.");
+    }
+  };
+
+  const stopMic = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (sourceRef.current) {
+      sourceRef.current.mediaStream.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    analyserRef.current = null;
+    sourceRef.current = null;
+    setMicActive(false);
+    setVolume(0);
+    setAlertState(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      {/* Sound Visualizer */}
+      <div className="flex-1 flex flex-col justify-center items-center p-2 bg-slate-950/50 rounded-xl border border-slate-800">
+        {!micActive ? (
+          <div className="text-center">
+            <MicOff className="w-10 h-10 text-slate-500 mx-auto mb-2" />
+            <p className="text-xs text-slate-400 max-w-[200px] leading-relaxed mx-auto">
+              Activate microphone to measure classroom noise levels.
+            </p>
+          </div>
+        ) : (
+          <div className="w-full space-y-4">
+            {/* Level Meter Bar */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-slate-400">
+                <span>Current Noise:</span>
+                <span className={alertState ? 'text-rose-400 font-bold' : 'text-emerald-400'}>{volume}%</span>
+              </div>
+              <div className="w-full bg-slate-800 h-6 rounded-full overflow-hidden relative border border-slate-700">
+                {/* Vol slide */}
+                <div 
+                  className={`h-full transition-all duration-75 rounded-full ${
+                    alertState ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
+                  }`}
+                  style={{ width: `${volume}%` }}
+                />
+                {/* Limit marker line */}
+                <div 
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-400 z-10"
+                  style={{ left: `${limit}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Warning Alarm indicator */}
+            {alertState && (
+              <div className="flex items-center justify-center space-x-1 bg-red-500/20 text-red-300 border border-red-500/30 p-1.5 rounded-lg text-[10px] uppercase font-black tracking-widest animate-pulse">
+                <AlertTriangle className="w-3.5 h-3.5" /> <span>Quiet down please!</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Controller Controls */}
+      <div className="mt-3 space-y-2">
+        {/* Limit slider */}
+        {micActive && (
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] text-slate-400 uppercase font-semibold">Limit:</span>
+            <input 
+              type="range" 
+              min="10" 
+              max="100" 
+              value={limit} 
+              onChange={(e) => setLimit(Number(e.target.value))}
+              className="flex-1 accent-teal-500"
+            />
+            <span className="text-[10px] font-mono font-bold text-slate-300">{limit}%</span>
+          </div>
+        )}
+
+        {/* Start / Stop Toggle */}
+        <button
+          onClick={micActive ? stopMic : startMic}
+          className={`w-full py-1.5 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition flex justify-center items-center gap-1.5 ${
+            micActive ? 'bg-rose-600 text-white hover:bg-rose-500' : 'bg-teal-500 text-slate-950 hover:bg-teal-400'
+          }`}
+        >
+          {micActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          {micActive ? 'Disable Meter' : 'Enable Noise Meter'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   11. INSTANT DYNAMIC QR CODE GENERATOR
+// ==========================================
+function QrWidget() {
+  const [text, setText] = useState("https://classroomscreen.com");
+  const [qrSrc, setQrSrc] = useState(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent("https://classroomscreen.com")}`);
+
+  const handleGenerate = () => {
+    if (!text.trim()) return;
+    setQrSrc(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`);
+  };
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      {/* QR Code Container */}
+      <div className="flex-1 flex justify-center items-center p-2 bg-slate-950/50 border border-slate-800 rounded-xl relative overflow-hidden mb-2 min-h-0">
+        <img 
+          src={qrSrc} 
+          alt="Classroom QR Code" 
+          className="w-32 h-32 object-contain bg-white p-2 rounded-lg border border-slate-700 shadow-md"
+          onError={(e) => {
+            // Fallback
+            e.target.onerror = null;
+            e.target.src = "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=150&q=80";
+          }}
+        />
+      </div>
+
+      {/* Input controls */}
+      <div className="space-y-1.5">
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type website URL / text..."
+          className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+          onKeyDown={(e) => { if (e.key === 'Enter') handleGenerate(); }}
+        />
+        <button
+          onClick={handleGenerate}
+          className="w-full bg-cyan-600 hover:bg-cyan-500 py-1 rounded text-xs font-bold uppercase tracking-wider transition"
+        >
+          Update QR Code
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==========================================
+//   12. BELL SCHEDULE & LIVE COUNTDOWN WIDGET
+// ==========================================
+function ScheduleWidget() {
+  const [now, setNow] = useState(new Date());
+
+  // Static school schedule mapping (converted 12h schedule to 24h internal values)
+  const bellSchedule = [
+    { name: "Homeroom", start: "07:35", end: "07:58", label: "7:35 - 7:58" },
+    { name: "1st Period", start: "08:01", end: "08:47", label: "8:01 - 8:47" },
+    { name: "2nd Period", start: "08:50", end: "09:36", label: "8:50 - 9:36" },
+    { name: "3rd Period", start: "09:39", end: "10:25", label: "9:39 - 10:25" },
+    { name: "4th Period", start: "10:28", end: "11:14", label: "10:28 - 11:14" },
+    { name: "5th (7th Lunch)", start: "11:17", end: "12:03", label: "11:17 - 12:03" },
+    { name: "6th (8th Lunch)", start: "12:06", end: "12:52", label: "12:06 - 12:52" },
+    { name: "7th Period", start: "12:55", end: "13:41", label: "12:55 - 1:41" },
+    { name: "8th Period", start: "13:44", end: "14:30", label: "1:44 - 2:30" }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Convert HH:MM time string to total seconds of the day
+  const toSeconds = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 3600 + minutes * 60;
+  };
+
+  const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+  // Find active period
+  let activePeriod = null;
+  let nextPeriod = null;
+  let timeRemainingSeconds = 0;
+  let percentElapsed = 0;
+
+  for (let i = 0; i < bellSchedule.length; i++) {
+    const period = bellSchedule[i];
+    const startSec = toSeconds(period.start);
+    const endSec = toSeconds(period.end);
+
+    if (currentSeconds >= startSec && currentSeconds <= endSec) {
+      activePeriod = period;
+      timeRemainingSeconds = endSec - currentSeconds;
+      const totalDuration = endSec - startSec;
+      const elapsed = currentSeconds - startSec;
+      percentElapsed = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+      break;
+    }
+  }
+
+  // If no active period, identify the next upcoming period
+  if (!activePeriod) {
+    nextPeriod = bellSchedule.find(period => toSeconds(period.start) > currentSeconds);
+    if (nextPeriod) {
+      timeRemainingSeconds = toSeconds(nextPeriod.start) - currentSeconds;
+    }
+  }
+
+  const formatCountdown = (totalSecs) => {
+    const hours = Math.floor(totalSecs / 3600);
+    const minutes = Math.floor((totalSecs % 3600) / 60);
+    const seconds = totalSecs % 60;
+
+    let result = "";
+    if (hours > 0) result += `${hours}h `;
+    result += `${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+    return result;
+  };
+
+  // Filter out any periods that have completely finished
+  const remainingPeriods = bellSchedule.filter(period => toSeconds(period.end) >= currentSeconds);
+
+  return (
+    <div className="h-full flex flex-col justify-between text-slate-100">
+      {/* Top Banner Display */}
+      <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center relative overflow-hidden flex flex-col justify-center min-h-[96px] shrink-0 mb-2">
+        {activePeriod ? (
+          <div>
+            <div className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-widest mb-0.5">
+              Current Period
+            </div>
+            <div className="text-sm font-bold text-white mb-1">
+              {activePeriod.name} ({activePeriod.label})
+            </div>
+            <div className="text-lg font-mono font-bold text-indigo-300">
+              {formatCountdown(timeRemainingSeconds)} left
+            </div>
+            {/* Progress bar */}
+            <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div 
+                className="bg-indigo-500 h-full rounded-full transition-all duration-1000" 
+                style={{ width: `${percentElapsed}%` }}
+              />
+            </div>
+          </div>
+        ) : nextPeriod ? (
+          <div>
+            <div className="text-[10px] text-amber-400 font-extrabold uppercase tracking-widest mb-0.5">
+              Passing Time / Next Class
+            </div>
+            <div className="text-sm font-semibold text-slate-200 mb-1">
+              Get ready for {nextPeriod.name}
+            </div>
+            <div className="text-lg font-mono font-bold text-amber-300">
+              Starts in {formatCountdown(timeRemainingSeconds)}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mb-0.5">
+              School Day Over
+            </div>
+            <div className="text-sm font-bold text-slate-300">
+              Have a wonderful afternoon!
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Interactive Bell List (Filtered to show only remaining periods) */}
+      <div className="flex-1 overflow-y-auto space-y-1 pr-0.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent text-xs">
+        {remainingPeriods.length > 0 ? (
+          remainingPeriods.map((period, idx) => {
+            const isActive = activePeriod?.name === period.name;
+            const bgClass = isActive 
+              ? 'bg-indigo-600/30 border-indigo-500/80 text-white font-semibold' 
+              : 'bg-slate-950/30 border-slate-900 text-slate-300 hover:bg-slate-950/50';
+
+            return (
+              <div 
+                key={idx}
+                className={`flex justify-between items-center px-2.5 py-1.5 rounded border transition-colors duration-150 ${bgClass}`}
+              >
+                <div className="flex items-center space-x-2">
+                  {isActive && (
+                    <span className="flex h-1.5 w-1.5 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500"></span>
+                    </span>
+                  )}
+                  <span>{period.name}</span>
+                </div>
+                <span className="font-mono text-[10px] opacity-90">{period.label}</span>
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center text-slate-500 text-[11px] py-4">
+            No periods remaining today.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
