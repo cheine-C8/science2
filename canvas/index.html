@@ -1019,6 +1019,335 @@
   <script>
     // --- HELPER BINDINGS FOR GLOBAL ONCLICK TRIGGERS ---
     
+    window.getWidgetMarkup = function(type, id) {
+      if (type === 'clock') {
+        return `
+          <div class="flex flex-col items-center justify-center h-full">
+            <div class="text-6xl font-mono font-bold text-slate-100 clock-time tracking-widest">00:00</div>
+            <div class="text-sm text-slate-400 clock-date mt-2 font-medium"></div>
+          </div>
+        `;
+      }
+      if (type === 'timer') {
+        return `
+          <div class="flex flex-col items-center h-full justify-between pb-2">
+            <div class="flex items-center justify-center space-x-2 mt-4">
+              <div class="flex flex-col items-center">
+                <button onclick="adjustTimerVal('${id}', 'min', 1)" class="timer-arrow p-1 text-slate-400 hover:text-white transition"><i data-lucide="chevron-up" class="w-6 h-6"></i></button>
+                <div class="text-5xl font-mono font-bold tracking-widest text-slate-100 timer-min">05</div>
+                <button onclick="adjustTimerVal('${id}', 'min', -1)" class="timer-arrow p-1 text-slate-400 hover:text-white transition"><i data-lucide="chevron-down" class="w-6 h-6"></i></button>
+              </div>
+              <div class="text-4xl font-bold pb-2 text-slate-500">:</div>
+              <div class="flex flex-col items-center">
+                <button onclick="adjustTimerVal('${id}', 'sec', 15)" class="timer-arrow p-1 text-slate-400 hover:text-white transition"><i data-lucide="chevron-up" class="w-6 h-6"></i></button>
+                <div class="text-5xl font-mono font-bold tracking-widest text-slate-100 timer-sec">00</div>
+                <button onclick="adjustTimerVal('${id}', 'sec', -15)" class="timer-arrow p-1 text-slate-400 hover:text-white transition"><i data-lucide="chevron-down" class="w-6 h-6"></i></button>
+              </div>
+            </div>
+            <div class="flex space-x-3 w-full px-4 mt-2">
+              <button onclick="toggleTimer('${id}')" class="timer-play-btn flex-1 flex justify-center items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-bold transition bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                <span class="timer-play-txt">Start</span>
+              </button>
+              <button onclick="resetTimer('${id}')" class="px-3 py-2 rounded-lg text-sm font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-300">
+                Reset
+              </button>
+            </div>
+          </div>
+        `;
+      }
+      if (type === 'stopwatch') {
+        return `
+          <div class="flex flex-col items-center h-full justify-center">
+            <div class="flex items-end space-x-1 mb-6">
+              <div class="text-5xl font-mono font-bold tracking-widest text-slate-100 sw-min">00</div>
+              <div class="text-4xl font-bold pb-1 text-slate-500">:</div>
+              <div class="text-5xl font-mono font-bold tracking-widest text-slate-100 sw-sec">00</div>
+              <div class="text-2xl font-mono font-bold tracking-widest text-slate-400 pb-1 ml-1">.<span class="sw-ms">00</span></div>
+            </div>
+            <div class="flex space-x-3 w-full px-6">
+              <button onclick="toggleStopwatch('${id}')" class="sw-play-btn flex-1 flex justify-center items-center space-x-1 px-3 py-2 rounded-lg text-sm font-bold transition bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                <span class="sw-play-txt">Start</span>
+              </button>
+              <button onclick="resetStopwatch('${id}')" class="px-3 py-2 rounded-lg text-sm font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-300">
+                Reset
+              </button>
+            </div>
+          </div>
+        `;
+      }
+      if (type === 'schedule') {
+        let rows = window.bellSchedule.map(s => `
+          <div class="flex justify-between items-center py-1.5 border-b border-slate-800/50 last:border-0">
+            <span class="text-xs font-semibold text-slate-300">${s.name}</span>
+            <span class="text-xs font-mono text-slate-400">${s.label}</span>
+          </div>
+        `).join('');
+        return `<div class="w-full h-full flex flex-col p-1"><h4 class="text-sm font-bold text-indigo-400 mb-2 border-b border-slate-700 pb-1">Today's Bells</h4><div class="flex-1 overflow-y-auto pr-2 scrollbar-thin">${rows}</div></div>`;
+      }
+      if (type === 'traffic') {
+        return `
+          <div class="flex flex-col items-center justify-center space-y-4 h-full bg-slate-950/50 rounded-lg py-4 border border-slate-800/80">
+            <button onclick="setLightColor('${id}', 'red')" class="light-red w-12 h-12 rounded-full transition-all duration-300 relative bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] scale-110"></button>
+            <button onclick="setLightColor('${id}', 'yellow')" class="light-yellow w-12 h-12 rounded-full transition-all duration-300 relative bg-yellow-950/70 hover:bg-yellow-900/40"></button>
+            <button onclick="setLightColor('${id}', 'green')" class="light-green w-12 h-12 rounded-full transition-all duration-300 relative bg-emerald-950/70 hover:bg-emerald-900/40"></button>
+          </div>
+        `;
+      }
+      if (type === 'work') {
+        return `
+          <div class="flex flex-col h-full space-y-3">
+            <div class="work-visual p-3 rounded-xl border flex items-center space-x-3.5 transition duration-300 border-rose-500 bg-rose-500/10 text-rose-300">
+              <div class="text-4xl work-icon">🤫</div>
+              <div>
+                <h4 class="font-bold text-lg work-title">Silence</h4>
+                <p class="text-xs opacity-80 work-desc">No talking allowed.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-auto">
+              <button onclick="setWorkSymbol('${id}', 'silence')" class="py-1.5 px-2 rounded-lg text-xs font-semibold text-center transition bg-indigo-600 text-white">Silence</button>
+              <button onclick="setWorkSymbol('${id}', 'whisper')" class="py-1.5 px-2 rounded-lg text-xs font-semibold text-center transition bg-slate-800 hover:bg-slate-700 text-slate-300">Whisper</button>
+              <button onclick="setWorkSymbol('${id}', 'ask')" class="py-1.5 px-2 rounded-lg text-xs font-semibold text-center transition bg-slate-800 hover:bg-slate-700 text-slate-300">Ask Neighbor</button>
+              <button onclick="setWorkSymbol('${id}', 'collab')" class="py-1.5 px-2 rounded-lg text-xs font-semibold text-center transition bg-slate-800 hover:bg-slate-700 text-slate-300">Collaborate</button>
+            </div>
+          </div>
+        `;
+      }
+      if (type === 'note') {
+        return `<textarea class="w-full h-full bg-transparent resize-none outline-none text-slate-200 text-sm placeholder-slate-500 font-medium leading-relaxed" placeholder="Type notes, instructions, or goals here..."></textarea>`;
+      }
+      if (type === 'draw') {
+        return `
+          <div class="flex flex-col h-full">
+            <div class="flex justify-between items-center mb-2 px-1 drawing-colors">
+              <div class="flex space-x-2">
+                <button onclick="setCanvasColor('${id}', '#abf263')" class="w-4 h-4 rounded-full border border-white ring-1 ring-indigo-500 transition transform scale-125" style="background-color: #abf263"></button>
+                <button onclick="setCanvasColor('${id}', '#f43f5e')" class="w-4 h-4 rounded-full border border-transparent transition transform scale-100" style="background-color: #f43f5e"></button>
+                <button onclick="setCanvasColor('${id}', '#3b82f6')" class="w-4 h-4 rounded-full border border-transparent transition transform scale-100" style="background-color: #3b82f6"></button>
+                <button onclick="setCanvasColor('${id}', '#facc15')" class="w-4 h-4 rounded-full border border-transparent transition transform scale-100" style="background-color: #facc15"></button>
+                <button onclick="setCanvasColor('${id}', '#ffffff')" class="w-4 h-4 rounded-full border border-transparent transition transform scale-100" style="background-color: #ffffff"></button>
+              </div>
+              <div class="flex space-x-2 items-center">
+                <button onclick="adjustBrush('${id}', -2)" class="text-slate-400 hover:text-white"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                <span class="text-xs text-slate-400 font-mono w-6 text-center brush-size-display">4px</span>
+                <button onclick="adjustBrush('${id}', 2)" class="text-slate-400 hover:text-white"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                <button onclick="clearDrawboard('${id}')" class="ml-2 text-rose-400 hover:text-rose-300 text-xs font-semibold px-2 py-1 bg-rose-500/10 rounded">Clear</button>
+              </div>
+            </div>
+            <canvas class="flex-1 bg-slate-950/40 rounded-lg cursor-crosshair border border-slate-800 touch-none"></canvas>
+          </div>
+        `;
+      }
+      if (type === 'dice') {
+        return `
+          <div class="flex flex-col items-center h-full justify-between">
+            <div class="flex space-x-2 mb-2 dice-count-selectors">
+              <button onclick="setDiceCount('${id}', 1)" class="w-6 h-6 rounded text-xs font-bold transition bg-indigo-600 text-white">1</button>
+              <button onclick="setDiceCount('${id}', 2)" class="w-6 h-6 rounded text-xs font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-300">2</button>
+              <button onclick="setDiceCount('${id}', 3)" class="w-6 h-6 rounded text-xs font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-300">3</button>
+            </div>
+            <div class="flex justify-center items-center flex-wrap gap-3 dice-wrapper py-2">
+              <div class="w-14 h-14 bg-white text-slate-950 rounded-xl flex items-center justify-center font-bold text-2xl shadow-xl transition-all duration-150 border-2 border-slate-300">1</div>
+            </div>
+            <div class="text-xs font-bold text-indigo-400 hidden dice-sum-display">Total: <span class="sum-value text-base"></span></div>
+            <button onclick="rollDice('${id}')" class="roll-btn w-full mt-2 py-2 rounded-lg text-sm font-bold transition bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+              <span class="roll-txt">Roll Dice</span>
+            </button>
+          </div>
+        `;
+      }
+      if (type === 'picker') {
+        return `
+          <div class="flex flex-col h-full w-full">
+            <div class="picker-input-wrapper flex flex-col h-full w-full">
+              <p class="text-[10px] text-slate-400 mb-1 uppercase font-bold tracking-wider">Paste names (one per line)</p>
+              <textarea class="picker-input flex-1 bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 resize-none outline-none focus:border-indigo-500 mb-2 scrollbar-thin"></textarea>
+              <button onclick="pickWinner('${id}')" class="w-full py-2 rounded-lg text-sm font-bold transition bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">Pick Random</button>
+            </div>
+            <div class="picker-result-wrapper hidden flex-col items-center justify-center h-full w-full">
+              <div class="text-xs text-indigo-400 font-bold mb-4 picker-status">Selecting...</div>
+              <div class="text-3xl font-bold text-white text-center break-words w-full px-2 picker-winner transition-all duration-200"></div>
+              <button onclick="resetPicker('${id}')" class="mt-6 px-4 py-1.5 rounded-lg text-xs font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-300">Reset</button>
+            </div>
+          </div>
+        `;
+      }
+      if (type === 'sound') {
+        return `
+          <div class="flex flex-col items-center h-full justify-center space-y-4">
+            <div class="text-xs font-semibold text-slate-400 sound-status">Initializing Mic...</div>
+            <div class="w-full h-8 bg-slate-950 rounded-full border border-slate-800 overflow-hidden relative">
+              <div class="h-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-rose-500 w-0 transition-all duration-75 sound-bar"></div>
+              <div class="absolute top-0 bottom-0 left-[80%] w-[2px] bg-rose-500/80 z-10"></div>
+            </div>
+            <p class="text-[10px] text-slate-500 text-center max-w-[200px]">Keep volume below the red line to maintain focus.</p>
+          </div>
+        `;
+      }
+      if (type === 'qr') {
+        return `
+          <div class="flex flex-col h-full items-center">
+            <input type="text" onchange="updateQrCode('${id}')" class="qr-input w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 outline-none focus:border-indigo-500 mb-3" placeholder="Enter URL or text...">
+            <div class="bg-white p-3 rounded-xl shadow-lg border border-slate-200 flex-1 flex items-center justify-center aspect-square w-full max-w-[180px]">
+              <img class="qr-img w-full h-full object-contain" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://example.com" />
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">Press enter after typing to update.</p>
+          </div>
+        `;
+      }
+      return `<div>Unknown Tool</div>`;
+    };
+
+    window.initializeWidgetInteractions = function(type, id) {
+      const widget = document.getElementById(id);
+      if (!widget) return;
+
+      if (type === 'clock') {
+        const updateClock = () => {
+          if (!document.getElementById(id)) {
+            clearInterval(widget.clockInterval);
+            return;
+          }
+          const now = new Date();
+          let hours = now.getHours();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          const mins = now.getMinutes().toString().padStart(2, '0');
+          const timeEl = widget.querySelector('.clock-time');
+          if (timeEl) timeEl.innerText = \`\${hours}:\${mins} \${ampm}\`;
+          
+          const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+          const dateEl = widget.querySelector('.clock-date');
+          if (dateEl) dateEl.innerText = now.toLocaleDateString(undefined, options);
+        };
+        updateClock();
+        widget.clockInterval = setInterval(updateClock, 1000);
+      }
+      if (type === 'timer') {
+        widget.dataset.secondsLeft = widget.dataset.secondsLeft || 300;
+        widget.dataset.isActive = widget.dataset.isActive || "false";
+        updateTimerDisplay(id);
+      }
+      if (type === 'stopwatch') {
+        widget.dataset.time = widget.dataset.time || 0;
+        widget.dataset.isActive = widget.dataset.isActive || "false";
+      }
+      if (type === 'draw') {
+        const canvas = widget.querySelector('canvas');
+        if (!canvas) return;
+        
+        // Use a slight timeout to let DOM render completely before getting dimensions
+        setTimeout(() => {
+          canvas.width = canvas.parentElement.clientWidth - 8;
+          canvas.height = canvas.parentElement.clientHeight - 40;
+          const ctx = canvas.getContext('2d');
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = canvas.dataset.color || '#abf263';
+          ctx.lineWidth = canvas.dataset.brushSize || 4;
+        }, 50);
+
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+
+        const draw = (e) => {
+          if (!isDrawing) return;
+          e.preventDefault();
+          const rect = canvas.getBoundingClientRect();
+          let clientX, clientY;
+          if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+          } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+          }
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+
+          const ctx = canvas.getContext('2d');
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+          lastX = x;
+          lastY = y;
+        };
+
+        const startDraw = (e) => {
+          isDrawing = true;
+          const rect = canvas.getBoundingClientRect();
+          if (e.touches && e.touches.length > 0) {
+            lastX = e.touches[0].clientX - rect.left;
+            lastY = e.touches[0].clientY - rect.top;
+          } else {
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+          }
+          e.stopPropagation();
+        };
+
+        const endDraw = () => {
+          if (isDrawing) {
+            isDrawing = false;
+            document.dispatchEvent(new CustomEvent('manualWidgetUpdate'));
+          }
+        };
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('mouseout', endDraw);
+        canvas.addEventListener('touchstart', startDraw, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', endDraw);
+      }
+      if (type === 'sound') {
+        widget.dataset.streamId = id;
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then(stream => {
+            window.micStream = stream;
+            const status = widget.querySelector('.sound-status');
+            const bar = widget.querySelector('.sound-bar');
+            if (status) status.innerText = "Listening...";
+            
+            if (!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = window.audioCtx.createMediaStreamSource(stream);
+            const analyser = window.audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            const updateSound = () => {
+              if (!document.getElementById(id) || widget.dataset.streamId !== id) {
+                stream.getTracks().forEach(t => t.stop());
+                return;
+              }
+              analyser.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+              const avg = sum / dataArray.length;
+              const percent = Math.min(100, Math.max(0, (avg / 128) * 100));
+              if (bar) bar.style.width = \`\${percent}%\`;
+              requestAnimationFrame(updateSound);
+            };
+            updateSound();
+          })
+          .catch(err => {
+            console.error("Mic access denied.", err);
+            const status = widget.querySelector('.sound-status');
+            if (status) status.innerText = "Mic Access Denied";
+          });
+      }
+    };
+
+    window.stopMicrophoneCapture = function(id) {
+      if (window.micStream) {
+        window.micStream.getTracks().forEach(t => t.stop());
+        window.micStream = null;
+      }
+    };
+
+    // --- HELPER BINDINGS FOR GLOBAL ONCLICK TRIGGERS ---    
     // Countdown Timer Actions
     function adjustTimer(id, seconds) {
       const widget = document.getElementById(id);
