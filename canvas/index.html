@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Classroom Canvas - Interactive Workspace</title>
+  <title>Canvas - Interactive Workspace</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -123,7 +123,7 @@
   <header class="absolute top-4 left-6 right-6 z-20 flex justify-between items-center pointer-events-none">
     <div id="branding-pill" class="flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-white">
       <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-      <span class="font-semibold text-sm tracking-wide">Classroom Canvas</span>
+      <span class="font-semibold text-sm tracking-wide">Canvas</span>
       <span class="text-[10px] uppercase bg-indigo-500/30 text-indigo-300 font-bold px-1.5 py-0.5 rounded">Interactive</span>
     </div>
 
@@ -399,7 +399,7 @@
 
       gradients.forEach(g => {
         gradContainer.innerHTML += `
-          <button onclick="setBackground('gradient', '${g.value}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full">
+          <button onclick="setBackground('gradient', '${g.value}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition text-left w-full">
             <div class="w-full h-10 rounded bg-gradient-to-tr ${g.value}"></div>
             <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${g.name}</span>
           </button>
@@ -695,7 +695,7 @@
               <button onclick="setLightColor('${id}', 'yellow')" class="light-yellow w-12 h-12 rounded-full transition-all duration-300 relative bg-yellow-950/70 hover:bg-yellow-900/40">
                 <div class="absolute inset-0.5 rounded-full bg-gradient-to-tr from-transparent to-white/20"></div>
               </button>
-              <button onclick="setLightColor('${id}', 'green')" class="light-green w-12 h-12 rounded-full transition-all duration-300 relative bg-emerald-950/70 hover:bg-emerald-900/40">
+              <button onclick="setLightColor('${id}', 'green')" class="light-green w-12 h-12 rounded-full transition-all duration-300 relative bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] scale-110">
                 <div class="absolute inset-0.5 rounded-full bg-gradient-to-tr from-transparent to-white/20"></div>
               </button>
             </div>
@@ -1101,6 +1101,7 @@
       updateTimerDisplay(id);
     }
 
+    // --- TIMING CHEVRON CHANGER ---
     function adjustTimerVal(id, scope, amount) {
       const widget = document.getElementById(id);
       if (widget.dataset.isActive === "true") return;
@@ -1440,6 +1441,7 @@
       }, 100);
     }
 
+    // --- PICKER RESET ---
     function resetPicker(id) {
       const widget = document.getElementById(id);
       widget.querySelector('.picker-input-wrapper').classList.remove('hidden');
@@ -1579,6 +1581,9 @@
       }
 
       setBackground(randomType, randomValue);
+
+      // Trigger Lucide on main static body content immediately (so dock and branding load instantly!)
+      lucide.createIcons();
 
       // Start with a completely blank screen (no initial widgets spawned)
 
