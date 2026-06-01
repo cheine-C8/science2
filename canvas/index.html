@@ -6,9 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Canvas - Interactive Workspace</title>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- QR Code Generator Lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
     /* Splash Screen Cat Animations */
@@ -59,25 +64,40 @@
 </head>
 <body class="relative w-screen h-screen overflow-hidden no-select bg-slate-900 font-sans text-slate-100">
 
+  <!-- Fireworks Floating Layer Canvas -->
   <canvas id="fireworks-canvas" class="absolute inset-0 pointer-events-none z-[50] w-full h-full"></canvas>
 
+  <!-- ========================================== -->
+  <!--    SPLASH SCREEN                           -->
+  <!-- ========================================== -->
   <div id="app-splash" class="fixed inset-0 z-[99999] bg-slate-950 flex flex-col justify-center items-center transition-all duration-700 ease-in-out overflow-hidden">
     
+    <!-- Full-Body Cat Walking Centered Animation -->
     <div class="cat-wrapper absolute top-1/2 -translate-y-1/2 pointer-events-none">
       <div class="cat-sprite text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+        <!-- Organic Full Cat Body Vector -->
         <svg xmlns="http://www.w3.org/2000/svg" width="180" height="120" viewBox="0 0 140 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Tail -->
           <path d="M25 65 C 10 50, 15 20, 30 15 C 40 10, 45 35, 45 50" />
+          <!-- Spine/Back -->
           <path d="M45 50 Q 75 40 105 50" />
+          <!-- Chest/Belly -->
           <path d="M45 60 Q 75 62 105 58" />
+          <!-- Head -->
           <path d="M105 50 Q 110 35 110 35 L 105 18 L 115 25 L 125 18 L 129 30 Q 138 40 125 48 L 115 50" />
+          <!-- Back Left Leg -->
           <path d="M50 55 L 47 85 L 53 85" />
+          <!-- Back Right Leg -->
           <path d="M60 55 L 58 81 L 64 81" />
+          <!-- Front Left Leg -->
           <path d="M100 54 L 102 85 L 108 85" />
+          <!-- Front Right Leg -->
           <path d="M109 52 L 111 81 L 117 81" />
         </svg>
       </div>
     </div>
 
+    <!-- Loading message positioned cleanly below the center path -->
     <div class="z-10 mt-64 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-slate-800 shadow-xl flex flex-col items-center">
       <p id="splash-text" class="text-slate-200 font-semibold tracking-wide text-sm animate-pulse flex items-center gap-2">
         <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-500"></i> Loading classroom resources...
@@ -87,9 +107,15 @@
     <p class="absolute bottom-6 text-xs text-slate-500 font-medium tracking-widest uppercase">Canvas Sync Pro</p>
   </div>
 
+  <!-- ========================================== -->
+  <!--    DESKTOP CANVAS BACKGROUND & GRID        -->
+  <!-- ========================================== -->
   <div id="canvas-bg" class="absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out"></div>
   <div id="grid-overlay" class="absolute inset-0 bg-repeat bg-[size:24px_24px] pointer-events-none transition-all duration-300"></div>
 
+  <!-- ========================================== -->
+  <!--    TOP BRANDING & BAR                       -->
+  <!-- ========================================== -->
   <header class="absolute top-4 left-6 right-6 z-20 flex justify-between items-center pointer-events-none">
     <div class="flex items-center space-x-2">
       <div id="branding-pill" class="flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-white">
@@ -98,6 +124,7 @@
         <span class="text-[10px] uppercase bg-indigo-500/30 text-indigo-300 font-bold px-1.5 py-0.5 rounded">Interactive</span>
       </div>
 
+      <!-- Live Sync Status Banner -->
       <div id="sync-status" class="flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300">
         <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-amber-500"></i>
         <span class="status-label">Connecting...</span>
@@ -120,6 +147,9 @@
     </div>
   </header>
 
+  <!-- ========================================== -->
+  <!--    CLOUD SYNC CONNECTION DRAWER             -->
+  <!-- ========================================== -->
   <div id="cloud-selector" class="hidden absolute top-16 right-6 z-[100] w-80 bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl p-4 text-white flex flex-col">
     <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
       <h3 class="font-semibold text-slate-100 flex items-center gap-1.5">
@@ -148,6 +178,9 @@
     </div>
   </div>
 
+  <!-- ========================================== -->
+  <!--    THEME SELECTOR DROPDOWN                  -->
+  <!-- ========================================== -->
   <div id="theme-selector" class="hidden absolute top-16 right-6 z-[100] w-80 max-h-[80vh] bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl p-4 text-white flex flex-col">
     <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
       <h3 class="font-semibold text-slate-100 flex items-center gap-1.5">
@@ -159,14 +192,17 @@
     </div>
 
     <div class="flex-1 overflow-y-auto pr-1 space-y-5 scrollbar-thin">
+      <!-- Gradients -->
       <div>
         <p class="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">Dynamic Gradients</p>
         <div id="gradient-choices" class="grid grid-cols-2 gap-2"></div>
       </div>
+      <!-- Images -->
       <div>
         <p class="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">HD Scenes</p>
         <div id="image-choices" class="grid grid-cols-2 gap-2"></div>
       </div>
+      <!-- Solid Colors -->
       <div>
         <p class="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">Solid Colors</p>
         <div id="color-choices" class="flex gap-2 flex-wrap"></div>
@@ -174,21 +210,28 @@
     </div>
   </div>
 
+  <!-- ========================================== -->
+  <!--    WIDGETS STAGING CONTAINER               -->
+  <!-- ========================================== -->
   <div id="widget-container" class="absolute inset-0 pt-16 pb-28 px-4 overflow-hidden pointer-events-none"></div>
 
+  <!-- Shrunk Fireworks Test Button -->
   <div class="absolute top-20 left-6 z-20 pointer-events-auto">
-    <button onclick="window.triggerFireworksCelebration()" class="flex items-center space-x-1 bg-indigo-600/90 hover:bg-indigo-500 text-white px-2 py-0.5 rounded text-[10px] font-bold shadow-md tracking-wide uppercase transition duration-150">
-      <i data-lucide="sparkles" class="w-3 h-3"></i>
-      <span>🎆 Firework</span>
+    <button onclick="window.triggerFireworksCelebration()" class="flex items-center space-x-1.5 bg-indigo-600/90 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md tracking-wide transition duration-150 active:scale-95">
+      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i>
+      <span>Test Fireworks</span>
     </button>
   </div>
 
-  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center space-y-2 max-w-full px-4">
+  <!-- ========================================== -->
+  <!--    BOTTOM FLOATING TOOLBAR DOCK             -->
+  <!-- ========================================== -->
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center space-y-2 max-w-full px-4 font-sans">
     <div id="tip-pill" class="text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-black/40 border-white/5 text-white/55">
       ✨ Tip: Drag headers to move, drag bottom-right corner to resize!
     </div>
     
-    <div id="dock-bar" class="flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 font-sans">
+    <div id="dock-bar" class="flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 pointer-events-auto">
       <button onclick="createWidget('clock')" class="group relative p-2.5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/20 transition duration-150">
         <i data-lucide="clock" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-950 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-800">Clock</span>
@@ -247,9 +290,12 @@
     </div>
   </div>
 
+  <!-- ========================================== -->
+  <!--    JAVASCRIPT CORE LOGIC & SYNC SYSTEM      -->
+  <!-- ========================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- GLOBALS & LOCAL STATE ---
@@ -266,6 +312,9 @@
     let roomId = window.location.hash ? window.location.hash.substring(1).trim() : 'default-room';
     if (!roomId) roomId = 'default-room';
 
+    // Retrieve environment values or fallbacks conforming to Platform Guidelines
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
     let firebaseConfig = { 
       apiKey: "AIzaSyB73ClrB7S2Ja-TWB31NqT5YP99-8Bv87w", 
       authDomain: "canvas-2afe2.firebaseapp.com", 
@@ -274,6 +323,18 @@
       messagingSenderId: "776885959637", 
       appId: "1:776885959637:web:64484c26072f5bc6c7db5c" 
     };
+
+    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+      try {
+        if (typeof __firebase_config === 'string') {
+          firebaseConfig = JSON.parse(__firebase_config);
+        } else if (typeof __firebase_config === 'object') {
+          firebaseConfig = __firebase_config;
+        }
+      } catch (e) {
+        console.error("Firebase config parse fail, falling back", e);
+      }
+    }
 
     const gradients = [
       { name: 'Midnight Aurora', value: 'from-slate-900 via-indigo-950 to-slate-900' },
@@ -415,6 +476,11 @@
         tipPill.className = "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-black/40 border-white/5 text-white/55";
         dockBar.className = "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 pointer-events-auto";
         syncStatus.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300";
+      }
+
+      // Re-trigger icon rendering because visual structures changed
+      if (window.lucide) {
+        window.lucide.createIcons();
       }
 
       triggerWorkspaceSync();
@@ -573,7 +639,7 @@
     }
     animateParticles();
 
-    // --- WIDGET LOGIC ENGINE ---
+    // --- ALL WIDGET MODULE BUILDERS ---
     window.createWidget = function(type, options = {}) {
       const id = options.id || 'w_' + Math.random().toString(36).substr(2, 9);
       const container = document.getElementById('widget-container');
@@ -601,7 +667,8 @@
 
       if (type === 'clock') {
         innerHTML = `<div class="flex-1 flex flex-col justify-center items-center font-mono text-3xl font-bold tracking-wider text-sky-400 select-all p-4" id="clock-txt-${id}">00:00:00</div>`;
-      } else if (type === 'timer') {
+      } 
+      else if (type === 'timer') {
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-4">
             <div class="text-4xl font-mono font-bold text-amber-500 mb-2" id="timer-display-${id}">05:00</div>
@@ -610,7 +677,8 @@
               <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs text-slate-400" id="timer-reset-${id}">Reset</button>
             </div>
           </div>`;
-      } else if (type === 'stopwatch') {
+      } 
+      else if (type === 'stopwatch') {
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-4">
             <div class="text-4xl font-mono font-bold text-emerald-400 mb-2" id="sw-display-${id}">00:00.0</div>
@@ -619,15 +687,111 @@
               <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs text-slate-400" id="sw-reset-${id}">Reset</button>
             </div>
           </div>`;
-      } else if (type === 'note') {
+      } 
+      else if (type === 'schedule') {
+        title = "BELL SCHEDULE";
+        let listHtml = bellSchedule.map((s, idx) => `
+          <div class="flex justify-between items-center py-1 border-b border-slate-800/60 text-xs" id="sched-row-${id}-${idx}">
+            <span class="font-medium text-slate-300 truncate max-w-[120px]">${s.name}</span>
+            <span class="font-mono text-slate-400 text-[10px]">${s.label}</span>
+          </div>
+        `).join('');
+        innerHTML = `
+          <div class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-1">
+            <div class="text-[10px] font-bold text-indigo-400 mb-1 flex justify-between items-center">
+              <span>ACTIVE TRACKER</span>
+              <span id="sched-current-${id}" class="bg-indigo-950 px-1.5 py-0.5 rounded text-indigo-300">Class</span>
+            </div>
+            ${listHtml}
+          </div>`;
+      } 
+      else if (type === 'traffic') {
+        title = "TRAFFIC LIGHT";
+        innerHTML = `
+          <div class="flex-1 flex justify-around items-center px-6 py-4">
+            <button id="traffic-red-${id}" class="w-12 h-12 rounded-full bg-rose-950 border border-rose-900/50 flex items-center justify-center transition duration-200">
+              <div class="w-6 h-6 rounded-full bg-rose-600/20"></div>
+            </button>
+            <button id="traffic-yellow-${id}" class="w-12 h-12 rounded-full bg-amber-950 border border-amber-900/50 flex items-center justify-center transition duration-200">
+              <div class="w-6 h-6 rounded-full bg-amber-600/20"></div>
+            </button>
+            <button id="traffic-green-${id}" class="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-900/50 flex items-center justify-center transition duration-200">
+              <div class="w-6 h-6 rounded-full bg-emerald-600/20"></div>
+            </button>
+          </div>`;
+      } 
+      else if (type === 'work') {
+        title = "WORK SYMBOL";
+        innerHTML = `
+          <div class="flex-1 flex flex-col justify-center items-center p-3 text-center">
+            <div class="text-3xl font-bold mb-1" id="work-symbol-${id}">🤫</div>
+            <div class="text-sm font-semibold mb-3 text-indigo-300" id="work-label-${id}">Silent Study</div>
+            <div class="flex gap-1 flex-wrap justify-center">
+              <button onclick="changeWorkSymbol('${id}', '🤫', 'Silent Study')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Silent</button>
+              <button onclick="changeWorkSymbol('${id}', '👥', 'Collab Work')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Collab</button>
+              <button onclick="changeWorkSymbol('${id}', '🙋', 'Ask Teacher')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Ask</button>
+            </div>
+          </div>`;
+      } 
+      else if (type === 'note') {
         innerHTML = `<textarea class="flex-1 bg-transparent p-3 resize-none text-sm focus:outline-none scrollbar-thin text-slate-200" placeholder="Type classroom notes here..." id="note-area-${id}"></textarea>`;
-      } else {
-        innerHTML = `<div class="flex-1 flex items-center justify-center text-xs text-slate-400 p-4">${type.toUpperCase()} Module Workspace</div>`;
+      } 
+      else if (type === 'draw') {
+        title = "DRAW BOARD";
+        innerHTML = `
+          <div class="flex-1 flex flex-col min-h-0 relative">
+            <div class="flex justify-between items-center bg-slate-950/40 border-b border-slate-800/80 px-2 py-1 text-[10px] gap-2">
+              <input type="color" id="draw-color-${id}" class="w-4 h-4 rounded cursor-pointer border-0 p-0 bg-transparent" value="#6366f1" />
+              <button id="draw-clear-${id}" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded text-rose-400">Clear</button>
+            </div>
+            <canvas id="draw-canvas-${id}" class="flex-1 w-full h-full bg-slate-950/20"></canvas>
+          </div>`;
+      } 
+      else if (type === 'dice') {
+        innerHTML = `
+          <div class="flex-1 flex flex-col justify-center items-center p-4">
+            <div class="text-5xl font-bold text-pink-500 mb-3" id="dice-value-${id}">🎲</div>
+            <button class="bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-200 font-semibold px-4 py-1.5 rounded-lg text-xs tracking-wider uppercase transition" id="dice-roll-${id}">Roll Dice</button>
+          </div>`;
+      } 
+      else if (type === 'picker') {
+        title = "NAME PICKER";
+        innerHTML = `
+          <div class="flex-1 flex flex-col p-3 min-h-0">
+            <textarea id="picker-list-${id}" class="flex-1 bg-slate-950/40 p-2 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300" placeholder="Enter one name per line..."></textarea>
+            <div class="mt-2 flex gap-1.5">
+              <button id="picker-trigger-${id}" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-bold py-1 rounded text-xs transition">PICK NAME</button>
+              <button id="picker-clear-${id}" class="bg-slate-800 text-slate-400 hover:text-rose-400 px-2 rounded text-xs"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+            <div id="picker-result-${id}" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-4 rounded-xl">
+              <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">🎉 Picked Student 🎉</div>
+              <div class="text-2xl font-bold text-yellow-400 mb-4 text-center" id="picker-winner-${id}">Student Name</div>
+              <button id="picker-close-${id}" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1 rounded font-semibold text-slate-200">Close</button>
+            </div>
+          </div>`;
+      } 
+      else if (type === 'sound') {
+        title = "SOUND METER";
+        innerHTML = `
+          <div class="flex-1 flex flex-col justify-center items-center p-4">
+            <div class="w-full bg-slate-950/60 h-4 rounded-full overflow-hidden border border-slate-800 mb-3 relative">
+              <div id="sound-bar-${id}" class="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 w-0 transition-all duration-75"></div>
+            </div>
+            <button id="sound-toggle-${id}" class="bg-slate-800 hover:bg-slate-700 px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-200">Enable Mic</button>
+          </div>`;
+      } 
+      else if (type === 'qr') {
+        title = "QR CODE SHARE";
+        innerHTML = `
+          <div class="flex-1 flex flex-col p-3 items-center min-h-0">
+            <div id="qr-display-${id}" class="w-24 h-24 bg-white p-1 rounded mb-2"></div>
+            <input type="text" id="qr-input-${id}" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-cyan-500 font-mono" value="${window.location.href}" />
+          </div>`;
       }
 
       wEl.innerHTML = `
         <div class="bg-slate-950/60 border-b border-slate-800 px-3 py-1.5 flex justify-between items-center cursor-move select-none shrink-0 rounded-t-xl" id="handle-${id}">
-          <span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5"><i data-lucide="grid" class="w-3 h-3"></i> ${title}</span>
+          <span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5"><i data-lucide="grid" class="w-3 h-3 text-slate-500"></i> ${title}</span>
           <button onclick="closeWidget('${id}')" class="text-slate-500 hover:text-rose-400 p-0.5 rounded transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
         </div>
         <div class="flex-1 flex flex-col min-h-0 relative bg-slate-900/40">${innerHTML}</div>
@@ -642,16 +806,297 @@
       window.widgets[id] = { type, x, y, w, h, z, state: {} };
       setupWidgetInteractions(id);
 
-      // Implement Live Loops 
-      if (type === 'clock') {
-        const updateClock = () => {
-          const el = document.getElementById(`clock-txt-${id}`);
-          if (!el) return;
-          const now = new Date();
-          el.innerText = now.toTimeString().split(' ')[0];
-          setTimeout(updateClock, 1000);
+      // --- RUNTIME MODULE INITIALIZERS ---
+      
+      // Timer Loop
+      if (type === 'timer') {
+        let tInterval = null;
+        let tDuration = 300; // 5 mins
+        const display = document.getElementById(`timer-display-${id}`);
+        const toggleBtn = document.getElementById(`timer-toggle-${id}`);
+        const resetBtn = document.getElementById(`timer-reset-${id}`);
+
+        const updateDisp = () => {
+          let mins = Math.floor(tDuration / 60);
+          let secs = tDuration % 60;
+          display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         };
-        updateClock();
+
+        toggleBtn.onclick = () => {
+          if (tInterval) {
+            clearInterval(tInterval);
+            tInterval = null;
+            toggleBtn.innerText = "Start";
+            toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+          } else {
+            toggleBtn.innerText = "Pause";
+            toggleBtn.className = "bg-rose-900 hover:bg-rose-800 px-2.5 py-1 rounded text-xs font-bold text-white";
+            tInterval = setInterval(() => {
+              if (tDuration > 0) {
+                tDuration--;
+                updateDisp();
+              } else {
+                clearInterval(tInterval);
+                tInterval = null;
+                toggleBtn.innerText = "Start";
+                toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+                window.playBuzzer('bell');
+              }
+            }, 1000);
+          }
+        };
+
+        resetBtn.onclick = () => {
+          clearInterval(tInterval);
+          tInterval = null;
+          tDuration = 300;
+          updateDisp();
+          toggleBtn.innerText = "Start";
+          toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+        };
+      }
+
+      // Stopwatch Loop
+      if (type === 'stopwatch') {
+        let swInterval = null;
+        let swTime = 0;
+        const display = document.getElementById(`sw-display-${id}`);
+        const toggleBtn = document.getElementById(`sw-toggle-${id}`);
+        const resetBtn = document.getElementById(`sw-reset-${id}`);
+
+        const updateDisp = () => {
+          let mins = Math.floor(swTime / 600);
+          let secs = Math.floor((swTime % 600) / 10);
+          let tenths = swTime % 10;
+          display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${tenths}`;
+        };
+
+        toggleBtn.onclick = () => {
+          if (swInterval) {
+            clearInterval(swInterval);
+            swInterval = null;
+            toggleBtn.innerText = "Start";
+            toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+          } else {
+            toggleBtn.innerText = "Pause";
+            toggleBtn.className = "bg-rose-900 hover:bg-rose-800 px-2.5 py-1 rounded text-xs font-bold text-white";
+            swInterval = setInterval(() => {
+              swTime++;
+              updateDisp();
+            }, 100);
+          }
+        };
+
+        resetBtn.onclick = () => {
+          clearInterval(swInterval);
+          swInterval = null;
+          swTime = 0;
+          updateDisp();
+          toggleBtn.innerText = "Start";
+          toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+        };
+      }
+
+      // Traffic Light
+      if (type === 'traffic') {
+        const trRed = document.getElementById(`traffic-red-${id}`);
+        const trYellow = document.getElementById(`traffic-yellow-${id}`);
+        const trGreen = document.getElementById(`traffic-green-${id}`);
+
+        const setTrafficState = (active) => {
+          trRed.className = `w-12 h-12 rounded-full flex items-center justify-center transition duration-200 ${active === 'red' ? 'bg-rose-600 shadow-[0_0_15px_#f43f5e]' : 'bg-rose-950/60 border border-rose-900/40'}`;
+          trYellow.className = `w-12 h-12 rounded-full flex items-center justify-center transition duration-200 ${active === 'yellow' ? 'bg-amber-500 shadow-[0_0_15px_#f59e0b]' : 'bg-amber-950/60 border border-amber-900/40'}`;
+          trGreen.className = `w-12 h-12 rounded-full flex items-center justify-center transition duration-200 ${active === 'green' ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-emerald-950/60 border border-emerald-900/40'}`;
+        };
+
+        trRed.onclick = () => setTrafficState('red');
+        trYellow.onclick = () => setTrafficState('yellow');
+        trGreen.onclick = () => setTrafficState('green');
+      }
+
+      // Notes Area
+      if (type === 'note') {
+        const textarea = document.getElementById(`note-area-${id}`);
+        textarea.addEventListener('input', () => {
+          window.widgets[id].state.text = textarea.value;
+          triggerWorkspaceSync();
+        });
+      }
+
+      // Dice Roll Action
+      if (type === 'dice') {
+        const dVal = document.getElementById(`dice-value-${id}`);
+        const dBtn = document.getElementById(`dice-roll-${id}`);
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+        dBtn.onclick = () => {
+          let count = 0;
+          dBtn.disabled = true;
+          const rollInterval = setInterval(() => {
+            dVal.innerText = diceFaces[Math.floor(Math.random() * 6)];
+            count++;
+            if (count > 8) {
+              clearInterval(rollInterval);
+              dBtn.disabled = false;
+              window.playBuzzer('buzzer');
+            }
+          }, 80);
+        };
+      }
+
+      // Name Picker Logic
+      if (type === 'picker') {
+        const inputField = document.getElementById(`picker-list-${id}`);
+        const trigger = document.getElementById(`picker-trigger-${id}`);
+        const clearBtn = document.getElementById(`picker-clear-${id}`);
+        const modal = document.getElementById(`picker-result-${id}`);
+        const winner = document.getElementById(`picker-winner-${id}`);
+        const closeModal = document.getElementById(`picker-close-${id}`);
+
+        trigger.onclick = () => {
+          const names = inputField.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+          if (names.length === 0) return;
+          
+          let cycle = 0;
+          const cycleInterval = setInterval(() => {
+            winner.innerText = names[Math.floor(Math.random() * names.length)];
+            cycle++;
+            if (cycle > 12) {
+              clearInterval(cycleInterval);
+              modal.classList.remove('hidden');
+              window.triggerFireworksCelebration();
+            }
+          }, 100);
+        };
+
+        clearBtn.onclick = () => {
+          inputField.value = '';
+        };
+
+        closeModal.onclick = () => {
+          modal.classList.add('hidden');
+        };
+      }
+
+      // Sound Meter Loop
+      if (type === 'sound') {
+        const soundBar = document.getElementById(`sound-bar-${id}`);
+        const soundBtn = document.getElementById(`sound-toggle-${id}`);
+        let activeMeter = false;
+        let audioSource = null;
+        let analyzer = null;
+        let processor = null;
+
+        soundBtn.onclick = async () => {
+          if (activeMeter) {
+            if (window.micStream) {
+              window.micStream.getTracks().forEach(track => track.stop());
+            }
+            activeMeter = false;
+            soundBtn.innerText = "Enable Mic";
+            soundBar.style.width = '0%';
+            return;
+          }
+
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            window.micStream = stream;
+            
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const context = new AudioContext();
+            audioSource = context.createMediaStreamSource(stream);
+            analyzer = context.createAnalyser();
+            analyzer.fftSize = 256;
+            audioSource.connect(analyzer);
+
+            activeMeter = true;
+            soundBtn.innerText = "Stop Meter";
+
+            const bufferLength = analyzer.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const checkVolume = () => {
+              if (!activeMeter) return;
+              analyzer.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i];
+              }
+              const average = sum / bufferLength;
+              const percent = Math.min(100, Math.floor((average / 128) * 100));
+              soundBar.style.width = `${percent}%`;
+              requestAnimationFrame(checkVolume);
+            };
+
+            checkVolume();
+          } catch (err) {
+            console.error("Mic access refused or failed", err);
+          }
+        };
+      }
+
+      // Draw Board Canvas
+      if (type === 'draw') {
+        const dCanvas = document.getElementById(`draw-canvas-${id}`);
+        const dColor = document.getElementById(`draw-color-${id}`);
+        const dClear = document.getElementById(`draw-clear-${id}`);
+        const dCtx = dCanvas.getContext('2d');
+        let painting = false;
+
+        const resizeDrawCanvas = () => {
+          const rect = dCanvas.parentNode.getBoundingClientRect();
+          dCanvas.width = rect.width;
+          dCanvas.height = rect.height - 30; // offset control header height
+        };
+        setTimeout(resizeDrawCanvas, 100);
+
+        dCanvas.addEventListener('mousedown', (e) => {
+          painting = true;
+          draw(e);
+        });
+
+        dCanvas.addEventListener('mouseup', () => {
+          painting = false;
+          dCtx.beginPath();
+        });
+
+        dCanvas.addEventListener('mousemove', draw);
+
+        function draw(e) {
+          if (!painting) return;
+          const rect = dCanvas.getBoundingClientRect();
+          dCtx.lineWidth = 4;
+          dCtx.lineCap = 'round';
+          dCtx.strokeStyle = dColor.value;
+
+          dCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+          dCtx.stroke();
+          dCtx.beginPath();
+          dCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        dClear.onclick = () => {
+          dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height);
+        };
+      }
+
+      // QR Code Generator
+      if (type === 'qr') {
+        const qrDisplay = document.getElementById(`qr-display-${id}`);
+        const qrInput = document.getElementById(`qr-input-${id}`);
+        
+        let qrcode = new QRCode(qrDisplay, {
+          text: qrInput.value,
+          width: 96,
+          height: 96,
+          colorDark : "#0f172a",
+          colorLight : "#ffffff"
+        });
+
+        qrInput.oninput = () => {
+          qrcode.clear();
+          qrcode.makeCode(qrInput.value);
+        };
       }
 
       triggerWorkspaceSync();
@@ -670,21 +1115,34 @@
       triggerWorkspaceSync();
     };
 
+    // Symbol Switcher helper
+    window.changeWorkSymbol = function(id, symbol, label) {
+      const symEl = document.getElementById(`work-symbol-${id}`);
+      const labelEl = document.getElementById(`work-label-${id}`);
+      if (symEl && labelEl) {
+        symEl.innerText = symbol;
+        labelEl.innerText = label;
+        window.widgets[id].state.symbol = symbol;
+        window.widgets[id].state.label = label;
+        triggerWorkspaceSync();
+      }
+    };
+
     function setupWidgetInteractions(id) {
       const el = document.getElementById(id);
       const handle = document.getElementById(`handle-${id}`);
       const resize = document.getElementById(`resize-${id}`);
 
-      // Focus / Depth bring to front
+      // Focus depth layering
       el.addEventListener('mousedown', () => {
         window.maxZIndex++;
         el.style.zIndex = window.maxZIndex;
         window.widgets[id].z = window.maxZIndex;
       });
 
-      // Simple Draggable implementation
+      // Drag implementation
       handle.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button') || e.target.closest('input')) return;
         e.preventDefault();
         el.classList.add('no-transition');
         const startX = e.clientX - el.offsetLeft;
@@ -710,7 +1168,7 @@
         document.addEventListener('mouseup', stopDrag);
       });
 
-      // Resize logic implementation
+      // Resize implementation
       resize.addEventListener('mousedown', (e) => {
         e.preventDefault();
         el.classList.add('no-transition');
@@ -720,12 +1178,29 @@
         const startY = e.clientY;
 
         function doResize(mEvt) {
-          const nw = Math.max(160, startW + (mEvt.clientX - startX));
-          const nh = Math.max(100, startH + (mEvt.clientY - startY));
+          const nw = Math.max(220, startW + (mEvt.clientX - startX));
+          const nh = Math.max(150, startH + (mEvt.clientY - startY));
           el.style.width = `${nw}px`;
           el.style.height = `${nh}px`;
           window.widgets[id].w = nw;
           window.widgets[id].h = nh;
+
+          // Re-draw resize canvases dynamically if relevant
+          const drawCanv = document.getElementById(`draw-canvas-${id}`);
+          if (drawCanv) {
+            const rect = drawCanv.parentNode.getBoundingClientRect();
+            // Preserve drawn context if resizing
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = drawCanv.width;
+            tempCanvas.height = drawCanv.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(drawCanv, 0, 0);
+
+            drawCanv.width = rect.width;
+            drawCanv.height = rect.height - 30;
+            const drawCtx = drawCanv.getContext('2d');
+            drawCtx.drawImage(tempCanvas, 0, 0);
+          }
         }
 
         function stopResize() {
@@ -743,12 +1218,13 @@
     // --- SYNCHRONIZATION SYNC ENGINE ---
     function triggerWorkspaceSync() {
       if (isIncomingStateUpdate) return;
+      if (!db || !auth || !auth.currentUser) return; // Guard against unauthenticated queries
       if (saveTimeout) clearTimeout(saveTimeout);
 
       saveTimeout = setTimeout(async () => {
-        if (!db) return;
         try {
-          const docRef = doc(db, "rooms", roomId);
+          // Conforming strictly to Rule 1 directory subpath schema layout requirements
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
           await setDoc(docRef, {
             backgroundType: window.activeBgType,
             backgroundValue: window.activeBgValue,
@@ -772,7 +1248,7 @@
       const syncStatusLabel = document.querySelector('#sync-status .status-label');
       const syncStatusIcon = document.querySelector('#sync-status i');
 
-      if (!db) {
+      if (!db || !auth || !auth.currentUser) {
         syncStatusLabel.innerText = "Offline Mode";
         if(syncStatusIcon) syncStatusIcon.className = "w-3.5 h-3.5 text-slate-500";
         return;
@@ -781,7 +1257,9 @@
       syncStatusLabel.innerText = "Connected";
       if(syncStatusIcon) syncStatusIcon.className = "w-3.5 h-3.5 text-emerald-500";
 
-      syncUnsubscribe = onSnapshot(doc(db, "rooms", roomId), (docSnap) => {
+      // Rule 1: Secure subscription directory conforming to artifact parameters
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+      syncUnsubscribe = onSnapshot(docRef, (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
         
@@ -819,28 +1297,115 @@
               targetEl.style.zIndex = wData.z;
               window.widgets[wKey] = wData;
             }
+
+            // Sync stateful values
+            if (wData.type === 'note' && wData.state && wData.state.text) {
+              const textEl = document.getElementById(`note-area-${wKey}`);
+              if (textEl && textEl.value !== wData.state.text) {
+                textEl.value = wData.state.text;
+              }
+            }
+            if (wData.type === 'work' && wData.state && wData.state.symbol) {
+              const symEl = document.getElementById(`work-symbol-${wKey}`);
+              const lblEl = document.getElementById(`work-label-${wKey}`);
+              if (symEl && lblEl) {
+                symEl.innerText = wData.state.symbol;
+                lblEl.innerText = wData.state.label || '';
+              }
+            }
           });
         }
 
         isIncomingStateUpdate = false;
+      }, (error) => {
+        console.error("Firestore subscription permission check: ", error);
+        syncStatusLabel.innerText = "Sync Denied";
+        if (syncStatusIcon) syncStatusIcon.className = "w-3.5 h-3.5 text-rose-500 animate-pulse";
       });
+    }
+
+    // Live clock loop
+    function initClockUpdater() {
+      const runClock = () => {
+        const clocks = document.querySelectorAll('[id^="clock-txt-"]');
+        clocks.forEach(c => {
+          const now = new Date();
+          c.innerText = now.toTimeString().split(' ')[0];
+        });
+        setTimeout(runClock, 1000);
+      };
+      runClock();
+    }
+
+    // Schedule active tracker indicator loop
+    function initScheduleActiveTracker() {
+      const runScheduleCheck = () => {
+        const currentWidgets = document.querySelectorAll('[id^="sched-current-"]');
+        currentWidgets.forEach(cWidget => {
+          const wId = cWidget.id.replace('sched-current-', '');
+          const now = new Date();
+          const currentMin = now.getHours() * 60 + now.getMinutes();
+
+          let activeBell = "Passing Period";
+          bellSchedule.forEach((s, idx) => {
+            const [sh, sm] = s.start.split(':').map(Number);
+            const [eh, em] = s.end.split(':').map(Number);
+            const sMin = sh * 60 + sm;
+            const eMin = eh * 60 + em;
+
+            const row = document.getElementById(`sched-row-${wId}-${idx}`);
+            if (row) {
+              if (currentMin >= sMin && currentMin <= eMin) {
+                row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs bg-indigo-500/10 px-1 rounded text-indigo-400 font-bold";
+                activeBell = s.name;
+              } else {
+                row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs";
+              }
+            }
+          });
+          cWidget.innerText = activeBell;
+        });
+        setTimeout(runScheduleCheck, 15000); // Check schedule rows every 15 secs
+      };
+      runScheduleCheck();
     }
 
     // --- INITIALIZATION GATEWAY ---
     window.addEventListener('DOMContentLoaded', async () => {
       buildThemeSelectorMenu();
       window.setBackground('gradient', 'from-slate-900 via-indigo-950 to-slate-900');
+      initClockUpdater();
+      initScheduleActiveTracker();
+
+      // Render static page-level Lucide icons immediately
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
 
       try {
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
-        await signInAnonymously(auth);
-      } catch (e) {
-        console.warn("Firebase credential failed initialization. Launching layout in local standalone offline backup mode.", e);
-      }
 
-      initializeRealtimeSync();
+        // Rule 3: Bind state listener before triggering asynchronous authenticators
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            initializeRealtimeSync();
+          } else {
+            console.warn("User is unauthenticated.");
+          }
+        });
+
+        // Safe priority sign-in chain
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (e) {
+        console.warn("Firebase credential failed initialization. Standalone mode ready.", e);
+        initializeRealtimeSync();
+      }
 
       setTimeout(() => {
         const splash = document.getElementById('app-splash');
