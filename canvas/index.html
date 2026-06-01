@@ -52,6 +52,11 @@
       user-select: none;
       -webkit-user-select: none;
     }
+
+    /* Dragging Performance Fix: Disables transitions dynamically on drag/resize */
+    .no-transition {
+      transition: none !important;
+    }
   </style>
 </head>
 <body class="relative w-screen h-screen overflow-hidden no-select bg-slate-900 font-sans text-slate-100">
@@ -555,10 +560,10 @@
       };
     }
 
+    // Apply Incoming Firestore Workspace State
     function applyWorkspaceState(state) {
       if (!state) return;
 
-      // Clean up existing widgets that aren't in the incoming state
       const incomingIds = state.widgets ? Object.keys(state.widgets) : [];
       Object.keys(widgets).forEach(id => {
         if (!incomingIds.includes(id)) {
@@ -566,14 +571,12 @@
         }
       });
 
-      // Update background
       if (state.themeType && state.themeValue) {
         if (state.themeType !== window.activeBgType || state.themeValue !== window.activeBgValue) {
           window.setBackground(state.themeType, state.themeValue);
         }
       }
 
-      // Add/Update widgets
       if (state.widgets) {
         Object.keys(state.widgets).forEach(id => {
           const wState = state.widgets[id];
@@ -581,7 +584,6 @@
           if (!el) {
             createWidgetLocally(wState.type, wState.id, wState.x, wState.y, wState.w, wState.h, wState.zIndex, wState.data);
           } else {
-            // Update placement
             el.style.left = `${wState.x}px`;
             el.style.top = `${wState.y}px`;
             el.style.width = `${wState.w}px`;
@@ -589,7 +591,6 @@
             el.style.zIndex = wState.zIndex;
             if (wState.zIndex > window.maxZIndex) window.maxZIndex = wState.zIndex;
 
-            // Update specific widget contents
             const w = widgets[id];
             if (w && w.deserialize) {
               w.deserialize(wState.data);
@@ -617,7 +618,7 @@
           isIncomingStateUpdate = false;
         }
       }, (error) => {
-        console.warn("Realtime sync issue (could be permissions/offline):", error);
+        console.warn("Realtime sync issue:", error);
       });
     }
 
@@ -639,7 +640,6 @@
     function removeWidgetLocally(id) {
       const el = document.getElementById(`widget-${id}`);
       if (el) {
-        // Destroy callbacks / cleanup
         if (widgets[id] && widgets[id].destroy) {
           widgets[id].destroy();
         }
@@ -654,17 +654,17 @@
     };
 
     function createWidgetLocally(type, id, x, y, w, h, zIndex, initialData) {
-      if (widgets[id]) return; // already exists
+      if (widgets[id]) return;
 
       const container = document.getElementById('widget-container');
       const card = document.createElement('div');
       card.id = `widget-${id}`;
-      card.className = "absolute bg-slate-900/95 border border-slate-700/70 rounded-xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col group transition-all duration-150";
+      // Note: We use specific property transitions to ensure positional styles bypass animation delays entirely
+      card.className = "absolute bg-slate-900/95 border border-slate-700/70 rounded-xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col group transition-[border-color,transform,background-color] duration-150";
       card.style.left = `${x}px`;
       card.style.top = `${y}px`;
       card.style.zIndex = zIndex;
 
-      // Define default dimensions
       let defaultW = 320;
       let defaultH = 240;
 
@@ -687,7 +687,6 @@
       card.style.width = `${actualW}px`;
       card.style.height = `${actualH}px`;
 
-      // Header icon
       let headerIcon = 'help-circle';
       let title = 'Widget';
       let themeColor = 'text-indigo-400';
@@ -734,7 +733,6 @@
 
       const bodyEl = card.querySelector('.widget-body');
 
-      // WIDGET LOGIC ATTACHMENTS
       const widgetInstance = {
         id,
         type,
@@ -747,18 +745,16 @@
 
       widgets[id] = widgetInstance;
 
-      // SETUP DRAG AND RESIZE HANDLERS (POINTER EVENTS)
       const headerEl = card.querySelector('.widget-header');
       const resizerEl = card.querySelector('.widget-resizer');
 
-      // Z-index lift
       card.addEventListener('pointerdown', () => {
         if (parseInt(card.style.zIndex) < window.maxZIndex) {
           card.style.zIndex = ++window.maxZIndex;
         }
       });
 
-      // DRAGGING ENGINE
+      // --- HIGH PERFORMANCE DRAGGING ENGINE ---
       let isDragging = false;
       let startX, startY, startLeft, startTop;
 
@@ -770,7 +766,8 @@
         startY = e.clientY;
         startLeft = parseInt(card.style.left) || 0;
         startTop = parseInt(card.style.top) || 0;
-        card.classList.add('scale-[1.01]', 'border-slate-500');
+        // The 'no-transition' class cancels positional interpolation, allowing 60FPS fluid drags
+        card.classList.add('scale-[1.01]', 'border-slate-500', 'no-transition');
         e.preventDefault();
       });
 
@@ -786,12 +783,12 @@
         if (isDragging) {
           isDragging = false;
           card.releasePointerCapture(e.pointerId);
-          card.classList.remove('scale-[1.01]', 'border-slate-500');
+          card.classList.remove('scale-[1.01]', 'border-slate-500', 'no-transition');
           triggerWorkspaceSync();
         }
       });
 
-      // RESIZING ENGINE
+      // --- HIGH PERFORMANCE RESIZING ENGINE ---
       let isResizing = false;
       let startW, startH;
 
@@ -802,6 +799,7 @@
         startY = e.clientY;
         startW = card.clientWidth;
         startH = card.clientHeight;
+        card.classList.add('no-transition');
         e.stopPropagation();
         e.preventDefault();
       });
@@ -821,11 +819,12 @@
         if (isResizing) {
           isResizing = false;
           resizerEl.releasePointerCapture(e.pointerId);
+          card.classList.remove('no-transition');
           triggerWorkspaceSync();
         }
       });
 
-      // SPECIFIC MODULE RENDERERS
+      // Renderer Routers
       if (type === 'clock') {
         renderClockWidget(widgetInstance, bodyEl, initialData);
       } else if (type === 'timer') {
@@ -854,7 +853,7 @@
     }
 
     // ==========================================
-    //   WIDGET: CLOCK (WITH SECONDS FIX!)
+    //   WIDGET: CLOCK
     // ==========================================
     function renderClockWidget(instance, body, data) {
       body.innerHTML = `
@@ -882,7 +881,7 @@
         if (!use24h) {
           ampm = hours >= 12 ? ' PM' : ' AM';
           hours = hours % 12;
-          hours = hours ? hours : 12; // 0 should be 12
+          hours = hours ? hours : 12;
         }
         const hourStr = String(hours).padStart(2, '0');
         displayEl.innerText = `${hourStr}:${minutes}:${seconds}${ampm}`;
@@ -942,7 +941,7 @@
 
       lucide.createIcons({ attrs: { class: 'lucide-custom' } });
 
-      let duration = data.duration || 300; // 5 mins default
+      let duration = data.duration || 300;
       let remaining = duration;
       let timerId = null;
 
@@ -980,13 +979,11 @@
 
       playBtn.onclick = () => {
         if (timerId) {
-          // Pause
           clearInterval(timerId);
           timerId = null;
           playBtn.innerHTML = `<i data-lucide="play" class="w-3 h-3"></i> Resume`;
           playBtn.className = "play-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-4 rounded text-xs transition flex items-center gap-1";
         } else {
-          // Play
           if (remaining === 0) remaining = duration;
           timerId = setInterval(tick, 1000);
           playBtn.innerHTML = `<i data-lucide="pause" class="w-3 h-3"></i> Pause`;
@@ -1044,7 +1041,7 @@
         </div>
       `;
 
-      let elapsed = 0; // tenths of a second
+      let elapsed = 0;
       let runId = null;
 
       const timeEl = body.querySelector('.stopwatch-time');
@@ -1090,9 +1087,7 @@
     }
 
     // ==========================================
-    //   WIDGET: BELL SCHEDULE (COMPLETELY FIXED!)
-    //   Shows time remaining in active period,
-    //   and then *only* remaining periods.
+    //   WIDGET: BELL SCHEDULE
     // ==========================================
     function renderScheduleWidget(instance, body, data) {
       body.innerHTML = `
@@ -1114,7 +1109,6 @@
       const countdownText = body.querySelector('.countdown-text');
       const listContainer = body.querySelector('.schedule-list');
 
-      // Convert "HH:MM" format string to total seconds of the day
       function timeToSeconds(timeStr) {
         const [h, m] = timeStr.split(':').map(Number);
         return (h * 3600) + (m * 60);
@@ -1127,17 +1121,14 @@
         let activePeriod = null;
         let nextUpcoming = null;
 
-        // Parse schedules with cached seconds
         const processedSchedule = bellSchedule.map(p => {
           const startSecs = timeToSeconds(p.start);
           const endSecs = timeToSeconds(p.end);
           return { ...p, startSecs, endSecs };
         });
 
-        // 1. Filter out already finished periods (only show periods that haven't ended yet)
         const remainingPeriods = processedSchedule.filter(p => p.endSecs > currentSecs);
 
-        // 2. Identify the currently active period, or the next upcoming period
         remainingPeriods.forEach(p => {
           if (currentSecs >= p.startSecs && currentSecs <= p.endSecs) {
             activePeriod = p;
@@ -1145,11 +1136,9 @@
         });
 
         if (!activePeriod && remainingPeriods.length > 0) {
-          // If no period is active, find the nearest upcoming one
           nextUpcoming = remainingPeriods[0];
         }
 
-        // 3. Render active period countdown
         if (activePeriod) {
           const secsLeft = activePeriod.endSecs - currentSecs;
           const mins = Math.floor(secsLeft / 60);
@@ -1170,7 +1159,6 @@
           countdownText.innerText = "School Day Finished 🎉";
         }
 
-        // 4. Render only the remaining periods in the list
         listContainer.innerHTML = '';
         if (remainingPeriods.length === 0) {
           listContainer.innerHTML = `
@@ -1385,7 +1373,6 @@
         redraw();
       }
 
-      // Quick Redraw Engine
       function redraw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (points.length === 0) return;
@@ -1405,7 +1392,6 @@
         ctx.stroke();
       }
 
-      // Drawing with Pointer Events (Native Mouse + Touch)
       let isDrawing = false;
 
       canvas.addEventListener('pointerdown', (e) => {
@@ -1436,7 +1422,6 @@
         }
       });
 
-      // Color Choices
       body.querySelectorAll('.color-btn').forEach(btn => {
         btn.onclick = () => {
           drawingColor = btn.dataset.color;
@@ -1447,14 +1432,12 @@
         };
       });
 
-      // Clear Screen
       body.querySelector('.clear-btn').onclick = () => {
         points = [];
         redraw();
         triggerWorkspaceSync();
       };
 
-      // Resizing Handler
       instance.onResize = () => resizeCanvas();
       setTimeout(resizeCanvas, 20);
 
@@ -1717,17 +1700,14 @@
 
     // --- MAIN INITIALIZATION & STARTUP FLOW ---
     window.onload = async function() {
-      // Setup UI Theme selector elements
       buildThemeSelectorMenu();
       window.setBackground('gradient', 'from-indigo-950 via-slate-900 to-blue-950');
 
-      // Initialize Firebase Connection (Structured robustly via rules)
       try {
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
-        // Complete Authentication Priority Setup
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
         } else {
@@ -1747,7 +1727,6 @@
         console.warn("Firestore initialization failed. Working in local storage mode:", err);
       }
 
-      // Lift Splash Screen
       setTimeout(() => {
         const splash = document.getElementById('app-splash');
         splash.classList.add('opacity-0', 'pointer-events-none');
