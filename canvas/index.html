@@ -15,20 +15,20 @@
   <style>
     /* Splash Screen Cat Animations */
     @keyframes cat-walk-across {
-      0% { left: -150px; }
+      0% { left: -200px; }
       100% { left: 100vw; }
     }
     @keyframes cat-bob {
       0%, 100% { transform: translateY(0) rotate(0deg); }
-      25% { transform: translateY(-8px) rotate(-3deg); }
+      25% { transform: translateY(-12px) rotate(-4deg); }
       50% { transform: translateY(0) rotate(0deg); }
-      75% { transform: translateY(-8px) rotate(3deg); }
+      75% { transform: translateY(-12px) rotate(4deg); }
     }
     .cat-wrapper {
-      animation: cat-walk-across 3.5s linear infinite;
+      animation: cat-walk-across 4.2s linear infinite;
     }
     .cat-sprite {
-      animation: cat-bob 0.5s ease-in-out infinite;
+      animation: cat-bob 0.6s ease-in-out infinite;
     }
 
     /* Custom Scrollbar Styling */
@@ -64,26 +64,41 @@
   <!-- ========================================== -->
   <!--    SPLASH SCREEN                            -->
   <!-- ========================================== -->
-  <div id="app-splash" class="fixed inset-0 z-[99999] bg-slate-50 flex flex-col justify-center items-center transition-all duration-700 ease-in-out overflow-hidden relative">
-    <!-- Cat Walking Animation -->
-    <div class="cat-wrapper absolute top-[40%] pointer-events-none">
-      <div class="cat-sprite text-indigo-500">
-        <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.82-6.42-.42-7 1.39-.58 4.64.26 6.42 2.26A7.9 7.9 0 0 1 12 5z"/>
-          <path d="M8 14v.5"/>
-          <path d="M16 14v.5"/>
-          <path d="M11.25 16.25h1.5L12 17l-.75-.75z"/>
+  <div id="app-splash" class="fixed inset-0 z-[99999] bg-slate-950 flex flex-col justify-center items-center transition-all duration-700 ease-in-out overflow-hidden relative">
+    
+    <!-- Full-Body Cat Walking Centered Animation -->
+    <div class="cat-wrapper absolute top-1/2 -translate-y-1/2 pointer-events-none">
+      <div class="cat-sprite text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+        <!-- Organic Full Cat Body Vector -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="180" height="120" viewBox="0 0 140 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Tail -->
+          <path d="M25 65 C 10 50, 15 20, 30 15 C 40 10, 45 35, 45 50" />
+          <!-- Spine/Back -->
+          <path d="M45 50 Q 75 40 105 50" />
+          <!-- Chest/Belly -->
+          <path d="M45 60 Q 75 62 105 58" />
+          <!-- Head -->
+          <path d="M105 50 Q 110 35 110 35 L 105 18 L 115 25 L 125 18 L 129 30 Q 138 40 125 48 L 115 50" />
+          <!-- Back Left Leg -->
+          <path d="M50 55 L 47 85 L 53 85" />
+          <!-- Back Right Leg -->
+          <path d="M60 55 L 58 81 L 64 81" />
+          <!-- Front Left Leg -->
+          <path d="M100 54 L 102 85 L 108 85" />
+          <!-- Front Right Leg -->
+          <path d="M109 52 L 111 81 L 117 81" />
         </svg>
       </div>
     </div>
 
-    <div class="z-10 mt-40 bg-white/60 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-200 shadow-sm flex flex-col items-center">
-      <p id="splash-text" class="text-slate-800 font-semibold tracking-wide text-sm animate-pulse flex items-center gap-2">
+    <!-- Loading message positioned cleanly below the center path -->
+    <div class="z-10 mt-64 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-slate-800 shadow-xl flex flex-col items-center">
+      <p id="splash-text" class="text-slate-200 font-semibold tracking-wide text-sm animate-pulse flex items-center gap-2">
         <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-500"></i> Loading classroom resources...
       </p>
     </div>
     
-    <p class="absolute bottom-6 text-xs text-slate-400 font-medium tracking-widest uppercase">Canvas Sync Pro</p>
+    <p class="absolute bottom-6 text-xs text-slate-500 font-medium tracking-widest uppercase">Canvas Sync Pro</p>
   </div>
 
   <!-- ========================================== -->
