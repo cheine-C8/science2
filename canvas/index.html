@@ -202,17 +202,17 @@
       ✨ Tip: Drag headers to move, drag bottom-right corner to resize!
     </div>
     
-    <div id="dock-bar" class="flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80">
+    <div id="dock-bar" class="flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 font-sans">
       <button onclick="createWidget('clock')" class="group relative p-2.5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/20 transition duration-150">
         <i data-lucide="clock" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-950 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-800">Clock</span>
       </button>
       <button onclick="createWidget('timer')" class="group relative p-2.5 rounded-xl text-slate-400 hover:text-amber-500 hover:bg-amber-500/20 transition duration-150">
-        <i data-lucide="timer" class="w-6 h-6 transition transform group-hover:scale-110"></i>
+        <i data-lucide="hourglass" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-950 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-800">Timer</span>
       </button>
       <button onclick="createWidget('stopwatch')" class="group relative p-2.5 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/20 transition duration-150">
-        <i data-lucide="refresh-cw" class="w-6 h-6 transition transform group-hover:scale-110"></i>
+        <i data-lucide="timer" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-950 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-800">Stopwatch</span>
       </button>
       <button onclick="createWidget('schedule')" class="group relative p-2.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/20 transition duration-150">
@@ -674,7 +674,7 @@
       else if (type === 'schedule') { defaultW = 340; defaultH = 340; }
       else if (type === 'traffic') { defaultW = 140; defaultH = 280; }
       else if (type === 'work') { defaultW = 220; defaultH = 180; }
-      else if (type === 'note') { defaultW = 320; defaultH = 260; }
+      else if (type === 'note') { defaultW = 320; defaultH = 290; } // slightly increased default height for style bar
       else if (type === 'draw') { defaultW = 400; defaultH = 320; }
       else if (type === 'dice') { defaultW = 260; defaultH = 190; }
       else if (type === 'picker') { defaultW = 300; defaultH = 300; }
@@ -692,8 +692,8 @@
       let themeColor = 'text-indigo-400';
 
       if (type === 'clock') { headerIcon = 'clock'; title = 'Clock'; themeColor = 'text-sky-400'; }
-      else if (type === 'timer') { headerIcon = 'timer'; title = 'Countdown'; themeColor = 'text-amber-500'; }
-      else if (type === 'stopwatch') { headerIcon = 'refresh-cw'; title = 'Stopwatch'; themeColor = 'text-emerald-500'; }
+      else if (type === 'timer') { headerIcon = 'hourglass'; title = 'Countdown'; themeColor = 'text-amber-500'; }
+      else if (type === 'stopwatch') { headerIcon = 'timer'; title = 'Stopwatch'; themeColor = 'text-emerald-500'; }
       else if (type === 'schedule') { headerIcon = 'bell'; title = 'Bell Schedule'; themeColor = 'text-amber-400'; }
       else if (type === 'traffic') { headerIcon = 'traffic-cone'; title = 'Traffic Status'; themeColor = 'text-rose-500'; }
       else if (type === 'work') { headerIcon = 'help-circle'; title = 'Work Mode'; themeColor = 'text-fuchsia-500'; }
@@ -766,7 +766,6 @@
         startY = e.clientY;
         startLeft = parseInt(card.style.left) || 0;
         startTop = parseInt(card.style.top) || 0;
-        // The 'no-transition' class cancels positional interpolation, allowing 60FPS fluid drags
         card.classList.add('scale-[1.01]', 'border-slate-500', 'no-transition');
         e.preventDefault();
       });
@@ -1298,34 +1297,169 @@
     }
 
     // ==========================================
-    //   WIDGET: TEXT NOTE
+    //   WIDGET: TEXT NOTE WITH STYLE BAR
     // ==========================================
     function renderNoteWidget(instance, body, data) {
       body.innerHTML = `
         <div class="flex flex-col h-full w-full">
-          <textarea class="note-editor flex-1 bg-slate-950/60 hover:bg-slate-950/80 focus:bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 outline-none focus:border-indigo-500/80 resize-none font-sans scrollbar-thin placeholder-slate-600 transition duration-150" placeholder="Type reminders or instructions here..."></textarea>
+          <!-- Text Styling Toolbar -->
+          <div class="note-toolbar flex items-center gap-1.5 pb-2 mb-1.5 border-b border-slate-800/60 shrink-0 flex-wrap">
+            <button class="note-btn-bold p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition" title="Bold">
+              <i data-lucide="bold" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="note-btn-italic p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition" title="Italic">
+              <i data-lucide="italic" class="w-3.5 h-3.5"></i>
+            </button>
+            
+            <div class="h-4 w-[1px] bg-slate-800/80 mx-1"></div>
+            
+            <button class="note-btn-left p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition" title="Align Left">
+              <i data-lucide="align-left" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="note-btn-center p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition" title="Align Center">
+              <i data-lucide="align-center" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="note-btn-right p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition" title="Align Right">
+              <i data-lucide="align-right" class="w-3.5 h-3.5"></i>
+            </button>
+            
+            <div class="h-4 w-[1px] bg-slate-800/80 mx-1"></div>
+            
+            <!-- Font Size -->
+            <select class="note-select-size bg-slate-950 border border-slate-800 text-[10px] text-slate-300 rounded px-1 py-0.5 focus:outline-none focus:border-indigo-500 cursor-pointer font-sans">
+              <option value="text-xs">Tiny</option>
+              <option value="text-sm">Small</option>
+              <option value="text-base" selected>Normal</option>
+              <option value="text-lg">Medium</option>
+              <option value="text-xl">Large</option>
+              <option value="text-2xl">X-Large</option>
+              <option value="text-3xl">Huge</option>
+            </select>
+
+            <!-- Font Color -->
+            <select class="note-select-color bg-slate-950 border border-slate-800 text-[10px] text-slate-300 rounded px-1 py-0.5 focus:outline-none focus:border-indigo-500 cursor-pointer font-sans">
+              <option value="text-slate-100" selected>White</option>
+              <option value="text-yellow-300">Yellow</option>
+              <option value="text-rose-400">Red</option>
+              <option value="text-emerald-400">Green</option>
+              <option value="text-sky-400">Blue</option>
+              <option value="text-purple-400">Purple</option>
+            </select>
+          </div>
+          <!-- Textarea -->
+          <textarea class="note-editor flex-1 bg-slate-950/60 hover:bg-slate-950/80 focus:bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 outline-none focus:border-indigo-500/80 resize-none font-sans scrollbar-thin placeholder-slate-600 transition-all duration-150" placeholder="Type reminders or instructions here..."></textarea>
         </div>
       `;
 
+      lucide.createIcons({ attrs: { class: 'lucide-custom' } });
+
       const editor = body.querySelector('.note-editor');
+      const btnBold = body.querySelector('.note-btn-bold');
+      const btnItalic = body.querySelector('.note-btn-italic');
+      const btnLeft = body.querySelector('.note-btn-left');
+      const btnCenter = body.querySelector('.note-btn-center');
+      const btnRight = body.querySelector('.note-btn-right');
+      const selectSize = body.querySelector('.note-select-size');
+      const selectColor = body.querySelector('.note-select-color');
+
       let text = data.text || "";
+      let isBold = data.isBold || false;
+      let isItalic = data.isItalic || false;
+      let align = data.align || "left";
+      let fontSize = data.fontSize || "text-base";
+      let textColor = data.textColor || "text-slate-100";
+
       editor.value = text;
 
-      let typingTimeout = null;
+      function applyStyling() {
+        if (isBold) {
+          btnBold.classList.add('bg-slate-800', 'text-indigo-400');
+          editor.style.fontWeight = 'bold';
+        } else {
+          btnBold.classList.remove('bg-slate-800', 'text-indigo-400');
+          editor.style.fontWeight = 'normal';
+        }
+
+        if (isItalic) {
+          btnItalic.classList.add('bg-slate-800', 'text-indigo-400');
+          editor.style.fontStyle = 'italic';
+        } else {
+          btnItalic.classList.remove('bg-slate-800', 'text-indigo-400');
+          editor.style.fontStyle = 'normal';
+        }
+
+        const alignButtons = { left: btnLeft, center: btnCenter, right: btnRight };
+        Object.keys(alignButtons).forEach(key => {
+          if (key === align) {
+            alignButtons[key].classList.add('bg-slate-800', 'text-indigo-400');
+          } else {
+            alignButtons[key].classList.remove('bg-slate-800', 'text-indigo-400');
+          }
+        });
+        editor.style.textAlign = align;
+
+        editor.className = "note-editor flex-1 bg-slate-950/60 hover:bg-slate-950/80 focus:bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 outline-none focus:border-indigo-500/80 resize-none font-sans scrollbar-thin placeholder-slate-600 transition-all duration-150";
+        editor.classList.add(fontSize, textColor);
+
+        selectSize.value = fontSize;
+        selectColor.value = textColor;
+      }
+
       editor.oninput = () => {
         text = editor.value;
+        debouncedSync();
+      };
+
+      btnBold.onclick = () => {
+        isBold = !isBold;
+        applyStyling();
+        triggerWorkspaceSync();
+      };
+
+      btnItalic.onclick = () => {
+        isItalic = !isItalic;
+        applyStyling();
+        triggerWorkspaceSync();
+      };
+
+      btnLeft.onclick = () => { align = 'left'; applyStyling(); triggerWorkspaceSync(); };
+      btnCenter.onclick = () => { align = 'center'; applyStyling(); triggerWorkspaceSync(); };
+      btnRight.onclick = () => { align = 'right'; applyStyling(); triggerWorkspaceSync(); };
+
+      selectSize.onchange = () => {
+        fontSize = selectSize.value;
+        applyStyling();
+        triggerWorkspaceSync();
+      };
+
+      selectColor.onchange = () => {
+        textColor = selectColor.value;
+        applyStyling();
+        triggerWorkspaceSync();
+      };
+
+      let typingTimeout = null;
+      function debouncedSync() {
         if (typingTimeout) clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {
           triggerWorkspaceSync();
         }, 600);
-      };
+      }
 
-      instance.serialize = () => ({ text });
+      applyStyling();
+
+      instance.serialize = () => ({ text, isBold, isItalic, align, fontSize, textColor });
       instance.deserialize = (d) => {
         if (d.text !== undefined && d.text !== editor.value) {
           editor.value = d.text;
           text = d.text;
         }
+        if (d.isBold !== undefined) isBold = d.isBold;
+        if (d.isItalic !== undefined) isItalic = d.isItalic;
+        if (d.align !== undefined) align = d.align;
+        if (d.fontSize !== undefined) fontSize = d.fontSize;
+        if (d.textColor !== undefined) textColor = d.textColor;
+        applyStyling();
       };
     }
 
@@ -1505,9 +1639,9 @@
         <div class="flex flex-col h-full w-full space-y-2">
           <div class="flex-1 flex flex-col space-y-1.5">
             <textarea class="names-list flex-1 bg-slate-950/60 border border-slate-800 rounded p-2 text-[11px] text-slate-100 outline-none focus:border-yellow-500 font-mono scrollbar-none" placeholder="Enter list of names, one per line..."></textarea>
-            <div class="picker-result bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 font-bold text-center text-sm py-2 rounded">Ready to pick!</div>
+            <div class="picker-result bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 font-bold text-center text-sm py-2 rounded font-sans">Ready to pick!</div>
           </div>
-          <button class="pick-btn w-full bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-black py-1.5 rounded text-xs transition">Pick Winner</button>
+          <button class="pick-btn w-full bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-black py-1.5 rounded text-xs transition font-sans">Pick Winner</button>
         </div>
       `;
 
@@ -1569,7 +1703,7 @@
               <div class="meter-bar h-full w-0 bg-gradient-to-r from-teal-500 via-amber-500 to-rose-500 transition-all duration-75"></div>
             </div>
           </div>
-          <button class="mic-toggle bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1 px-4 rounded text-xs text-slate-300 font-bold transition flex items-center gap-1.5">
+          <button class="mic-toggle bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1 px-4 rounded text-xs text-slate-300 font-bold transition flex items-center gap-1.5 font-sans">
             <i data-lucide="mic" class="w-3.5 h-3.5"></i> Enable Mic
           </button>
         </div>
@@ -1600,7 +1734,7 @@
           dataArray = new Uint8Array(bufferLength);
 
           toggleBtn.innerHTML = `<i data-lucide="mic-off" class="w-3.5 h-3.5"></i> Mute Mic`;
-          toggleBtn.className = "mic-toggle bg-rose-950 hover:bg-rose-900 border border-rose-800 py-1 px-4 rounded text-xs text-rose-200 font-bold transition flex items-center gap-1.5";
+          toggleBtn.className = "mic-toggle bg-rose-950 hover:bg-rose-900 border border-rose-800 py-1 px-4 rounded text-xs text-rose-200 font-bold transition flex items-center gap-1.5 font-sans";
           lucide.createIcons();
 
           function draw() {
@@ -1640,7 +1774,7 @@
         dbReadout.innerText = '0 dB';
 
         toggleBtn.innerHTML = `<i data-lucide="mic" class="w-3.5 h-3.5"></i> Enable Mic`;
-        toggleBtn.className = "mic-toggle bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1 px-4 rounded text-xs text-slate-300 font-bold transition flex items-center gap-1.5";
+        toggleBtn.className = "mic-toggle bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1 px-4 rounded text-xs text-slate-300 font-bold transition flex items-center gap-1.5 font-sans";
         lucide.createIcons();
       }
 
