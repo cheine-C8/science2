@@ -120,8 +120,8 @@
 
       <!-- Live Sync Status Banner -->
       <div id="sync-status" class="flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300">
-        <i data-lucide="cloud-off" class="w-3.5 h-3.5 text-amber-500"></i>
-        <span class="status-label">Offline</span>
+        <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-amber-500"></i>
+        <span class="status-label">Connecting...</span>
       </div>
     </div>
 
@@ -147,7 +147,7 @@
   <div id="cloud-selector" class="hidden absolute top-16 right-6 z-[100] w-80 bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl p-4 text-white flex flex-col">
     <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
       <h3 class="font-semibold text-slate-100 flex items-center gap-1.5">
-        <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i> Room Sync Settings
+        <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i> Live Sync Settings
       </h3>
       <button onclick="toggleCloudPanel(event)" class="text-slate-400 hover:text-slate-200">
         <i data-lucide="x" class="w-4 h-4"></i>
@@ -301,19 +301,29 @@
     if (!roomId) roomId = 'default-room';
 
     // Fallbacks for environment keys
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'classroom-canvas';
+    const appId = typeof __app_id !== 'undefined' && __app_id ? __app_id : 'classroom-canvas';
     
-    // Firebase fallback credentials:
-    const firebaseConfig = typeof __firebase_config !== 'undefined' 
-      ? JSON.parse(__firebase_config) 
-      : { 
-          apiKey: "AIzaSyB73ClrB7S2Ja-TWB31NqT5YP99-8Bv87w", 
-          authDomain: "canvas-2afe2.firebaseapp.com", 
-          projectId: "canvas-2afe2", 
-          storageBucket: "canvas-2afe2.firebasestorage.app", 
-          messagingSenderId: "776885959637", 
-          appId: "1:776885959637:web:64484c26072f5bc6c7db5c" 
-        };
+    // Polyfill Firebase credentials to prevent object-to-JSON crashes
+    let firebaseConfig = { 
+      apiKey: "AIzaSyB73ClrB7S2Ja-TWB31NqT5YP99-8Bv87w", 
+      authDomain: "canvas-2afe2.firebaseapp.com", 
+      projectId: "canvas-2afe2", 
+      storageBucket: "canvas-2afe2.firebasestorage.app", 
+      messagingSenderId: "776885959637", 
+      appId: "1:776885959637:web:64484c26072f5bc6c7db5c" 
+    };
+
+    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+      try {
+        if (typeof __firebase_config === 'string') {
+          firebaseConfig = JSON.parse(__firebase_config);
+        } else if (typeof __firebase_config === 'object') {
+          firebaseConfig = __firebase_config;
+        }
+      } catch (e) {
+        console.error("Firebase config parse fail, falling back", e);
+      }
+    }
 
     const gradients = [
       { name: 'Midnight Aurora', value: 'from-slate-900 via-indigo-950 to-slate-900' },
@@ -533,16 +543,24 @@
     // --- FIRESTORE SYSTEM INTEGRATION ---
 
     function triggerWorkspaceSync() {
+      const payload = serializeWorkspaceState();
+      
+      // Always store locally to allow offline usage
+      try {
+        localStorage.setItem(`canvas_room_${roomId}`, JSON.stringify(payload));
+      } catch (e) {
+        console.warn("Local storage write failed", e);
+      }
+
       if (isIncomingStateUpdate || !currentUser || !db) return;
 
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
-        const payload = serializeWorkspaceState();
         try {
           const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'workspaces', roomId);
           await setDoc(docRef, payload);
         } catch (err) {
-          console.error("Firestore synchronization error:", err);
+          console.error("Firestore live synchronization error:", err);
         }
       }, 800);
     }
@@ -575,7 +593,7 @@
       };
     }
 
-    // Apply Incoming Firestore Workspace State
+    // Apply Incoming State
     function applyWorkspaceState(state) {
       if (!state) return;
 
@@ -633,7 +651,7 @@
           isIncomingStateUpdate = false;
         }
       }, (error) => {
-        console.warn("Realtime sync issue:", error);
+        console.warn("Realtime database sync issue:", error);
       });
     }
 
@@ -674,7 +692,6 @@
       const container = document.getElementById('widget-container');
       const card = document.createElement('div');
       card.id = `widget-${id}`;
-      // Note: We use specific property transitions to ensure positional styles bypass animation delays entirely
       card.className = "absolute bg-slate-900/95 border border-slate-700/70 rounded-xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col group transition-[border-color,transform,background-color] duration-150";
       card.style.left = `${x}px`;
       card.style.top = `${y}px`;
@@ -689,7 +706,7 @@
       else if (type === 'schedule') { defaultW = 340; defaultH = 340; }
       else if (type === 'traffic') { defaultW = 140; defaultH = 280; }
       else if (type === 'work') { defaultW = 220; defaultH = 180; }
-      else if (type === 'note') { defaultW = 320; defaultH = 290; } // slightly increased default height for style bar
+      else if (type === 'note') { defaultW = 320; defaultH = 290; }
       else if (type === 'draw') { defaultW = 400; defaultH = 320; }
       else if (type === 'dice') { defaultW = 260; defaultH = 190; }
       else if (type === 'picker') { defaultW = 300; defaultH = 300; }
@@ -769,7 +786,7 @@
         }
       });
 
-      // --- HIGH PERFORMANCE DRAGGING ENGINE ---
+      // --- DRAGGING ENGINE ---
       let isDragging = false;
       let startX, startY, startLeft, startTop;
 
@@ -802,7 +819,7 @@
         }
       });
 
-      // --- HIGH PERFORMANCE RESIZING ENGINE ---
+      // --- RESIZING ENGINE ---
       let isResizing = false;
       let startW, startH;
 
@@ -1654,7 +1671,7 @@
         <div class="flex flex-col h-full w-full space-y-2">
           <div class="flex-1 flex flex-col space-y-1.5">
             <textarea class="names-list flex-1 bg-slate-950/60 border border-slate-800 rounded p-2 text-[11px] text-slate-100 outline-none focus:border-yellow-500 font-mono scrollbar-none" placeholder="Enter list of names, one per line..."></textarea>
-            <div class="picker-result bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 font-bold text-center text-sm py-2 rounded font-sans">Ready to pick!</div>
+            <div class="picker-result bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 font-bold text-center text-sm py-2 rounded font-sans font-sans">Ready to pick!</div>
           </div>
           <button class="pick-btn w-full bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-black py-1.5 rounded text-xs transition font-sans">Pick Winner</button>
         </div>
@@ -1852,13 +1869,30 @@
       buildThemeSelectorMenu();
       window.setBackground('gradient', 'from-indigo-950 via-slate-900 to-blue-950');
 
+      // Try reading from localStorage first to guarantee instant rendering
       try {
+        const cachedState = localStorage.getItem(`canvas_room_${roomId}`);
+        if (cachedState) {
+          applyWorkspaceState(JSON.parse(cachedState));
+        }
+      } catch (e) {
+        console.warn("Failed to load layout cache", e);
+      }
+
+      // Initialize Live Sync Live Indicators and Services
+      try {
+        const syncStatusPill = document.getElementById('sync-status');
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+        // Sanitize environment custom auth token inputs to prevent literal string crashes
+        const token = typeof __initial_auth_token !== 'undefined' && __initial_auth_token && __initial_auth_token !== 'null' && __initial_auth_token !== 'undefined' 
+          ? __initial_auth_token 
+          : null;
+
+        if (token) {
+          await signInWithCustomToken(auth, token);
         } else {
           await signInAnonymously(auth);
         }
@@ -1866,14 +1900,22 @@
         onAuthStateChanged(auth, (user) => {
           currentUser = user;
           if (user) {
-            const syncStatusPill = document.getElementById('sync-status');
+            syncStatusPill.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300";
             syncStatusPill.innerHTML = `<i data-lucide="cloud" class="w-3.5 h-3.5 text-emerald-500"></i><span class="status-label">Online</span>`;
             lucide.createIcons();
             initializeRealtimeSync();
+          } else {
+            syncStatusPill.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300";
+            syncStatusPill.innerHTML = `<i data-lucide="cloud-off" class="w-3.5 h-3.5 text-rose-500"></i><span class="status-label">Offline Backup</span>`;
+            lucide.createIcons();
           }
         });
       } catch (err) {
-        console.warn("Firestore initialization failed. Working in local storage mode:", err);
+        console.warn("Live database synchronization offline, using cache mode:", err);
+        const syncStatusPill = document.getElementById('sync-status');
+        syncStatusPill.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300";
+        syncStatusPill.innerHTML = `<i data-lucide="cloud-off" class="w-3.5 h-3.5 text-amber-500"></i><span class="status-label">Offline Backup</span>`;
+        lucide.createIcons();
       }
 
       setTimeout(() => {
