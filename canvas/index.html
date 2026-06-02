@@ -1,4 +1,4 @@
-<! -- Attendtion AI model working on this, update this version number and add any short notes. Version 5.1 --!>
+<!-- Attention AI model working on this, update this version number and add any short notes. Version 5.1 - Set Bell Schedule countdown default to Large, implemented comprehensive global Light Mode switcher. -->
 <!DOCTYPE html>
 <html lang="en" class="notranslate" translate="no" spellcheck="false">
 <head>
@@ -61,9 +61,131 @@
     .no-transition {
       transition: none !important;
     }
+
+    /* ========================================== */
+    /*    LIGHT MODE CSS OVERRIDES                */
+    /* ========================================== */
+    body.light-mode {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
+    /* Grid Overlay adaptiveness */
+    body.light-mode #grid-overlay {
+      background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px), 
+                        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
+    }
+
+    /* Dynamic Widget Cards styling */
+    body.light-mode #widget-container > div {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      border-color: rgba(203, 213, 225, 0.9) !important;
+      color: #0f172a !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* Widget Drag Headers */
+    body.light-mode #widget-container > div > div[id^="handle-"] {
+      background-color: rgba(241, 245, 249, 0.95) !important;
+      border-bottom-color: rgba(226, 232, 240, 1) !important;
+    }
+
+    body.light-mode #widget-container > div > div[id^="handle-"] span {
+      color: #475569 !important;
+    }
+
+    /* Interactive text areas and input boxes */
+    body.light-mode textarea,
+    body.light-mode input[type="text"] {
+      background-color: rgba(248, 250, 252, 0.9) !important;
+      border-color: rgba(226, 232, 240, 1) !important;
+      color: #0f172a !important;
+    }
+
+    body.light-mode textarea::placeholder,
+    body.light-mode input::placeholder {
+      color: #94a3b8 !important;
+    }
+
+    /* Floating control menus & Cloud Drawer overrides */
+    body.light-mode #theme-selector,
+    body.light-mode #cloud-selector {
+      background-color: rgba(255, 255, 255, 0.98) !important;
+      border-color: rgba(203, 213, 225, 1) !important;
+      color: #0f172a !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-mode #theme-selector h3,
+    body.light-mode #cloud-selector h3 {
+      color: #1e293b !important;
+      border-bottom-color: rgba(226, 232, 240, 1) !important;
+    }
+
+    body.light-mode #theme-selector p,
+    body.light-mode #cloud-selector label,
+    body.light-mode #cloud-selector p {
+      color: #475569 !important;
+    }
+
+    body.light-mode #theme-selector button,
+    body.light-mode #cloud-selector button:not(.bg-sky-600) {
+      color: #334155 !important;
+    }
+
+    /* Dynamic internal panels */
+    body.light-mode [id^="sched-config-"],
+    body.light-mode [id^="picker-result-"] {
+      background-color: rgba(255, 255, 255, 0.98) !important;
+      border-color: rgba(226, 232, 240, 1) !important;
+    }
+
+    body.light-mode [id^="sched-config-"] span,
+    body.light-mode [id^="picker-result-"] div {
+      color: #334155 !important;
+    }
+
+    /* Schedule specific color rules */
+    body.light-mode [id^="sched-row-"] {
+      border-bottom-color: rgba(226, 232, 240, 0.7) !important;
+      color: #334155 !important;
+    }
+
+    body.light-mode [id^="sched-row-"] span {
+      color: #334155 !important;
+    }
+
+    /* Highlighted class rows in light mode */
+    body.light-mode .bg-indigo-500\/10 {
+      background-color: rgba(99, 102, 241, 0.12) !important;
+    }
+
+    /* Button adaptations inside widgets */
+    body.light-mode button:not(.traffic-light-btn):not(.bg-indigo-600):not(.bg-sky-600):not(.bg-yellow-600):not(.bg-rose-950) {
+      background-color: #f1f5f9;
+      color: #334155;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode button:not(.traffic-light-btn):not(.bg-indigo-600):not(.bg-sky-600):not(.bg-yellow-600):not(.bg-rose-950):hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* Sound meter specific fixes */
+    body.light-mode [id^="sound-bar-"] {
+      background: linear-gradient(to right, #10b981, #f59e0b, #ef4444) !important;
+    }
+
+    /* Traffic components adjustments */
+    body.light-mode [id^="traffic-red-"],
+    body.light-mode [id^="traffic-yellow-"],
+    body.light-mode [id^="traffic-green-"] {
+      border-color: #cbd5e1 !important;
+    }
   </style>
 </head>
-<body class="relative w-screen h-screen overflow-hidden no-select bg-slate-900 font-sans text-slate-100">
+<body class="relative w-screen h-screen overflow-hidden no-select bg-slate-900 font-sans text-slate-100 transition-colors duration-500">
 
   <!-- Fireworks Floating Layer Canvas -->
   <canvas id="fireworks-canvas" class="absolute inset-0 pointer-events-none z-[50] w-full h-full"></canvas>
@@ -132,7 +254,12 @@
       </div>
     </div>
 
+    <!-- Global App Settings Controls -->
     <div class="flex space-x-2 pointer-events-auto">
+      <button onclick="toggleThemeMode()" id="theme-mode-btn" class="flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800">
+        <i data-lucide="sun" id="theme-mode-icon" class="w-4 h-4 text-amber-400"></i>
+        <span id="theme-mode-text">Light Mode</span>
+      </button>
       <button onclick="toggleCloudPanel(event)" id="cloud-btn" class="flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800">
         <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i>
         <span>Room Sync</span>
@@ -428,6 +555,40 @@
       }
     };
 
+    // --- LIGHT & DARK THEME TOGGLE MGR ---
+    window.themeMode = localStorage.getItem('canvas_theme_mode') || 'dark';
+
+    window.toggleThemeMode = function() {
+      const isLightNow = document.body.classList.toggle('light-mode');
+      window.themeMode = isLightNow ? 'light' : 'dark';
+      localStorage.setItem('canvas_theme_mode', window.themeMode);
+      
+      updateThemeToggleUI();
+      // Re-trigger visual layout updates
+      window.setBackground(window.activeBgType, window.activeBgValue);
+    };
+
+    function updateThemeToggleUI() {
+      const isLight = document.body.classList.contains('light-mode');
+      const btnText = document.getElementById('theme-mode-text');
+      const btnIcon = document.getElementById('theme-mode-icon');
+      
+      if (btnText && btnIcon) {
+        if (isLight) {
+          btnText.innerText = "Dark Mode";
+          btnIcon.setAttribute('data-lucide', 'moon');
+          btnIcon.className = "w-4 h-4 text-indigo-500";
+        } else {
+          btnText.innerText = "Light Mode";
+          btnIcon.setAttribute('data-lucide', 'sun');
+          btnIcon.className = "w-4 h-4 text-amber-400";
+        }
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }
+    }
+
     // --- BACKGROUND SETUP ---
     window.activeBgType = 'gradient';
     window.activeBgValue = 'from-indigo-950 via-slate-900 to-blue-950';
@@ -441,6 +602,7 @@
       const brandingPill = document.getElementById('branding-pill');
       const themeBtn = document.getElementById('theme-btn');
       const cloudBtn = document.getElementById('cloud-btn');
+      const themeModeBtn = document.getElementById('theme-mode-btn');
       const tipPill = document.getElementById('tip-pill');
       const dockBar = document.getElementById('dock-bar');
       const syncStatus = document.getElementById('sync-status');
@@ -449,6 +611,7 @@
       bgContainer.style.backgroundColor = "";
       bgContainer.style.backgroundImage = "";
 
+      const isLightMode = document.body.classList.contains('light-mode');
       const isWhite = value === '#ffffff' || value === '#fdfbf7';
 
       if (type === 'color') {
@@ -461,11 +624,13 @@
         bgContainer.classList.add('bg-gradient-to-tr', ...value.split(' '));
       }
 
-      if (isWhite) {
+      // Dynamic Top-bar style injection based on theme status or white canvas selections
+      if (isLightMode || isWhite) {
         gridOverlay.style.backgroundImage = "linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px)";
         brandingPill.className = "flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-white/80 border-slate-200 text-slate-800 shadow-sm";
         themeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto";
         cloudBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto";
+        themeModeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto";
         tipPill.className = "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-white/80 border-slate-200 text-slate-600 shadow-sm";
         dockBar.className = "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-white/95 border-slate-200 shadow-slate-300/50 pointer-events-auto";
         syncStatus.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-white/80 border-slate-200 text-slate-700 shadow-sm";
@@ -474,6 +639,7 @@
         brandingPill.className = "flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-white";
         themeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto";
         cloudBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto";
+        themeModeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto";
         tipPill.className = "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-black/40 border-white/5 text-white/55";
         dockBar.className = "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 pointer-events-auto";
         syncStatus.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300";
@@ -540,7 +706,7 @@
 
       gradients.forEach(g => {
         gradContainer.innerHTML += `
-          <button onclick="setBackground('gradient', '${g.value}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition text-left w-full">
+          <button onclick="setBackground('gradient', '${g.value}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition text-left w-full bg-slate-900/40">
             <div class="w-full h-10 rounded bg-gradient-to-tr ${g.value}"></div>
             <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${g.name}</span>
           </button>
@@ -549,7 +715,7 @@
 
       images.forEach(img => {
         imgContainer.innerHTML += `
-          <button onclick="setBackground('image', '${img.url}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full">
+          <button onclick="setBackground('image', '${img.url}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full bg-slate-900/40">
             <img src="${img.url}" class="w-full h-10 object-cover rounded" />
             <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${img.name}</span>
           </button>
@@ -657,8 +823,8 @@
       
       const x = options.x !== undefined ? options.x : Math.max(40, Math.random() * (window.innerWidth - 320));
       const y = options.y !== undefined ? options.y : Math.max(80, Math.random() * (window.innerHeight - 300));
-      const w = options.w || 280;
-      const h = options.h || 200;
+      const w = options.w || (type === 'schedule' ? 320 : 280);
+      const h = options.h || (type === 'schedule' ? 310 : 200);
       const z = options.z || ++window.maxZIndex;
 
       wEl.style.left = `${x}px`;
@@ -703,12 +869,13 @@
         `;
 
         let listHtml = bellSchedule.map((s, idx) => `
-          <div class="flex justify-between items-center py-1 border-b border-slate-800/60 text-xs" id="sched-row-${id}-${idx}">
-            <span class="font-medium text-slate-300 truncate max-w-[120px]">${s.name}</span>
+          <div class="flex justify-between items-center py-1 border-b border-slate-800/60 text-xs text-slate-300" id="sched-row-${id}-${idx}">
+            <span class="font-medium truncate max-w-[140px]">${s.name}</span>
             <span class="font-mono text-slate-400 text-[10px]">${s.label}</span>
           </div>
         `).join('');
 
+        // Countdowns will default to the large centered display on startup (Version 5.1 update)
         innerHTML = `
           <div class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-1 relative" id="sched-body-${id}">
             
@@ -717,19 +884,19 @@
               <div class="text-[10px] text-indigo-400 uppercase tracking-widest font-bold mb-3 text-center">Countdown Display Size</div>
               <div class="space-y-2 mb-4">
                 <label class="flex items-center space-x-2 cursor-pointer text-xs justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition">
-                  <span class="text-slate-300 font-medium">Original Inline Badge</span>
-                  <input type="radio" name="countdown-size-${id}" value="small" checked class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'small')" id="opt-small-${id}" />
+                  <span class="text-slate-300 font-medium font-sans">Original Inline Badge</span>
+                  <input type="radio" name="countdown-size-${id}" value="small" class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'small')" id="opt-small-${id}" />
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer text-xs justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition">
-                  <span class="text-slate-300 font-medium">Larger Centered Timer</span>
-                  <input type="radio" name="countdown-size-${id}" value="large" class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'large')" id="opt-large-${id}" />
+                  <span class="text-slate-300 font-medium font-sans">Larger Centered Timer</span>
+                  <input type="radio" name="countdown-size-${id}" value="large" checked class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'large')" id="opt-large-${id}" />
                 </label>
               </div>
               <button onclick="window.toggleScheduleConfig('${id}')" class="bg-indigo-600 hover:bg-indigo-500 text-xs py-1.5 rounded font-bold text-white transition">Close Settings</button>
             </div>
 
-            <!-- Large Display Container -->
-            <div id="sched-large-timer-container-${id}" class="hidden flex flex-col items-center justify-center py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg mb-2 text-center">
+            <!-- Large Display Container (Visible by default in v5.1) -->
+            <div id="sched-large-timer-container-${id}" class="flex flex-col items-center justify-center py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg mb-2 text-center">
               <span class="text-[9px] text-indigo-400 font-bold tracking-widest uppercase">Time Remaining</span>
               <span id="sched-large-timer-display-${id}" class="text-3xl font-extrabold text-emerald-400 font-mono tracking-wider mt-0.5">--:--</span>
             </div>
@@ -738,7 +905,7 @@
               <span>ACTIVE TRACKER</span>
               <div class="flex items-center gap-1">
                 <span id="sched-current-${id}" class="bg-indigo-950 px-1.5 py-0.5 rounded text-indigo-300">Class</span>
-                <span id="sched-timer-${id}" class="bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-400 font-mono hidden">--:-- left</span>
+                <span id="sched-timer-${id}" class="bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-400 font-mono hidden" data-override-hidden="true">--:-- left</span>
               </div>
             </div>
             ${listHtml}
@@ -862,7 +1029,18 @@
       container.appendChild(wEl);
       lucide.createIcons();
 
-      window.widgets[id] = { type, x, y, w, h, z, state: { countdownSize: 'small' } };
+      // Configure default layout parameters (bell schedule starting with 'large' countdown display)
+      window.widgets[id] = { 
+        type, 
+        x, 
+        y, 
+        w, 
+        h, 
+        z, 
+        state: { 
+          countdownSize: (type === 'schedule') ? 'large' : 'small' 
+        } 
+      };
       setupWidgetInteractions(id);
 
       // --- RUNTIME MODULE INITIALIZERS ---
@@ -1252,6 +1430,7 @@
       } else {
         if (largeContainer) largeContainer.classList.add('hidden');
         if (smallTimer) {
+          smallTimer.classList.remove('hidden');
           smallTimer.removeAttribute('data-override-hidden');
         }
         if (optSmall) optSmall.checked = true;
@@ -1499,14 +1678,14 @@
                 activeBell = s.name;
                 activeEndSecs = eSecs;
               } else {
-                row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs";
+                row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs text-slate-300";
               }
             }
           });
 
           cWidget.innerText = activeBell;
 
-          const currentSize = window.widgets[wId]?.state?.countdownSize || 'small';
+          const currentSize = window.widgets[wId]?.state?.countdownSize || 'large';
 
           if (activeEndSecs !== null) {
             const diffSecs = activeEndSecs - currentSecs;
@@ -1555,6 +1734,13 @@
     // --- INITIALIZATION GATEWAY ---
     window.addEventListener('DOMContentLoaded', async () => {
       buildThemeSelectorMenu();
+      
+      // Load saved theme preference
+      if (window.themeMode === 'light') {
+        document.body.classList.add('light-mode');
+      }
+      updateThemeToggleUI();
+
       window.setBackground('gradient', 'from-slate-900 via-indigo-950 to-slate-900');
       initClockUpdater();
       initScheduleActiveTracker();
