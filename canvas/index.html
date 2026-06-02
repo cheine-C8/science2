@@ -664,6 +664,7 @@
 
       let title = type.toUpperCase();
       let innerHTML = '';
+      let headerActions = '';
 
       if (type === 'clock') {
         innerHTML = `<div class="flex-1 flex flex-col justify-center items-center font-mono text-3xl font-bold tracking-wider text-sky-400 select-all p-4" id="clock-txt-${id}">00:00:00</div>`;
@@ -690,17 +691,50 @@
       } 
       else if (type === 'schedule') {
         title = "BELL SCHEDULE";
+        headerActions = `
+          <button onclick="window.toggleScheduleConfig('${id}')" class="text-slate-500 hover:text-indigo-400 p-1 rounded transition" title="Countdown Settings">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+
         let listHtml = bellSchedule.map((s, idx) => `
           <div class="flex justify-between items-center py-1 border-b border-slate-800/60 text-xs" id="sched-row-${id}-${idx}">
             <span class="font-medium text-slate-300 truncate max-w-[120px]">${s.name}</span>
             <span class="font-mono text-slate-400 text-[10px]">${s.label}</span>
           </div>
         `).join('');
+
         innerHTML = `
-          <div class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-1">
+          <div class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-1 relative" id="sched-body-${id}">
+            
+            <!-- Setup dialog config panels -->
+            <div id="sched-config-${id}" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col justify-center p-4 rounded-xl z-20">
+              <div class="text-[10px] text-indigo-400 uppercase tracking-widest font-bold mb-3 text-center">Countdown Display Size</div>
+              <div class="space-y-2 mb-4">
+                <label class="flex items-center space-x-2 cursor-pointer text-xs justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition">
+                  <span class="text-slate-300 font-medium">Original Inline Badge</span>
+                  <input type="radio" name="countdown-size-${id}" value="small" checked class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'small')" id="opt-small-${id}" />
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer text-xs justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition">
+                  <span class="text-slate-300 font-medium">Larger Centered Timer</span>
+                  <input type="radio" name="countdown-size-${id}" value="large" class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'large')" id="opt-large-${id}" />
+                </label>
+              </div>
+              <button onclick="window.toggleScheduleConfig('${id}')" class="bg-indigo-600 hover:bg-indigo-500 text-xs py-1.5 rounded font-bold text-white transition">Close Settings</button>
+            </div>
+
+            <!-- Large Display Container -->
+            <div id="sched-large-timer-container-${id}" class="hidden flex flex-col items-center justify-center py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg mb-2 text-center">
+              <span class="text-[9px] text-indigo-400 font-bold tracking-widest uppercase">Time Remaining</span>
+              <span id="sched-large-timer-display-${id}" class="text-3xl font-extrabold text-emerald-400 font-mono tracking-wider mt-0.5">--:--</span>
+            </div>
+
             <div class="text-[10px] font-bold text-indigo-400 mb-1 flex justify-between items-center">
               <span>ACTIVE TRACKER</span>
-              <span id="sched-current-${id}" class="bg-indigo-950 px-1.5 py-0.5 rounded text-indigo-300">Class</span>
+              <div class="flex items-center gap-1">
+                <span id="sched-current-${id}" class="bg-indigo-950 px-1.5 py-0.5 rounded text-indigo-300">Class</span>
+                <span id="sched-timer-${id}" class="bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-400 font-mono hidden">--:-- left</span>
+              </div>
             </div>
             ${listHtml}
           </div>`;
@@ -792,7 +826,10 @@
       wEl.innerHTML = `
         <div class="bg-slate-950/60 border-b border-slate-800 px-3 py-1.5 flex justify-between items-center cursor-move select-none shrink-0 rounded-t-xl" id="handle-${id}">
           <span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5"><i data-lucide="grid" class="w-3 h-3 text-slate-500"></i> ${title}</span>
-          <button onclick="closeWidget('${id}')" class="text-slate-500 hover:text-rose-400 p-0.5 rounded transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+          <div class="flex items-center gap-1.5">
+            ${headerActions}
+            <button onclick="closeWidget('${id}')" class="text-slate-500 hover:text-rose-400 p-0.5 rounded transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+          </div>
         </div>
         <div class="flex-1 flex flex-col min-h-0 relative bg-slate-900/40">${innerHTML}</div>
         <div class="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize flex items-end justify-end p-0.5 pointer-events-auto z-10" id="resize-${id}">
@@ -803,7 +840,7 @@
       container.appendChild(wEl);
       lucide.createIcons();
 
-      window.widgets[id] = { type, x, y, w, h, z, state: {} };
+      window.widgets[id] = { type, x, y, w, h, z, state: { countdownSize: 'small' } };
       setupWidgetInteractions(id);
 
       // --- RUNTIME MODULE INITIALIZERS ---
@@ -1128,6 +1165,41 @@
       }
     };
 
+    // Configuration View & Selection Handler for Schedule Module
+    window.toggleScheduleConfig = function(id) {
+      const configPanel = document.getElementById(`sched-config-${id}`);
+      if (configPanel) {
+        configPanel.classList.toggle('hidden');
+      }
+    };
+
+    window.setCountdownSize = function(id, size) {
+      if (!window.widgets[id]) return;
+      window.widgets[id].state.countdownSize = size;
+      
+      const largeContainer = document.getElementById(`sched-large-timer-container-${id}`);
+      const smallTimer = document.getElementById(`sched-timer-${id}`);
+      const optSmall = document.getElementById(`opt-small-${id}`);
+      const optLarge = document.getElementById(`opt-large-${id}`);
+      
+      if (size === 'large') {
+        if (largeContainer) largeContainer.classList.remove('hidden');
+        if (smallTimer) {
+          smallTimer.classList.add('hidden');
+          smallTimer.setAttribute('data-override-hidden', 'true');
+        }
+        if (optLarge) optLarge.checked = true;
+      } else {
+        if (largeContainer) largeContainer.classList.add('hidden');
+        if (smallTimer) {
+          smallTimer.removeAttribute('data-override-hidden');
+        }
+        if (optSmall) optSmall.checked = true;
+      }
+      
+      triggerWorkspaceSync();
+    };
+
     function setupWidgetInteractions(id) {
       const el = document.getElementById(id);
       const handle = document.getElementById(`handle-${id}`);
@@ -1313,6 +1385,9 @@
                 lblEl.innerText = wData.state.label || '';
               }
             }
+            if (wData.type === 'schedule' && wData.state && wData.state.countdownSize) {
+              window.setCountdownSize(wKey, wData.state.countdownSize);
+            }
           });
         }
 
@@ -1337,35 +1412,82 @@
       runClock();
     }
 
-    // Schedule active tracker indicator loop
+    // Schedule active tracker indicator and countdown loop
     function initScheduleActiveTracker() {
       const runScheduleCheck = () => {
         const currentWidgets = document.querySelectorAll('[id^="sched-current-"]');
         currentWidgets.forEach(cWidget => {
           const wId = cWidget.id.replace('sched-current-', '');
+          const timerEl = document.getElementById(`sched-timer-${wId}`);
+          const largeContainer = document.getElementById(`sched-large-timer-container-${wId}`);
           const now = new Date();
-          const currentMin = now.getHours() * 60 + now.getMinutes();
+          const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
           let activeBell = "Passing Period";
+          let activeEndSecs = null;
+
           bellSchedule.forEach((s, idx) => {
             const [sh, sm] = s.start.split(':').map(Number);
             const [eh, em] = s.end.split(':').map(Number);
-            const sMin = sh * 60 + sm;
-            const eMin = eh * 60 + em;
+            const sSecs = sh * 3600 + sm * 60;
+            const eSecs = eh * 3600 + em * 60;
 
             const row = document.getElementById(`sched-row-${wId}-${idx}`);
             if (row) {
-              if (currentMin >= sMin && currentMin <= eMin) {
+              if (currentSecs >= sSecs && currentSecs < eSecs) {
                 row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs bg-indigo-500/10 px-1 rounded text-indigo-400 font-bold";
                 activeBell = s.name;
+                activeEndSecs = eSecs;
               } else {
                 row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs";
               }
             }
           });
+
           cWidget.innerText = activeBell;
+
+          const currentSize = window.widgets[wId]?.state?.countdownSize || 'small';
+
+          if (activeEndSecs !== null) {
+            const diffSecs = activeEndSecs - currentSecs;
+            if (diffSecs > 0) {
+              const m = Math.floor(diffSecs / 60);
+              const s = diffSecs % 60;
+              const timeString = `${m}:${s.toString().padStart(2, '0')}`;
+
+              // Handle small timer displaying logic
+              if (timerEl) {
+                timerEl.innerText = `${timeString} left`;
+                if (timerEl.getAttribute('data-override-hidden') === 'true' || currentSize === 'large') {
+                  timerEl.classList.add('hidden');
+                } else {
+                  timerEl.classList.remove('hidden');
+                }
+              }
+
+              // Handle large timer displaying logic
+              const largeDisplay = document.getElementById(`sched-large-timer-display-${wId}`);
+              if (largeDisplay) {
+                largeDisplay.innerText = timeString;
+              }
+
+              if (largeContainer) {
+                if (currentSize === 'large') {
+                  largeContainer.classList.remove('hidden');
+                } else {
+                  largeContainer.classList.add('hidden');
+                }
+              }
+            } else {
+              if (timerEl) timerEl.classList.add('hidden');
+              if (largeContainer) largeContainer.classList.add('hidden');
+            }
+          } else {
+            if (timerEl) timerEl.classList.add('hidden');
+            if (largeContainer) largeContainer.classList.add('hidden');
+          }
         });
-        setTimeout(runScheduleCheck, 15000); // Check schedule rows every 15 secs
+        setTimeout(runScheduleCheck, 1000); // Ticks every 1s for accurate live countdown
       };
       runScheduleCheck();
     }
