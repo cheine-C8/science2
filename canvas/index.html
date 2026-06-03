@@ -65,7 +65,7 @@
     .widget-light textarea::placeholder,
     .widget-light input[type="text"]::placeholder { color: #94a3b8 !important; }
     
-    /* Buttons in light mode (ignoring specific custom colored ones like traffic lights) */
+    /* Buttons in light mode */
     .widget-light button.bg-slate-800:not(.tl-btn) { 
       background-color: #e2e8f0 !important; color: #475569 !important; border-color: #cbd5e1 !important;
     }
@@ -136,6 +136,28 @@
     }
     .tl-label-input::placeholder { color: rgba(255,255,255,0.3); }
     .tl-label-input:focus { border-bottom-color: rgba(255,255,255,0.4); }
+
+    @keyframes tail-wag {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(18deg); }
+    }
+    @keyframes leg-swing-1 {
+      0%, 100% { transform: rotate(-8deg); }
+      50% { transform: rotate(10deg); }
+    }
+    @keyframes leg-swing-2 {
+      0%, 100% { transform: rotate(10deg); }
+      50% { transform: rotate(-8deg); }
+    }
+    @keyframes sleep-rise {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .cat-tail-anim { transform-origin: 32px 65px; animation: tail-wag 0.8s ease-in-out infinite; }
+    .cat-leg-swing-1 { transform-origin: center top; animation: leg-swing-1 0.5s ease-in-out infinite; }
+    .cat-leg-swing-2 { transform-origin: center top; animation: leg-swing-2 0.5s ease-in-out infinite; }
+    .cat-sleep-breath { transform-origin: center; animation: sleep-rise 2.5s ease-in-out infinite; }
   </style>
 </head>
 <body class="relative w-screen h-screen overflow-hidden no-select bg-slate-100 font-sans text-slate-800">
@@ -309,6 +331,11 @@
         <i data-lucide="qr-code" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">QR Code</span>
       </button>
+      
+      <button onclick="createWidget('cat')" class="group relative p-2.5 rounded-xl text-slate-500 hover:text-indigo-500 hover:bg-indigo-500/10 transition duration-150">
+        <i data-lucide="cat" class="w-6 h-6 transition transform group-hover:scale-110"></i>
+        <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">Wandering Cat</span>
+      </button>
     </div>
   </div>
 
@@ -321,7 +348,7 @@
     window.audioCtx  = null;
     window.micStream = null;
     window.widgets   = {};
-    window.isLightMode = true; // Set to true by default
+    window.isLightMode = true; // Defaulting to premium Light Mode workspace
 
     let db = null, auth = null;
     let syncUnsubscribe = null;
@@ -382,6 +409,37 @@
     window.bellSchedule = bellSchedule;
 
     const $id = id => document.getElementById(id);
+
+    window.playMeowSound = function() {
+      try {
+        window.audioCtx = window.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = window.audioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        const now = ctx.currentTime;
+        
+        // Pitch rises up, then gently rolls back down to sound like "me-ow"
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(580, now + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(420, now + 0.45);
+
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.25, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.55);
+      } catch (e) {
+        console.warn("Meow synthesis failed:", e);
+      }
+    };
 
     function setButtonRunning(btn, running) {
       if (running) {
@@ -527,9 +585,9 @@
       const x = options.x !== undefined ? options.x : Math.max(40, Math.random() * (window.innerWidth  - 340));
       const y = options.y !== undefined ? options.y : Math.max(80, Math.random() * (window.innerHeight - 520));
       
-      // Default sizing logic based on widget type (Slightly shortened Schedule & perfectly sized Traffic Light on load)
-      const w = options.w || (type === 'schedule' ? 300 : (type === 'draw' ? 300 : (type === 'traffic' ? 390 : 280)));
-      const h = options.h || (type === 'schedule' ? 400 : (type === 'draw' ? 250 : (type === 'traffic' ? 280 : 200)));
+      // Adjusted layout sizes
+      const w = options.w || (type === 'schedule' ? 320 : (type === 'draw' ? 300 : (type === 'traffic' ? 390 : 280)));
+      const h = options.h || (type === 'schedule' ? 520 : (type === 'draw' ? 250 : (type === 'traffic' ? 280 : 200)));
       const z = options.z || ++window.maxZIndex;
 
       let title = type.toUpperCase();
@@ -696,6 +754,43 @@
             <div id="qr-display-${id}" class="w-24 h-24 bg-white p-1 rounded mb-2"></div>
             <input type="text" id="qr-input-${id}" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-cyan-500 font-mono" value="${window.location.href}" />
           </div>`;
+
+      } else if (type === 'cat') {
+        title = "WANDERING CAT";
+        innerHTML = `
+          <div class="flex-1 flex flex-col justify-between p-3 select-none overflow-hidden min-h-0 relative">
+            <div id="cat-playground-${id}" class="flex-1 relative w-full overflow-hidden bg-slate-950/20 border border-slate-800/40 rounded-xl min-h-[110px] transition-colors">
+              <!-- Inline Cat SVGs featuring wagging tail and leg swinging structures -->
+              <div id="cat-sprite-${id}" class="absolute transition-transform duration-100 ease-linear w-16 h-16 pointer-events-none select-none" style="left:20px; top:30px;">
+                <svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500 fill-current">
+                  <!-- Tail -->
+                  <path d="M22,50 Q10,40 16,25 Q22,10 32,20 Q26,30 28,40" class="cat-tail-anim" />
+                  <!-- Body -->
+                  <ellipse cx="50" cy="58" rx="22" ry="16" />
+                  <!-- Head -->
+                  <circle cx="72" cy="45" r="14" />
+                  <!-- Ears -->
+                  <polygon points="63,35 66,18 72,32" />
+                  <polygon points="76,32 82,18 85,35" />
+                  <!-- Face details -->
+                  <circle cx="69" cy="42" r="1.5" fill="white" />
+                  <circle cx="77" cy="42" r="1.5" fill="white" />
+                  <polygon points="73,47 75,47 74,49" fill="#fda4af" />
+                  <!-- Legs (swinging when walking/running) -->
+                  <line x1="36" y1="72" x2="36" y2="86" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" id="cat-leg1-${id}" class="cat-leg-swing-1" />
+                  <line x1="46" y1="72" x2="46" y2="86" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" id="cat-leg2-${id}" class="cat-leg-swing-2" />
+                  <line x1="56" y1="72" x2="56" y2="86" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" id="cat-leg3-${id}" class="cat-leg-swing-1" />
+                  <line x1="66" y1="72" x2="66" y2="86" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" id="cat-leg4-${id}" class="cat-leg-swing-2" />
+                </svg>
+              </div>
+            </div>
+            <!-- Interactive Action buttons -->
+            <div class="mt-2.5 flex gap-1.5 justify-center flex-wrap shrink-0">
+              <button id="cat-btn-meow-${id}" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-bold text-slate-200">Meow! 🔊</button>
+              <button id="cat-btn-state-${id}" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-bold text-slate-200">State: Walk</button>
+              <button id="cat-btn-wander-${id}" class="bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-[11px] font-bold text-white transition" title="Let the cat wander outside the box!">Wander Screen</button>
+            </div>
+          </div>`;
       }
 
       const wEl = document.createElement('div');
@@ -724,6 +819,134 @@
       window.widgets[id] = { type, x, y, w, h, z, state: { countdownSize: type === 'schedule' ? 'large' : 'small' } };
       setupWidgetInteractions(id);
 
+      if (type === 'cat') {
+        const sprite = $id(`cat-sprite-${id}`);
+        const playground = $id(`cat-playground-${id}`);
+        const wanderBtn = $id(`cat-btn-wander-${id}`);
+        const stateBtn = $id(`cat-btn-state-${id}`);
+        const meowBtn = $id(`cat-btn-meow-${id}`);
+
+        let cx = 10;
+        let cy = 25;
+        let vx = 1.2;
+        let vy = 0.2;
+        let isWanderingScreen = false;
+        let catState = 'walk'; // walk, run, sleep
+
+        // Leg nodes to toggling rotation styles
+        const l1 = $id(`cat-leg1-${id}`);
+        const l2 = $id(`cat-leg2-${id}`);
+        const l3 = $id(`cat-leg3-${id}`);
+        const l4 = $id(`cat-leg4-${id}`);
+
+        function updateLegAnimation() {
+          const runLegs = catState !== 'sleep';
+          const speedClass = catState === 'run' ? 'duration-150' : 'duration-300';
+          [l1, l2, l3, l4].forEach(leg => {
+            if (leg) {
+              if (runLegs) {
+                leg.classList.add(leg.id.includes('1') || leg.id.includes('3') ? 'cat-leg-swing-1' : 'cat-leg-swing-2');
+                leg.classList.remove('no-transition');
+              } else {
+                leg.classList.remove('cat-leg-swing-1', 'cat-leg-swing-2');
+                leg.classList.add('no-transition');
+                leg.style.transform = 'rotate(0deg)';
+              }
+            }
+          });
+        }
+
+        meowBtn.onclick = () => {
+          window.playMeowSound();
+          // Cute bubble reaction
+          const orig = meowBtn.innerText;
+          meowBtn.innerText = "Meow! 🐱";
+          setTimeout(() => { meowBtn.innerText = orig; }, 800);
+        };
+
+        stateBtn.onclick = () => {
+          if (catState === 'walk') {
+            catState = 'run';
+            stateBtn.innerText = "State: Run";
+          } else if (catState === 'run') {
+            catState = 'sleep';
+            stateBtn.innerText = "State: Sleep";
+            sprite.classList.add('cat-sleep-breath');
+          } else {
+            catState = 'walk';
+            stateBtn.innerText = "State: Walk";
+            sprite.classList.remove('cat-sleep-breath');
+          }
+          updateLegAnimation();
+        };
+
+        wanderBtn.onclick = () => {
+          isWanderingScreen = !isWanderingScreen;
+          if (isWanderingScreen) {
+            wanderBtn.innerText = "Return Home";
+            wanderBtn.className = "bg-rose-600 hover:bg-rose-500 px-2 py-1 rounded text-[11px] font-bold text-white transition";
+            // Reparent sprite to overall widget-container so it floats across the workspace
+            document.getElementById('widget-container').appendChild(sprite);
+            sprite.style.zIndex = "999";
+          } else {
+            wanderBtn.innerText = "Wander Screen";
+            wanderBtn.className = "bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-[11px] font-bold text-white transition";
+            playground.appendChild(sprite);
+            cx = 10; cy = 25;
+            sprite.style.left = `${cx}px`;
+            sprite.style.top = `${cy}px`;
+          }
+        };
+
+        const walkLoop = () => {
+          if (!$id(id)) {
+            // Cleanup stray wandering sprite if parent widget is closed
+            if (sprite && sprite.parentNode === document.getElementById('widget-container')) {
+              sprite.remove();
+            }
+            return;
+          }
+
+          if (catState !== 'sleep') {
+            let mult = catState === 'run' ? 2.5 : 1.0;
+            cx += vx * mult;
+            cy += vy * mult;
+
+            let maxW = playground.clientWidth - 55;
+            let maxH = playground.clientHeight - 55;
+
+            if (isWanderingScreen) {
+              maxW = window.innerWidth - 60;
+              maxH = window.innerHeight - 60;
+            }
+
+            // Boundary collision handling
+            if (cx < 0) { cx = 0; vx = -vx; }
+            if (cx > maxW) { cx = maxW; vx = -vx; }
+            if (cy < 0) { cy = 0; vy = -vy; }
+            if (cy > maxH) { cy = maxH; vy = -vy; }
+
+            // Random walking drift logic
+            if (Math.random() < 0.02) {
+              vy = (Math.random() - 0.5) * 1.5;
+            }
+
+            sprite.style.left = `${cx}px`;
+            sprite.style.top = `${cy}px`;
+
+            // Flips the cat sprite facing direction based on horizontal velocity
+            if (vx > 0) {
+              sprite.style.transform = 'scaleX(1)';
+            } else {
+              sprite.style.transform = 'scaleX(-1)';
+            }
+          }
+
+          requestAnimationFrame(walkLoop);
+        };
+        requestAnimationFrame(walkLoop);
+      }
+
       if (type === 'timer') {
         let tInterval = null, tDuration = 300;
         const display  = $id(`timer-display-${id}`);
@@ -742,7 +965,6 @@
               else {
                 clearInterval(tInterval); tInterval = null;
                 setButtonRunning(toggleBtn, false);
-                // Trigger sound
                 if (window.playBuzzer) window.playBuzzer('bell');
               }
             }, 1000);
@@ -1286,7 +1508,7 @@
     window.addEventListener('DOMContentLoaded', async () => {
       buildThemeSelectorMenu();
       
-      // Default to Light Mode using the "Soft Cream" color option
+      // Defaulting to Light Mode using the Soft Cream option
       window.setBackground('color', '#fdfbf7');
       
       initClockUpdater();
