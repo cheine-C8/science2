@@ -244,11 +244,7 @@
 
   <div id="widget-container" class="absolute inset-0 pt-16 pb-28 px-4 overflow-hidden pointer-events-none"></div>
 
-  <div class="absolute top-20 left-6 z-20 pointer-events-auto">
-    <button onclick="window.triggerFireworksCelebration()" class="flex items-center space-x-1.5 bg-indigo-600/90 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md tracking-wide transition duration-150 active:scale-95">
-      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i><span>Test Fireworks</span>
-    </button>
-  </div>
+  <div class="absolute top-20 left-6 z-20 pointer-events-auto"></div>
 
   <!-- DOCK -->
   <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center space-y-2 max-w-full px-4 font-sans">
@@ -256,6 +252,16 @@
       ✨ Tip: Drag headers to move, drag bottom-right corner to resize!
     </div>
     <div id="dock-bar" class="flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 pointer-events-auto">
+      <button onclick="createWidget('traffic')" class="group relative p-2.5 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 transition duration-150">
+        <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6 transition transform group-hover:scale-110" xmlns="http://www.w3.org/2000/svg">
+          <rect x="7" y="2" width="10" height="20" rx="3" class="fill-slate-700 stroke-slate-500" stroke-width="1.5" />
+          <circle cx="12" cy="6" r="2.2" fill="#ef4444" />
+          <circle cx="12" cy="12" r="2.2" fill="#fbbf24" />
+          <circle cx="12" cy="18" r="2.2" fill="#10b981" />
+        </svg>
+        <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">Traffic Light</span>
+      </button>
+      
       <button onclick="createWidget('clock')" class="group relative p-2.5 rounded-xl text-slate-500 hover:text-sky-500 hover:bg-sky-500/10 transition duration-150">
         <i data-lucide="clock" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">Clock</span>
@@ -273,15 +279,7 @@
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">Bell Schedule</span>
       </button>
       <div class="h-6 w-[1px] bg-slate-400/30 mx-2"></div>
-      <button onclick="createWidget('traffic')" class="group relative p-2.5 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 transition duration-150">
-        <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6 transition transform group-hover:scale-110" xmlns="http://www.w3.org/2000/svg">
-          <rect x="7" y="2" width="10" height="20" rx="3" class="fill-slate-700 stroke-slate-500" stroke-width="1.5" />
-          <circle cx="12" cy="6" r="2.2" fill="#ef4444" />
-          <circle cx="12" cy="12" r="2.2" fill="#fbbf24" />
-          <circle cx="12" cy="18" r="2.2" fill="#10b981" />
-        </svg>
-        <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">Traffic Light</span>
-      </button>
+      
       <button onclick="createWidget('work')" class="group relative p-2.5 rounded-xl text-slate-500 hover:text-fuchsia-500 hover:bg-fuchsia-500/10 transition duration-150">
         <i data-lucide="help-circle" class="w-6 h-6 transition transform group-hover:scale-110"></i>
         <span class="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-150 bg-slate-900 text-white text-[11px] px-2 py-1 rounded-md shadow-lg pointer-events-none text-nowrap border border-slate-700">Work Symbol</span>
@@ -602,27 +600,34 @@
 
       } else if (type === 'traffic') {
         title = "TRAFFIC LIGHT";
+        options.w = 340;
+        options.h = 240;
         innerHTML = `
-          <div class="flex-1 flex items-center justify-center p-3 gap-4">
+          <div class="flex-1 flex items-center justify-center p-3 gap-6">
             <div class="tl-housing" id="tl-housing-${id}">
               <div class="flex flex-col items-center gap-1">
                 <div class="tl-light off-red"  id="tl-red-${id}"    onclick="window.setTrafficLight('${id}','red')"></div>
-                <input class="tl-label-input" id="tl-label-red-${id}"    placeholder="STOP"  maxlength="12" value="STOP" />
               </div>
               <div class="flex flex-col items-center gap-1">
                 <div class="tl-light off-yellow" id="tl-yellow-${id}" onclick="window.setTrafficLight('${id}','yellow')"></div>
-                <input class="tl-label-input" id="tl-label-yellow-${id}" placeholder="SLOW"  maxlength="12" value="SLOW" />
               </div>
               <div class="flex flex-col items-center gap-1">
                 <div class="tl-light off-green" id="tl-green-${id}"  onclick="window.setTrafficLight('${id}','green')"></div>
-                <input class="tl-label-input" id="tl-label-green-${id}"  placeholder="GO"    maxlength="12" value="GO" />
               </div>
             </div>
-            <div class="flex flex-col gap-2 text-xs">
-              <button onclick="window.setTrafficLight('${id}','red')"    class="tl-btn flex items-center gap-1.5 bg-rose-950/70 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-2.5 py-1.5 rounded-lg font-bold transition w-20 justify-center">🔴 Stop</button>
-              <button onclick="window.setTrafficLight('${id}','yellow')" class="tl-btn flex items-center gap-1.5 bg-amber-950/70 hover:bg-amber-900 border border-amber-900/50 text-amber-300 px-2.5 py-1.5 rounded-lg font-bold transition w-20 justify-center">🟡 Slow</button>
-              <button onclick="window.setTrafficLight('${id}','green')"  class="tl-btn flex items-center gap-1.5 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-900/50 text-emerald-300 px-2.5 py-1.5 rounded-lg font-bold transition w-20 justify-center">🟢 Go</button>
-              <button onclick="window.setTrafficLight('${id}','off')"    class="tl-btn flex items-center gap-1.5 bg-slate-800/70 hover:bg-slate-700 border border-slate-700 text-slate-400 px-2.5 py-1.5 rounded-lg font-semibold transition w-20 justify-center">⚫ Off</button>
+            <div class="flex flex-col gap-5 text-xs w-full">
+               <div class="flex items-center gap-2">
+                 <button onclick="window.setTrafficLight('${id}','red')" class="tl-btn flex items-center gap-1.5 bg-rose-950/70 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-2.5 py-1.5 rounded-lg font-bold transition justify-center">🔴</button>
+                 <textarea id="tl-label-red-${id}" class="w-full bg-slate-950/40 p-1.5 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-10" placeholder="Type instructions for STOP..."></textarea>
+               </div>
+               <div class="flex items-center gap-2">
+                 <button onclick="window.setTrafficLight('${id}','yellow')" class="tl-btn flex items-center gap-1.5 bg-amber-950/70 hover:bg-amber-900 border border-amber-900/50 text-amber-300 px-2.5 py-1.5 rounded-lg font-bold transition justify-center">🟡</button>
+                 <textarea id="tl-label-yellow-${id}" class="w-full bg-slate-950/40 p-1.5 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-10" placeholder="Type instructions for SLOW..."></textarea>
+               </div>
+               <div class="flex items-center gap-2">
+                 <button onclick="window.setTrafficLight('${id}','green')" class="tl-btn flex items-center gap-1.5 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-900/50 text-emerald-300 px-2.5 py-1.5 rounded-lg font-bold transition justify-center">🟢</button>
+                 <textarea id="tl-label-green-${id}" class="w-full bg-slate-950/40 p-1.5 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-10" placeholder="Type instructions for GO..."></textarea>
+               </div>
             </div>
           </div>`;
 
@@ -782,6 +787,21 @@
         });
       }
 
+      if (type === 'traffic') {
+          $id(`tl-label-red-${id}`).addEventListener('input', function() {
+              window.widgets[id].state.redText = this.value;
+              triggerWorkspaceSync();
+          });
+          $id(`tl-label-yellow-${id}`).addEventListener('input', function() {
+              window.widgets[id].state.yellowText = this.value;
+              triggerWorkspaceSync();
+          });
+          $id(`tl-label-green-${id}`).addEventListener('input', function() {
+              window.widgets[id].state.greenText = this.value;
+              triggerWorkspaceSync();
+          });
+      }
+
       if (type === 'dice') {
         const dVal = $id(`dice-value-${id}`);
         const dBtn = $id(`dice-roll-${id}`);
@@ -858,12 +878,12 @@
         let painting  = false;
 
         const resize = () => {
-          const rect = canvas.parentNode.getBoundingClientRect();
+          const r = canvas.parentNode.getBoundingClientRect();
           const tmp = document.createElement('canvas');
           tmp.width = canvas.width; tmp.height = canvas.height;
           tmp.getContext('2d').drawImage(canvas, 0, 0);
-          canvas.width  = rect.width;
-          canvas.height = Math.max(rect.height - 30, 60);
+          canvas.width  = r.width;
+          canvas.height = Math.max(r.height - 30, 60);
           ctx.drawImage(tmp, 0, 0);
         };
         setTimeout(resize, 100);
@@ -1179,8 +1199,22 @@
             if (wd.type === 'schedule' && wd.state?.countdownSize) {
               window.setCountdownSize(k, wd.state.countdownSize);
             }
-            if (wd.type === 'traffic' && wd.state?.trafficState) {
-              window.setTrafficLight(k, wd.state.trafficState);
+            if (wd.type === 'traffic') {
+                if (wd.state?.trafficState) {
+                  window.setTrafficLight(k, wd.state.trafficState);
+                }
+                if (wd.state?.redText) {
+                    const ta = $id(`tl-label-red-${k}`);
+                    if(ta && ta.value !== wd.state.redText) ta.value = wd.state.redText;
+                }
+                if (wd.state?.yellowText) {
+                    const ta = $id(`tl-label-yellow-${k}`);
+                    if(ta && ta.value !== wd.state.yellowText) ta.value = wd.state.yellowText;
+                }
+                if (wd.state?.greenText) {
+                    const ta = $id(`tl-label-green-${k}`);
+                    if(ta && ta.value !== wd.state.greenText) ta.value = wd.state.greenText;
+                }
             }
           });
         }
