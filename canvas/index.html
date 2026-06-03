@@ -125,7 +125,7 @@
       border: none;
       border-bottom: 1px solid rgba(255,255,255,0.15);
       color: rgba(255,255,255,0.7);
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 600;
       text-align: center;
       width: 56px;
@@ -527,9 +527,9 @@
       const x = options.x !== undefined ? options.x : Math.max(40, Math.random() * (window.innerWidth  - 340));
       const y = options.y !== undefined ? options.y : Math.max(80, Math.random() * (window.innerHeight - 520));
       
-      // Default sizing logic based on widget type
-      const w = options.w || (type === 'schedule' ? 320 : (type === 'draw' ? 300 : 280));
-      const h = options.h || (type === 'schedule' ? 520 : (type === 'draw' ? 250 : 200));
+      // Default sizing logic based on widget type (Slightly shortened Schedule & perfectly sized Traffic Light on load)
+      const w = options.w || (type === 'schedule' ? 300 : (type === 'draw' ? 300 : (type === 'traffic' ? 390 : 280)));
+      const h = options.h || (type === 'schedule' ? 400 : (type === 'draw' ? 250 : (type === 'traffic' ? 280 : 200)));
       const z = options.z || ++window.maxZIndex;
 
       let title = type.toUpperCase();
@@ -600,11 +600,9 @@
 
       } else if (type === 'traffic') {
         title = "TRAFFIC LIGHT";
-        options.w = 340;
-        options.h = 240;
         innerHTML = `
           <div class="flex-1 flex items-center justify-center p-3 gap-6">
-            <div class="tl-housing" id="tl-housing-${id}">
+            <div class="tl-housing shrink-0" id="tl-housing-${id}">
               <div class="flex flex-col items-center gap-1">
                 <div class="tl-light off-red"  id="tl-red-${id}"    onclick="window.setTrafficLight('${id}','red')"></div>
               </div>
@@ -615,18 +613,18 @@
                 <div class="tl-light off-green" id="tl-green-${id}"  onclick="window.setTrafficLight('${id}','green')"></div>
               </div>
             </div>
-            <div class="flex flex-col gap-5 text-xs w-full">
+            <div class="flex flex-col gap-4 text-xs w-full justify-center">
                <div class="flex items-center gap-2">
-                 <button onclick="window.setTrafficLight('${id}','red')" class="tl-btn flex items-center gap-1.5 bg-rose-950/70 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-2.5 py-1.5 rounded-lg font-bold transition justify-center">🔴</button>
-                 <textarea id="tl-label-red-${id}" class="w-full bg-slate-950/40 p-1.5 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-10" placeholder="Type instructions for STOP..."></textarea>
+                 <button onclick="window.setTrafficLight('${id}','red')" class="tl-btn flex items-center gap-1.5 bg-rose-950/70 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-3 py-2 rounded-lg font-bold transition justify-center shrink-0">🔴</button>
+                 <textarea id="tl-label-red-${id}" class="w-full bg-slate-950/40 p-1.5 text-sm font-semibold rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-11" placeholder="Instructions for STOP..."></textarea>
                </div>
                <div class="flex items-center gap-2">
-                 <button onclick="window.setTrafficLight('${id}','yellow')" class="tl-btn flex items-center gap-1.5 bg-amber-950/70 hover:bg-amber-900 border border-amber-900/50 text-amber-300 px-2.5 py-1.5 rounded-lg font-bold transition justify-center">🟡</button>
-                 <textarea id="tl-label-yellow-${id}" class="w-full bg-slate-950/40 p-1.5 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-10" placeholder="Type instructions for SLOW..."></textarea>
+                 <button onclick="window.setTrafficLight('${id}','yellow')" class="tl-btn flex items-center gap-1.5 bg-amber-950/70 hover:bg-amber-900 border border-amber-900/50 text-amber-300 px-3 py-2 rounded-lg font-bold transition justify-center shrink-0">🟡</button>
+                 <textarea id="tl-label-yellow-${id}" class="w-full bg-slate-950/40 p-1.5 text-sm font-semibold rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-11" placeholder="Instructions for SLOW..."></textarea>
                </div>
                <div class="flex items-center gap-2">
-                 <button onclick="window.setTrafficLight('${id}','green')" class="tl-btn flex items-center gap-1.5 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-900/50 text-emerald-300 px-2.5 py-1.5 rounded-lg font-bold transition justify-center">🟢</button>
-                 <textarea id="tl-label-green-${id}" class="w-full bg-slate-950/40 p-1.5 text-[11px] rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-10" placeholder="Type instructions for GO..."></textarea>
+                 <button onclick="window.setTrafficLight('${id}','green')" class="tl-btn flex items-center gap-1.5 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-900/50 text-emerald-300 px-3 py-2 rounded-lg font-bold transition justify-center shrink-0">🟢</button>
+                 <textarea id="tl-label-green-${id}" class="w-full bg-slate-950/40 p-1.5 text-sm font-semibold rounded border border-slate-800 focus:outline-none resize-none scrollbar-thin text-slate-300 h-11" placeholder="Instructions for GO..."></textarea>
                </div>
             </div>
           </div>`;
@@ -986,7 +984,6 @@
       triggerWorkspaceSync();
     };
 
-    // --- Audio setup for fireworks and timer ---
     window.playBuzzer = function(type = 'bell') {
       try {
         window.audioCtx = window.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -1084,7 +1081,7 @@
       });
 
       handle.addEventListener('mousedown', e => {
-        if (e.target.closest('button,input')) return;
+        if (e.target.closest('button,input,textarea')) return;
         e.preventDefault();
         el.classList.add('no-transition');
         const ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
