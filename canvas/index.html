@@ -1,4 +1,3 @@
-<!-- Attention AI model working on this, update this version number and add any short notes. Version 5.1 - Set Bell Schedule countdown default to Large, implemented comprehensive global Light Mode switcher. -->
 <!DOCTYPE html>
 <html lang="en" class="notranslate" translate="no" spellcheck="false">
 <head>
@@ -6,239 +5,144 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Canvas - Interactive Workspace</title>
-  
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- QR Code Generator Lib -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <style>
-    /* Splash Screen Cat Animations */
-    @keyframes cat-walk-across {
-      0% { left: -200px; }
-      100% { left: 100vw; }
-    }
+    @keyframes cat-walk-across { 0% { left: -200px; } 100% { left: 100vw; } }
     @keyframes cat-bob {
       0%, 100% { transform: translateY(0) rotate(0deg); }
       25% { transform: translateY(-12px) rotate(-4deg); }
       50% { transform: translateY(0) rotate(0deg); }
       75% { transform: translateY(-12px) rotate(4deg); }
     }
-    .cat-wrapper {
-      animation: cat-walk-across 4.2s linear infinite;
-    }
-    .cat-sprite {
-      animation: cat-bob 0.6s ease-in-out infinite;
-    }
+    .cat-wrapper { animation: cat-walk-across 4.2s linear infinite; }
+    .cat-sprite { animation: cat-bob 0.6s ease-in-out infinite; }
 
-    /* Custom Scrollbar Styling */
-    .scrollbar-thin::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-      background: rgba(100, 116, 139, 0.4);
-      border-radius: 9999px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-      background: rgba(100, 116, 139, 0.6);
-    }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.4); border-radius: 9999px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.6); }
 
-    /* Selection Prevention */
-    .no-select {
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    .no-select { user-select: none; -webkit-user-select: none; }
+    .no-transition { transition: none !important; }
 
-    /* Dragging Performance Fix: Disables transitions dynamically on drag/resize */
-    .no-transition {
-      transition: none !important;
+    /* Light-mode widget overrides */
+    .widget-light {
+      background: rgba(255,255,255,0.96) !important;
+      border-color: rgba(0,0,0,0.1) !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
     }
-
-    /* ========================================== */
-    /*    LIGHT MODE CSS OVERRIDES                */
-    /* ========================================== */
-    body.light-mode {
-      background-color: #f1f5f9;
-      color: #0f172a;
+    .widget-light .widget-header {
+      background: rgba(248,250,252,0.95) !important;
+      border-color: rgba(0,0,0,0.07) !important;
     }
-
-    /* Grid Overlay adaptiveness */
-    body.light-mode #grid-overlay {
-      background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px), 
-                        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
+    .widget-light .widget-header span  { color: #64748b !important; }
+    .widget-light .widget-header button { color: #94a3b8 !important; }
+    .widget-light .widget-header button:hover { color: #ef4444 !important; }
+    .widget-light .widget-body {
+      background: rgba(255,255,255,0.5) !important;
     }
-
-    /* Dynamic Widget Cards styling */
-    body.light-mode #widget-container > div {
-      background-color: rgba(255, 255, 255, 0.95) !important;
-      border-color: rgba(203, 213, 225, 0.9) !important;
-      color: #0f172a !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
-    }
-
-    /* Widget Drag Headers */
-    body.light-mode #widget-container > div > div[id^="handle-"] {
-      background-color: rgba(241, 245, 249, 0.95) !important;
-      border-bottom-color: rgba(226, 232, 240, 1) !important;
-    }
-
-    body.light-mode #widget-container > div > div[id^="handle-"] span {
-      color: #475569 !important;
-    }
-
-    /* Interactive text areas and input boxes */
-    body.light-mode textarea,
-    body.light-mode input[type="text"] {
-      background-color: rgba(248, 250, 252, 0.9) !important;
-      border-color: rgba(226, 232, 240, 1) !important;
-      color: #0f172a !important;
-    }
-
-    body.light-mode textarea::placeholder,
-    body.light-mode input::placeholder {
-      color: #94a3b8 !important;
-    }
-
-    /* Floating control menus & Cloud Drawer overrides */
-    body.light-mode #theme-selector,
-    body.light-mode #cloud-selector {
-      background-color: rgba(255, 255, 255, 0.98) !important;
-      border-color: rgba(203, 213, 225, 1) !important;
-      color: #0f172a !important;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    body.light-mode #theme-selector h3,
-    body.light-mode #cloud-selector h3 {
+    /* Light text overrides for common inner elements */
+    .widget-light textarea,
+    .widget-light input[type="text"] {
       color: #1e293b !important;
-      border-bottom-color: rgba(226, 232, 240, 1) !important;
+      background: rgba(241,245,249,0.8) !important;
     }
+    .widget-light textarea::placeholder,
+    .widget-light input[type="text"]::placeholder { color: #94a3b8 !important; }
+    /* Schedule rows in light mode */
+    .widget-light .sched-row { border-color: rgba(0,0,0,0.06) !important; }
+    .widget-light .sched-row span { color: #475569 !important; }
+    .widget-light .sched-row .mono { color: #64748b !important; }
 
-    body.light-mode #theme-selector p,
-    body.light-mode #cloud-selector label,
-    body.light-mode #cloud-selector p {
-      color: #475569 !important;
+    /* Traffic light housing */
+    .tl-housing {
+      background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 100%);
+      border-radius: 24px;
+      border: 3px solid #111;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.6);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: fit-content;
     }
-
-    body.light-mode #theme-selector button,
-    body.light-mode #cloud-selector button:not(.bg-sky-600) {
-      color: #334155 !important;
+    .tl-light {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: box-shadow 0.2s, background 0.2s;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
     }
-
-    /* Dynamic internal panels */
-    body.light-mode [id^="sched-config-"],
-    body.light-mode [id^="picker-result-"] {
-      background-color: rgba(255, 255, 255, 0.98) !important;
-      border-color: rgba(226, 232, 240, 1) !important;
+    .tl-light.off-red   { background: #3d1010; }
+    .tl-light.off-yellow{ background: #2d2000; }
+    .tl-light.off-green { background: #0a2010; }
+    .tl-light.on-red    { background: radial-gradient(circle at 35% 35%, #ff6666, #cc0000); box-shadow: 0 0 18px 6px rgba(220,50,50,0.75); }
+    .tl-light.on-yellow { background: radial-gradient(circle at 35% 35%, #ffe066, #e6a800); box-shadow: 0 0 18px 6px rgba(230,180,0,0.75); }
+    .tl-light.on-green  { background: radial-gradient(circle at 35% 35%, #66ff99, #00aa44); box-shadow: 0 0 18px 6px rgba(0,200,80,0.75); }
+    /* sheen dot */
+    .tl-light::after {
+      content: '';
+      position: absolute; top: 10px; left: 10px;
+      width: 12px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      pointer-events: none;
     }
-
-    body.light-mode [id^="sched-config-"] span,
-    body.light-mode [id^="picker-result-"] div {
-      color: #334155 !important;
+    .tl-label-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      width: 56px;
+      outline: none;
+      padding: 1px 2px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
-
-    /* Schedule specific color rules */
-    body.light-mode [id^="sched-row-"] {
-      border-bottom-color: rgba(226, 232, 240, 0.7) !important;
-      color: #334155 !important;
-    }
-
-    body.light-mode [id^="sched-row-"] span {
-      color: #334155 !important;
-    }
-
-    /* Highlighted class rows in light mode */
-    body.light-mode .bg-indigo-500\/10 {
-      background-color: rgba(99, 102, 241, 0.12) !important;
-    }
-
-    /* Button adaptations inside widgets */
-    body.light-mode button:not(.traffic-light-btn):not(.bg-indigo-600):not(.bg-sky-600):not(.bg-yellow-600):not(.bg-rose-950) {
-      background-color: #f1f5f9;
-      color: #334155;
-      border-color: #e2e8f0;
-    }
-
-    body.light-mode button:not(.traffic-light-btn):not(.bg-indigo-600):not(.bg-sky-600):not(.bg-yellow-600):not(.bg-rose-950):hover {
-      background-color: #e2e8f0;
-      color: #0f172a;
-    }
-
-    /* Sound meter specific fixes */
-    body.light-mode [id^="sound-bar-"] {
-      background: linear-gradient(to right, #10b981, #f59e0b, #ef4444) !important;
-    }
-
-    /* Traffic components adjustments */
-    body.light-mode [id^="traffic-red-"],
-    body.light-mode [id^="traffic-yellow-"],
-    body.light-mode [id^="traffic-green-"] {
-      border-color: #cbd5e1 !important;
-    }
+    .tl-label-input::placeholder { color: rgba(255,255,255,0.3); }
+    .tl-label-input:focus { border-bottom-color: rgba(255,255,255,0.4); }
   </style>
 </head>
-<body class="relative w-screen h-screen overflow-hidden no-select bg-slate-900 font-sans text-slate-100 transition-colors duration-500">
+<body class="relative w-screen h-screen overflow-hidden no-select bg-slate-900 font-sans text-slate-100">
 
-  <!-- Fireworks Floating Layer Canvas -->
   <canvas id="fireworks-canvas" class="absolute inset-0 pointer-events-none z-[50] w-full h-full"></canvas>
 
-  <!-- ========================================== -->
-  <!--    SPLASH SCREEN                           -->
-  <!-- ========================================== -->
+  <!-- SPLASH SCREEN -->
   <div id="app-splash" class="fixed inset-0 z-[99999] bg-slate-950 flex flex-col justify-center items-center transition-all duration-700 ease-in-out overflow-hidden">
-    
-    <!-- Full-Body Cat Walking Centered Animation -->
     <div class="cat-wrapper absolute top-1/2 -translate-y-1/2 pointer-events-none">
       <div class="cat-sprite text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-        <!-- Organic Full Cat Body Vector -->
         <svg xmlns="http://www.w3.org/2000/svg" width="180" height="120" viewBox="0 0 140 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <!-- Tail -->
           <path d="M25 65 C 10 50, 15 20, 30 15 C 40 10, 45 35, 45 50" />
-          <!-- Spine/Back -->
           <path d="M45 50 Q 75 40 105 50" />
-          <!-- Chest/Belly -->
           <path d="M45 60 Q 75 62 105 58" />
-          <!-- Head -->
           <path d="M105 50 Q 110 35 110 35 L 105 18 L 115 25 L 125 18 L 129 30 Q 138 40 125 48 L 115 50" />
-          <!-- Back Left Leg -->
           <path d="M50 55 L 47 85 L 53 85" />
-          <!-- Back Right Leg -->
           <path d="M60 55 L 58 81 L 64 81" />
-          <!-- Front Left Leg -->
           <path d="M100 54 L 102 85 L 108 85" />
-          <!-- Front Right Leg -->
           <path d="M109 52 L 111 81 L 117 81" />
         </svg>
       </div>
     </div>
-
-    <!-- Loading message positioned cleanly below the center path -->
     <div class="z-10 mt-64 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-slate-800 shadow-xl flex flex-col items-center">
       <p id="splash-text" class="text-slate-200 font-semibold tracking-wide text-sm animate-pulse flex items-center gap-2">
         <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-500"></i> Loading classroom resources...
       </p>
     </div>
-    
     <p class="absolute bottom-6 text-xs text-slate-500 font-medium tracking-widest uppercase">Canvas Sync Pro</p>
   </div>
 
-  <!-- ========================================== -->
-  <!--    DESKTOP CANVAS BACKGROUND & GRID        -->
-  <!-- ========================================== -->
+  <!-- CANVAS BG & GRID -->
   <div id="canvas-bg" class="absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out"></div>
   <div id="grid-overlay" class="absolute inset-0 bg-repeat bg-[size:24px_24px] pointer-events-none transition-all duration-300"></div>
 
-  <!-- ========================================== -->
-  <!--    TOP BRANDING & BAR                       -->
-  <!-- ========================================== -->
+  <!-- TOP BAR -->
   <header class="absolute top-4 left-6 right-6 z-20 flex justify-between items-center pointer-events-none">
     <div class="flex items-center space-x-2">
       <div id="branding-pill" class="flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-white">
@@ -246,48 +150,32 @@
         <span class="font-semibold text-sm tracking-wide">Canvas</span>
         <span class="text-[10px] uppercase bg-indigo-500/30 text-indigo-300 font-bold px-1.5 py-0.5 rounded">Interactive</span>
       </div>
-
-      <!-- Live Sync Status Banner -->
       <div id="sync-status" class="flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300">
         <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-amber-500"></i>
         <span class="status-label">Connecting...</span>
       </div>
     </div>
-
-    <!-- Global App Settings Controls -->
     <div class="flex space-x-2 pointer-events-auto">
-      <button onclick="toggleThemeMode()" id="theme-mode-btn" class="flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800">
-        <i data-lucide="sun" id="theme-mode-icon" class="w-4 h-4 text-amber-400"></i>
-        <span id="theme-mode-text">Light Mode</span>
-      </button>
       <button onclick="toggleCloudPanel(event)" id="cloud-btn" class="flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800">
-        <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i>
-        <span>Room Sync</span>
+        <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i><span>Room Sync</span>
       </button>
       <button onclick="toggleBgSelector(event)" id="theme-btn" class="flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800">
-        <i data-lucide="palette" class="w-4 h-4 text-pink-500"></i>
-        <span>Theme & Colors</span>
+        <i data-lucide="palette" class="w-4 h-4 text-pink-500"></i><span>Theme & Colors</span>
       </button>
       <button onclick="clearAllWidgets()" class="flex items-center space-x-1.5 bg-rose-950/80 hover:bg-rose-900 backdrop-blur-md border border-rose-800 text-rose-200 px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm">
-        <i data-lucide="trash-2" class="w-4 h-4"></i>
-        <span>Clear Screen</span>
+        <i data-lucide="trash-2" class="w-4 h-4"></i><span>Clear Screen</span>
       </button>
     </div>
   </header>
 
-  <!-- ========================================== -->
-  <!--    CLOUD SYNC CONNECTION DRAWER             -->
-  <!-- ========================================== -->
+  <!-- CLOUD SYNC DRAWER -->
   <div id="cloud-selector" class="hidden absolute top-16 right-6 z-[100] w-80 bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl p-4 text-white flex flex-col">
     <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
       <h3 class="font-semibold text-slate-100 flex items-center gap-1.5">
         <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i> Live Sync Settings
       </h3>
-      <button onclick="toggleCloudPanel(event)" class="text-slate-400 hover:text-slate-200">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
+      <button onclick="toggleCloudPanel(event)" class="text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    
     <div class="space-y-4 text-xs">
       <div>
         <label class="block text-slate-400 font-semibold mb-1">CURRENT ROOM NAME / ID</label>
@@ -306,31 +194,23 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!--    THEME SELECTOR DROPDOWN                  -->
-  <!-- ========================================== -->
+  <!-- THEME SELECTOR -->
   <div id="theme-selector" class="hidden absolute top-16 right-6 z-[100] w-80 max-h-[80vh] bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl p-4 text-white flex flex-col">
     <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
       <h3 class="font-semibold text-slate-100 flex items-center gap-1.5">
         <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i> Choose Canvas Backdrop
       </h3>
-      <button onclick="toggleBgSelector(event)" class="text-slate-400 hover:text-slate-200">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
+      <button onclick="toggleBgSelector(event)" class="text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-
     <div class="flex-1 overflow-y-auto pr-1 space-y-5 scrollbar-thin">
-      <!-- Gradients -->
       <div>
         <p class="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">Dynamic Gradients</p>
         <div id="gradient-choices" class="grid grid-cols-2 gap-2"></div>
       </div>
-      <!-- Images -->
       <div>
         <p class="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">HD Scenes</p>
         <div id="image-choices" class="grid grid-cols-2 gap-2"></div>
       </div>
-      <!-- Solid Colors -->
       <div>
         <p class="text-xs text-slate-400 font-medium mb-2.5 uppercase tracking-wider">Solid Colors</p>
         <div id="color-choices" class="flex gap-2 flex-wrap"></div>
@@ -338,27 +218,21 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!--    WIDGETS STAGING CONTAINER               -->
-  <!-- ========================================== -->
+  <!-- WIDGET CONTAINER -->
   <div id="widget-container" class="absolute inset-0 pt-16 pb-28 px-4 overflow-hidden pointer-events-none"></div>
 
-  <!-- Shrunk Fireworks Test Button -->
+  <!-- Fireworks Test -->
   <div class="absolute top-20 left-6 z-20 pointer-events-auto">
     <button onclick="window.triggerFireworksCelebration()" class="flex items-center space-x-1.5 bg-indigo-600/90 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md tracking-wide transition duration-150 active:scale-95">
-      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i>
-      <span>Test Fireworks</span>
+      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i><span>Test Fireworks</span>
     </button>
   </div>
 
-  <!-- ========================================== -->
-  <!--    BOTTOM FLOATING TOOLBAR DOCK             -->
-  <!-- ========================================== -->
+  <!-- DOCK -->
   <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center space-y-2 max-w-full px-4 font-sans">
     <div id="tip-pill" class="text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-black/40 border-white/5 text-white/55">
       ✨ Tip: Drag headers to move, drag bottom-right corner to resize!
     </div>
-    
     <div id="dock-bar" class="flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 pointer-events-auto">
       <button onclick="createWidget('clock')" class="group relative p-2.5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/20 transition duration-150">
         <i data-lucide="clock" class="w-6 h-6 transition transform group-hover:scale-110"></i>
@@ -418,277 +292,234 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!--    JAVASCRIPT CORE LOGIC & SYNC SYSTEM      -->
-  <!-- ========================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // --- GLOBALS & LOCAL STATE ---
+    // ─── GLOBALS ───────────────────────────────────────────────────────────────
     window.maxZIndex = 10;
-    window.audioCtx = null;
+    window.audioCtx  = null;
     window.micStream = null;
-    window.widgets = {}; 
-    let db = null;
-    let auth = null;
+    window.widgets   = {};
+    window.isLightMode = false;
+
+    let db = null, auth = null;
     let syncUnsubscribe = null;
-    let saveTimeout = null;
-    let isIncomingStateUpdate = false; 
+    let saveTimeout     = null;
+    let isIncomingStateUpdate = false;
 
-    let roomId = window.location.hash ? window.location.hash.substring(1).trim() : 'default-room';
-    if (!roomId) roomId = 'default-room';
+    let roomId = (window.location.hash ? window.location.hash.substring(1).trim() : '') || 'default-room';
 
-    // Retrieve environment values or fallbacks conforming to Platform Guidelines
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-    let firebaseConfig = { 
-      apiKey: "AIzaSyB73ClrB7S2Ja-TWB31NqT5YP99-8Bv87w", 
-      authDomain: "canvas-2afe2.firebaseapp.com", 
-      projectId: "canvas-2afe2", 
-      storageBucket: "canvas-2afe2.firebasestorage.app", 
-      messagingSenderId: "776885959637", 
-      appId: "1:776885959637:web:64484c26072f5bc6c7db5c" 
+    let firebaseConfig = {
+      apiKey: "AIzaSyB73ClrB7S2Ja-TWB31NqT5YP99-8Bv87w",
+      authDomain: "canvas-2afe2.firebaseapp.com",
+      projectId: "canvas-2afe2",
+      storageBucket: "canvas-2afe2.firebasestorage.app",
+      messagingSenderId: "776885959637",
+      appId: "1:776885959637:web:64484c26072f5bc6c7db5c"
     };
-
     if (typeof __firebase_config !== 'undefined' && __firebase_config) {
       try {
-        if (typeof __firebase_config === 'string') {
-          firebaseConfig = JSON.parse(__firebase_config);
-        } else if (typeof __firebase_config === 'object') {
-          firebaseConfig = __firebase_config;
-        }
-      } catch (e) {
-        console.error("Firebase config parse fail, falling back", e);
-      }
+        firebaseConfig = typeof __firebase_config === 'string'
+          ? JSON.parse(__firebase_config)
+          : __firebase_config;
+      } catch(e) { console.error("Firebase config parse fail", e); }
     }
 
+    // ─── DATA ──────────────────────────────────────────────────────────────────
     const gradients = [
-      { name: 'Midnight Aurora', value: 'from-slate-900 via-indigo-950 to-slate-900' },
-      { name: 'Warm Classroom', value: 'from-amber-950 via-stone-900 to-amber-950' },
-      { name: 'Ocean Depths', value: 'from-cyan-950 via-blue-950 to-slate-950' },
-      { name: 'Forest Moss', value: 'from-emerald-950 via-zinc-900 to-green-950' },
-      { name: 'Retro Sunset', value: 'from-violet-950 via-fuchsia-950 to-rose-950' },
+      { name: 'Midnight Aurora',  value: 'from-slate-900 via-indigo-950 to-slate-900' },
+      { name: 'Warm Classroom',   value: 'from-amber-950 via-stone-900 to-amber-950'  },
+      { name: 'Ocean Depths',     value: 'from-cyan-950 via-blue-950 to-slate-950'    },
+      { name: 'Forest Moss',      value: 'from-emerald-950 via-zinc-900 to-green-950' },
+      { name: 'Retro Sunset',     value: 'from-violet-950 via-fuchsia-950 to-rose-950'},
     ];
-
     const colors = [
-      { name: 'Pure White', value: '#ffffff' },
-      { name: 'Soft Cream', value: '#fdfbf7' },
-      { name: 'Slate Gray', value: '#1e293b' },
+      { name: 'Pure White',       value: '#ffffff' },
+      { name: 'Soft Cream',       value: '#fdfbf7' },
+      { name: 'Slate Gray',       value: '#1e293b' },
       { name: 'Classic Blackboard', value: '#14532d' },
-      { name: 'Deep Burgundy', value: '#4c0519' },
-      { name: 'Royal Indigo', value: '#1e1b4b' },
-      { name: 'True Dark', value: '#09090b' },
+      { name: 'Deep Burgundy',    value: '#4c0519' },
+      { name: 'Royal Indigo',     value: '#1e1b4b' },
+      { name: 'True Dark',        value: '#09090b' },
     ];
-
     const images = [
-      { name: 'Abstract Sparks', url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1920&q=80' },
-      { name: 'Cozy Library', url: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80' },
-      { name: 'Bright Bokeh', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1920&q=80' },
-      { name: 'Chalkboard Texture', url: 'https://images.unsplash.com/photo-1571844307560-f17ab2ec17c2?auto=format&fit=crop&w=1920&q=80' },
-      { name: 'Calming Nature', url: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1920&q=80' },
+      { name: 'Abstract Sparks',  url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1920&q=80' },
+      { name: 'Cozy Library',     url: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80' },
+      { name: 'Bright Bokeh',     url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1920&q=80' },
+      { name: 'Chalkboard',       url: 'https://images.unsplash.com/photo-1571844307560-f17ab2ec17c2?auto=format&fit=crop&w=1920&q=80' },
+      { name: 'Calming Nature',   url: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1920&q=80' },
     ];
-
     const bellSchedule = [
-      { name: "Homeroom", start: "07:35", end: "07:58", label: "7:35 - 7:58" },
-      { name: "1st Period", start: "08:01", end: "08:47", label: "8:01 - 8:47" },
-      { name: "2nd Period", start: "08:50", end: "09:36", label: "8:50 - 9:36" },
-      { name: "3rd Period", start: "09:39", end: "10:25", label: "9:39 - 10:25" },
-      { name: "4th Period", start: "10:28", end: "11:14", label: "10:28 - 11:14" },
-      { name: "5th (7th Lunch)", start: "11:17", end: "12:03", label: "11:17 - 12:03" },
-      { name: "6th (8th Lunch)", start: "12:06", end: "12:52", label: "12:06 - 12:52" },
-      { name: "7th Period", start: "12:55", end: "13:41", label: "12:55 - 1:41" },
-      { name: "8th Period", start: "13:44", end: "14:30", label: "1:44 - 2:30" }
+      { name: "Homeroom",           start: "07:35", end: "07:58", label: "7:35 - 7:58"   },
+      { name: "1st Period",         start: "08:01", end: "08:47", label: "8:01 - 8:47"   },
+      { name: "2nd Period",         start: "08:50", end: "09:36", label: "8:50 - 9:36"   },
+      { name: "3rd Period",         start: "09:39", end: "10:25", label: "9:39 - 10:25"  },
+      { name: "4th Period",         start: "10:28", end: "11:14", label: "10:28 - 11:14" },
+      { name: "5th (7th Lunch)",    start: "11:17", end: "12:03", label: "11:17 - 12:03" },
+      { name: "6th (8th Lunch)",    start: "12:06", end: "12:52", label: "12:06 - 12:52" },
+      { name: "7th Period",         start: "12:55", end: "13:41", label: "12:55 - 1:41"  },
+      { name: "8th Period",         start: "13:44", end: "14:30", label: "1:44 - 2:30"   },
     ];
 
     window.gradients = gradients;
-    window.colors = colors;
-    window.images = images;
+    window.colors    = colors;
+    window.images    = images;
     window.bellSchedule = bellSchedule;
 
-    // --- SOUND SYNTHESIZER ---
-    window.playBuzzer = function(type = 'bell') {
-      try {
-        if (!window.audioCtx) {
-          window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        const ctx = window.audioCtx;
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
-        if (type === 'bell') {
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gain = ctx.createGain();
+    // ─── HELPERS ───────────────────────────────────────────────────────────────
 
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(880, ctx.currentTime);
-          osc2.type = 'triangle';
-          osc2.frequency.setValueAtTime(440, ctx.currentTime);
+    // Safer getElementById with optional fallback
+    const $id = id => document.getElementById(id);
 
-          gain.gain.setValueAtTime(0.5, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
-
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc1.start();
-          osc2.start();
-          osc1.stop(ctx.currentTime + 1.2);
-          osc2.stop(ctx.currentTime + 1.2);
-        } else {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(330, ctx.currentTime);
-          gain.gain.setValueAtTime(0.3, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.8);
-        }
-      } catch (e) {
-        console.warn("Audio context failed or not allowed.", e);
-      }
-    };
-
-    // --- LIGHT & DARK THEME TOGGLE MGR ---
-    window.themeMode = localStorage.getItem('canvas_theme_mode') || 'dark';
-
-    window.toggleThemeMode = function() {
-      const isLightNow = document.body.classList.toggle('light-mode');
-      window.themeMode = isLightNow ? 'light' : 'dark';
-      localStorage.setItem('canvas_theme_mode', window.themeMode);
-      
-      updateThemeToggleUI();
-      // Re-trigger visual layout updates
-      window.setBackground(window.activeBgType, window.activeBgValue);
-    };
-
-    function updateThemeToggleUI() {
-      const isLight = document.body.classList.contains('light-mode');
-      const btnText = document.getElementById('theme-mode-text');
-      const btnIcon = document.getElementById('theme-mode-icon');
-      
-      if (btnText && btnIcon) {
-        if (isLight) {
-          btnText.innerText = "Dark Mode";
-          btnIcon.setAttribute('data-lucide', 'moon');
-          btnIcon.className = "w-4 h-4 text-indigo-500";
-        } else {
-          btnText.innerText = "Light Mode";
-          btnIcon.setAttribute('data-lucide', 'sun');
-          btnIcon.className = "w-4 h-4 text-amber-400";
-        }
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
+    // Efficient toggle-button state helper used by timer / stopwatch
+    function setButtonRunning(btn, running) {
+      if (running) {
+        btn.innerText = "Pause";
+        btn.className = "bg-rose-900 hover:bg-rose-800 px-2.5 py-1 rounded text-xs font-bold text-white";
+      } else {
+        btn.innerText = "Start";
+        btn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
       }
     }
 
-    // --- BACKGROUND SETUP ---
-    window.activeBgType = 'gradient';
+    // ─── SOUND ─────────────────────────────────────────────────────────────────
+    window.playBuzzer = function(type = 'bell') {
+      try {
+        window.audioCtx = window.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = window.audioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        if (type === 'bell') {
+          const [o1, o2, gain] = [ctx.createOscillator(), ctx.createOscillator(), ctx.createGain()];
+          o1.type = 'sine';     o1.frequency.value = 880;
+          o2.type = 'triangle'; o2.frequency.value = 440;
+          gain.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+          [o1, o2].forEach(o => { o.connect(gain); o.start(); o.stop(ctx.currentTime + 1.2); });
+          gain.connect(ctx.destination);
+        } else {
+          const osc = ctx.createOscillator(), gain = ctx.createGain();
+          osc.type = 'sawtooth'; osc.frequency.value = 330;
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 0.8);
+        }
+      } catch(e) { console.warn("Audio failed:", e); }
+    };
+
+    // ─── BACKGROUND ────────────────────────────────────────────────────────────
+    // Apply or remove light-mode class on a single widget element
+    function applyWidgetTheme(el, isLight) {
+      if (isLight) {
+        el.classList.add('widget-light');
+      } else {
+        el.classList.remove('widget-light');
+      }
+    }
+
+    // Re-theme all currently open widgets (called when background changes)
+    function applyAllWidgetThemes(isLight) {
+      document.querySelectorAll('#widget-container > [id^="w_"]').forEach(el => applyWidgetTheme(el, isLight));
+    }
+
+    window.activeBgType  = 'color';
     window.activeBgValue = 'from-indigo-950 via-slate-900 to-blue-950';
 
+    // Cache the theme-dependent elements to avoid repeated queries
+    const themeEls = {
+      bg:       () => $id('canvas-bg'),
+      grid:     () => $id('grid-overlay'),
+      brand:    () => $id('branding-pill'),
+      theme:    () => $id('theme-btn'),
+      cloud:    () => $id('cloud-btn'),
+      tip:      () => $id('tip-pill'),
+      dock:     () => $id('dock-bar'),
+      sync:     () => $id('sync-status'),
+    };
+
+    const darkTheme = {
+      grid:  "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)",
+      brand: "flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-white",
+      btn:   "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto",
+      tip:   "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-black/40 border-white/5 text-white/55",
+      dock:  "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 pointer-events-auto",
+      sync:  "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300",
+    };
+    const lightTheme = {
+      grid:  "linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px)",
+      brand: "flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-white/80 border-slate-200 text-slate-800 shadow-sm",
+      btn:   "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto",
+      tip:   "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-white/80 border-slate-200 text-slate-600 shadow-sm",
+      dock:  "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-white/95 border-slate-200 shadow-slate-300/50 pointer-events-auto",
+      sync:  "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-white/80 border-slate-200 text-slate-700 shadow-sm",
+    };
+
     window.setBackground = function(type, value) {
-      window.activeBgType = type;
+      window.activeBgType  = type;
       window.activeBgValue = value;
 
-      const bgContainer = document.getElementById('canvas-bg');
-      const gridOverlay = document.getElementById('grid-overlay');
-      const brandingPill = document.getElementById('branding-pill');
-      const themeBtn = document.getElementById('theme-btn');
-      const cloudBtn = document.getElementById('cloud-btn');
-      const themeModeBtn = document.getElementById('theme-mode-btn');
-      const tipPill = document.getElementById('tip-pill');
-      const dockBar = document.getElementById('dock-bar');
-      const syncStatus = document.getElementById('sync-status');
-
-      bgContainer.className = "absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out";
-      bgContainer.style.backgroundColor = "";
-      bgContainer.style.backgroundImage = "";
-
-      const isLightMode = document.body.classList.contains('light-mode');
-      const isWhite = value === '#ffffff' || value === '#fdfbf7';
+      const bgEl = themeEls.bg();
+      bgEl.className = "absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out";
+      bgEl.style.backgroundColor = "";
+      bgEl.style.backgroundImage = "";
 
       if (type === 'color') {
-        bgContainer.style.backgroundColor = value;
+        bgEl.style.backgroundColor = value;
       } else if (type === 'image') {
-        bgContainer.style.backgroundImage = `url(${value})`;
-        bgContainer.style.backgroundSize = "cover";
-        bgContainer.style.backgroundPosition = "center";
-      } else if (type === 'gradient') {
-        bgContainer.classList.add('bg-gradient-to-tr', ...value.split(' '));
-      }
-
-      // Dynamic Top-bar style injection based on theme status or white canvas selections
-      if (isLightMode || isWhite) {
-        gridOverlay.style.backgroundImage = "linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px)";
-        brandingPill.className = "flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-white/80 border-slate-200 text-slate-800 shadow-sm";
-        themeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto";
-        cloudBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto";
-        themeModeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-white hover:bg-slate-100 border-slate-200 text-slate-700 pointer-events-auto";
-        tipPill.className = "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-white/80 border-slate-200 text-slate-600 shadow-sm";
-        dockBar.className = "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-white/95 border-slate-200 shadow-slate-300/50 pointer-events-auto";
-        syncStatus.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-white/80 border-slate-200 text-slate-700 shadow-sm";
+        bgEl.style.backgroundImage  = `url(${value})`;
+        bgEl.style.backgroundSize   = "cover";
+        bgEl.style.backgroundPosition = "center";
       } else {
-        gridOverlay.style.backgroundImage = "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)";
-        brandingPill.className = "flex items-center space-x-3 pointer-events-auto backdrop-blur-md border py-1.5 px-4 rounded-full transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-white";
-        themeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto";
-        cloudBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto";
-        themeModeBtn.className = "flex items-center space-x-1.5 border px-3 py-1.5 rounded-lg text-sm transition font-medium shadow-sm bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 pointer-events-auto";
-        tipPill.className = "text-[11px] px-3 py-1 rounded-full backdrop-blur-sm shadow border transition-colors duration-300 bg-black/40 border-white/5 text-white/55";
-        dockBar.className = "flex items-center space-x-1 backdrop-blur-xl border p-2.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full scrollbar-none transition-colors duration-300 bg-slate-900/90 border-slate-700/80 pointer-events-auto";
-        syncStatus.className = "flex items-center space-x-1.5 pointer-events-auto backdrop-blur-md border py-1.5 px-3 rounded-full text-xs transition-colors duration-300 bg-slate-900/60 border-slate-700/50 text-slate-300";
+        bgEl.classList.add('bg-gradient-to-tr', ...value.split(' '));
       }
 
-      // Re-trigger icon rendering because visual structures changed
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
+      const isWhite = value === '#ffffff' || value === '#fdfbf7';
+      const t = isWhite ? lightTheme : darkTheme;
 
+      themeEls.grid().style.backgroundImage = t.grid;
+      themeEls.brand().className = t.brand;
+      themeEls.theme().className = t.btn;
+      themeEls.cloud().className = t.btn;
+      themeEls.tip().className   = t.tip;
+      themeEls.dock().className  = t.dock;
+      themeEls.sync().className  = t.sync;
+
+      lucide.createIcons();
       triggerWorkspaceSync();
     };
 
     window.toggleBgSelector = function(e) {
       if (e) e.stopPropagation();
-      document.getElementById('theme-selector').classList.toggle('hidden');
-      document.getElementById('cloud-selector').classList.add('hidden');
+      $id('theme-selector').classList.toggle('hidden');
+      $id('cloud-selector').classList.add('hidden');
     };
-
     window.toggleCloudPanel = function(e) {
       if (e) e.stopPropagation();
-      document.getElementById('cloud-selector').classList.toggle('hidden');
-      document.getElementById('theme-selector').classList.add('hidden');
+      $id('cloud-selector').classList.toggle('hidden');
+      $id('theme-selector').classList.add('hidden');
     };
-
-    window.copyRoomLink = async function() {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-      } catch (err) {
-        const tempInput = document.createElement("input");
-        tempInput.value = window.location.href;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand("copy");
-        document.body.removeChild(tempInput);
-      }
-
-      const copyBtn = document.querySelector("#cloud-selector button");
-      const prevHtml = copyBtn.innerHTML;
-      copyBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copied!`;
+    window.copyRoomLink = function() {
+      navigator.clipboard.writeText(window.location.href).catch(() => {
+        const tmp = document.createElement('input');
+        tmp.value = window.location.href;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        tmp.remove();
+      });
+      const btn = document.querySelector('#cloud-selector button');
+      const prev = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copied!`;
       lucide.createIcons();
-      setTimeout(() => {
-        copyBtn.innerHTML = prevHtml;
-        lucide.createIcons();
-      }, 2000);
+      setTimeout(() => { btn.innerHTML = prev; lucide.createIcons(); }, 2000);
     };
-
     window.changeRoomId = function() {
-      const val = document.getElementById('room-input-field').value.trim();
+      const val = $id('room-input-field').value.trim();
       if (!val) return;
       window.location.hash = `#${val}`;
       roomId = val;
@@ -696,211 +527,154 @@
     };
 
     function buildThemeSelectorMenu() {
-      const gradContainer = document.getElementById('gradient-choices');
-      const imgContainer = document.getElementById('image-choices');
-      const colorContainer = document.getElementById('color-choices');
+      $id('gradient-choices').innerHTML = gradients.map(g => `
+        <button onclick="setBackground('gradient','${g.value}')" class="flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full">
+          <div class="w-full h-10 rounded bg-gradient-to-tr ${g.value}"></div>
+          <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${g.name}</span>
+        </button>`).join('');
 
-      gradContainer.innerHTML = '';
-      imgContainer.innerHTML = '';
-      colorContainer.innerHTML = '';
+      $id('image-choices').innerHTML = images.map(img => `
+        <button onclick="setBackground('image','${img.url}')" class="flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full">
+          <img src="${img.url}" class="w-full h-10 object-cover rounded" loading="lazy" />
+          <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${img.name}</span>
+        </button>`).join('');
 
-      gradients.forEach(g => {
-        gradContainer.innerHTML += `
-          <button onclick="setBackground('gradient', '${g.value}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition text-left w-full bg-slate-900/40">
-            <div class="w-full h-10 rounded bg-gradient-to-tr ${g.value}"></div>
-            <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${g.name}</span>
-          </button>
-        `;
-      });
-
-      images.forEach(img => {
-        imgContainer.innerHTML += `
-          <button onclick="setBackground('image', '${img.url}')" class="group relative flex flex-col items-center p-1 rounded-lg border border-slate-800 hover:border-indigo-500 transition w-full bg-slate-900/40">
-            <img src="${img.url}" class="w-full h-10 object-cover rounded" />
-            <span class="text-[10px] text-slate-300 mt-1 truncate w-full text-center">${img.name}</span>
-          </button>
-        `;
-      });
-
-      colors.forEach(c => {
-        colorContainer.innerHTML += `
-          <button onclick="setBackground('color', '${c.value}')" class="w-8 h-8 rounded-full border border-slate-700/60 transition transform hover:scale-110 active:scale-95 shadow" style="background-color: ${c.value};" title="${c.name}"></button>
-        `;
-      });
+      $id('color-choices').innerHTML = colors.map(c => `
+        <button onclick="setBackground('color','${c.value}')" class="w-8 h-8 rounded-full border border-slate-700/60 transition transform hover:scale-110 active:scale-95 shadow" style="background-color:${c.value}" title="${c.name}"></button>`
+      ).join('');
     }
 
-    // --- FIREWORKS RENDERING ENGINE ---
-    const canvas = document.getElementById('fireworks-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
+    // ─── FIREWORKS ─────────────────────────────────────────────────────────────
+    const fwCanvas = $id('fireworks-canvas');
+    const fwCtx    = fwCanvas.getContext('2d');
+    let   particles = [];
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    function resizeFWCanvas() {
+      fwCanvas.width  = window.innerWidth;
+      fwCanvas.height = window.innerHeight;
     }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    window.addEventListener('resize', resizeFWCanvas);
+    resizeFWCanvas();
 
     class Particle {
       constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
+        this.x = x; this.y = y; this.color = color;
         this.radius = Math.random() * 2.5 + 1;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 6 + 2;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
+        const a = Math.random() * Math.PI * 2, spd = Math.random() * 6 + 2;
+        this.vx = Math.cos(a) * spd; this.vy = Math.sin(a) * spd;
         this.alpha = 1;
-        this.decay = Math.random() * 0.015 + 0.015;
+        this.decay   = Math.random() * 0.015 + 0.015;
         this.gravity = 0.06;
       }
-      draw() {
-        ctx.save();
-        ctx.globalAlpha = this.alpha;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = this.color;
-        ctx.fill();
-        ctx.restore();
-      }
       update() {
-        this.vx *= 0.98;
-        this.vy *= 0.98;
-        this.vy += this.gravity;
-        this.x += this.vx;
-        this.y += this.vy;
+        this.vx *= 0.98; this.vy *= 0.98; this.vy += this.gravity;
+        this.x += this.vx;  this.y += this.vy;
         this.alpha -= this.decay;
+      }
+      draw() {
+        fwCtx.save();
+        fwCtx.globalAlpha  = this.alpha;
+        fwCtx.shadowBlur   = 10;
+        fwCtx.shadowColor  = this.color;
+        fwCtx.fillStyle    = this.color;
+        fwCtx.beginPath();
+        fwCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        fwCtx.fill();
+        fwCtx.restore();
       }
     }
 
     window.triggerFireworksCelebration = function() {
-      const colorsList = ['#ff0055', '#00ffcc', '#ffcc00', '#ff00ff', '#00ff00', '#ffffff', '#2288ff'];
-      const burstCount = 5;
-      
-      for (let b = 0; b < burstCount; b++) {
+      const palette = ['#ff0055','#00ffcc','#ffcc00','#ff00ff','#00ff00','#ffffff','#2288ff'];
+      for (let b = 0; b < 5; b++) {
         setTimeout(() => {
-          const targetX = Math.random() * (canvas.width * 0.6) + (canvas.width * 0.2);
-          const targetY = Math.random() * (canvas.height * 0.4) + (canvas.height * 0.15);
-          const assignedColor = colorsList[Math.floor(Math.random() * colorsList.length)];
-          
-          for (let p = 0; p < 60; p++) {
-            particles.push(new Particle(targetX, targetY, assignedColor));
-          }
+          const tx = Math.random() * fwCanvas.width * 0.6 + fwCanvas.width * 0.2;
+          const ty = Math.random() * fwCanvas.height * 0.4 + fwCanvas.height * 0.15;
+          const c  = palette[Math.floor(Math.random() * palette.length)];
+          for (let p = 0; p < 60; p++) particles.push(new Particle(tx, ty, c));
           window.playBuzzer('bell');
         }, b * 220);
       }
     };
 
-    function animateParticles() {
+    (function animateParticles() {
       requestAnimationFrame(animateParticles);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+      fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
       for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.update();
-        if (p.alpha <= 0) {
-          particles.splice(i, 1);
-        } else {
-          p.draw();
-        }
+        particles[i].update();
+        if (particles[i].alpha <= 0) { particles.splice(i, 1); continue; }
+        particles[i].draw();
       }
-    }
-    animateParticles();
+    })();
 
-    // --- ALL WIDGET MODULE BUILDERS ---
+    // ─── WIDGET FACTORY ────────────────────────────────────────────────────────
     window.createWidget = function(type, options = {}) {
       const id = options.id || 'w_' + Math.random().toString(36).substr(2, 9);
-      const container = document.getElementById('widget-container');
+      if ($id(id)) return;
 
-      if (document.getElementById(id)) return;
-
-      const wEl = document.createElement('div');
-      wEl.id = id;
-      wEl.className = "absolute pointer-events-auto rounded-xl border bg-slate-900/90 border-slate-700/80 shadow-2xl flex flex-col group overflow-hidden transition-shadow focus-within:ring-2 focus-within:ring-indigo-500/50";
-      
-      const x = options.x !== undefined ? options.x : Math.max(40, Math.random() * (window.innerWidth - 320));
+      const x = options.x !== undefined ? options.x : Math.max(40, Math.random() * (window.innerWidth  - 320));
       const y = options.y !== undefined ? options.y : Math.max(80, Math.random() * (window.innerHeight - 300));
-      const w = options.w || (type === 'schedule' ? 320 : 280);
-      const h = options.h || (type === 'schedule' ? 310 : 200);
+      const w = options.w || 280;
+      const h = options.h || 200;
       const z = options.z || ++window.maxZIndex;
-
-      wEl.style.left = `${x}px`;
-      wEl.style.top = `${y}px`;
-      wEl.style.width = `${w}px`;
-      wEl.style.height = `${h}px`;
-      wEl.style.zIndex = z;
 
       let title = type.toUpperCase();
       let innerHTML = '';
       let headerActions = '';
 
+      // ── Widget HTML templates ──────────────────────────────────────────────
       if (type === 'clock') {
         innerHTML = `<div class="flex-1 flex flex-col justify-center items-center font-mono text-3xl font-bold tracking-wider text-sky-400 select-all p-4" id="clock-txt-${id}">00:00:00</div>`;
-      } 
-      else if (type === 'timer') {
+
+      } else if (type === 'timer') {
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-4">
             <div class="text-4xl font-mono font-bold text-amber-500 mb-2" id="timer-display-${id}">05:00</div>
             <div class="flex space-x-2">
-              <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold" id="timer-toggle-${id}">Start</button>
+              <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200" id="timer-toggle-${id}">Start</button>
               <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs text-slate-400" id="timer-reset-${id}">Reset</button>
             </div>
           </div>`;
-      } 
-      else if (type === 'stopwatch') {
+
+      } else if (type === 'stopwatch') {
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-4">
             <div class="text-4xl font-mono font-bold text-emerald-400 mb-2" id="sw-display-${id}">00:00.0</div>
             <div class="flex space-x-2">
-              <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold" id="sw-toggle-${id}">Start</button>
+              <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200" id="sw-toggle-${id}">Start</button>
               <button class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs text-slate-400" id="sw-reset-${id}">Reset</button>
             </div>
           </div>`;
-      } 
-      else if (type === 'schedule') {
+
+      } else if (type === 'schedule') {
         title = "BELL SCHEDULE";
-        headerActions = `
-          <button onclick="window.toggleScheduleConfig('${id}')" class="text-slate-500 hover:text-indigo-400 p-1 rounded transition" title="Countdown Settings">
-            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-          </button>
-        `;
-
-        let listHtml = bellSchedule.map((s, idx) => `
-          <div class="flex justify-between items-center py-1 border-b border-slate-800/60 text-xs text-slate-300" id="sched-row-${id}-${idx}">
-            <span class="font-medium truncate max-w-[140px]">${s.name}</span>
+        headerActions = `<button onclick="window.toggleScheduleConfig('${id}')" class="text-slate-500 hover:text-indigo-400 p-1 rounded transition" title="Countdown Settings"><i data-lucide="settings" class="w-3.5 h-3.5"></i></button>`;
+        const listHtml = bellSchedule.map((s, i) => `
+          <div class="flex justify-between items-center py-1 border-b border-slate-800/60 text-xs" id="sched-row-${id}-${i}">
+            <span class="font-medium text-slate-300 truncate max-w-[120px]">${s.name}</span>
             <span class="font-mono text-slate-400 text-[10px]">${s.label}</span>
-          </div>
-        `).join('');
+          </div>`).join('');
 
-        // Countdowns will default to the large centered display on startup (Version 5.1 update)
         innerHTML = `
           <div class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-1 relative" id="sched-body-${id}">
-            
-            <!-- Setup dialog config panels -->
             <div id="sched-config-${id}" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col justify-center p-4 rounded-xl z-20">
               <div class="text-[10px] text-indigo-400 uppercase tracking-widest font-bold mb-3 text-center">Countdown Display Size</div>
               <div class="space-y-2 mb-4">
-                <label class="flex items-center space-x-2 cursor-pointer text-xs justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition">
-                  <span class="text-slate-300 font-medium font-sans">Original Inline Badge</span>
-                  <input type="radio" name="countdown-size-${id}" value="small" class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'small')" id="opt-small-${id}" />
+                <label class="flex items-center justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition cursor-pointer text-xs">
+                  <span class="text-slate-300 font-medium">Original Inline Badge</span>
+                  <input type="radio" name="countdown-size-${id}" value="small" class="accent-indigo-500" onclick="window.setCountdownSize('${id}','small')" id="opt-small-${id}" />
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer text-xs justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition">
-                  <span class="text-slate-300 font-medium font-sans">Larger Centered Timer</span>
-                  <input type="radio" name="countdown-size-${id}" value="large" checked class="accent-indigo-500" onclick="window.setCountdownSize('${id}', 'large')" id="opt-large-${id}" />
+                <label class="flex items-center justify-between bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700 transition cursor-pointer text-xs">
+                  <span class="text-slate-300 font-medium">Larger Centered Timer</span>
+                  <input type="radio" name="countdown-size-${id}" value="large" checked class="accent-indigo-500" onclick="window.setCountdownSize('${id}','large')" id="opt-large-${id}" />
                 </label>
               </div>
               <button onclick="window.toggleScheduleConfig('${id}')" class="bg-indigo-600 hover:bg-indigo-500 text-xs py-1.5 rounded font-bold text-white transition">Close Settings</button>
             </div>
-
-            <!-- Large Display Container (Visible by default in v5.1) -->
             <div id="sched-large-timer-container-${id}" class="flex flex-col items-center justify-center py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg mb-2 text-center">
               <span class="text-[9px] text-indigo-400 font-bold tracking-widest uppercase">Time Remaining</span>
               <span id="sched-large-timer-display-${id}" class="text-3xl font-extrabold text-emerald-400 font-mono tracking-wider mt-0.5">--:--</span>
             </div>
-
             <div class="text-[10px] font-bold text-indigo-400 mb-1 flex justify-between items-center">
               <span>ACTIVE TRACKER</span>
               <div class="flex items-center gap-1">
@@ -910,56 +684,51 @@
             </div>
             ${listHtml}
           </div>`;
-      } 
-      else if (type === 'traffic') {
+
+      } else if (type === 'traffic') {
         title = "TRAFFIC LIGHT";
+        // Real stoplight housing with editable text labels per light
         innerHTML = `
-          <div class="flex-1 flex flex-col items-center justify-center p-4 gap-4">
-
-            <div class="bg-slate-950 border-4 border-slate-700 rounded-3xl px-5 py-4 shadow-2xl flex flex-col items-center gap-4">
-              <button id="traffic-red-${id}" class="traffic-light-btn w-16 h-16 rounded-full bg-rose-950 border-4 border-slate-800 flex items-center justify-center transition-all duration-200">
-                <div class="w-10 h-10 rounded-full bg-rose-500/20"></div>
-              </button>
-
-              <button id="traffic-yellow-${id}" class="traffic-light-btn w-16 h-16 rounded-full bg-amber-950 border-4 border-slate-800 flex items-center justify-center transition-all duration-200">
-                <div class="w-10 h-10 rounded-full bg-amber-500/20"></div>
-              </button>
-
-              <button id="traffic-green-${id}" class="traffic-light-btn w-16 h-16 rounded-full bg-emerald-950 border-4 border-slate-800 flex items-center justify-center transition-all duration-200">
-                <div class="w-10 h-10 rounded-full bg-emerald-500/20"></div>
-              </button>
+          <div class="flex-1 flex items-center justify-center p-3 gap-4">
+            <div class="tl-housing" id="tl-housing-${id}">
+              <div class="flex flex-col items-center gap-1">
+                <div class="tl-light off-red"  id="tl-red-${id}"    onclick="window.setTrafficLight('${id}','red')"></div>
+                <input class="tl-label-input" id="tl-label-red-${id}"    placeholder="STOP"  maxlength="12" value="STOP" />
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="tl-light off-yellow" id="tl-yellow-${id}" onclick="window.setTrafficLight('${id}','yellow')"></div>
+                <input class="tl-label-input" id="tl-label-yellow-${id}" placeholder="SLOW"  maxlength="12" value="SLOW" />
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="tl-light off-green" id="tl-green-${id}"  onclick="window.setTrafficLight('${id}','green')"></div>
+                <input class="tl-label-input" id="tl-label-green-${id}"  placeholder="GO"    maxlength="12" value="GO" />
+              </div>
             </div>
-
-            <input
-              id="traffic-text-${id}"
-              type="text"
-              maxlength="40"
-              placeholder="Add classroom message..."
-              class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 text-center text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-            />
-
-            <div id="traffic-message-${id}" class="text-sm font-semibold text-slate-300 text-center min-h-[20px] px-2">
-              Ready to Learn
+            <div class="flex flex-col gap-2 text-xs">
+              <button onclick="window.setTrafficLight('${id}','red')"    class="flex items-center gap-1.5 bg-rose-950/70 hover:bg-rose-900 border border-rose-900/50 text-rose-300 px-2.5 py-1.5 rounded-lg font-bold transition w-20 justify-center">🔴 Stop</button>
+              <button onclick="window.setTrafficLight('${id}','yellow')" class="flex items-center gap-1.5 bg-amber-950/70 hover:bg-amber-900 border border-amber-900/50 text-amber-300 px-2.5 py-1.5 rounded-lg font-bold transition w-20 justify-center">🟡 Slow</button>
+              <button onclick="window.setTrafficLight('${id}','green')"  class="flex items-center gap-1.5 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-900/50 text-emerald-300 px-2.5 py-1.5 rounded-lg font-bold transition w-20 justify-center">🟢 Go</button>
+              <button onclick="window.setTrafficLight('${id}','off')"   class="flex items-center gap-1.5 bg-slate-800/70 hover:bg-slate-700 border border-slate-700 text-slate-400 px-2.5 py-1.5 rounded-lg font-semibold transition w-20 justify-center">⚫ Off</button>
             </div>
           </div>`;
-      } 
-      else if (type === 'work') {
+
+      } else if (type === 'work') {
         title = "WORK SYMBOL";
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-3 text-center">
             <div class="text-3xl font-bold mb-1" id="work-symbol-${id}">🤫</div>
             <div class="text-sm font-semibold mb-3 text-indigo-300" id="work-label-${id}">Silent Study</div>
             <div class="flex gap-1 flex-wrap justify-center">
-              <button onclick="changeWorkSymbol('${id}', '🤫', 'Silent Study')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Silent</button>
-              <button onclick="changeWorkSymbol('${id}', '👥', 'Collab Work')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Collab</button>
-              <button onclick="changeWorkSymbol('${id}', '🙋', 'Ask Teacher')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Ask</button>
+              <button onclick="changeWorkSymbol('${id}','🤫','Silent Study')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Silent</button>
+              <button onclick="changeWorkSymbol('${id}','👥','Collab Work')"  class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Collab</button>
+              <button onclick="changeWorkSymbol('${id}','🙋','Ask Teacher')" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-medium">Ask</button>
             </div>
           </div>`;
-      } 
-      else if (type === 'note') {
+
+      } else if (type === 'note') {
         innerHTML = `<textarea class="flex-1 bg-transparent p-3 resize-none text-sm focus:outline-none scrollbar-thin text-slate-200" placeholder="Type classroom notes here..." id="note-area-${id}"></textarea>`;
-      } 
-      else if (type === 'draw') {
+
+      } else if (type === 'draw') {
         title = "DRAW BOARD";
         innerHTML = `
           <div class="flex-1 flex flex-col min-h-0 relative">
@@ -967,17 +736,17 @@
               <input type="color" id="draw-color-${id}" class="w-4 h-4 rounded cursor-pointer border-0 p-0 bg-transparent" value="#6366f1" />
               <button id="draw-clear-${id}" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded text-rose-400">Clear</button>
             </div>
-            <canvas id="draw-canvas-${id}" class="flex-1 w-full h-full bg-slate-950/20"></canvas>
+            <canvas id="draw-canvas-${id}" class="flex-1 w-full bg-slate-950/20" style="touch-action:none"></canvas>
           </div>`;
-      } 
-      else if (type === 'dice') {
+
+      } else if (type === 'dice') {
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-4">
             <div class="text-5xl font-bold text-pink-500 mb-3" id="dice-value-${id}">🎲</div>
             <button class="bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-200 font-semibold px-4 py-1.5 rounded-lg text-xs tracking-wider uppercase transition" id="dice-roll-${id}">Roll Dice</button>
           </div>`;
-      } 
-      else if (type === 'picker') {
+
+      } else if (type === 'picker') {
         title = "NAME PICKER";
         innerHTML = `
           <div class="flex-1 flex flex-col p-3 min-h-0">
@@ -992,8 +761,8 @@
               <button id="picker-close-${id}" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1 rounded font-semibold text-slate-200">Close</button>
             </div>
           </div>`;
-      } 
-      else if (type === 'sound') {
+
+      } else if (type === 'sound') {
         title = "SOUND METER";
         innerHTML = `
           <div class="flex-1 flex flex-col justify-center items-center p-4">
@@ -1002,8 +771,8 @@
             </div>
             <button id="sound-toggle-${id}" class="bg-slate-800 hover:bg-slate-700 px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-200">Enable Mic</button>
           </div>`;
-      } 
-      else if (type === 'qr') {
+
+      } else if (type === 'qr') {
         title = "QR CODE SHARE";
         innerHTML = `
           <div class="flex-1 flex flex-col p-3 items-center min-h-0">
@@ -1012,771 +781,520 @@
           </div>`;
       }
 
+      // Assemble widget DOM
+      const wEl = document.createElement('div');
+      wEl.id = id;
+      wEl.className = "absolute pointer-events-auto rounded-xl border bg-slate-900/90 border-slate-700/80 shadow-2xl flex flex-col group overflow-hidden transition-shadow focus-within:ring-2 focus-within:ring-indigo-500/50";
+      wEl.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${z}`;
       wEl.innerHTML = `
-        <div class="bg-slate-950/60 border-b border-slate-800 px-3 py-1.5 flex justify-between items-center cursor-move select-none shrink-0 rounded-t-xl" id="handle-${id}">
+        <div class="widget-header bg-slate-950/60 border-b border-slate-800 px-3 py-1.5 flex justify-between items-center cursor-move select-none shrink-0 rounded-t-xl" id="handle-${id}">
           <span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5"><i data-lucide="grid" class="w-3 h-3 text-slate-500"></i> ${title}</span>
           <div class="flex items-center gap-1.5">
             ${headerActions}
             <button onclick="closeWidget('${id}')" class="text-slate-500 hover:text-rose-400 p-0.5 rounded transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
-        <div class="flex-1 flex flex-col min-h-0 relative bg-slate-900/40">${innerHTML}</div>
+        <div class="widget-body flex-1 flex flex-col min-h-0 relative bg-slate-900/40">${innerHTML}</div>
         <div class="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize flex items-end justify-end p-0.5 pointer-events-auto z-10" id="resize-${id}">
           <svg width="6" height="6" viewBox="0 0 6 6" class="text-slate-600 fill-current"><path d="M6 6H0V4.5H4.5V0H6V6Z"/></svg>
-        </div>
-      `;
+        </div>`;
 
-      container.appendChild(wEl);
+      document.getElementById('widget-container').appendChild(wEl);
       lucide.createIcons();
 
-      // Configure default layout parameters (bell schedule starting with 'large' countdown display)
-      window.widgets[id] = { 
-        type, 
-        x, 
-        y, 
-        w, 
-        h, 
-        z, 
-        state: { 
-          countdownSize: (type === 'schedule') ? 'large' : 'small' 
-        } 
-      };
+      window.widgets[id] = { type, x, y, w, h, z, state: { countdownSize: type === 'schedule' ? 'large' : 'small' } };
       setupWidgetInteractions(id);
 
-      // --- RUNTIME MODULE INITIALIZERS ---
-      
-      // Timer Loop
-      if (type === 'timer') {
-        let tInterval = null;
-        let tDuration = 300; // 5 mins
-        const display = document.getElementById(`timer-display-${id}`);
-        const toggleBtn = document.getElementById(`timer-toggle-${id}`);
-        const resetBtn = document.getElementById(`timer-reset-${id}`);
+      // ── Runtime module initializers ─────────────────────────────────────────
 
-        const updateDisp = () => {
-          let mins = Math.floor(tDuration / 60);
-          let secs = tDuration % 60;
-          display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        };
+      if (type === 'timer') {
+        let tInterval = null, tDuration = 300;
+        const display  = $id(`timer-display-${id}`);
+        const toggleBtn = $id(`timer-toggle-${id}`);
+        const resetBtn  = $id(`timer-reset-${id}`);
+        const fmt = () => `${String(Math.floor(tDuration / 60)).padStart(2,'0')}:${String(tDuration % 60).padStart(2,'0')}`;
 
         toggleBtn.onclick = () => {
           if (tInterval) {
-            clearInterval(tInterval);
-            tInterval = null;
-            toggleBtn.innerText = "Start";
-            toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+            clearInterval(tInterval); tInterval = null;
+            setButtonRunning(toggleBtn, false);
           } else {
-            toggleBtn.innerText = "Pause";
-            toggleBtn.className = "bg-rose-900 hover:bg-rose-800 px-2.5 py-1 rounded text-xs font-bold text-white";
+            setButtonRunning(toggleBtn, true);
             tInterval = setInterval(() => {
-              if (tDuration > 0) {
-                tDuration--;
-                updateDisp();
-              } else {
-                clearInterval(tInterval);
-                tInterval = null;
-                toggleBtn.innerText = "Start";
-                toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+              if (tDuration > 0) { tDuration--; display.innerText = fmt(); }
+              else {
+                clearInterval(tInterval); tInterval = null;
+                setButtonRunning(toggleBtn, false);
                 window.playBuzzer('bell');
               }
             }, 1000);
           }
         };
-
         resetBtn.onclick = () => {
-          clearInterval(tInterval);
-          tInterval = null;
-          tDuration = 300;
-          updateDisp();
-          toggleBtn.innerText = "Start";
-          toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+          clearInterval(tInterval); tInterval = null;
+          tDuration = 300; display.innerText = fmt();
+          setButtonRunning(toggleBtn, false);
         };
       }
 
-      // Stopwatch Loop
       if (type === 'stopwatch') {
-        let swInterval = null;
-        let swTime = 0;
-        const display = document.getElementById(`sw-display-${id}`);
-        const toggleBtn = document.getElementById(`sw-toggle-${id}`);
-        const resetBtn = document.getElementById(`sw-reset-${id}`);
-
-        const updateDisp = () => {
-          let mins = Math.floor(swTime / 600);
-          let secs = Math.floor((swTime % 600) / 10);
-          let tenths = swTime % 10;
-          display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${tenths}`;
-        };
+        let swInterval = null, swTime = 0;
+        const display   = $id(`sw-display-${id}`);
+        const toggleBtn = $id(`sw-toggle-${id}`);
+        const resetBtn  = $id(`sw-reset-${id}`);
+        const fmt = () => `${String(Math.floor(swTime / 600)).padStart(2,'0')}:${String(Math.floor((swTime % 600) / 10)).padStart(2,'0')}.${swTime % 10}`;
 
         toggleBtn.onclick = () => {
           if (swInterval) {
-            clearInterval(swInterval);
-            swInterval = null;
-            toggleBtn.innerText = "Start";
-            toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+            clearInterval(swInterval); swInterval = null;
+            setButtonRunning(toggleBtn, false);
           } else {
-            toggleBtn.innerText = "Pause";
-            toggleBtn.className = "bg-rose-900 hover:bg-rose-800 px-2.5 py-1 rounded text-xs font-bold text-white";
-            swInterval = setInterval(() => {
-              swTime++;
-              updateDisp();
-            }, 100);
+            setButtonRunning(toggleBtn, true);
+            swInterval = setInterval(() => { swTime++; display.innerText = fmt(); }, 100);
           }
         };
-
         resetBtn.onclick = () => {
-          clearInterval(swInterval);
-          swInterval = null;
-          swTime = 0;
-          updateDisp();
-          toggleBtn.innerText = "Start";
-          toggleBtn.className = "bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs font-bold text-slate-200";
+          clearInterval(swInterval); swInterval = null;
+          swTime = 0; display.innerText = fmt();
+          setButtonRunning(toggleBtn, false);
         };
       }
 
-      // Traffic Light
       if (type === 'traffic') {
-        const trRed = document.getElementById(`traffic-red-${id}`);
-        const trYellow = document.getElementById(`traffic-yellow-${id}`);
-        const trGreen = document.getElementById(`traffic-green-${id}`);
-        const trText = document.getElementById(`traffic-text-${id}`);
-        const trMessage = document.getElementById(`traffic-message-${id}`);
-
-        const trafficButtons = {
-          red: trRed,
-          yellow: trYellow,
-          green: trGreen
-        };
-
-        const trafficStyles = {
-          red: {
-            active: 'bg-rose-500 shadow-[0_0_25px_rgba(244,63,94,0.9)] scale-105',
-            inactive: 'bg-rose-950 border-4 border-slate-800'
-          },
-          yellow: {
-            active: 'bg-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.9)] scale-105',
-            inactive: 'bg-amber-950 border-4 border-slate-800'
-          },
-          green: {
-            active: 'bg-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.9)] scale-105',
-            inactive: 'bg-emerald-950 border-4 border-slate-800'
-          }
-        };
-
-        const setTrafficState = (active) => {
-          Object.entries(trafficButtons).forEach(([color, btn]) => {
-            btn.className = `traffic-light-btn w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
-              active === color
-                ? trafficStyles[color].active
-                : trafficStyles[color].inactive
-            }`;
-          });
-
-          window.widgets[id].state.activeLight = active;
-          triggerWorkspaceSync();
-        };
-
-        trRed.onclick = () => setTrafficState('red');
-        trYellow.onclick = () => setTrafficState('yellow');
-        trGreen.onclick = () => setTrafficState('green');
-
-        trText.addEventListener('input', () => {
-          trMessage.textContent = trText.value || 'Ready to Learn';
-          window.widgets[id].state.message = trText.value;
-          triggerWorkspaceSync();
-        });
-
-        setTrafficState('green');
+        // Lights already handled by global setTrafficLight — nothing more to wire
       }
 
-      // Notes Area
       if (type === 'note') {
-        const textarea = document.getElementById(`note-area-${id}`);
-        textarea.addEventListener('input', () => {
-          window.widgets[id].state.text = textarea.value;
+        $id(`note-area-${id}`).addEventListener('input', function() {
+          window.widgets[id].state.text = this.value;
           triggerWorkspaceSync();
         });
       }
 
-      // Dice Roll Action
       if (type === 'dice') {
-        const dVal = document.getElementById(`dice-value-${id}`);
-        const dBtn = document.getElementById(`dice-roll-${id}`);
-        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-
+        const dVal = $id(`dice-value-${id}`);
+        const dBtn = $id(`dice-roll-${id}`);
+        const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
         dBtn.onclick = () => {
-          let count = 0;
           dBtn.disabled = true;
-          const rollInterval = setInterval(() => {
-            dVal.innerText = diceFaces[Math.floor(Math.random() * 6)];
-            count++;
-            if (count > 8) {
-              clearInterval(rollInterval);
-              dBtn.disabled = false;
-              window.playBuzzer('buzzer');
-            }
+          let n = 0;
+          const iv = setInterval(() => {
+            dVal.innerText = faces[Math.floor(Math.random() * 6)];
+            if (++n > 8) { clearInterval(iv); dBtn.disabled = false; window.playBuzzer('buzzer'); }
           }, 80);
         };
       }
 
-      // Name Picker Logic
       if (type === 'picker') {
-        const inputField = document.getElementById(`picker-list-${id}`);
-        const trigger = document.getElementById(`picker-trigger-${id}`);
-        const clearBtn = document.getElementById(`picker-clear-${id}`);
-        const modal = document.getElementById(`picker-result-${id}`);
-        const winner = document.getElementById(`picker-winner-${id}`);
-        const closeModal = document.getElementById(`picker-close-${id}`);
+        const listEl    = $id(`picker-list-${id}`);
+        const trigger   = $id(`picker-trigger-${id}`);
+        const clearBtn  = $id(`picker-clear-${id}`);
+        const modal     = $id(`picker-result-${id}`);
+        const winnerEl  = $id(`picker-winner-${id}`);
+        const closeBtn  = $id(`picker-close-${id}`);
 
         trigger.onclick = () => {
-          const names = inputField.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-          if (names.length === 0) return;
-          
-          let cycle = 0;
-          const cycleInterval = setInterval(() => {
-            winner.innerText = names[Math.floor(Math.random() * names.length)];
-            cycle++;
-            if (cycle > 12) {
-              clearInterval(cycleInterval);
-              modal.classList.remove('hidden');
-              window.triggerFireworksCelebration();
-            }
+          const names = listEl.value.split('\n').map(n => n.trim()).filter(Boolean);
+          if (!names.length) return;
+          let n = 0;
+          const iv = setInterval(() => {
+            winnerEl.innerText = names[Math.floor(Math.random() * names.length)];
+            if (++n > 12) { clearInterval(iv); modal.classList.remove('hidden'); window.triggerFireworksCelebration(); }
           }, 100);
         };
-
-        clearBtn.onclick = () => {
-          inputField.value = '';
-        };
-
-        closeModal.onclick = () => {
-          modal.classList.add('hidden');
-        };
+        clearBtn.onclick = () => { listEl.value = ''; };
+        closeBtn.onclick = () => { modal.classList.add('hidden'); };
       }
 
-      // Sound Meter Loop
       if (type === 'sound') {
-        const soundBar = document.getElementById(`sound-bar-${id}`);
-        const soundBtn = document.getElementById(`sound-toggle-${id}`);
-        let activeMeter = false;
-        let audioSource = null;
-        let analyzer = null;
-        let processor = null;
+        const bar  = $id(`sound-bar-${id}`);
+        const btn  = $id(`sound-toggle-${id}`);
+        let active = false;
 
-        soundBtn.onclick = async () => {
-          if (activeMeter) {
-            if (window.micStream) {
-              window.micStream.getTracks().forEach(track => track.stop());
-            }
-            activeMeter = false;
-            soundBtn.innerText = "Enable Mic";
-            soundBar.style.width = '0%';
+        btn.onclick = async () => {
+          if (active) {
+            if (window.micStream) window.micStream.getTracks().forEach(t => t.stop());
+            active = false; btn.innerText = "Enable Mic"; bar.style.width = '0%';
             return;
           }
-
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             window.micStream = stream;
-            
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const context = new AudioContext();
-            audioSource = context.createMediaStreamSource(stream);
-            analyzer = context.createAnalyser();
-            analyzer.fftSize = 256;
-            audioSource.connect(analyzer);
-
-            activeMeter = true;
-            soundBtn.innerText = "Stop Meter";
-
-            const bufferLength = analyzer.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            const checkVolume = () => {
-              if (!activeMeter) return;
-              analyzer.getByteFrequencyData(dataArray);
-              let sum = 0;
-              for (let i = 0; i < bufferLength; i++) {
-                sum += dataArray[i];
-              }
-              const average = sum / bufferLength;
-              const percent = Math.min(100, Math.floor((average / 128) * 100));
-              soundBar.style.width = `${percent}%`;
-              requestAnimationFrame(checkVolume);
+            const ctx    = new (window.AudioContext || window.webkitAudioContext)();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            active = true; btn.innerText = "Stop Meter";
+            const tick = () => {
+              if (!active) return;
+              analyser.getByteFrequencyData(data);
+              const avg = data.reduce((a, b) => a + b, 0) / data.length;
+              bar.style.width = `${Math.min(100, Math.floor(avg / 128 * 100))}%`;
+              requestAnimationFrame(tick);
             };
-
-            checkVolume();
-          } catch (err) {
-            console.error("Mic access refused or failed", err);
-          }
+            tick();
+          } catch(err) { console.error("Mic error:", err); }
         };
       }
 
-      // Draw Board Canvas
       if (type === 'draw') {
-        const dCanvas = document.getElementById(`draw-canvas-${id}`);
-        const dColor = document.getElementById(`draw-color-${id}`);
-        const dClear = document.getElementById(`draw-clear-${id}`);
-        const dCtx = dCanvas.getContext('2d');
-        let painting = false;
+        const canvas  = $id(`draw-canvas-${id}`);
+        const colorIn = $id(`draw-color-${id}`);
+        const clearBtn = $id(`draw-clear-${id}`);
+        const ctx     = canvas.getContext('2d');
+        let painting  = false;
 
-        const resizeDrawCanvas = () => {
-          const rect = dCanvas.parentNode.getBoundingClientRect();
-          dCanvas.width = rect.width;
-          dCanvas.height = rect.height - 30; // offset control header height
+        const resize = () => {
+          const rect = canvas.parentNode.getBoundingClientRect();
+          // Save & restore drawing on resize
+          const tmp = document.createElement('canvas');
+          tmp.width = canvas.width; tmp.height = canvas.height;
+          tmp.getContext('2d').drawImage(canvas, 0, 0);
+          canvas.width  = rect.width;
+          canvas.height = Math.max(rect.height - 30, 60);
+          ctx.drawImage(tmp, 0, 0);
         };
-        setTimeout(resizeDrawCanvas, 100);
+        setTimeout(resize, 100);
 
-        dCanvas.addEventListener('mousedown', (e) => {
-          painting = true;
-          draw(e);
-        });
+        const pos = e => {
+          const r = canvas.getBoundingClientRect();
+          const src = e.touches ? e.touches[0] : e;
+          return [src.clientX - r.left, src.clientY - r.top];
+        };
 
-        dCanvas.addEventListener('mouseup', () => {
-          painting = false;
-          dCtx.beginPath();
-        });
-
-        dCanvas.addEventListener('mousemove', draw);
-
-        function draw(e) {
+        const startDraw = e => { e.preventDefault(); painting = true; };
+        const stopDraw  = () => { painting = false; ctx.beginPath(); };
+        const draw = e => {
           if (!painting) return;
-          const rect = dCanvas.getBoundingClientRect();
-          dCtx.lineWidth = 4;
-          dCtx.lineCap = 'round';
-          dCtx.strokeStyle = dColor.value;
-
-          dCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-          dCtx.stroke();
-          dCtx.beginPath();
-          dCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-        }
-
-        dClear.onclick = () => {
-          dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height);
+          e.preventDefault();
+          const [x, y] = pos(e);
+          ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = colorIn.value;
+          ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
         };
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw);
+        canvas.addEventListener('touchmove', draw, { passive: false });
+
+        clearBtn.onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Expose resize for widget resize handler
+        window.widgets[id]._drawResize = resize;
       }
 
-      // QR Code Generator
       if (type === 'qr') {
-        const qrDisplay = document.getElementById(`qr-display-${id}`);
-        const qrInput = document.getElementById(`qr-input-${id}`);
-        
-        let qrcode = new QRCode(qrDisplay, {
-          text: qrInput.value,
-          width: 96,
-          height: 96,
-          colorDark : "#0f172a",
-          colorLight : "#ffffff"
-        });
-
-        qrInput.oninput = () => {
-          qrcode.clear();
-          qrcode.makeCode(qrInput.value);
-        };
+        const qrDiv  = $id(`qr-display-${id}`);
+        const qrInput = $id(`qr-input-${id}`);
+        const qr = new QRCode(qrDiv, { text: qrInput.value, width: 96, height: 96, colorDark: "#0f172a", colorLight: "#ffffff" });
+        qrInput.oninput = () => { qr.clear(); qr.makeCode(qrInput.value); };
       }
 
       triggerWorkspaceSync();
     };
 
+    // ─── TRAFFIC LIGHT STATE ───────────────────────────────────────────────────
+    window.setTrafficLight = function(id, state) {
+      const lights = { red: $id(`tl-red-${id}`), yellow: $id(`tl-yellow-${id}`), green: $id(`tl-green-${id}`) };
+      if (!lights.red) return;
+      lights.red.className    = `tl-light ${state === 'red'    ? 'on-red'    : 'off-red'}`;
+      lights.yellow.className = `tl-light ${state === 'yellow' ? 'on-yellow' : 'off-yellow'}`;
+      lights.green.className  = `tl-light ${state === 'green'  ? 'on-green'  : 'off-green'}`;
+      if (window.widgets[id]) {
+        window.widgets[id].state.trafficState = state;
+        triggerWorkspaceSync();
+      }
+    };
+
+    // ─── WIDGET MANAGEMENT ─────────────────────────────────────────────────────
     window.closeWidget = function(id) {
-      const el = document.getElementById(id);
+      const el = $id(id);
       if (el) el.remove();
       delete window.widgets[id];
       triggerWorkspaceSync();
     };
 
     window.clearAllWidgets = function() {
-      document.getElementById('widget-container').innerHTML = '';
+      $id('widget-container').innerHTML = '';
       window.widgets = {};
       triggerWorkspaceSync();
     };
 
-    // Symbol Switcher helper
     window.changeWorkSymbol = function(id, symbol, label) {
-      const symEl = document.getElementById(`work-symbol-${id}`);
-      const labelEl = document.getElementById(`work-label-${id}`);
-      if (symEl && labelEl) {
-        symEl.innerText = symbol;
-        labelEl.innerText = label;
+      const sym = $id(`work-symbol-${id}`);
+      const lbl = $id(`work-label-${id}`);
+      if (sym && lbl) {
+        sym.innerText = symbol; lbl.innerText = label;
         window.widgets[id].state.symbol = symbol;
-        window.widgets[id].state.label = label;
+        window.widgets[id].state.label  = label;
         triggerWorkspaceSync();
       }
     };
 
-    // Configuration View & Selection Handler for Schedule Module
     window.toggleScheduleConfig = function(id) {
-      const configPanel = document.getElementById(`sched-config-${id}`);
-      if (configPanel) {
-        configPanel.classList.toggle('hidden');
-      }
+      $id(`sched-config-${id}`)?.classList.toggle('hidden');
     };
 
     window.setCountdownSize = function(id, size) {
       if (!window.widgets[id]) return;
       window.widgets[id].state.countdownSize = size;
-      
-      const largeContainer = document.getElementById(`sched-large-timer-container-${id}`);
-      const smallTimer = document.getElementById(`sched-timer-${id}`);
-      const optSmall = document.getElementById(`opt-small-${id}`);
-      const optLarge = document.getElementById(`opt-large-${id}`);
-      
+      const large     = $id(`sched-large-timer-container-${id}`);
+      const small     = $id(`sched-timer-${id}`);
+      const optSmall  = $id(`opt-small-${id}`);
+      const optLarge  = $id(`opt-large-${id}`);
       if (size === 'large') {
-        if (largeContainer) largeContainer.classList.remove('hidden');
-        if (smallTimer) {
-          smallTimer.classList.add('hidden');
-          smallTimer.setAttribute('data-override-hidden', 'true');
-        }
+        large?.classList.remove('hidden');
+        small?.classList.add('hidden');
+        small?.setAttribute('data-override-hidden','true');
         if (optLarge) optLarge.checked = true;
       } else {
-        if (largeContainer) largeContainer.classList.add('hidden');
-        if (smallTimer) {
-          smallTimer.classList.remove('hidden');
-          smallTimer.removeAttribute('data-override-hidden');
-        }
+        large?.classList.add('hidden');
+        small?.removeAttribute('data-override-hidden');
         if (optSmall) optSmall.checked = true;
       }
-      
       triggerWorkspaceSync();
     };
 
+    // ─── DRAG & RESIZE ─────────────────────────────────────────────────────────
     function setupWidgetInteractions(id) {
-      const el = document.getElementById(id);
-      const handle = document.getElementById(`handle-${id}`);
-      const resize = document.getElementById(`resize-${id}`);
+      const el     = $id(id);
+      const handle = $id(`handle-${id}`);
+      const resize = $id(`resize-${id}`);
 
-      // Focus depth layering
       el.addEventListener('mousedown', () => {
-        window.maxZIndex++;
-        el.style.zIndex = window.maxZIndex;
-        window.widgets[id].z = window.maxZIndex;
+        el.style.zIndex = window.widgets[id].z = ++window.maxZIndex;
       });
 
-      // Drag implementation
-      handle.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button') || e.target.closest('input')) return;
+      handle.addEventListener('mousedown', e => {
+        if (e.target.closest('button,input')) return;
         e.preventDefault();
         el.classList.add('no-transition');
-        const startX = e.clientX - el.offsetLeft;
-        const startY = e.clientY - el.offsetTop;
-
-        function doDrag(mEvt) {
-          const nx = mEvt.clientX - startX;
-          const ny = mEvt.clientY - startY;
-          el.style.left = `${nx}px`;
-          el.style.top = `${ny}px`;
-          window.widgets[id].x = nx;
-          window.widgets[id].y = ny;
-        }
-
-        function stopDrag() {
+        const ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
+        const move = mv => {
+          el.style.left = `${mv.clientX - ox}px`;
+          el.style.top  = `${mv.clientY - oy}px`;
+          window.widgets[id].x = mv.clientX - ox;
+          window.widgets[id].y = mv.clientY - oy;
+        };
+        const up = () => {
           el.classList.remove('no-transition');
-          document.removeEventListener('mousemove', doDrag);
-          document.removeEventListener('mouseup', stopDrag);
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
           triggerWorkspaceSync();
-        }
-
-        document.addEventListener('mousemove', doDrag);
-        document.addEventListener('mouseup', stopDrag);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
       });
 
-      // Resize implementation
-      resize.addEventListener('mousedown', (e) => {
+      resize.addEventListener('mousedown', e => {
         e.preventDefault();
         el.classList.add('no-transition');
-        const startW = el.offsetWidth;
-        const startH = el.offsetHeight;
-        const startX = e.clientX;
-        const startY = e.clientY;
-
-        function doResize(mEvt) {
-          const nw = Math.max(220, startW + (mEvt.clientX - startX));
-          const nh = Math.max(150, startH + (mEvt.clientY - startY));
-          el.style.width = `${nw}px`;
+        const sw = el.offsetWidth, sh = el.offsetHeight;
+        const sx = e.clientX,      sy = e.clientY;
+        const move = mv => {
+          const nw = Math.max(220, sw + mv.clientX - sx);
+          const nh = Math.max(150, sh + mv.clientY - sy);
+          el.style.width  = `${nw}px`;
           el.style.height = `${nh}px`;
           window.widgets[id].w = nw;
           window.widgets[id].h = nh;
-
-          // Re-draw resize canvases dynamically if relevant
-          const drawCanv = document.getElementById(`draw-canvas-${id}`);
-          if (drawCanv) {
-            const rect = drawCanv.parentNode.getBoundingClientRect();
-            // Preserve drawn context if resizing
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = drawCanv.width;
-            tempCanvas.height = drawCanv.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(drawCanv, 0, 0);
-
-            drawCanv.width = rect.width;
-            drawCanv.height = rect.height - 30;
-            const drawCtx = drawCanv.getContext('2d');
-            drawCtx.drawImage(tempCanvas, 0, 0);
-          }
-        }
-
-        function stopResize() {
+          // Notify draw board of resize
+          window.widgets[id]._drawResize?.();
+        };
+        const up = () => {
           el.classList.remove('no-transition');
-          document.removeEventListener('mousemove', doResize);
-          document.removeEventListener('mouseup', stopResize);
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
           triggerWorkspaceSync();
-        }
-
-        document.addEventListener('mousemove', doResize);
-        document.addEventListener('mouseup', stopResize);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
       });
     }
 
-    // --- SYNCHRONIZATION SYNC ENGINE ---
+    // ─── SYNC ──────────────────────────────────────────────────────────────────
     function triggerWorkspaceSync() {
-      if (isIncomingStateUpdate) return;
-      if (!db || !auth || !auth.currentUser) return; // Guard against unauthenticated queries
-      if (saveTimeout) clearTimeout(saveTimeout);
-
+      if (isIncomingStateUpdate || !db || !auth?.currentUser) return;
+      clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         try {
-          // Conforming strictly to Rule 1 directory subpath schema layout requirements
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-          await setDoc(docRef, {
-            backgroundType: window.activeBgType,
-            backgroundValue: window.activeBgValue,
-            widgets: window.widgets,
-            updatedAt: Date.now()
-          }, { merge: true });
-        } catch (err) {
-          console.error("Error writing to cloud storage sync: ", err);
-        }
+          await setDoc(
+            doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId),
+            { backgroundType: window.activeBgType, backgroundValue: window.activeBgValue, widgets: window.widgets, updatedAt: Date.now() },
+            { merge: true }
+          );
+        } catch(err) { console.error("Sync write error:", err); }
       }, 400);
     }
 
     function initializeRealtimeSync() {
-      document.getElementById('room-input-field').value = roomId;
-      
-      if (syncUnsubscribe) {
-        syncUnsubscribe();
-        syncUnsubscribe = null;
-      }
+      $id('room-input-field').value = roomId;
+      syncUnsubscribe?.();
+      syncUnsubscribe = null;
 
-      const syncStatusLabel = document.querySelector('#sync-status .status-label');
-      const syncStatusIcon = document.querySelector('#sync-status i');
+      const label = document.querySelector('#sync-status .status-label');
+      const icon  = document.querySelector('#sync-status i');
 
-      if (!db || !auth || !auth.currentUser) {
-        syncStatusLabel.innerText = "Offline Mode";
-        if(syncStatusIcon) syncStatusIcon.className = "w-3.5 h-3.5 text-slate-500";
+      if (!db || !auth?.currentUser) {
+        label.innerText = "Offline Mode";
+        if (icon) icon.className = "w-3.5 h-3.5 text-slate-500";
         return;
       }
+      label.innerText = "Connected";
+      if (icon) icon.className = "w-3.5 h-3.5 text-emerald-500";
 
-      syncStatusLabel.innerText = "Connected";
-      if(syncStatusIcon) syncStatusIcon.className = "w-3.5 h-3.5 text-emerald-500";
-
-      // Rule 1: Secure subscription directory conforming to artifact parameters
       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-      syncUnsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (!docSnap.exists()) return;
-        const data = docSnap.data();
-        
+      syncUnsubscribe = onSnapshot(docRef, snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
         isIncomingStateUpdate = true;
 
-        if (data.backgroundType && data.backgroundValue) {
-          if (data.backgroundType !== window.activeBgType || data.backgroundValue !== window.activeBgValue) {
-            window.setBackground(data.backgroundType, data.backgroundValue);
-          }
+        if (data.backgroundType && data.backgroundValue &&
+            (data.backgroundType !== window.activeBgType || data.backgroundValue !== window.activeBgValue)) {
+          window.setBackground(data.backgroundType, data.backgroundValue);
         }
 
         if (data.widgets) {
-          Object.keys(window.widgets).forEach(wKey => {
-            if (!data.widgets[wKey]) {
-              const el = document.getElementById(wKey);
-              if (el) el.remove();
-              delete window.widgets[wKey];
-            }
+          // Remove deleted widgets
+          Object.keys(window.widgets).forEach(k => {
+            if (!data.widgets[k]) { $id(k)?.remove(); delete window.widgets[k]; }
           });
-
-          Object.keys(data.widgets).forEach(wKey => {
-            const wData = data.widgets[wKey];
-            let targetEl = document.getElementById(wKey);
-            
-            if (!targetEl) {
-              window.createWidget(wData.type, {
-                id: wKey, x: wData.x, y: wData.y, w: wData.w, h: wData.h, z: wData.z
-              });
-              targetEl = document.getElementById(wKey);
+          // Add or update widgets
+          Object.entries(data.widgets).forEach(([k, wd]) => {
+            let el = $id(k);
+            if (!el) {
+              window.createWidget(wd.type, { id: k, x: wd.x, y: wd.y, w: wd.w, h: wd.h, z: wd.z });
+              el = $id(k);
             } else {
-              targetEl.style.left = `${wData.x}px`;
-              targetEl.style.top = `${wData.y}px`;
-              targetEl.style.width = `${wData.w}px`;
-              targetEl.style.height = `${wData.h}px`;
-              targetEl.style.zIndex = wData.z;
-              window.widgets[wKey] = wData;
+              el.style.left   = `${wd.x}px`;
+              el.style.top    = `${wd.y}px`;
+              el.style.width  = `${wd.w}px`;
+              el.style.height = `${wd.h}px`;
+              el.style.zIndex = wd.z;
+              window.widgets[k] = wd;
             }
-
-            // Sync stateful values
-            if (wData.type === 'note' && wData.state && wData.state.text) {
-              const textEl = document.getElementById(`note-area-${wKey}`);
-              if (textEl && textEl.value !== wData.state.text) {
-                textEl.value = wData.state.text;
-              }
+            // Sync stateful content
+            if (wd.type === 'note' && wd.state?.text) {
+              const ta = $id(`note-area-${k}`);
+              if (ta && ta.value !== wd.state.text) ta.value = wd.state.text;
             }
-            if (wData.type === 'work' && wData.state && wData.state.symbol) {
-              const symEl = document.getElementById(`work-symbol-${wKey}`);
-              const lblEl = document.getElementById(`work-label-${wKey}`);
-              if (symEl && lblEl) {
-                symEl.innerText = wData.state.symbol;
-                lblEl.innerText = wData.state.label || '';
-              }
+            if (wd.type === 'work' && wd.state?.symbol) {
+              const s = $id(`work-symbol-${k}`), l = $id(`work-label-${k}`);
+              if (s) s.innerText = wd.state.symbol;
+              if (l) l.innerText = wd.state.label || '';
             }
-            if (wData.type === 'schedule' && wData.state && wData.state.countdownSize) {
-              window.setCountdownSize(wKey, wData.state.countdownSize);
+            if (wd.type === 'schedule' && wd.state?.countdownSize) {
+              window.setCountdownSize(k, wd.state.countdownSize);
+            }
+            if (wd.type === 'traffic' && wd.state?.trafficState) {
+              window.setTrafficLight(k, wd.state.trafficState);
             }
           });
         }
-
         isIncomingStateUpdate = false;
-      }, (error) => {
-        console.error("Firestore subscription permission check: ", error);
-        syncStatusLabel.innerText = "Sync Denied";
-        if (syncStatusIcon) syncStatusIcon.className = "w-3.5 h-3.5 text-rose-500 animate-pulse";
+      }, err => {
+        console.error("Firestore subscription error:", err);
+        label.innerText = "Sync Denied";
+        if (icon) icon.className = "w-3.5 h-3.5 text-rose-500 animate-pulse";
       });
     }
 
-    // Live clock loop
+    // ─── LIVE LOOPS ────────────────────────────────────────────────────────────
     function initClockUpdater() {
-      const runClock = () => {
-        const clocks = document.querySelectorAll('[id^="clock-txt-"]');
-        clocks.forEach(c => {
-          const now = new Date();
-          c.innerText = now.toTimeString().split(' ')[0];
-        });
-        setTimeout(runClock, 1000);
+      const tick = () => {
+        const now = new Date();
+        const str = now.toTimeString().split(' ')[0];
+        document.querySelectorAll('[id^="clock-txt-"]').forEach(el => { el.innerText = str; });
+        setTimeout(tick, 1000);
       };
-      runClock();
+      tick();
     }
 
-    // Schedule active tracker indicator and countdown loop
     function initScheduleActiveTracker() {
-      const runScheduleCheck = () => {
-        const currentWidgets = document.querySelectorAll('[id^="sched-current-"]');
-        currentWidgets.forEach(cWidget => {
+      const tick = () => {
+        const now  = new Date();
+        const secs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+        document.querySelectorAll('[id^="sched-current-"]').forEach(cWidget => {
           const wId = cWidget.id.replace('sched-current-', '');
-          const timerEl = document.getElementById(`sched-timer-${wId}`);
-          const largeContainer = document.getElementById(`sched-large-timer-container-${wId}`);
-          const now = new Date();
-          const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+          const timerEl    = $id(`sched-timer-${wId}`);
+          const largeCont  = $id(`sched-large-timer-container-${wId}`);
+          const largeDisp  = $id(`sched-large-timer-display-${wId}`);
+          const size       = window.widgets[wId]?.state?.countdownSize || 'large';
 
-          let activeBell = "Passing Period";
-          let activeEndSecs = null;
+          let activeName = "Passing Period", activeEnd = null;
 
-          bellSchedule.forEach((s, idx) => {
+          bellSchedule.forEach((s, i) => {
             const [sh, sm] = s.start.split(':').map(Number);
             const [eh, em] = s.end.split(':').map(Number);
             const sSecs = sh * 3600 + sm * 60;
             const eSecs = eh * 3600 + em * 60;
-
-            const row = document.getElementById(`sched-row-${wId}-${idx}`);
+            const row   = $id(`sched-row-${wId}-${i}`);
             if (row) {
-              if (currentSecs >= sSecs && currentSecs < eSecs) {
-                row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs bg-indigo-500/10 px-1 rounded text-indigo-400 font-bold";
-                activeBell = s.name;
-                activeEndSecs = eSecs;
-              } else {
-                row.className = "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs text-slate-300";
-              }
+              row.className = secs >= sSecs && secs < eSecs
+                ? "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs bg-indigo-500/10 px-1 rounded text-indigo-400 font-bold"
+                : "flex justify-between items-center py-1 border-b border-slate-800/60 text-xs";
             }
+            if (secs >= sSecs && secs < eSecs) { activeName = s.name; activeEnd = eSecs; }
           });
 
-          cWidget.innerText = activeBell;
+          cWidget.innerText = activeName;
 
-          const currentSize = window.widgets[wId]?.state?.countdownSize || 'large';
-
-          if (activeEndSecs !== null) {
-            const diffSecs = activeEndSecs - currentSecs;
-            if (diffSecs > 0) {
-              const m = Math.floor(diffSecs / 60);
-              const s = diffSecs % 60;
-              const timeString = `${m}:${s.toString().padStart(2, '0')}`;
-
-              // Handle small timer displaying logic
-              if (timerEl) {
-                timerEl.innerText = `${timeString} left`;
-                if (timerEl.getAttribute('data-override-hidden') === 'true' || currentSize === 'large') {
-                  timerEl.classList.add('hidden');
-                } else {
-                  timerEl.classList.remove('hidden');
-                }
-              }
-
-              // Handle large timer displaying logic
-              const largeDisplay = document.getElementById(`sched-large-timer-display-${wId}`);
-              if (largeDisplay) {
-                largeDisplay.innerText = timeString;
-              }
-
-              if (largeContainer) {
-                if (currentSize === 'large') {
-                  largeContainer.classList.remove('hidden');
-                } else {
-                  largeContainer.classList.add('hidden');
-                }
-              }
-            } else {
-              if (timerEl) timerEl.classList.add('hidden');
-              if (largeContainer) largeContainer.classList.add('hidden');
+          if (activeEnd !== null && activeEnd > secs) {
+            const diff = activeEnd - secs;
+            const ts   = `${Math.floor(diff / 60)}:${String(diff % 60).padStart(2,'0')}`;
+            if (timerEl) {
+              timerEl.innerText = `${ts} left`;
+              const hide = timerEl.getAttribute('data-override-hidden') === 'true' || size === 'large';
+              timerEl.classList.toggle('hidden', hide);
             }
+            if (largeDisp) largeDisp.innerText = ts;
+            if (largeCont) largeCont.classList.toggle('hidden', size !== 'large');
           } else {
-            if (timerEl) timerEl.classList.add('hidden');
-            if (largeContainer) largeContainer.classList.add('hidden');
+            timerEl?.classList.add('hidden');
+            largeCont?.classList.add('hidden');
           }
         });
-        setTimeout(runScheduleCheck, 1000); // Ticks every 1s for accurate live countdown
+        setTimeout(tick, 1000);
       };
-      runScheduleCheck();
+      tick();
     }
 
-    // --- INITIALIZATION GATEWAY ---
+    // ─── INIT ──────────────────────────────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', async () => {
       buildThemeSelectorMenu();
-      
-      // Load saved theme preference
-      if (window.themeMode === 'light') {
-        document.body.classList.add('light-mode');
-      }
-      updateThemeToggleUI();
-
       window.setBackground('gradient', 'from-slate-900 via-indigo-950 to-slate-900');
       initClockUpdater();
       initScheduleActiveTracker();
-
-      // Render static page-level Lucide icons immediately
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
+      lucide.createIcons();
 
       try {
         const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
+        db   = getFirestore(app);
         auth = getAuth(app);
 
-        // Rule 3: Bind state listener before triggering asynchronous authenticators
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            initializeRealtimeSync();
-          } else {
-            console.warn("User is unauthenticated.");
-          }
+        onAuthStateChanged(auth, user => {
+          if (user) initializeRealtimeSync();
+          else console.warn("Unauthenticated.");
         });
 
-        // Safe priority sign-in chain
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
         } else {
           await signInAnonymously(auth);
         }
-      } catch (e) {
-        console.warn("Firebase credential failed initialization. Standalone mode ready.", e);
+      } catch(e) {
+        console.warn("Firebase init failed — standalone mode.", e);
         initializeRealtimeSync();
       }
 
       setTimeout(() => {
-        const splash = document.getElementById('app-splash');
+        const splash = $id('app-splash');
         if (splash) {
           splash.classList.add('opacity-0', 'pointer-events-none');
           setTimeout(() => splash.remove(), 800);
