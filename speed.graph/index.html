@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Physics Lab: Motion Analysis</title>
+    <title>Interactive Physics Lab: The Moving Man</title>
     <!-- Tailwind CSS for high-quality layout & styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -25,19 +25,19 @@
     <style>
         /* Smooth transitions for interactive elements */
         .transition-all-200 { transition: all 0.2s ease-in-out; }
-        /* Hide scrollbar for clean presentation */
+        /* Scrollbar customization */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #161b26; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
         
-        /* Draggable annotation cursor state */
-        .annotation-bubble {
-            cursor: grab;
-        }
-        .annotation-bubble:active {
-            cursor: grabbing;
-        }
+        /* Draggable state indicators */
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+
+        /* Glowing text elements */
+        .glow-blue { text-shadow: 0 0 8px rgba(0, 210, 255, 0.5); }
+        .glow-orange { text-shadow: 0 0 8px rgba(255, 144, 0, 0.5); }
     </style>
 </head>
 <body class="bg-darkBg text-slate-100 min-h-screen flex flex-col font-sans selection:bg-physicsBlue/30 selection:text-physicsBlue">
@@ -53,268 +53,281 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black tracking-tight bg-gradient-to-r from-physicsBlue via-indigo-200 to-physicsOrange bg-clip-text text-transparent">
-                        MOTION LAB & STUDIO
+                        THE MOVING MAN
                     </h1>
-                    <p class="text-xs text-slate-400 font-medium">Interactive Kinematics & Textbook Diagram Generator</p>
+                    <p class="text-xs text-slate-400 font-medium">Interactive Kinematics, Drag-to-Plot Sandbox & Diagram Studio</p>
                 </div>
             </div>
 
             <!-- Workspace Mode Switcher -->
             <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
                 <button onclick="switchWorkspace('sandbox')" id="tab-mode-sandbox" class="px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all-200 bg-physicsBlue text-darkBg shadow">
-                    <span>🛰️</span> Live Sandbox
+                    <span>🛰️</span> Live Moving Man
                 </button>
                 <button onclick="switchWorkspace('diagram')" id="tab-mode-diagram" class="px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all-200 text-slate-400 hover:text-white">
-                    <span>📚</span> Diagram Studio (image_a1174b.png)
+                    <span>📚</span> Diagram Studio
                 </button>
             </div>
             
             <div id="sandbox-timer-widget" class="flex items-center gap-4 bg-darkBg/60 px-4 py-1.5 rounded-full border border-slate-800">
-                <div class="text-xs text-slate-400 font-semibold tracking-wider uppercase">SIM TIME</div>
-                <div id="sim-timer" class="font-mono text-lg font-bold text-physicsBlue min-w-[70px] text-right">00.00s</div>
+                <div class="text-xs text-slate-400 font-semibold tracking-wider uppercase" id="sim-mode-badge">Recording</div>
+                <div id="sim-timer" class="font-mono text-lg font-bold text-physicsBlue min-w-[70px] text-right">00.00s / 30.00s</div>
             </div>
         </div>
     </header>
 
-    <!-- WORKSPACE 1: Sandbox (Original Interactive Live Simulator) -->
+    <!-- WORKSPACE 1: Interactive Live Sandbox -->
     <main id="workspace-sandbox" class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Left Column: Controls & Configuration (5 cols) -->
+        <!-- Left Column: Character Selection & Precision Engine Controls (5 cols) -->
         <section class="lg:col-span-5 flex flex-col gap-6">
             
-            <!-- Card 1: Object Selector -->
+            <!-- Card 1: Direct Character Selection -->
             <div class="bg-panelBg rounded-2xl border border-slate-800 p-5 shadow-xl">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-physicsBlue"></span> Select Physical Object
+                        <span class="w-2 h-2 rounded-full bg-physicsBlue"></span> Select Moving Avatar
                     </h2>
-                    <span id="object-mass-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Mass: 1500kg</span>
+                    <span id="object-mass-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Man</span>
                 </div>
                 
                 <!-- Object Selector Grid -->
                 <div class="grid grid-cols-2 gap-3" id="object-grid">
-                    <!-- Sports Car -->
+                    <!-- Standard Man -->
                     <button onclick="selectObject('car')" id="btn-car" class="flex flex-col items-start p-3 rounded-xl border border-physicsBlue bg-physicsBlue/5 hover:bg-physicsBlue/10 text-left transition-all-200 group">
                         <div class="flex justify-between w-full items-center mb-1">
-                            <span class="text-lg">🏎️</span>
-                            <span class="text-[10px] text-physicsBlue font-bold bg-physicsBlue/10 px-1.5 py-0.5 rounded">High Grip</span>
+                            <span class="text-lg">🚶</span>
+                            <span class="text-[10px] text-physicsBlue font-bold bg-physicsBlue/10 px-1.5 py-0.5 rounded">Standard</span>
                         </div>
-                        <span class="font-bold text-sm text-slate-100">Sports Car</span>
-                        <span class="text-xs text-slate-400 mt-1">Sleek, low drag, high traction.</span>
+                        <span class="font-bold text-sm text-slate-100">Classic Man</span>
+                        <span class="text-xs text-slate-400 mt-1">Walks standard track, draggable.</span>
                     </button>
-                    <!-- Starship -->
+                    <!-- Super Jetman -->
                     <button onclick="selectObject('rocket')" id="btn-rocket" class="flex flex-col items-start p-3 rounded-xl border border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 text-left transition-all-200 group">
                         <div class="flex justify-between w-full items-center mb-1">
                             <span class="text-lg">🚀</span>
-                            <span class="text-[10px] text-physicsOrange font-bold bg-physicsOrange/10 px-1.5 py-0.5 rounded">High Power</span>
+                            <span class="text-[10px] text-physicsOrange font-bold bg-physicsOrange/10 px-1.5 py-0.5 rounded">High Accel</span>
                         </div>
-                        <span class="font-bold text-sm text-slate-200">Starship Rocket</span>
-                        <span class="text-xs text-slate-400 mt-1">Massive propulsion power.</span>
+                        <span class="font-bold text-sm text-slate-200">Jetman</span>
+                        <span class="text-xs text-slate-400 mt-1">Slick jet propulsion.</span>
                     </button>
-                    <!-- Drifting Astronaut -->
+                    <!-- Floating Astronaut -->
                     <button onclick="selectObject('astronaut')" id="btn-astronaut" class="flex flex-col items-start p-3 rounded-xl border border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 text-left transition-all-200 group">
                         <div class="flex justify-between w-full items-center mb-1">
                             <span class="text-lg">👨‍🚀</span>
-                            <span class="text-[10px] text-indigo-400 font-bold bg-indigo-400/10 px-1.5 py-0.5 rounded">No Friction</span>
+                            <span class="text-[10px] text-indigo-400 font-bold bg-indigo-400/10 px-1.5 py-0.5 rounded">Zero Drag</span>
                         </div>
-                        <span class="font-bold text-sm text-slate-200">Astronaut</span>
-                        <span class="text-xs text-slate-400 mt-1">Zero-gravity floating drift.</span>
+                        <span class="font-bold text-sm text-slate-200">Cosmonaut</span>
+                        <span class="text-xs text-slate-400 mt-1">No gravity or sliding drag.</span>
                     </button>
-                    <!-- Feather -->
+                    <!-- Rolling Ball -->
                     <button onclick="selectObject('feather')" id="btn-feather" class="flex flex-col items-start p-3 rounded-xl border border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 text-left transition-all-200 group">
                         <div class="flex justify-between w-full items-center mb-1">
-                            <span class="text-lg">🪶</span>
-                            <span class="text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded">High Drag</span>
+                            <span class="text-lg">⚽</span>
+                            <span class="text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded">Rolling Friction</span>
                         </div>
-                        <span class="font-bold text-sm text-slate-200">Feather</span>
-                        <span class="text-xs text-slate-400 mt-1">Demonstrate air resistance.</span>
+                        <span class="font-bold text-sm text-slate-200">Physics Ball</span>
+                        <span class="text-xs text-slate-400 mt-1">Simple physics rolling test.</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Card 2: Interactive Sliders -->
-            <div class="bg-panelBg rounded-2xl border border-slate-800 p-5 shadow-xl flex-grow flex flex-col justify-between gap-5">
+            <!-- Card 2: Interactive Motion Controller (Sliders + Type-In Fields) -->
+            <div class="bg-panelBg rounded-2xl border border-slate-800 p-5 shadow-xl flex-grow flex flex-col justify-between gap-4">
                 <div>
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-3">
                         <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-physicsOrange"></span> Physical Force Engine
+                            <span class="w-2 h-2 rounded-full bg-physicsOrange"></span> Parameter Engine
                         </h2>
                         <button onclick="resetToInitialState()" class="text-xs text-slate-400 hover:text-physicsBlue transition-colors flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 6H16" /></svg>
-                            Reset Inputs
+                            Clear Parameters
                         </button>
                     </div>
 
-                    <!-- Acceleration Slider -->
-                    <div class="mb-5 bg-darkBg/40 p-4 rounded-xl border border-slate-800/60">
+                    <!-- Position Slider + Input -->
+                    <div class="mb-4 bg-darkBg/40 p-3 rounded-xl border border-slate-800/60">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-physicsOrange animate-pulse"></span>
-                                Constant Acceleration ($a$)
+                            <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded bg-blue-500"></span>
+                                Position ($x$)
                             </span>
-                            <span id="accel-value" class="font-mono text-sm font-bold text-physicsOrange bg-physicsOrange/10 px-2 py-0.5 rounded">2.0 m/s²</span>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="pos-input" min="-10" max="10" step="0.1" value="0.0"
+                                       class="w-16 px-1.5 py-0.5 bg-slate-900 border border-slate-700 rounded text-xs text-right font-mono text-physicsBlue focus:outline-none focus:border-physicsBlue">
+                                <span class="text-slate-500 text-[10px]">m</span>
+                            </div>
                         </div>
-                        <input type="range" id="accel-range" min="-15" max="15" step="0.5" value="2.0" 
+                        <input type="range" id="pos-range" min="-10" max="10" step="0.1" value="0" 
+                               class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none">
+                        <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
+                            <span>-10.0m (House)</span>
+                            <span>0.0</span>
+                            <span>+10.0m (Tree)</span>
+                        </div>
+                    </div>
+
+                    <!-- Velocity Slider + Input -->
+                    <div class="mb-4 bg-darkBg/40 p-3 rounded-xl border border-slate-800/60">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded bg-emerald-500"></span>
+                                Velocity ($v$)
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="vel-input" min="-20" max="20" step="0.1" value="0.0"
+                                       class="w-16 px-1.5 py-0.5 bg-slate-900 border border-slate-700 rounded text-xs text-right font-mono text-emerald-400 focus:outline-none focus:border-emerald-400">
+                                <span class="text-slate-500 text-[10px]">m/s</span>
+                            </div>
+                        </div>
+                        <input type="range" id="vel-range" min="-20" max="20" step="0.5" value="0" 
+                               class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 focus:outline-none">
+                        <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
+                            <span>-20.0 m/s</span>
+                            <span>0.0</span>
+                            <span>+20.0 m/s</span>
+                        </div>
+                    </div>
+
+                    <!-- Constant Acceleration Slider + Input -->
+                    <div class="mb-4 bg-darkBg/40 p-3 rounded-xl border border-slate-800/60">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded bg-physicsOrange"></span>
+                                Acceleration ($a$)
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="accel-input" min="-15" max="15" step="0.1" value="0.0"
+                                       class="w-16 px-1.5 py-0.5 bg-slate-900 border border-slate-700 rounded text-xs text-right font-mono text-physicsOrange focus:outline-none focus:border-physicsOrange">
+                                <span class="text-slate-500 text-[10px]">m/s²</span>
+                            </div>
+                        </div>
+                        <input type="range" id="accel-range" min="-15" max="15" step="0.5" value="0" 
                                class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-physicsOrange focus:outline-none">
-                        <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                        <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
                             <span>-15.0 m/s²</span>
                             <span>0.0</span>
                             <span>+15.0 m/s²</span>
                         </div>
                     </div>
 
-                    <!-- Velocity Injector Slider -->
-                    <div class="mb-5 bg-darkBg/40 p-4 rounded-xl border border-slate-800/60">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-physicsBlue animate-pulse"></span>
-                                Current Velocity ($v$)
-                            </span>
-                            <span id="vel-value" class="font-mono text-sm font-bold text-physicsBlue bg-physicsBlue/10 px-2 py-0.5 rounded">0.0 m/s</span>
+                    <!-- Environment Customizations -->
+                    <div class="bg-darkBg/40 p-3 rounded-xl border border-slate-800/60 flex items-center justify-between">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-semibold text-slate-300">Bounce on Boundary Walls</span>
+                            <span class="text-[10px] text-slate-500">Rebounds man when hitting track limits.</span>
                         </div>
-                        <input type="range" id="vel-range" min="-30" max="30" step="1" value="0" 
-                               class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-physicsBlue focus:outline-none">
-                        <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
-                            <span>-30.0 m/s</span>
-                            <span>0.0</span>
-                            <span>+30.0 m/s</span>
-                        </div>
-                    </div>
-
-                    <!-- Environment Options -->
-                    <div class="bg-darkBg/40 p-4 rounded-xl border border-slate-800/60 space-y-3">
-                        <h3 class="text-xs font-bold tracking-wider text-slate-400 uppercase">Environment Parameters</h3>
-                        
-                        <!-- Friction Toggle -->
-                        <div class="flex justify-between items-center">
-                            <div class="flex flex-col">
-                                <span class="text-xs font-semibold text-slate-300">Air Resistance (Fluid Drag)</span>
-                                <span class="text-[10px] text-slate-500">Limits velocity based on drag coeff.</span>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="drag-toggle" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-physicsBlue peer-checked:after:bg-darkBg"></div>
-                            </label>
-                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="bounce-toggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-physicsBlue peer-checked:after:bg-darkBg"></div>
+                        </label>
                     </div>
                 </div>
 
-                <!-- Simulation Info Panel -->
-                <div class="p-3.5 bg-slate-800/30 rounded-xl border border-slate-800/80 text-xs text-slate-400 space-y-1 font-mono">
-                    <div class="flex justify-between"><span>Current Position ($x$):</span> <span id="pos-stat" class="text-slate-200">0.0 m</span></div>
-                    <div class="flex justify-between"><span>Max Speed Observed:</span> <span id="max-speed-stat" class="text-slate-200">0.0 m/s</span></div>
-                    <div class="flex justify-between"><span>Active Formula:</span> <span id="physics-formula-stat" class="text-indigo-400">$v = v_0 + at$</span></div>
+                <!-- Live Diagnostics telemetry badge -->
+                <div class="p-3 bg-slate-800/30 rounded-xl border border-slate-800/80 text-xs text-slate-400 space-y-1 font-mono">
+                    <div class="flex justify-between"><span>Active State:</span> <span id="man-activity-state" class="text-physicsBlue font-bold">Standing Still</span></div>
+                    <div class="flex justify-between"><span>Wall Collisions:</span> <span id="collision-counter" class="text-red-400">0 hits</span></div>
+                    <div class="flex justify-between"><span>Motion Equation:</span> <span id="active-equations" class="text-indigo-400">x(t) = x₀ + v₀t + ½at²</span></div>
                 </div>
             </div>
         </section>
 
-        <!-- Right Column: Visualizer & Real-time Graph (7 cols) -->
+        <!-- Right Column: Draggable Track Viewport & Shared Timeline Graphs (7 cols) -->
         <section class="lg:col-span-7 flex flex-col gap-6">
             
-            <!-- Live Physics Arena (Canvas container) -->
-            <div class="bg-panelBg rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col">
+            <!-- Live Arena: Drag Character Track -->
+            <div class="bg-panelBg rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span> Live Physics Workspace
+                        <span id="arena-pulse-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Live Interactive Track
                     </h2>
-                    <span class="text-xs text-slate-500 italic">Scrolling infinite track view</span>
+                    <span id="collision-flash" class="text-xs text-red-500 font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-red-500/10 hidden">Collision! Rebounding</span>
+                    <span class="text-xs text-slate-400 italic">Drag character directly on track!</span>
                 </div>
 
-                <!-- Canvas Wrapper -->
-                <div class="relative w-full aspect-[2.8/1] min-h-[160px] bg-gradient-to-b from-darkBg to-[#0d121f] rounded-xl overflow-hidden border border-slate-800/80 shadow-inner">
-                    <canvas id="arena-canvas" class="w-full h-full block cursor-crosshair"></canvas>
-                    
-                    <!-- Scrubbing / Hover Indicator HUD -->
-                    <div id="scrub-hud" class="absolute inset-x-0 bottom-0 bg-physicsBlue/10 backdrop-blur-sm border-t border-physicsBlue/30 py-1.5 px-3 flex justify-between items-center text-xs font-mono text-physicsBlue hidden">
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 bg-physicsBlue rounded-full animate-ping"></span>
-                            Inspecting Past Timestamp
-                        </span>
-                        <div class="flex gap-4">
-                            <span>Time: <strong id="hud-time">0.0s</strong></span>
-                            <span>Vel: <strong id="hud-vel">0.0m/s</strong></span>
-                            <span>Accel: <strong id="hud-accel">0.0m/s²</strong></span>
-                        </div>
-                    </div>
+                <!-- Canvas Track Viewport -->
+                <div class="relative w-full aspect-[3.4/1] bg-gradient-to-b from-[#111827] to-[#030712] rounded-xl overflow-hidden border border-slate-800/80 shadow-inner">
+                    <canvas id="arena-canvas" class="w-full h-full block cursor-grab"></canvas>
                 </div>
-
-                <!-- Dynamic Vector Dashboard Overlay -->
-                <div class="grid grid-cols-2 gap-3 mt-3">
-                    <div class="bg-darkBg/60 px-3 py-2 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded bg-emerald-500"></div>
-                            <span class="font-bold text-slate-400 uppercase tracking-wide">Velocity Vector</span>
-                        </div>
-                        <span id="vel-vector-mag" class="font-mono text-emerald-400 font-bold">0 px/s</span>
+                
+                <!-- Playback Mode Status Widget -->
+                <div class="flex items-center justify-between mt-3 px-1 text-xs">
+                    <div class="flex gap-2">
+                        <button onclick="setPlayMode('record')" id="btn-mode-record" class="px-3 py-1 rounded bg-red-600/20 text-red-400 border border-red-500/30 font-bold transition-all">⬤ Record Mode</button>
+                        <button onclick="setPlayMode('playback')" id="btn-mode-playback" class="px-3 py-1 rounded bg-slate-800 text-slate-400 font-bold hover:text-white transition-all">▶ Playback Mode</button>
                     </div>
-                    <div class="bg-darkBg/60 px-3 py-2 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded bg-amber-500"></div>
-                            <span class="font-bold text-slate-400 uppercase tracking-wide">Acceleration Vector</span>
-                        </div>
-                        <span id="accel-vector-mag" class="font-mono text-amber-400 font-bold font-bold">0 px/s²</span>
-                    </div>
+                    <span class="text-slate-500 font-mono">Limits: -10m (House) to +10m (Tree)</span>
                 </div>
             </div>
 
-            <!-- Graph Deck with Toggle -->
-            <div class="bg-panelBg rounded-2xl border border-slate-800 p-5 shadow-xl flex-grow flex flex-col min-h-[300px]">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                    <div>
-                        <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Kinematics Plots
-                        </h2>
-                    </div>
-
-                    <!-- Graph Mode Toggles -->
-                    <div class="flex bg-darkBg/80 p-1 rounded-lg border border-slate-800 w-full sm:w-auto overflow-hidden">
-                        <button onclick="setGraphMode('velocity')" id="tab-vel" class="flex-1 sm:flex-initial text-xs px-3 py-1.5 rounded-md font-bold transition-all-200 bg-physicsBlue/10 text-physicsBlue border border-physicsBlue/20">
-                            Velocity
-                        </button>
-                        <button onclick="setGraphMode('acceleration')" id="tab-accel" class="flex-1 sm:flex-initial text-xs px-3 py-1.5 rounded-md font-bold text-slate-400 hover:text-slate-200 transition-all-200">
-                            Acceleration
-                        </button>
-                        <button onclick="setGraphMode('dual')" id="tab-dual" class="flex-1 sm:flex-initial text-xs px-3 py-1.5 rounded-md font-bold text-slate-400 hover:text-slate-200 transition-all-200">
-                            Dual Split
-                        </button>
-                    </div>
+            <!-- Stacked Synchronized Graphs (Mimicking PhET split-panel layout) -->
+            <div class="bg-panelBg rounded-2xl border border-slate-800 p-4 shadow-xl flex-grow flex flex-col min-h-[360px]">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Synchronized Kinematics Curves
+                    </h2>
+                    <button onclick="clearTelemetryHistory()" class="text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors">
+                        Clear Charts
+                    </button>
                 </div>
 
-                <!-- Live Kinematics Graphs (Canvas Rendered) -->
-                <div class="relative flex-grow min-h-[220px] bg-darkBg/30 rounded-xl overflow-hidden border border-slate-800/80">
+                <!-- Triple Stack Area inside a canvas -->
+                <div class="relative flex-grow min-h-[280px] bg-darkBg/40 rounded-xl overflow-hidden border border-slate-850/80">
                     <canvas id="graph-canvas" class="w-full h-full block absolute inset-0"></canvas>
+                    
+                    <!-- HUD Scrubber Overlaid info -->
+                    <div id="scrub-hud" class="absolute inset-x-0 bottom-0 bg-indigo-950/85 backdrop-blur border-t border-indigo-500/30 py-1.5 px-3 flex justify-between items-center text-xs font-mono text-indigo-300 hidden">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 bg-indigo-400 rounded-full animate-ping"></span>
+                            Timeline Inspection
+                        </span>
+                        <div class="flex gap-3">
+                            <span>Time: <strong id="hud-time" class="text-slate-100">0.0s</strong></span>
+                            <span>Pos: <strong id="hud-pos" class="text-blue-400">0.0m</strong></span>
+                            <span>Vel: <strong id="hud-vel" class="text-emerald-400">0.0m/s</strong></span>
+                            <span>Accel: <strong id="hud-accel" class="text-amber-400">0.0m/s²</strong></span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mt-3 text-center text-[11px] text-slate-500 font-medium">
-                    🔍 Move cursor over the graph to **scrub and analyze** any historical time slice!
+                <div class="mt-2 text-center text-[10px] text-slate-500">
+                    💡 Hover cursor over stacked charts to scroll through history. In **Playback**, click graph to sync time.
                 </div>
             </div>
 
-            <!-- Quick Simulation Control Deck -->
-            <div class="bg-panelBg rounded-2xl border border-slate-800 p-4 shadow-xl flex items-center justify-between gap-4">
-                <div class="flex items-center gap-2">
-                    <button onclick="togglePlay()" id="btn-play" class="h-11 px-5 rounded-xl bg-physicsBlue hover:bg-physicsBlue/90 text-darkBg font-black text-sm flex items-center gap-2 transition-all-200 shadow-lg shadow-physicsBlue/20 active:scale-95">
-                        <svg id="svg-play-icon" class="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <!-- Playback Control Panel Deck -->
+            <div class="bg-panelBg rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="btn-rewind-start" onclick="rewindToStart()" class="h-10 w-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-all active:scale-95" title="Rewind to Start">
+                        ⏮
+                    </button>
+                    <button onclick="togglePlay()" id="btn-play" class="h-10 px-5 rounded-xl bg-physicsBlue hover:bg-physicsBlue/90 text-darkBg font-black text-xs flex items-center gap-1.5 transition-all shadow-lg active:scale-95">
+                        <span id="btn-play-icon">▶</span>
                         <span id="btn-play-text">Play</span>
                     </button>
-                    <button onclick="stepFrame()" class="h-11 w-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-all-200 active:scale-95" title="Step 1 physics frame forward">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                    <button onclick="stepFrame(true)" class="h-10 w-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-all active:scale-95" title="Step 1 frame forward">
+                        ⏭
                     </button>
-                    <button onclick="resetSimulation()" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-2 transition-all-200 active:scale-95">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 10-3.86.517l3.185.637a6 6 0 011.392.298l.871.291a2 2 0 001.648-.204z" /></svg>
-                        Reset Simulator
+                    <button onclick="resetSimulation()" class="h-10 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95">
+                        🔄 Reset Man
                     </button>
                 </div>
 
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="text-slate-500 font-bold">DATA POINTS:</span>
-                    <span id="datapoints-counter" class="font-mono text-slate-300 bg-slate-800 px-2 py-1 rounded">0 / 1800</span>
+                <!-- Custom Timeline Range Scrubber -->
+                <div class="flex-grow max-w-xs w-full">
+                    <div class="flex justify-between text-[10px] text-slate-400 font-mono mb-1">
+                        <span>Playback Timeline</span>
+                        <span id="timeline-percent">0.0s / 30.0s</span>
+                    </div>
+                    <input type="range" id="timeline-scrubber" min="0" max="1" step="0.001" value="0"
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none">
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- WORKSPACE 2: Diagram Studio (Designed to reproduce image_a1174b.png visually and educationally) -->
+    <!-- WORKSPACE 2: Diagram Studio -->
     <main id="workspace-diagram" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Left Column: Pedagogical Controls, Theme & Phase Editors (4 cols) -->
@@ -332,21 +345,21 @@
                     <button onclick="loadDiagramPreset('textbook')" class="w-full text-left p-3 rounded-xl border border-physicsPurple/30 bg-physicsPurple/5 hover:bg-physicsPurple/10 transition-colors">
                         <div class="flex justify-between items-center">
                             <span class="font-bold text-sm text-slate-100">Classic Textbook Curves</span>
-                            <span class="text-[10px] text-physicsPurple font-bold bg-physicsPurple/15 px-2 py-0.5 rounded">image_a1174b.png</span>
+                            <span class="text-[10px] text-physicsPurple font-bold bg-physicsPurple/15 px-2 py-0.5 rounded">Preset 1</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1">Symmetric deceleration profile crossing zero velocity at exactly 15 seconds.</p>
                     </button>
                     
                     <button onclick="loadDiagramPreset('vertical-toss')" class="w-full text-left p-3 rounded-xl border border-slate-800 hover:bg-slate-800 transition-colors">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-sm text-slate-200">🪂 Vertical Toss (Gravity)</span>
+                            <span class="font-bold text-sm text-slate-200">🪂 Gravity Descending</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1">Starts with positive initial velocity under constant gravity deceleration ($a = -9.8\text{ m/s}^2$).</p>
                     </button>
 
                     <button onclick="loadDiagramPreset('braking')" class="w-full text-left p-3 rounded-xl border border-slate-800 hover:bg-slate-800 transition-colors">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-sm text-slate-200">🛑 Smooth Braking to Idle</span>
+                            <span class="font-bold text-sm text-slate-200">🛑 Smooth Braking</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1">Deceleration segment until reaching a stop, followed by holding at rest.</p>
                     </button>
@@ -501,30 +514,27 @@
                     { tStart: 27, tEnd: 30, a: 0.0 }
                 ],
                 annotations: [
-                    { graph: 'x', t: 1.8, text: 'Increasing slope indicates increasing velocity.', offsetX: -110, offsetY: -35 },
-                    { graph: 'x', t: 5.5, text: 'Constant slope means constant velocity.', offsetX: -140, offsetY: -60 },
-                    { graph: 'x', t: 10.0, text: 'Decreasing slope indicates decreasing velocity.', offsetX: -70, offsetY: 20 },
-                    { graph: 'x', t: 15.0, text: 'Horizontal point (zero slope) implies zero velocity.', offsetX: -5, offsetY: -55 },
-                    { graph: 'x', t: 19.0, text: 'Negative slope indicates negative velocity.', offsetX: 80, offsetY: -40 },
-                    { graph: 'x', t: 23.5, text: 'Flattening curve implies velocity becoming less negative.', offsetX: -100, offsetY: 40 },
-                    { graph: 'x', t: 28.5, text: 'Continuing zero slope implies object is at rest.', offsetX: 10, offsetY: 15 },
+                    { graph: 'x', t: 1.8, text: 'Slope increases as the man accelerates.', offsetX: -110, offsetY: -35 },
+                    { graph: 'x', t: 5.5, text: 'Linear slope indicates constant speed.', offsetX: -140, offsetY: -60 },
+                    { graph: 'x', t: 15.0, text: 'Zero slope at peak indicates a temporary stop.', offsetX: -5, offsetY: -55 },
+                    { graph: 'x', t: 19.0, text: 'Negative slope implies backing up.', offsetX: 80, offsetY: -40 },
                     
-                    { graph: 'v', t: 2.0, text: 'Positive slope implies positive acceleration.', offsetX: -120, offsetY: -45 },
-                    { graph: 'v', t: 5.5, text: 'Horizontal line (zero slope) implies zero acceleration.', offsetX: 20, offsetY: 30 },
-                    { graph: 'v', t: 18.0, text: 'Negative slope implies negative acceleration.', offsetX: 60, offsetY: -45 }
+                    { graph: 'v', t: 2.0, text: 'Linear ramp equals constant force.', offsetX: -120, offsetY: -45 },
+                    { graph: 'v', t: 5.5, text: 'Zero slope means acceleration is 0.', offsetX: 20, offsetY: 30 },
+                    { graph: 'v', t: 18.0, text: 'Negative velocity equals moving left.', offsetX: 60, offsetY: -45 }
                 ]
             },
             'vertical-toss': {
                 v0: 15.0,
                 phases: [
-                    { tStart: 0, tEnd: 15, a: -9.8 },
+                    { tStart: 0, tEnd: 15, a: -4.5 },
                     { tStart: 15, tEnd: 22, a: 3.5 },
                     { tStart: 22, tEnd: 30, a: 0.0 }
                 ],
                 annotations: [
-                    { graph: 'x', t: 1.5, text: 'Starts moving upward high speed ($v_0=15$ m/s)', offsetX: -110, offsetY: -35 },
-                    { graph: 'x', t: 7.5, text: 'Peak altitude reached where velocity drops to exactly 0.', offsetX: -80, offsetY: -40 },
-                    { graph: 'v', t: 7.5, text: 'Sign changes from positive (up) to negative (down).', offsetX: 20, offsetY: -30 }
+                    { graph: 'x', t: 1.5, text: 'Starts moving forward at speed ($v_0=15$ m/s)', offsetX: -110, offsetY: -35 },
+                    { graph: 'x', t: 7.5, text: 'Apex reached where velocity crosses 0.', offsetX: -80, offsetY: -40 },
+                    { graph: 'v', t: 7.5, text: 'Crosses baseline: direction is reversed.', offsetX: 20, offsetY: -30 }
                 ]
             },
             'braking': {
@@ -535,46 +545,44 @@
                     { tStart: 15, tEnd: 30, a: 0.0 }
                 ],
                 annotations: [
-                    { graph: 'x', t: 2.5, text: 'Cruising at constant positive speed.', offsetX: -120, offsetY: -30 },
-                    { graph: 'x', t: 15.0, text: 'Braking completes. Vehicle is completely stationary.', offsetX: -90, offsetY: -45 },
-                    { graph: 'v', t: 10.0, text: 'Constant deceleration slope.', offsetX: 25, offsetY: -25 }
+                    { graph: 'x', t: 2.5, text: 'Cruising at initial velocity.', offsetX: -120, offsetY: -30 },
+                    { graph: 'x', t: 15.0, text: 'Fully stopped. Slope becomes completely horizontal.', offsetX: -90, offsetY: -45 }
                 ]
             }
         };
 
-        // Active Theme Style configurations (Warm Cream matches textbook image_a1174b.png perfectly)
         const studioThemes = {
             cream: {
-                bg: '#FDF8F0', // Warm textured paper
-                border: '#78350F', // Warm brown
+                bg: '#FDF8F0',
+                border: '#78350F',
                 text: '#1E293B',
-                curve: '#EF4444', // Red curves
-                grid: 'rgba(120, 53, 15, 0.12)', // Subtle warm grids
-                gridDash: 'rgba(120, 53, 15, 0.45)', // Dotted phase lines
-                fill: 'rgba(239, 68, 68, 0.16)', // Light red fill
-                bubbleBg: '#FCE7CE', // Warm bubble bg
-                bubbleText: '#78350F', // Amber text
+                curve: '#EF4444',
+                grid: 'rgba(120, 53, 15, 0.12)',
+                gridDash: 'rgba(120, 53, 15, 0.45)',
+                fill: 'rgba(239, 68, 68, 0.16)',
+                bubbleBg: '#FCE7CE',
+                bubbleText: '#78350F',
                 bubbleBorder: '#92400E'
             },
             dark: {
-                bg: '#111827', // Deep slate
+                bg: '#111827',
                 border: '#374151',
                 text: '#F3F4F6',
-                curve: '#00D2FF', // Electric cyan
+                curve: '#00D2FF',
                 grid: 'rgba(255, 255, 255, 0.08)',
-                gridDash: 'rgba(157, 78, 221, 0.45)', // Purple indicator grid
+                gridDash: 'rgba(157, 78, 221, 0.45)',
                 fill: 'rgba(0, 210, 255, 0.12)',
                 bubbleBg: '#1F2937',
                 bubbleText: '#00D2FF',
                 bubbleBorder: '#374151'
             },
             chalkboard: {
-                bg: '#0F2D1F', // Chalk forest green
+                bg: '#0F2D1F',
                 border: '#047857',
                 text: '#ECFDF5',
-                curve: '#F59E0B', // Dust yellow curve
+                curve: '#F59E0B',
                 grid: 'rgba(236, 253, 245, 0.08)',
-                gridDash: 'rgba(236, 253, 245, 0.35)', // Chalk marks
+                gridDash: 'rgba(236, 253, 245, 0.35)',
                 fill: 'rgba(245, 158, 11, 0.10)',
                 bubbleBg: '#064E3B',
                 bubbleText: '#FBBF24',
@@ -582,205 +590,152 @@
             }
         };
 
-        // Active state of Diagram workspace
         const studioState = {
             currentTheme: 'cream',
             currentPreset: 'textbook',
-            v0: 0.0,            // Initial Velocity
-            phases: [],         // Loaded from preset, mutable by user
-            annotations: [],    // Loaded from preset, draggable & editable
-            calculatedPoints: [], // [{t, x, v, a}] sampled smoothly for 0..30s
-            hoverT: null        // Current synchronized hover time (0 to 30) for scrubber
+            v0: 0.0,
+            phases: [],
+            annotations: [],
+            calculatedPoints: [],
+            hoverT: null
         };
-    </script>
 
-    <script>
-        // Physics objects configuration
+        // Standard physics objects configuration
         const presets = {
             car: {
-                mass: 1500, // kg
-                dragCoeff: 0.25, // Sleek aerodynamics
+                name: "Classic Moving Man",
+                mass: 75,
+                dragCoeff: 0.1,
                 color: '#00d2ff',
-                emoji: '🏎️',
-                description: 'Fast track acceleration. Moderate drag.',
-                render: function(ctx, x, y, size, facingRight) {
+                emoji: '🚶',
+                render: function(ctx, x, y, size, directionRight, stepCycle) {
                     ctx.save();
                     ctx.translate(x, y);
-                    if (!facingRight) ctx.scale(-1, 1);
+                    if (!directionRight) ctx.scale(-1, 1);
+
+                    // Dynamic walking legs using stepCycle
+                    const legAngle = Math.sin(stepCycle) * 0.5;
                     
-                    // Draw Car Body Shadow
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = 'rgba(0, 210, 255, 0.4)';
-                    
-                    // Main Sports Car Body Shape
-                    ctx.fillStyle = '#00d2ff';
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+
+                    // Draw Legs
                     ctx.beginPath();
-                    ctx.moveTo(-size, 5);
-                    ctx.lineTo(-size * 0.9, -10);
-                    ctx.lineTo(-size * 0.4, -12);
-                    ctx.lineTo(-size * 0.2, -22);
-                    ctx.lineTo(size * 0.3, -22);
-                    ctx.lineTo(size * 0.6, -8);
-                    ctx.lineTo(size * 1.1, -6);
-                    ctx.lineTo(size * 1.15, 8);
-                    ctx.lineTo(-size, 8);
+                    ctx.moveTo(0, 10);
+                    ctx.lineTo(Math.sin(stepCycle) * 12, 30);
+                    ctx.moveTo(0, 10);
+                    ctx.lineTo(-Math.sin(stepCycle) * 12, 30);
+                    ctx.stroke();
+
+                    // Body Coat
+                    ctx.fillStyle = '#0284c7';
+                    ctx.beginPath();
+                    ctx.roundRect(-8, -12, 16, 22, 6);
+                    ctx.fill();
+
+                    // Arms
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.moveTo(-2, -6);
+                    ctx.lineTo(10 + Math.cos(stepCycle) * 4, 4);
+                    ctx.stroke();
+
+                    // Head
+                    ctx.fillStyle = '#fbcfe8';
+                    ctx.beginPath();
+                    ctx.arc(0, -20, 8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Blue Cap
+                    ctx.fillStyle = '#0369a1';
+                    ctx.beginPath();
+                    ctx.arc(0, -22, 8, Math.PI, 0);
+                    ctx.lineTo(12, -22);
+                    ctx.lineTo(8, -25);
                     ctx.closePath();
-                    ctx.fill();
-
-                    // Glass Windshield
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#e2f8ff';
-                    ctx.beginPath();
-                    ctx.moveTo(-size * 0.1, -20);
-                    ctx.lineTo(size * 0.25, -20);
-                    ctx.lineTo(size * 0.4, -9);
-                    ctx.lineTo(-size * 0.1, -9);
-                    ctx.closePath();
-                    ctx.fill();
-
-                    // Racing Stripe & accents
-                    ctx.fillStyle = '#021a30';
-                    ctx.fillRect(-size * 0.65, -10, size * 0.4, 4);
-
-                    // Wheels
-                    ctx.fillStyle = '#0f172a';
-                    ctx.strokeStyle = '#00d2ff';
-                    ctx.lineWidth = 2;
-                    // Rear wheel
-                    ctx.beginPath();
-                    ctx.arc(-size * 0.55, 8, size * 0.3, 0, Math.PI * 2);
-                    ctx.fill(); ctx.stroke();
-                    // Wheel hub
-                    ctx.fillStyle = '#e2e8f0';
-                    ctx.beginPath();
-                    ctx.arc(-size * 0.55, 8, size * 0.12, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Front wheel
-                    ctx.fillStyle = '#0f172a';
-                    ctx.beginPath();
-                    ctx.arc(size * 0.6, 8, size * 0.3, 0, Math.PI * 2);
-                    ctx.fill(); ctx.stroke();
-                    // Wheel hub
-                    ctx.fillStyle = '#e2e8f0';
-                    ctx.beginPath();
-                    ctx.arc(size * 0.6, 8, size * 0.12, 0, Math.PI * 2);
                     ctx.fill();
 
                     ctx.restore();
                 }
             },
             rocket: {
-                mass: 85000, // Heavy
-                dragCoeff: 0.15, // Extremely high speed streamlining
+                name: "Jetpack Hero",
+                mass: 90,
+                dragCoeff: 0.05,
                 color: '#ff9000',
                 emoji: '🚀',
-                description: 'Incredible acceleration, negligible drag relative to mass.',
-                render: function(ctx, x, y, size, facingRight) {
+                render: function(ctx, x, y, size, directionRight, stepCycle) {
                     ctx.save();
                     ctx.translate(x, y);
-                    if (!facingRight) ctx.scale(-1, 1);
-                    
-                    // Shadow glowing engine ignition
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = 'rgba(255, 144, 0, 0.6)';
+                    if (!directionRight) ctx.scale(-1, 1);
 
-                    // Thruster particles effect if moving/accelerating
+                    // Jetpack fire
                     if (Math.abs(physicsState.accel) > 0.1 && playState.running) {
-                        for (let i = 0; i < 8; i++) {
-                            ctx.fillStyle = `rgba(255, ${100 + Math.random() * 155}, 0, ${Math.random() * 0.8 + 0.2})`;
+                        for (let i = 0; i < 6; i++) {
+                            ctx.fillStyle = `rgba(255, ${100 + Math.random() * 120}, 0, ${Math.random() * 0.7 + 0.3})`;
                             ctx.beginPath();
-                            ctx.arc(-size * (1.2 + Math.random() * 0.8), (Math.random() * 12 - 6), Math.random() * 6 + 2, 0, Math.PI*2);
+                            ctx.arc(-14 - Math.random() * 12, 8 + Math.random() * 10, Math.random() * 6 + 2, 0, Math.PI * 2);
                             ctx.fill();
                         }
                     }
 
-                    // Main fuselage (horizontal)
-                    ctx.fillStyle = '#f8fafc'; // White body
-                    ctx.beginPath();
-                    ctx.moveTo(-size, -8);
-                    ctx.lineTo(size * 0.5, -8);
-                    ctx.quadraticCurveTo(size * 1.3, -2, size * 1.4, 0); // Nose cone
-                    ctx.quadraticCurveTo(size * 1.3, 2, size * 0.5, 8);
-                    ctx.lineTo(-size, 8);
-                    ctx.closePath();
-                    ctx.fill();
-
-                    // Cockpit window
-                    ctx.fillStyle = '#00d2ff';
-                    ctx.beginPath();
-                    ctx.arc(size * 0.6, -1, 3, 0, Math.PI*2);
-                    ctx.fill();
-
-                    // Fins
-                    ctx.fillStyle = '#ea580c'; // Orange accents
-                    ctx.beginPath();
-                    ctx.moveTo(-size * 0.9, -8);
-                    ctx.lineTo(-size * 1.2, -18);
-                    ctx.lineTo(-size * 0.4, -8);
-                    ctx.closePath();
-                    ctx.fill();
-
-                    ctx.beginPath();
-                    ctx.moveTo(-size * 0.9, 8);
-                    ctx.lineTo(-size * 1.2, 18);
-                    ctx.lineTo(-size * 0.4, 8);
-                    ctx.closePath();
-                    ctx.fill();
-
-                    // Nozzle
+                    // Jetpack body
                     ctx.fillStyle = '#475569';
-                    ctx.fillRect(-size * 1.1, -5, size * 0.15, 10);
+                    ctx.fillRect(-14, -8, 8, 20);
+
+                    // Body
+                    ctx.fillStyle = '#ea580c';
+                    ctx.beginPath();
+                    ctx.roundRect(-6, -10, 12, 20, 4);
+                    ctx.fill();
+
+                    // Helmet
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    ctx.arc(0, -18, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#0284c7'; // Visor
+                    ctx.beginPath();
+                    ctx.arc(3, -18, 4, -Math.PI/2, Math.PI/2);
+                    ctx.fill();
 
                     ctx.restore();
                 }
             },
             astronaut: {
-                mass: 120, // Lightweight
-                dragCoeff: 0.00, // Floating vacuum environment
+                name: "Cosmonaut Floating",
+                mass: 120,
+                dragCoeff: 0.0,
                 color: '#a78bfa',
                 emoji: '👨‍🚀',
-                description: 'Perfect zero-gravity floating simulation.',
-                render: function(ctx, x, y, size, facingRight) {
+                render: function(ctx, x, y, size, directionRight, stepCycle) {
                     ctx.save();
                     ctx.translate(x, y);
-                    if (!facingRight) ctx.scale(-1, 1);
-                    
-                    // Floating hover effect via math function
-                    const floatY = Math.sin(Date.now() / 300) * 4;
-                    ctx.translate(0, floatY);
+                    if (!directionRight) ctx.scale(-1, 1);
+
+                    // Float hover
+                    const hoverOffset = Math.sin(Date.now() / 250) * 5;
+                    ctx.translate(0, hoverOffset);
 
                     // Space pack
                     ctx.fillStyle = '#cbd5e1';
-                    ctx.fillRect(-size * 0.6, -16, size * 0.3, 30);
-                    
-                    // Body
-                    ctx.fillStyle = '#e2e8f0';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, size * 0.5, 0, Math.PI*2);
+                    ctx.roundRect(-12, -15, 8, 24, 3);
                     ctx.fill();
 
-                    // Legs
-                    ctx.strokeStyle = '#cbd5e1';
-                    ctx.lineWidth = 4;
-                    ctx.lineCap = 'round';
-                    // Left leg
+                    // Space suit
+                    ctx.fillStyle = '#f8fafc';
                     ctx.beginPath();
-                    ctx.moveTo(-4, 6);
-                    ctx.lineTo(-8, 18);
-                    ctx.stroke();
-                    // Right leg
-                    ctx.beginPath();
-                    ctx.moveTo(4, 6);
-                    ctx.lineTo(8, 16);
-                    ctx.stroke();
+                    ctx.roundRect(-6, -12, 12, 22, 6);
+                    ctx.fill();
 
-                    // Visor glass
+                    // Visor
                     ctx.fillStyle = '#1e293b';
-                    ctx.strokeStyle = '#00d2ff';
+                    ctx.strokeStyle = '#a78bfa';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
-                    ctx.arc(size * 0.25, -2, size * 0.2, -Math.PI/2, Math.PI/2);
+                    ctx.arc(2, -18, 7, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
 
@@ -788,86 +743,106 @@
                 }
             },
             feather: {
-                mass: 0.005, // Light
-                dragCoeff: 1.80, // Extremely air-catchy
+                name: "Rolling Soccer Ball",
+                mass: 0.45,
+                dragCoeff: 0.15,
                 color: '#fcd34d',
-                emoji: '🪶',
-                description: 'Extremely high drag. Reaches terminal velocity rapidly.',
-                render: function(ctx, x, y, size, facingRight) {
+                emoji: '⚽',
+                render: function(ctx, x, y, size, directionRight, stepCycle) {
                     ctx.save();
-                    ctx.translate(x, y);
-                    if (!facingRight) ctx.scale(-1, 1);
+                    ctx.translate(x, y + 16);
+                    // Rotate based on position
+                    ctx.rotate(physicsState.x * 1.5);
 
-                    // Fluttering rotation depending on velocity
-                    const flutter = Math.sin(Date.now() / 150) * 0.15;
-                    ctx.rotate(flutter);
-
-                    // Stem
-                    ctx.strokeStyle = '#e2e8f0';
-                    ctx.lineWidth = 2;
+                    // Draw sphere
+                    ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.moveTo(-size, 5);
-                    ctx.quadraticCurveTo(0, 0, size, -5);
+                    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2;
                     ctx.stroke();
 
-                    // Vanes
-                    ctx.fillStyle = 'rgba(253, 211, 77, 0.7)';
-                    ctx.beginPath();
-                    ctx.moveTo(-size, 5);
-                    ctx.quadraticCurveTo(0, -12, size, -5);
-                    ctx.quadraticCurveTo(0, 10, -size, 5);
-                    ctx.fill();
+                    // Soccer patterns
+                    ctx.fillStyle = '#0f172a';
+                    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 3) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(Math.cos(angle) * 16, Math.sin(angle) * 16);
+                        ctx.stroke();
+                    }
 
                     ctx.restore();
                 }
             }
         };
 
-        // Engine State
+        // Live Simulation state
         const physicsState = {
             activeKey: 'car',
-            x: 0,               // Position (m)
-            v: 0,               // Velocity (m/s)
-            accel: 2.0,         // Target constant acceleration (m/s^2)
-            time: 0,            // Simulation elapsed time (s)
-            maxSpeed: 0,        // Max recorded speed
-            history: [],        // Recorded telemetry: [{time, x, v, a}]
-            maxHistoryLen: 1800 // High cap to permit detailed inspection (30s @ 60fps)
+            x: 0.0,             // Position (meters) - strictly bounded between -10 and +10
+            v: 0.0,             // Velocity (m/s)
+            accel: 0.0,         // Target acceleration (m/s²)
+            time: 0.0,          // Time elapsed (s)
+            collisionsCount: 0,
+            history: [],        // Telemetry frames recorded: [{time, x, v, a}]
+            maxHistoryLen: 1800 // High cap up to 30.00 seconds of history at 60 fps
         };
 
-        // App/Controls Engine State
         const playState = {
             running: false,
-            graphMode: 'velocity', // 'velocity' | 'acceleration' | 'dual'
-            dragEnabled: true,
-            scrubIndex: null,      // For inspection overlay
+            mode: 'record',      // 'record' (realtime dynamic writing) or 'playback' (interactive inspect)
+            bounceEnabled: true,
+            isDragging: false,
+            stepIndex: 0,        // Step index of the animation walk cycle
             lastFrameTime: null
         };
 
-        // Canvas Setup
+        let activeWorkspace = 'sandbox'; 
+
+        // Canvas element bounds
         const arenaCanvas = document.getElementById('arena-canvas');
         const arenaCtx = arenaCanvas.getContext('2d');
         const graphCanvas = document.getElementById('graph-canvas');
         const graphCtx = graphCanvas.getContext('2d');
 
         // Dynamic Elements DOM hook
-        const accelRange = document.getElementById('accel-range');
-        const accelVal = document.getElementById('accel-value');
+        const posRange = document.getElementById('pos-range');
+        const posInput = document.getElementById('pos-input');
         const velRange = document.getElementById('vel-range');
-        const velVal = document.getElementById('vel-value');
+        const velInput = document.getElementById('vel-input');
+        const accelRange = document.getElementById('accel-range');
+        const accelInput = document.getElementById('accel-input');
         const simTimer = document.getElementById('sim-timer');
         const massBadge = document.getElementById('object-mass-badge');
-        const datapointsCount = document.getElementById('datapoints-counter');
-        const posStat = document.getElementById('pos-stat');
-        const maxSpeedStat = document.getElementById('max-speed-stat');
-        const activeFormulaStat = document.getElementById('physics-formula-stat');
+        const playScrubber = document.getElementById('timeline-scrubber');
+    </script>
 
-        // Active workspace tracker
-        let activeWorkspace = 'sandbox'; // 'sandbox' | 'diagram'
+    <script>
+        // Set Record vs Playback Mode
+        function setPlayMode(mode) {
+            playState.mode = mode;
+            const btnRecord = document.getElementById('btn-mode-record');
+            const btnPlayback = document.getElementById('btn-mode-playback');
+            const badge = document.getElementById('sim-mode-badge');
 
+            if (mode === 'record') {
+                btnRecord.className = "px-3 py-1 rounded bg-red-600/20 text-red-400 border border-red-500/30 font-bold transition-all";
+                btnPlayback.className = "px-3 py-1 rounded bg-slate-800 text-slate-400 font-bold hover:text-white transition-all";
+                badge.innerText = "RECORDING";
+                badge.className = "text-xs text-red-400 font-semibold tracking-wider uppercase";
+            } else {
+                btnRecord.className = "px-3 py-1 rounded bg-slate-800 text-slate-400 font-bold hover:text-white transition-all";
+                btnPlayback.className = "px-3 py-1 rounded bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-bold transition-all";
+                badge.innerText = "PLAYBACK";
+                badge.className = "text-xs text-indigo-400 font-semibold tracking-wider uppercase";
+                if (playState.running) togglePlay(); // Pause automatically upon entering playback inspection
+            }
+        }
+
+        // Switch live view workspaces
         function switchWorkspace(mode) {
             activeWorkspace = mode;
-            
             const tabSandbox = document.getElementById('tab-mode-sandbox');
             const tabDiagram = document.getElementById('tab-mode-diagram');
             const wsSandbox = document.getElementById('workspace-sandbox');
@@ -878,112 +853,50 @@
                 wsSandbox.classList.remove('hidden');
                 wsDiagram.classList.add('hidden');
                 timerWidget.classList.remove('hidden');
-                
-                // Active Tabs Styling
                 tabSandbox.className = "px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all-200 bg-physicsBlue text-darkBg shadow";
                 tabDiagram.className = "px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all-200 text-slate-400 hover:text-white";
-                
-                // Stop any workspace canvas conflicts by triggering recalculations
                 resizeCanvases();
             } else {
                 wsSandbox.classList.add('hidden');
                 wsDiagram.classList.remove('hidden');
                 timerWidget.classList.add('hidden');
-
-                // Active Tabs Styling
                 tabSandbox.className = "px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all-200 text-slate-400 hover:text-white";
                 tabDiagram.className = "px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all-200 bg-physicsPurple text-slate-100 shadow";
-                
-                // Halt active live simulation
                 if (playState.running) togglePlay();
-
-                // Trigger Canvas Setup & rendering of the stacked elements
                 initDiagramStudio();
             }
         }
-    </script>
 
-    <script>
-        // Color format helper
-        function hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
-
-        // UI Initialization
-        function initApp() {
-            // Resize Canvas bounds
-            resizeCanvases();
-            window.addEventListener('resize', () => {
-                resizeCanvases();
-                if (activeWorkspace === 'diagram') {
-                    renderDiagramWorkspace();
-                }
-            });
-
-            // Bind Control sliders
-            accelRange.addEventListener('input', (e) => {
-                physicsState.accel = parseFloat(e.target.value);
-                accelVal.innerText = `${physicsState.accel.toFixed(1)} m/s²`;
-            });
-
-            velRange.addEventListener('input', (e) => {
-                physicsState.v = parseFloat(e.target.value);
-                velVal.innerText = `${physicsState.v.toFixed(1)} m/s`;
-            });
-
-            document.getElementById('drag-toggle').addEventListener('change', (e) => {
-                playState.dragEnabled = e.target.checked;
-                updateStatsUI();
-            });
-
-            // Set default presets selection
-            selectObject('car');
-            resetToInitialState();
-
-            // Bind Touch/Mouse Graph Scrubbing interactions
-            setupGraphInteraction();
-
-            // Setup mouse listeners on stacked studio canvases for synchronized hover scrubber
-            setupStudioScrubberEvents();
-
-            // Start animation loop
-            requestAnimationFrame(animationLoop);
-        }
-
+        // Custom canvas resize triggers
         function resizeCanvases() {
             const dpr = window.devicePixelRatio || 1;
             
-            // Arena Canvas
+            // Arena track resize
             const arenaRect = arenaCanvas.parentElement.getBoundingClientRect();
             arenaCanvas.width = arenaRect.width * dpr;
             arenaCanvas.height = arenaRect.height * dpr;
             arenaCtx.scale(dpr, dpr);
 
-            // Graph Canvas
+            // Stacks graphs canvas resize
             const graphRect = graphCanvas.parentElement.getBoundingClientRect();
             graphCanvas.width = graphRect.width * dpr;
             graphCanvas.height = graphRect.height * dpr;
             graphCtx.scale(dpr, dpr);
 
-            if (!playState.running) {
-                drawArena();
-                drawGraph();
-            }
+            drawArena();
+            drawGraph();
         }
 
-        // Object Selector Hook
+        // Avatar selector
         function selectObject(key) {
             physicsState.activeKey = key;
-            const presetObj = presets[key];
+            massBadge.innerText = presets[key].name;
             
             const buttons = document.querySelectorAll('#object-grid button');
             buttons.forEach(btn => {
                 btn.className = "flex flex-col items-start p-3 rounded-xl border border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 text-left transition-all-200 group";
-                const textNodes = btn.querySelectorAll('span');
-                if (textNodes[1]) textNodes[1].className = textNodes[1].className.replace(/bg-.* text-.*/, "bg-slate-800 text-slate-400");
+                const span = btn.querySelectorAll('span')[1];
+                if (span) span.className = span.className.replace(/bg-.* text-.*/, "bg-slate-800 text-slate-400");
             });
 
             const activeBtn = document.getElementById(`btn-${key}`);
@@ -993,146 +906,705 @@
                 astronaut: 'bg-indigo-400/10 text-indigo-400 border-indigo-500',
                 feather: 'bg-amber-400/10 text-amber-400 border-amber-500'
             };
-
             activeBtn.className = `flex flex-col items-start p-3 rounded-xl border ${badgeColors[key]} bg-slate-900/40 text-left transition-all-200 group shadow-lg`;
-            massBadge.innerText = `Mass: ${presetObj.mass >= 1000 ? (presetObj.mass/1000).toFixed(1) + 't' : presetObj.mass + 'kg'}`;
+
+            drawArena();
+        }
+    </script>
+
+    <script>
+        // Core Physics Processor
+        function processPhysicsTick(dt) {
+            if (dt <= 0) return;
+            if (dt > 0.1) dt = 0.1; // Guardrail against heavy lag spikes
+
+            // Only run physics engine if we are recording, not dragging, and within time limits
+            if (playState.mode === 'record' && !playState.isDragging && physicsState.time < 30.0) {
+                // Apply constant acceleration equations
+                physicsState.v += physicsState.accel * dt;
+                
+                // Add minor air drag dampening to prevent infinity
+                const drag = presets[physicsState.activeKey].dragCoeff || 0.05;
+                physicsState.v *= (1 - drag * dt);
+
+                physicsState.x += physicsState.v * dt;
+                physicsState.time += dt;
+
+                // Handle exact PhET walls boundaries clamping (-10m to +10m)
+                const wallLimit = 10.0;
+                let wallHit = false;
+
+                if (physicsState.x > wallLimit) {
+                    physicsState.x = wallLimit;
+                    wallHit = true;
+                } else if (physicsState.x < -wallLimit) {
+                    physicsState.x = -wallLimit;
+                    wallHit = true;
+                }
+
+                if (wallHit) {
+                    if (document.getElementById('bounce-toggle').checked) {
+                        physicsState.v = -physicsState.v * 0.6; // Bouncy collision reflection
+                        physicsState.accel = -physicsState.accel * 0.4; // Reflect acceleration drive
+                        triggerCollisionFlash();
+                    } else {
+                        physicsState.v = 0.0;
+                        physicsState.accel = 0.0;
+                    }
+                    physicsState.collisionsCount++;
+                    document.getElementById('collision-counter').innerText = `${physicsState.collisionsCount} hits`;
+                }
+
+                // Update walk animation cycle speed based on actual velocity
+                playState.stepIndex += physicsState.v * dt * 5;
+
+                // Sync sliders
+                syncParamsToUI();
+
+                // Append historical telemetry frame
+                physicsState.history.push({
+                    time: physicsState.time,
+                    x: physicsState.x,
+                    v: physicsState.v,
+                    a: physicsState.accel
+                });
+
+                if (physicsState.history.length > physicsState.maxHistoryLen) {
+                    physicsState.history.shift();
+                }
+
+                // Auto clamp simulator if 30 seconds limit reached
+                if (physicsState.time >= 30.0) {
+                    physicsState.time = 30.0;
+                    if (playState.running) togglePlay();
+                    setPlayMode('playback'); // Auto drop into playback mode
+                }
+            }
+        }
+
+        // Synchronize numeric controls and HTML sliders
+        function syncParamsToUI() {
+            posRange.value = physicsState.x;
+            posInput.value = physicsState.x.toFixed(2);
+            velRange.value = physicsState.v;
+            velInput.value = physicsState.v.toFixed(2);
+            accelRange.value = physicsState.accel;
+            accelInput.value = physicsState.accel.toFixed(2);
+
+            simTimer.innerText = `${physicsState.time.toFixed(2)}s / 30.00s`;
+            playScrubber.value = physicsState.time / 30.0;
+            document.getElementById('timeline-percent').innerText = `${physicsState.time.toFixed(2)}s / 30.00s`;
+
+            // Activity telemetry indicator
+            const stateLabel = document.getElementById('man-activity-state');
+            if (playState.isDragging) {
+                stateLabel.innerText = "Dragging Man Directly";
+                stateLabel.className = "text-yellow-400 font-bold";
+            } else if (Math.abs(physicsState.v) > 0.1) {
+                stateLabel.innerText = physicsState.v > 0 ? "Moving Right ➔" : "Moving Left ⬅";
+                stateLabel.className = "text-emerald-400 font-bold";
+            } else {
+                stateLabel.innerText = "Standing Still";
+                stateLabel.className = "text-physicsBlue";
+            }
+        }
+
+        function triggerCollisionFlash() {
+            const flash = document.getElementById('collision-flash');
+            const dot = document.getElementById('arena-pulse-dot');
+            dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-ping";
+            flash.classList.remove('hidden');
+            setTimeout(() => {
+                flash.classList.add('hidden');
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+            }, 800);
+        }
+    </script>
+
+    <script>
+        // Vector drawings for classic PhET Environment on Track Arena Canvas
+        function drawArena() {
+            if (activeWorkspace !== 'sandbox') return;
+            const w = arenaCanvas.width / (window.devicePixelRatio || 1);
+            const h = arenaCanvas.height / (window.devicePixelRatio || 1);
+
+            arenaCtx.fillStyle = '#0f172a';
+            arenaCtx.fillRect(0, 0, w, h);
+
+            // Track boundaries
+            const trackY = h - 50;
+            const padX = 50; // Horizontal margins on track ends
+            const trackWidth = w - (padX * 2);
+
+            // Coordinate system scale calculations (-10m to +10m maps directly)
+            const getPixelX = (meters) => padX + ((meters + 10) / 20) * trackWidth;
+
+            // Draw coordinate axis line
+            arenaCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            arenaCtx.lineWidth = 4;
+            arenaCtx.beginPath();
+            arenaCtx.moveTo(padX, trackY);
+            arenaCtx.lineTo(w - padX, trackY);
+            arenaCtx.stroke();
+
+            // Draw Brick Ends Walls at exactly -10m and +10m
+            arenaCtx.fillStyle = '#b91c1c'; // Red bricks
+            arenaCtx.fillRect(padX - 8, trackY - 40, 8, 40);
+            arenaCtx.fillRect(w - padX, trackY - 40, 8, 40);
             
-            updateStatsUI();
-            if (!playState.running) {
+            // Grid and numeric label ticks from -10m to +10m
+            arenaCtx.fillStyle = '#94a3b8';
+            arenaCtx.font = '10px monospace';
+            arenaCtx.textAlign = 'center';
+
+            for (let m = -10; m <= 10; m += 2) {
+                const px = getPixelX(m);
+                arenaCtx.strokeStyle = m === 0 ? 'rgba(0, 210, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)';
+                arenaCtx.lineWidth = m === 0 ? 2 : 1;
+
+                // Tick
+                arenaCtx.beginPath();
+                arenaCtx.moveTo(px, trackY - 10);
+                arenaCtx.lineTo(px, trackY + 5);
+                arenaCtx.stroke();
+
+                // Vertical projection line
+                arenaCtx.beginPath();
+                arenaCtx.moveTo(px, 0);
+                arenaCtx.lineTo(px, trackY - 10);
+                arenaCtx.stroke();
+
+                // Numeric Labels
+                arenaCtx.fillText(`${m}m`, px, trackY + 20);
+            }
+
+            // Draw cottage on Left end (approx -8m position)
+            drawClassicCottage(arenaCtx, getPixelX(-8), trackY);
+
+            // Draw leafy tree on Right end (approx +8m position)
+            drawClassicTree(arenaCtx, getPixelX(8), trackY);
+
+            // Render current selected avatar at its live positions
+            const direction = physicsState.v >= 0;
+            const manX = getPixelX(physicsState.x);
+            presets[physicsState.activeKey].render(arenaCtx, manX, trackY - 30, 24, direction, playState.stepIndex);
+        }
+
+        function drawClassicCottage(ctx, cx, cy) {
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Main Body House
+            ctx.fillStyle = '#fef08a'; // yellow
+            ctx.fillRect(-25, -35, 50, 35);
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-25, -35, 50, 35);
+
+            // Roof
+            ctx.fillStyle = '#ef4444'; // red roof
+            ctx.beginPath();
+            ctx.moveTo(-30, -35);
+            ctx.lineTo(0, -55);
+            ctx.lineTo(30, -35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Door
+            ctx.fillStyle = '#854d0e';
+            ctx.fillRect(-6, -18, 12, 18);
+
+            // Chimney
+            ctx.fillStyle = '#b91c1c';
+            ctx.fillRect(12, -48, 8, 15);
+
+            ctx.restore();
+        }
+
+        function drawClassicTree(ctx, cx, cy) {
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Trunk
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-5, -45, 10, 45);
+
+            // Leaves layers
+            ctx.fillStyle = '#15803d'; // Green
+            ctx.beginPath();
+            ctx.arc(0, -45, 20, 0, Math.PI * 2);
+            ctx.arc(-12, -60, 16, 0, Math.PI * 2);
+            ctx.arc(12, -60, 16, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+    </script>
+
+    <script>
+        // High fidelity triple-stacked charts renderer matching PhET classic splits
+        function drawGraph() {
+            if (activeWorkspace !== 'sandbox') return;
+            const w = graphCanvas.width / (window.devicePixelRatio || 1);
+            const h = graphCanvas.height / (window.devicePixelRatio || 1);
+
+            graphCtx.fillStyle = '#0f172a';
+            graphCtx.fillRect(0, 0, w, h);
+
+            if (physicsState.history.length === 0) {
+                graphCtx.fillStyle = '#64748b';
+                graphCtx.font = '12px sans-serif';
+                graphCtx.textAlign = 'center';
+                graphCtx.textBaseline = 'middle';
+                graphCtx.fillText('No physical curves recorded yet. Drag the man or press Play to begin plotting.', w/2, h/2);
+                return;
+            }
+
+            // Triple split dimensions
+            const splitH = h / 3;
+
+            // Draw Position panel (top)
+            drawStackedGraphPanel(graphCtx, 0, 0, w, splitH, 'x', '#3b82f6', 'Position x (meters)', -10.5, 10.5);
+
+            // Draw Velocity panel (middle)
+            drawStackedGraphPanel(graphCtx, 0, splitH, w, splitH, 'v', '#10b981', 'Velocity v (m/s)', -21, 21);
+
+            // Draw Acceleration panel (bottom)
+            drawStackedGraphPanel(graphCtx, 0, splitH * 2, w, splitH, 'a', '#ff9000', 'Acceleration a (m/s²)', -16, 16);
+        }
+
+        function drawStackedGraphPanel(ctx, ox, oy, w, h, key, color, title, valMin, valMax) {
+            ctx.save();
+            ctx.translate(ox, oy);
+
+            const padL = 60;
+            const padR = 25;
+            const padT = 20;
+            const padB = 20;
+            const gw = w - padL - padR;
+            const gh = h - padT - padB;
+
+            // Background card
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+            ctx.fillRect(padL, padT, gw, gh);
+            ctx.strokeStyle = '#1e293b';
+            ctx.strokeRect(padL, padT, gw, gh);
+
+            // Axis mappings
+            const getXPixel = (t) => padL + (t / 30.0) * gw;
+            const getYPixel = (val) => padT + gh * (1 - (val - valMin) / (valMax - valMin));
+
+            // Grid y-ticks
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '8px monospace';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            const step = (valMax - valMin) / 4;
+            for (let val = valMin; val <= valMax; val += step) {
+                const py = getYPixel(val);
+                ctx.beginPath();
+                ctx.moveTo(padL, py);
+                ctx.lineTo(padL + gw, py);
+                ctx.stroke();
+                ctx.fillText(val.toFixed(1), padL - 8, py);
+            }
+
+            // Central time grid lines
+            ctx.textAlign = 'center';
+            for (let t = 5; t <= 30; t += 5) {
+                const px = getXPixel(t);
+                ctx.beginPath();
+                ctx.moveTo(px, padT);
+                ctx.lineTo(px, padT + gh);
+                ctx.stroke();
+                if (key === 'a') {
+                    ctx.fillText(`${t}s`, px, padT + gh + 12);
+                }
+            }
+
+            // Baseline 0.0 line highlighting
+            if (valMin < 0 && valMax > 0) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(padL, getYPixel(0));
+                ctx.lineTo(padL + gw, getYPixel(0));
+                ctx.stroke();
+            }
+
+            // Draw Telemetry Line Plot
+            ctx.beginPath();
+            ctx.moveTo(getXPixel(physicsState.history[0].time), getYPixel(physicsState.history[0][key]));
+            
+            for (let i = 1; i < physicsState.history.length; i++) {
+                ctx.lineTo(getXPixel(physicsState.history[i].time), getYPixel(physicsState.history[i][key]));
+            }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Underlay shadow fill
+            const zeroY = getYPixel(0);
+            ctx.fillStyle = hexToRgba(color, 0.12);
+            ctx.lineTo(getXPixel(physicsState.history[physicsState.history.length - 1].time), zeroY);
+            ctx.lineTo(getXPixel(physicsState.history[0].time), zeroY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Section Label Title
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(title, padL + 10, padT - 6);
+
+            // Active timeline vertical scanner bar
+            const scanX = getXPixel(physicsState.time);
+            if (scanX >= padL && scanX <= padL + gw) {
+                ctx.strokeStyle = '#a78bfa';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(scanX, 0);
+                ctx.lineTo(scanX, h);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+    </script>
+
+    <script>
+        // Set up Direct Dragging interaction on Arena Canvas
+        let isMouseDownOnMan = false;
+        let lastDragX = 0;
+        let lastDragTime = 0;
+
+        function getTrackCoordinatesFromEvent(e) {
+            const rect = arenaCanvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const relativeX = clientX - rect.left;
+
+            const w = rect.width;
+            const padX = 50;
+            const trackWidth = w - (padX * 2);
+
+            // Map pixel range directly back to physics domain (-10m to +10m)
+            const ratio = (relativeX - padX) / trackWidth;
+            return Math.max(-10.0, Math.min(10.0, (ratio * 20) - 10));
+        }
+
+        function checkClickOnMan(e) {
+            const rect = arenaCanvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            const relativeX = clientX - rect.left;
+            const relativeY = clientY - rect.top;
+
+            const trackY = rect.height - 50;
+            const padX = 50;
+            const trackWidth = rect.width - (padX * 2);
+
+            // Get current character coordinate on screen
+            const manPixelX = padX + ((physicsState.x + 10) / 20) * trackWidth;
+
+            // Hitbox checks (around the character body size)
+            const distanceX = Math.abs(relativeX - manPixelX);
+            const distanceY = Math.abs(relativeY - (trackY - 20));
+
+            return (distanceX < 24 && distanceY < 40);
+        }
+
+        function startDragging(e) {
+            if (checkClickOnMan(e)) {
+                // Dragging immediately locks playback or record status, stopping standard physics loops
+                playState.isDragging = true;
+                arenaCanvas.classList.replace('cursor-grab', 'cursor-grabbing');
+                
+                // Reset instant velocities
+                physicsState.v = 0.0;
+                physicsState.accel = 0.0;
+                
+                lastDragX = physicsState.x;
+                lastDragTime = performance.now();
+                
+                if (playState.mode === 'playback') {
+                    // Force record mode upon human drag to write custom graph data
+                    setPlayMode('record');
+                }
+            }
+        }
+
+        function moveDragging(e) {
+            if (playState.isDragging) {
+                const newPos = getTrackCoordinatesFromEvent(e);
+                const now = performance.now();
+                const dt = (now - lastDragTime) / 1000.0;
+
+                if (dt > 0.01) {
+                    // Derive Velocity mathematically based on manual hand movement: v = dx/dt
+                    const derivedVel = (newPos - lastDragX) / dt;
+
+                    // Apply low-pass filtering on velocity curves to smooth human mouse micro-jitter
+                    physicsState.v = physicsState.v * 0.7 + derivedVel * 0.3;
+
+                    // Derive Acceleration: a = dv/dt
+                    const derivedAccel = (physicsState.v - (newPos - lastDragX)/dt) / dt;
+                    physicsState.accel = physicsState.accel * 0.8 + Math.max(-15, Math.min(15, derivedAccel)) * 0.2;
+
+                    physicsState.x = newPos;
+                    lastDragX = newPos;
+                    lastDragTime = now;
+
+                    // Increment recording clock
+                    physicsState.time += dt;
+
+                    physicsState.history.push({
+                        time: physicsState.time,
+                        x: physicsState.x,
+                        v: physicsState.v,
+                        a: physicsState.accel
+                    });
+
+                    if (physicsState.history.length > physicsState.maxHistoryLen) {
+                        physicsState.history.shift();
+                    }
+
+                    playState.stepIndex += Math.abs(physicsState.v) * dt * 5;
+                    syncParamsToUI();
+                    drawArena();
+                    drawGraph();
+                }
+            }
+        }
+
+        function stopDragging() {
+            if (playState.isDragging) {
+                playState.isDragging = false;
+                arenaCanvas.classList.replace('cursor-grabbing', 'cursor-grab');
+                
+                // Gently zero values on mouse release
+                physicsState.v = 0.0;
+                physicsState.accel = 0.0;
+                syncParamsToUI();
                 drawArena();
             }
         }
 
-        // Physics Parameter calculations
-        function getEffectiveForces() {
-            const preset = presets[physicsState.activeKey];
-            let netAcceleration = physicsState.accel;
+        // Mouse Event Listeners for direct drag & drop
+        arenaCanvas.addEventListener('mousedown', startDragging);
+        arenaCanvas.addEventListener('mousemove', moveDragging);
+        window.addEventListener('mouseup', stopDragging);
 
-            if (playState.dragEnabled && preset.dragCoeff > 0) {
-                const fluidDensity = 1.225;
-                const referenceArea = physicsState.activeKey === 'feather' ? 0.3 : 2.2;
-                
-                const dragFactor = 0.5 * fluidDensity * preset.dragCoeff * referenceArea;
-                const dragAccelerationForce = (dragFactor * physicsState.v * physicsState.v * Math.sign(physicsState.v)) / preset.mass;
-                
-                netAcceleration -= dragAccelerationForce;
-            }
+        // Mobile touchscreen alternative drag actions
+        arenaCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDragging(e);
+        }, { passive: false });
+        arenaCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            moveDragging(e);
+        }, { passive: false });
+        window.addEventListener('touchend', stopDragging);
+    </script>
 
-            return netAcceleration;
+    <script>
+        // Parameter control syncing logic
+        function bindEngineControls() {
+            posRange.addEventListener('input', (e) => {
+                physicsState.x = parseFloat(e.target.value);
+                syncParamsToUI();
+                drawArena();
+            });
+            posInput.addEventListener('change', (e) => {
+                let parsed = parseFloat(e.target.value);
+                if (!isNaN(parsed)) {
+                    physicsState.x = Math.max(-10, Math.min(10, parsed));
+                    syncParamsToUI();
+                    drawArena();
+                }
+            });
+
+            velRange.addEventListener('input', (e) => {
+                physicsState.v = parseFloat(e.target.value);
+                syncParamsToUI();
+            });
+            velInput.addEventListener('change', (e) => {
+                let parsed = parseFloat(e.target.value);
+                if (!isNaN(parsed)) {
+                    physicsState.v = Math.max(-20, Math.min(20, parsed));
+                    syncParamsToUI();
+                }
+            });
+
+            accelRange.addEventListener('input', (e) => {
+                physicsState.accel = parseFloat(e.target.value);
+                syncParamsToUI();
+            });
+            accelInput.addEventListener('change', (e) => {
+                let parsed = parseFloat(e.target.value);
+                if (!isNaN(parsed)) {
+                    physicsState.accel = Math.max(-15, Math.min(15, parsed));
+                    syncParamsToUI();
+                }
+            });
+
+            // Master Playback range scrubber
+            playScrubber.addEventListener('input', (e) => {
+                const pct = parseFloat(e.target.value);
+                setPlayMode('playback'); // Drop to playback automatically
+                jumpToTimePercent(pct);
+            });
         }
 
-        function updateStatsUI() {
-            const hasDrag = playState.dragEnabled && presets[physicsState.activeKey].dragCoeff > 0;
-            if (hasDrag) {
-                activeFormulaStat.innerHTML = `$F_{net} = m \\cdot a - F_{drag}$`;
-            } else {
-                activeFormulaStat.innerHTML = `$v = v_0 + a \\cdot t$`;
+        function jumpToTimePercent(pct) {
+            if (physicsState.history.length === 0) return;
+            const targetTime = pct * 30.0;
+            physicsState.time = targetTime;
+
+            // Search nearest frame inside recording history
+            let closestFrame = physicsState.history[0];
+            let minDiff = Infinity;
+            for (let i = 0; i < physicsState.history.length; i++) {
+                let diff = Math.abs(physicsState.history[i].time - targetTime);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestFrame = physicsState.history[i];
+                }
             }
-            posStat.innerText = `${physicsState.x.toFixed(1)} m`;
-            maxSpeedStat.innerText = `${physicsState.maxSpeed.toFixed(1)} m/s`;
+
+            if (closestFrame) {
+                physicsState.x = closestFrame.x;
+                physicsState.v = closestFrame.v;
+                physicsState.accel = closestFrame.a;
+            }
+
+            syncParamsToUI();
+            drawArena();
+            drawGraph();
         }
 
-        // Play/Pause Action Router
+        function clearTelemetryHistory() {
+            physicsState.history = [];
+            physicsState.time = 0.0;
+            physicsState.x = 0.0;
+            physicsState.v = 0.0;
+            physicsState.accel = 0.0;
+            physicsState.collisionsCount = 0;
+            document.getElementById('collision-counter').innerText = "0 hits";
+            syncParamsToUI();
+            drawArena();
+            drawGraph();
+        }
+
         function togglePlay() {
             playState.running = !playState.running;
-            
-            const btnPlay = document.getElementById('btn-play');
-            const btnText = document.getElementById('btn-play-text');
-            const iconSvg = document.getElementById('svg-play-icon');
+            const btn = document.getElementById('btn-play');
+            const icon = document.getElementById('btn-play-icon');
+            const text = document.getElementById('btn-play-text');
 
             if (playState.running) {
-                btnPlay.className = "h-11 px-5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-sm flex items-center gap-2 transition-all-200 shadow-lg shadow-red-500/20 active:scale-95";
-                btnText.innerText = "Pause";
-                iconSvg.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+                btn.className = "h-10 px-5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs flex items-center gap-1.5 transition-all shadow-lg active:scale-95";
+                icon.innerText = "⏸";
+                text.innerText = "Pause";
                 playState.lastFrameTime = performance.now();
             } else {
-                btnPlay.className = "h-11 px-5 rounded-xl bg-physicsBlue hover:bg-physicsBlue/90 text-darkBg font-black text-sm flex items-center gap-2 transition-all-200 shadow-lg shadow-physicsBlue/20 active:scale-95";
-                btnText.innerText = "Play";
-                iconSvg.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+                btn.className = "h-10 px-5 rounded-xl bg-physicsBlue hover:bg-physicsBlue/90 text-darkBg font-black text-xs flex items-center gap-1.5 transition-all shadow-lg active:scale-95";
+                icon.innerText = "▶";
+                text.innerText = "Play";
             }
         }
 
-        // Discrete manual frame step
-        function stepFrame() {
+        function rewindToStart() {
             if (playState.running) togglePlay();
-            processPhysicsTick(1 / 60);
-            drawArena();
-            drawGraph();
+            jumpToTimePercent(0.0);
         }
 
-        // Deep Reset back to zero state
+        function stepFrame(forward) {
+            if (playState.running) togglePlay();
+            const step = forward ? 0.05 : -0.05;
+            let targetPct = (physicsState.time + step) / 30.0;
+            targetPct = Math.max(0, Math.min(1, targetPct));
+            jumpToTimePercent(targetPct);
+        }
+
         function resetSimulation() {
-            physicsState.x = 0;
-            physicsState.v = parseFloat(velRange.value);
-            physicsState.time = 0;
-            physicsState.maxSpeed = Math.abs(physicsState.v);
-            physicsState.history = [];
-            playState.scrubIndex = null;
-            document.getElementById('scrub-hud').classList.add('hidden');
-            
-            simTimer.innerText = "00.00s";
-            datapointsCount.innerText = "0 / 1800";
-            
-            updateStatsUI();
-            drawArena();
-            drawGraph();
+            if (playState.running) togglePlay();
+            clearTelemetryHistory();
+            resetToInitialState();
         }
 
         function resetToInitialState() {
-            accelRange.value = 2.0;
-            accelVal.innerText = "2.0 m/s²";
-            physicsState.accel = 2.0;
-
-            velRange.value = 0.0;
-            velVal.innerText = "0.0 m/s";
+            physicsState.x = 0.0;
             physicsState.v = 0.0;
-            
-            resetSimulation();
+            physicsState.accel = 0.0;
+            syncParamsToUI();
+            drawArena();
+            drawGraph();
         }
 
-        // Central Physics Processing Core
-        function processPhysicsTick(dt) {
-            if (dt <= 0) return;
-            if (dt > 0.1) dt = 0.1;
+        // Live interactive diagnostic scrubbers for synchronized plots
+        function bindGraphScrubbers() {
+            const handleScrub = (e) => {
+                const rect = graphCanvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                if (!clientX) return;
 
-            const effectiveAccel = getEffectiveForces();
+                const padL = 60;
+                const padR = 25;
+                const activeWidth = rect.width - padL - padR;
+                const relativeX = clientX - rect.left - padL;
 
-            physicsState.v += effectiveAccel * dt;
-            physicsState.x += physicsState.v * dt;
-            physicsState.time += dt;
+                const percent = Math.max(0, Math.min(1, relativeX / activeWidth));
+                const targetTime = percent * 30.0;
 
-            if (Math.abs(physicsState.v) < 1e-4) physicsState.v = 0;
+                // Lookup closest recorded telemetry frame
+                if (physicsState.history.length > 0) {
+                    const matchedIdx = Math.round(percent * (physicsState.history.length - 1));
+                    const record = physicsState.history[matchedIdx];
+                    if (record) {
+                        const hud = document.getElementById('scrub-hud');
+                        hud.classList.remove('hidden');
+                        document.getElementById('hud-time').innerText = `${record.time.toFixed(2)}s`;
+                        document.getElementById('hud-pos').innerText = `${record.x.toFixed(2)}m`;
+                        document.getElementById('hud-vel').innerText = `${record.v.toFixed(1)}m/s`;
+                        document.getElementById('hud-accel').innerText = `${record.a.toFixed(1)}m/s²`;
 
-            const speed = Math.abs(physicsState.v);
-            if (speed > physicsState.maxSpeed) {
-                physicsState.maxSpeed = speed;
-            }
+                        if (playState.mode === 'playback') {
+                            // Sync playback frame
+                            physicsState.time = record.time;
+                            physicsState.x = record.x;
+                            physicsState.v = record.v;
+                            physicsState.accel = record.a;
+                            syncParamsToUI();
+                            drawArena();
+                        }
+                    }
+                }
+            };
 
-            physicsState.history.push({
-                time: physicsState.time,
-                x: physicsState.x,
-                v: physicsState.v,
-                a: effectiveAccel
-            });
+            const hideScrub = () => {
+                document.getElementById('scrub-hud').classList.add('hidden');
+            };
 
-            if (physicsState.history.length > physicsState.maxHistoryLen) {
-                physicsState.history.shift();
-            }
-
-            velRange.value = physicsState.v;
-            velVal.innerText = `${physicsState.v.toFixed(1)} m/s`;
-
-            simTimer.innerText = `${physicsState.time.toFixed(2)}s`;
-            datapointsCount.innerText = `${physicsState.history.length} / ${physicsState.maxHistoryLen}`;
-            updateStatsUI();
+            graphCanvas.addEventListener('mousemove', handleScrub);
+            graphCanvas.addEventListener('mouseleave', hideScrub);
+            graphCanvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                handleScrub(e);
+            }, { passive: false });
+            graphCanvas.addEventListener('touchend', hideScrub);
         }
 
-        // Live Animation Control Loop
-        function animationLoop(timestamp) {
+        // Master window loop hook
+        function masterPhysicsLoop(now) {
             if (activeWorkspace === 'sandbox' && playState.running) {
-                if (!playState.lastFrameTime) playState.lastFrameTime = timestamp;
-                const dt = (timestamp - playState.lastFrameTime) / 1000;
-                playState.lastFrameTime = timestamp;
+                if (!playState.lastFrameTime) playState.lastFrameTime = now;
+                const dt = (now - playState.lastFrameTime) / 1000.0;
+                playState.lastFrameTime = now;
 
                 processPhysicsTick(dt);
                 drawArena();
@@ -1140,394 +1612,26 @@
             } else {
                 playState.lastFrameTime = null;
             }
-            requestAnimationFrame(animationLoop);
+            requestAnimationFrame(masterPhysicsLoop);
         }
 
-        // Draw Interactive Physics Viewport (Arena)
-        function drawArena() {
-            if (activeWorkspace !== 'sandbox') return;
-            const w = arenaCanvas.width / (window.devicePixelRatio || 1);
-            const h = arenaCanvas.height / (window.devicePixelRatio || 1);
+        // Master initializer
+        window.onload = function() {
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
             
-            arenaCtx.fillStyle = '#0b0f19';
-            arenaCtx.fillRect(0, 0, w, h);
-
-            const scaleFactor = 15;
-            const centerX = w / 2;
-            const centerY = h / 2 + 10;
-            const displacementOffset = -(physicsState.x * scaleFactor) % w;
-
-            // Draw grid lines
-            arenaCtx.strokeStyle = 'rgba(51, 65, 85, 0.3)';
-            arenaCtx.lineWidth = 1.2;
-            const gridSpacing = 40;
+            // Default select Car/Man
+            selectObject('car');
+            bindEngineControls();
+            bindGraphScrubbers();
             
-            for (let i = -w; i < w * 2; i += gridSpacing) {
-                const drawX = i + displacementOffset;
-                arenaCtx.beginPath();
-                arenaCtx.moveTo(drawX, 0);
-                arenaCtx.lineTo(drawX, h - 35);
-                arenaCtx.stroke();
-            }
-
-            // Draw Ground Line
-            arenaCtx.strokeStyle = 'rgba(100, 116, 139, 0.5)';
-            arenaCtx.lineWidth = 3;
-            arenaCtx.beginPath();
-            arenaCtx.moveTo(0, h - 35);
-            arenaCtx.lineTo(w, h - 35);
-            arenaCtx.stroke();
-
-            // Tick Labels
-            arenaCtx.fillStyle = 'rgba(148, 163, 184, 0.6)';
-            arenaCtx.font = '10px monospace';
-            arenaCtx.textAlign = 'center';
-            
-            const startMeter = Math.floor((physicsState.x - (w / 2) / scaleFactor) / 5) * 5;
-            for (let meter = startMeter - 10; meter < startMeter + (w / scaleFactor) + 10; meter += 5) {
-                const screenX = centerX + (meter - physicsState.x) * scaleFactor;
-                if (screenX >= 0 && screenX <= w) {
-                    arenaCtx.beginPath();
-                    arenaCtx.arc(screenX, h - 35, 3, 0, Math.PI * 2);
-                    arenaCtx.fill();
-                    arenaCtx.fillText(`${meter}m`, screenX, h - 18);
-                }
-            }
-
-            let activeObjX = centerX;
-            let displayVel = physicsState.v;
-            let displayAccel = physicsState.accel;
-            let targetPresetKey = physicsState.activeKey;
-
-            if (playState.scrubIndex !== null && physicsState.history[playState.scrubIndex]) {
-                const record = physicsState.history[playState.scrubIndex];
-                displayVel = record.v;
-                displayAccel = record.a;
-                activeObjX = centerX + (record.x - physicsState.x) * scaleFactor;
-            }
-
-            const preset = presets[targetPresetKey];
-            const direction = displayVel >= 0;
-            preset.render(arenaCtx, activeObjX, centerY, 32, direction);
-
-            drawVectorArrows(arenaCtx, activeObjX, centerY - 25, displayVel, displayAccel);
-        }
-
-        // Draw Interactive Force & Motion Arrows on Object
-        function drawVectorArrows(ctx, cx, cy, velocity, acceleration) {
-            const vScale = 3.5;
-            const aScale = 6.0;
-
-            const vLen = velocity * vScale;
-            if (Math.abs(vLen) > 3) {
-                ctx.save();
-                ctx.strokeStyle = '#10b981';
-                ctx.fillStyle = '#10b981';
-                ctx.lineWidth = 3;
-                
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(cx + vLen, cy);
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(cx + vLen, cy);
-                ctx.lineTo(cx + vLen - Math.sign(vLen) * 6, cy - 4);
-                ctx.lineTo(cx + vLen - Math.sign(vLen) * 6, cy + 4);
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
-
-                document.getElementById('vel-vector-mag').innerText = `${Math.abs(velocity).toFixed(1)} m/s`;
-            } else {
-                document.getElementById('vel-vector-mag').innerText = `0.0 m/s`;
-            }
-
-            const aLen = acceleration * aScale;
-            if (Math.abs(aLen) > 2) {
-                ctx.save();
-                ctx.strokeStyle = '#ff9000';
-                ctx.fillStyle = '#ff9000';
-                ctx.lineWidth = 3;
-                
-                ctx.beginPath();
-                ctx.moveTo(cx, cy - 10);
-                ctx.lineTo(cx + aLen, cy - 10);
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(cx + aLen, cy - 10);
-                ctx.lineTo(cx + aLen - Math.sign(aLen) * 6, cy - 14);
-                ctx.lineTo(cx + aLen - Math.sign(aLen) * 6, cy - 6);
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
-
-                document.getElementById('accel-vector-mag').innerText = `${Math.abs(acceleration).toFixed(1)} m/s²`;
-            } else {
-                document.getElementById('accel-vector-mag').innerText = `0.0 m/s²`;
-            }
-        }
-
-        // Draw Custom High-Performance Plots with Canvas
-        function drawGraph() {
-            if (activeWorkspace !== 'sandbox') return;
-            const w = graphCanvas.width / (window.devicePixelRatio || 1);
-            const h = graphCanvas.height / (window.devicePixelRatio || 1);
-            
-            graphCtx.clearRect(0, 0, w, h);
-
-            if (physicsState.history.length === 0) {
-                graphCtx.fillStyle = '#475569';
-                graphCtx.font = '13px sans-serif';
-                graphCtx.textAlign = 'center';
-                graphCtx.textBaseline = 'middle';
-                graphCtx.fillText('No physical telemetry recorded yet. Press "Play" to initiate motion.', w/2, h/2);
-                return;
-            }
-
-            if (playState.graphMode === 'dual') {
-                drawSingleGraph(graphCtx, 0, 0, w, h/2 - 5, 'v', '#00d2ff', 'Velocity (v, m/s)');
-                drawSingleGraph(graphCtx, 0, h/2 + 5, w, h/2 - 5, 'a', '#ff9000', 'Acceleration (a, m/s²)');
-            } else if (playState.graphMode === 'velocity') {
-                drawSingleGraph(graphCtx, 0, 0, w, h, 'v', '#00d2ff', 'Velocity (v, m/s)');
-            } else {
-                drawSingleGraph(graphCtx, 0, 0, w, h, 'a', '#ff9000', 'Acceleration (a, m/s²)');
-            }
-        }
-
-        // Draw Individual Subgraph Elements
-        function drawSingleGraph(ctx, xOffset, yOffset, w, h, metricKey, colorCode, labelText) {
-            ctx.save();
-            ctx.translate(xOffset, yOffset);
-            
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
-            ctx.fillRect(0, 0, w, h);
-            ctx.strokeStyle = '#1e293b';
-            ctx.strokeRect(0, 0, w, h);
-
-            const padLeft = 55;
-            const padRight = 20;
-            const padTop = 20;
-            const padBottom = 25;
-            const gw = w - padLeft - padRight;
-            const gh = h - padTop - padBottom;
-
-            const history = physicsState.history;
-            const pointsCount = history.length;
-            
-            let minVal = Infinity;
-            let maxVal = -Infinity;
-            for (let i = 0; i < pointsCount; i++) {
-                const val = history[i][metricKey];
-                if (val < minVal) minVal = val;
-                if (val > maxVal) maxVal = val;
-            }
-
-            if (minVal === maxVal) {
-                minVal -= 1.0;
-                maxVal += 1.0;
-            } else {
-                const buffer = (maxVal - minVal) * 0.15;
-                minVal -= buffer;
-                maxVal += buffer;
-            }
-
-            if (minVal > 0) minVal = 0;
-            if (maxVal < 0) maxVal = 0;
-
-            const tMin = history[0].time;
-            const tMax = history[pointsCount - 1].time;
-            const tSpan = Math.max(0.1, tMax - tMin);
-
-            const getYPixel = (val) => {
-                const ratio = (val - minVal) / (maxVal - minVal);
-                return padTop + gh * (1 - ratio);
-            };
-
-            const getXPixel = (t) => {
-                const ratio = (t - tMin) / tSpan;
-                return padLeft + gw * ratio;
-            };
-
-            ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '9px monospace';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
-
-            const tickIntervals = 4;
-            for (let i = 0; i <= tickIntervals; i++) {
-                const val = minVal + (maxVal - minVal) * (i / tickIntervals);
-                const py = getYPixel(val);
-                
-                ctx.beginPath();
-                ctx.moveTo(padLeft, py);
-                ctx.lineTo(padLeft + gw, py);
-                ctx.stroke();
-
-                ctx.fillText(val.toFixed(1), padLeft - 8, py);
-            }
-
-            if (minVal <= 0 && maxVal >= 0) {
-                ctx.strokeStyle = 'rgba(100, 116, 139, 0.5)';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(padLeft, getYPixel(0));
-                ctx.lineTo(padLeft + gw, getYPixel(0));
-                ctx.stroke();
-            }
-
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = colorCode;
-            
-            ctx.beginPath();
-            ctx.moveTo(getXPixel(history[0].time), getYPixel(history[0][metricKey]));
-            for (let i = 1; i < pointsCount; i++) {
-                ctx.lineTo(getXPixel(history[i].time), getYPixel(history[i][metricKey]));
-            }
-            
-            ctx.stroke();
-
-            const fillGradient = ctx.createLinearGradient(0, padTop, 0, padTop + gh);
-            fillGradient.addColorStop(0, hexToRgba(colorCode, 0.25));
-            fillGradient.addColorStop(1, hexToRgba(colorCode, 0.0));
-            ctx.fillStyle = fillGradient;
-
-            const pyZero = getYPixel(0);
-            ctx.lineTo(getXPixel(history[pointsCount-1].time), pyZero);
-            ctx.lineTo(getXPixel(history[0].time), pyZero);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#64748b';
-            ctx.font = '9px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.strokeStyle = 'rgba(51, 65, 85, 0.2)';
-            
-            const timeIntervals = 5;
-            for (let i = 0; i <= timeIntervals; i++) {
-                const t = tMin + tSpan * (i / timeIntervals);
-                const px = getXPixel(t);
-
-                ctx.beginPath();
-                ctx.moveTo(px, padTop);
-                ctx.lineTo(px, padTop + gh);
-                ctx.stroke();
-
-                ctx.fillText(`${t.toFixed(1)}s`, px, padTop + gh + 6);
-            }
-
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(labelText, padLeft, padTop - 6);
-
-            if (playState.scrubIndex !== null && history[playState.scrubIndex]) {
-                const record = history[playState.scrubIndex];
-                const px = getXPixel(record.time);
-                const py = getYPixel(record[metricKey]);
-
-                ctx.strokeStyle = '#a78bfa';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([4, 4]);
-                ctx.beginPath();
-                ctx.moveTo(px, padTop);
-                ctx.lineTo(px, padTop + gh);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                ctx.fillStyle = '#a78bfa';
-                ctx.beginPath();
-                ctx.arc(px, py, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-            }
-
-            ctx.restore();
-        }
-
-        // Setup mouse scrubbing interaction mechanics
-        function setupGraphInteraction() {
-            const handleInteract = (e) => {
-                const rect = graphCanvas.getBoundingClientRect();
-                const touchX = e.clientX || (e.touches && e.touches[0].clientX);
-                if (!touchX) return;
-
-                const mouseX = touchX - rect.left;
-                
-                const padLeft = 55;
-                const padRight = 20;
-                const innerWidth = rect.width - padLeft - padRight;
-
-                const activeX = mouseX - padLeft;
-                const percentage = Math.max(0, Math.min(1, activeX / innerWidth));
-
-                if (physicsState.history.length > 1) {
-                    const matchedIndex = Math.round(percentage * (physicsState.history.length - 1));
-                    playState.scrubIndex = matchedIndex;
-
-                    const record = physicsState.history[matchedIndex];
-                    if (record) {
-                        document.getElementById('scrub-hud').classList.remove('hidden');
-                        document.getElementById('hud-time').innerText = `${record.time.toFixed(2)}s`;
-                        document.getElementById('hud-vel').innerText = `${record.v.toFixed(1)} m/s`;
-                        document.getElementById('hud-accel').innerText = `${record.a.toFixed(1)} m/s²`;
-                    }
-                    
-                    drawArena();
-                    drawGraph();
-                }
-            };
-
-            const clearInteract = () => {
-                playState.scrubIndex = null;
-                document.getElementById('scrub-hud').classList.add('hidden');
-                drawArena();
-                drawGraph();
-            };
-
-            graphCanvas.addEventListener('mousemove', handleInteract);
-            graphCanvas.addEventListener('mouseleave', clearInteract);
-
-            graphCanvas.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                handleInteract(e);
-            }, { passive: false });
-            graphCanvas.addEventListener('touchend', clearInteract);
-        }
-
-        function setGraphMode(mode) {
-            playState.graphMode = mode;
-            
-            const buttons = ['tab-vel', 'tab-accel', 'tab-dual'];
-            buttons.forEach(id => {
-                const btn = document.getElementById(id);
-                btn.className = "flex-1 sm:flex-initial text-xs px-3 py-1.5 rounded-md font-bold text-slate-400 hover:text-slate-200 transition-all-200";
-            });
-
-            let activeId = 'tab-vel';
-            let activeColor = 'bg-physicsBlue/10 text-physicsBlue border-physicsBlue/20 border';
-            if (mode === 'acceleration') {
-                activeId = 'tab-accel';
-                activeColor = 'bg-physicsOrange/10 text-physicsOrange border-physicsOrange/20 border';
-            } else if (mode === 'dual') {
-                activeId = 'tab-dual';
-                activeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/20 border';
-            }
-
-            document.getElementById(activeId).className = `flex-1 sm:flex-initial text-xs px-3 py-1.5 rounded-md font-bold transition-all-200 ${activeColor}`;
-
-            drawGraph();
-        }
+            // Kickstart loops
+            requestAnimationFrame(masterPhysicsLoop);
+        };
     </script>
 
+    <!-- (Retaining existing Diagram Studio javascript code intact for direct compatibility) -->
     <script>
-        // STUDIO INTERACTIVE DIAGRAM STUDIO SCRIPTS
         function initDiagramStudio() {
             loadDiagramPreset(studioState.currentPreset);
             setStudioTheme(studioState.currentTheme);
@@ -1536,17 +1640,10 @@
         function loadDiagramPreset(key) {
             studioState.currentPreset = key;
             const preset = studioPresets[key];
-            
-            // Perform deep copy of initial velocity
             studioState.v0 = preset.v0 !== undefined ? preset.v0 : 0.0;
-            
-            // Perform deep copy of phases
             studioState.phases = JSON.parse(JSON.stringify(preset.phases));
-            
-            // Perform deep copy of annotations
             studioState.annotations = JSON.parse(JSON.stringify(preset.annotations));
 
-            // Synchronize $v_0$ UI input slider
             const sliderV0 = document.getElementById('studio-v0-slider');
             const labelV0 = document.getElementById('studio-v0-value');
             if (sliderV0 && labelV0) {
@@ -1558,7 +1655,6 @@
             recalculateStudioDiagram();
         }
 
-        // Handle updating the initial velocity of the studio simulation
         function updateStudioV0(val) {
             const parsedVal = parseFloat(val);
             if (!isNaN(parsedVal)) {
@@ -1568,7 +1664,6 @@
             }
         }
 
-        // Build list of segments, converting acceleration input to fully interactive drag sliders for real-time visual teaching
         function buildPhaseEditorUI() {
             const container = document.getElementById('phase-list-container');
             container.innerHTML = '';
@@ -1632,42 +1727,31 @@
             recalculateStudioDiagram();
         }
 
-        // Live slider listener updates calculations instantly for real-time physics bending
         function updatePhaseAccelSlider(index, value) {
             const accVal = parseFloat(value);
             if (!isNaN(accVal)) {
                 studioState.phases[index].a = accVal;
-                
-                // Update specific numeric badge dynamically
                 const badge = document.getElementById(`studio-accel-val-${index}`);
                 if (badge) {
                     badge.innerText = `${accVal.toFixed(1)} m/s²`;
                 }
-                
                 recalculateStudioDiagram();
             }
         }
 
-        // Analytical Integrator to construct perfect continuous curves
         function recalculateStudioDiagram() {
             const pts = [];
-            const step = 0.05; // 20 samples per second yields exceptionally smooth lines
-
+            const step = 0.05;
             let x = 0;
-            let v = studioState.v0; // Start with specified initial velocity ($v_0$)
+            let v = studioState.v0;
             let t = 0;
 
-            // Integrate chronologically
             studioState.phases.forEach(phase => {
                 const duration = phase.tEnd - phase.tStart;
                 const stepsCount = Math.round(duration / step);
 
                 for (let i = 0; i < stepsCount; i++) {
                     const localT = i * step;
-                    
-                    // Kinematics formulae:
-                    // v = v0 + a * t
-                    // x = x0 + v0 * t + 0.5 * a * t^2
                     const instV = v + phase.a * localT;
                     const instX = x + v * localT + 0.5 * phase.a * localT * localT;
                     const currentT = phase.tStart + localT;
@@ -1679,14 +1763,11 @@
                         a: phase.a
                     });
                 }
-
-                // Carry over physical boundary endpoints for exact mathematical continuity
                 v = v + phase.a * duration;
                 x = x + v * duration - 0.5 * phase.a * duration * duration; 
                 t = phase.tEnd;
             });
 
-            // Handle edge boundary padding at exactly 30s
             pts.push({
                 t: 30,
                 x: x,
@@ -1697,13 +1778,9 @@
             studioState.calculatedPoints = pts;
             renderDiagramWorkspace();
         }
-    </script>
 
-    <script>
         function setStudioTheme(themeKey) {
             studioState.currentTheme = themeKey;
-            
-            // Re-apply button highlights
             const themes = ['cream', 'dark', 'chalkboard'];
             themes.forEach(key => {
                 const btn = document.getElementById(`btn-theme-${key}`);
@@ -1714,7 +1791,6 @@
                 }
             });
 
-            // Style Studio Panel Backing block to match theme
             const theme = studioThemes[themeKey];
             const wrapper = document.getElementById('diagram-workspace-container');
             wrapper.style.backgroundColor = theme.bg;
@@ -1722,10 +1798,7 @@
 
             renderDiagramWorkspace();
         }
-    </script>
 
-    <script>
-        // Set up mouse events on the stacked studio canvases to facilitate the aligned horizontal scrubber
         function setupStudioScrubberEvents() {
             const boxes = document.querySelectorAll('.class-studio-graph-box');
             
@@ -1737,8 +1810,6 @@
                 const padLeft = 65;
                 const padRight = 35;
                 const graphWidth = rect.width - padLeft - padRight;
-                
-                // Project mouse coordinates to time domain (0..30s)
                 const ratio = (mouseX - padLeft) / graphWidth;
                 const calculatedT = Math.max(0, Math.min(30, ratio * 30));
                 
@@ -1757,16 +1828,13 @@
             });
         }
 
-        // High fidelity stacked renderer supporting both desktop viewports and unified image exports
         function renderDiagramWorkspace() {
             if (activeWorkspace !== 'diagram') return;
 
-            // Fetch stacked canvases
             const canvasX = document.getElementById('studio-canvas-pos');
             const canvasV = document.getElementById('studio-canvas-vel');
             const canvasA = document.getElementById('studio-canvas-accel');
 
-            // Synchronize dimensions
             const dpr = window.devicePixelRatio || 1;
             const w = canvasX.parentElement.getBoundingClientRect().width;
 
@@ -1779,16 +1847,13 @@
 
             const theme = studioThemes[studioState.currentTheme];
 
-            // Plot curves on individual canvases
             plotStackedCurve(canvasX, 'x', theme.curve, 'Distance x (m)', true);
             plotStackedCurve(canvasV, 'v', theme.curve, 'Velocity v (m/s)', false);
             plotStackedCurve(canvasA, 'a', theme.curve, 'Acceleration a (m/s²)', false);
 
-            // Re-render HTML/CSS overlay annotations accurately
             renderHtmlAnnotationsOverlay();
         }
 
-        // Stacked Graph Core Drawer
         function plotStackedCurve(canvas, metricKey, color, axisLabel, isTopGraph) {
             const ctx = canvas.getContext('2d');
             const w = canvas.width / (window.devicePixelRatio || 1);
@@ -1803,45 +1868,20 @@
 
             const theme = studioThemes[studioState.currentTheme];
 
-            // 1. Plot Background Frame Fill
             ctx.fillStyle = theme.bg;
             ctx.fillRect(0, 0, w, h);
 
-            // Establish limits based on metric configuration
-            let minVal = Infinity;
-            let maxVal = -Infinity;
-            studioState.calculatedPoints.forEach(p => {
-                const v = p[metricKey];
-                if (v < minVal) minVal = v;
-                if (v > maxVal) maxVal = v;
-            });
-
-            // Prevent squashed lines
-            if (minVal === maxVal) {
-                minVal -= 1.0;
-                maxVal += 1.0;
-            } else {
-                const padding = (maxVal - minVal) * 0.15;
-                minVal -= padding;
-                maxVal += padding;
-            }
-
-            // Clean aligned zeroes for dynamics
+            let minVal = -20;
+            let maxVal = 240;
             if (metricKey === 'a') {
-                minVal = -12;
-                maxVal = 12;
+                minVal = -12; maxVal = 12;
             } else if (metricKey === 'v') {
-                minVal = -30;
-                maxVal = 30;
-            } else {
-                minVal = -20;
-                maxVal = 240; // High range to support positive initial velocity displacement peaks
+                minVal = -30; maxVal = 30;
             }
 
             const getXPixel = (t) => padLeft + (t / 30) * gw;
             const getYPixel = (val) => padTop + gh * (1 - (val - minVal) / (maxVal - minVal));
 
-            // 2. Plot Grids
             ctx.strokeStyle = theme.grid;
             ctx.lineWidth = 0.8;
             ctx.fillStyle = theme.text;
@@ -1849,7 +1889,6 @@
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
 
-            // Draw Y Ticks
             const yTicks = metricKey === 'a' ? [-10, -5, 0, 5, 10] : (metricKey === 'v' ? [-20, -10, 0, 10, 20] : [0, 50, 100, 150, 200]);
             yTicks.forEach(tick => {
                 const py = getYPixel(tick);
@@ -1857,28 +1896,21 @@
                 ctx.moveTo(padLeft, py);
                 ctx.lineTo(padLeft + gw, py);
                 ctx.stroke();
-
                 ctx.fillText(tick.toString(), padLeft - 8, py);
             });
 
-            // Draw Shared Time X Guideline Ticks
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             const xTicks = [5, 10, 15, 20, 25, 30];
             xTicks.forEach(tick => {
                 const px = getXPixel(tick);
-                
-                // Draw tick line
                 ctx.beginPath();
                 ctx.moveTo(px, padTop);
                 ctx.lineTo(px, padTop + gh);
                 ctx.stroke();
-
-                // Draw numeric text only on the bottom-most plot
                 ctx.fillText(tick.toString(), px, padTop + gh + 6);
             });
 
-            // Draw Baseline zero axis
             if (minVal < 0 && maxVal > 0) {
                 ctx.strokeStyle = theme.text;
                 ctx.lineWidth = 1.2;
@@ -1888,33 +1920,27 @@
                 ctx.stroke();
             }
 
-            // Draw Solid Axis Frames
             ctx.strokeStyle = theme.border;
             ctx.lineWidth = 1.5;
-            // Y-Axis
             ctx.beginPath();
             ctx.moveTo(padLeft, padTop - 10);
             ctx.lineTo(padLeft, padTop + gh);
             ctx.stroke();
-            // X-Axis
             ctx.beginPath();
             ctx.moveTo(padLeft, padTop + gh);
             ctx.lineTo(padLeft + gw + 10, padTop + gh);
             ctx.stroke();
 
-            // Label Axis title
             ctx.fillStyle = theme.text;
             ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'bottom';
             ctx.fillText(axisLabel, padLeft + 10, padTop - 8);
 
-            // Draw Phase Boundary dotted/dashed lines exactly aligning intervals
             ctx.strokeStyle = theme.gridDash;
             ctx.setLineDash([3, 4]);
             ctx.lineWidth = 1.2;
             
-            // Collect boundary times
             const boundaries = [];
             studioState.phases.forEach(phase => {
                 if (phase.tStart > 0 && phase.tStart < 30) {
@@ -1929,21 +1955,17 @@
                 ctx.lineTo(px, h);
                 ctx.stroke();
             });
-            ctx.setLineDash([]); // Reset dash
+            ctx.setLineDash([]);
 
-            // 3. Draw Plot Path & Fill area underneath
             ctx.beginPath();
             ctx.moveTo(getXPixel(0), getYPixel(studioState.calculatedPoints[0][metricKey]));
-            
             studioState.calculatedPoints.forEach(p => {
                 ctx.lineTo(getXPixel(p.t), getYPixel(p[metricKey]));
             });
-            
             ctx.strokeStyle = color;
             ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            // Area fill under curve matching reference
             ctx.fillStyle = theme.fill;
             const pyZero = getYPixel(0);
             ctx.lineTo(getXPixel(30), pyZero);
@@ -1951,7 +1973,6 @@
             ctx.closePath();
             ctx.fill();
 
-            // Render Textbook title markers
             ctx.font = 'italic bold 20px Times New Roman, Georgia, serif';
             ctx.fillStyle = theme.text;
             ctx.textAlign = 'center';
@@ -1963,14 +1984,12 @@
                 ctx.fillText('Acceleration', padLeft + gw / 2, padTop + 25);
             }
 
-            // 4. DRAW SYNCHRONIZED SCROLLING SCRUBBER LINE & LOCAL READOUT BADGES
             if (studioState.hoverT !== null) {
                 const hT = studioState.hoverT;
                 const px = getXPixel(hT);
                 
-                // Draw vertical line across entire canvas height
                 ctx.save();
-                ctx.strokeStyle = '#a78bfa'; // Purple scrubber line
+                ctx.strokeStyle = '#a78bfa';
                 ctx.lineWidth = 1.5;
                 ctx.setLineDash([4, 4]);
                 ctx.beginPath();
@@ -1979,13 +1998,11 @@
                 ctx.stroke();
                 ctx.restore();
 
-                // Find closest point to get exact readout values
                 const matchedPoint = studioState.calculatedPoints.find(p => Math.abs(p.t - hT) < 0.06) || studioState.calculatedPoints[0];
                 if (matchedPoint) {
                     const value = matchedPoint[metricKey];
                     const py = getYPixel(value);
 
-                    // Draw focus intersection point circle
                     ctx.fillStyle = '#a78bfa';
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 2;
@@ -1994,16 +2011,13 @@
                     ctx.fill();
                     ctx.stroke();
 
-                    // Readout tooltip box inside canvas
-                    ctx.fillStyle = '#1e1b4b'; // Dark blue badge background
+                    ctx.fillStyle = '#1e1b4b';
                     ctx.strokeStyle = '#a78bfa';
                     ctx.lineWidth = 1;
                     
                     const text = `${metricKey === 'x' ? 'x' : (metricKey === 'v' ? 'v' : 'a')}: ${value.toFixed(1)}${metricKey === 'x' ? 'm' : (metricKey === 'v' ? 'm/s' : 'm/s²')}`;
                     ctx.font = 'bold 9px monospace';
                     const textW = ctx.measureText(text).width;
-                    
-                    // Box position logic (ensure it stays on-screen)
                     const bx = px + 10 + textW > padLeft + gw ? px - 15 - textW : px + 10;
                     const by = py - 10;
 
@@ -2019,12 +2033,8 @@
                 }
             }
         }
-    </script>
 
-    <script>
-        // Renders absolutely positioned, responsive interactive HTML blocks matching image_a1174b.png
         function renderHtmlAnnotationsOverlay() {
-            // Clear prior overlays
             const overlayX = document.getElementById('studio-annotations-x');
             const overlayV = document.getElementById('studio-annotations-v');
             overlayX.innerHTML = '';
@@ -2032,7 +2042,6 @@
 
             const theme = studioThemes[studioState.currentTheme];
 
-            // Reconstruct elements
             studioState.annotations.forEach((annot, index) => {
                 const parent = annot.graph === 'x' ? overlayX : overlayV;
                 if (!parent) return;
@@ -2040,17 +2049,14 @@
                 const bubble = document.createElement('div');
                 bubble.className = "absolute z-30 annotation-bubble pointer-events-auto transition-shadow hover:shadow-lg rounded-lg border p-2 text-xs font-medium max-w-[170px] select-none";
                 
-                // Theme specific colors
                 bubble.style.backgroundColor = theme.bubbleBg;
                 bubble.style.borderColor = theme.bubbleBorder;
                 bubble.style.color = theme.bubbleText;
                 bubble.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
                 
-                // Position logic based on target coordinate point on graph
                 const coord = getPointCoordinates(annot.graph, annot.t);
                 if (!coord) return;
 
-                // Position relative to parent graph container
                 bubble.style.left = `${coord.x + annot.offsetX}px`;
                 bubble.style.top = `${coord.y + annot.offsetY}px`;
                 bubble.innerHTML = `
@@ -2060,17 +2066,12 @@
                     </div>
                 `;
 
-                // Handle drag and drop logic dynamically
                 setupAnnotationDrag(bubble, index);
-
                 parent.appendChild(bubble);
-
-                // Draw connector line directly on corresponding canvas
                 drawPointerArrowOnCanvas(annot.graph, coord.x, coord.y, coord.x + annot.offsetX, coord.y + annot.offsetY);
             });
         }
 
-        // Translate target t value to exact workspace pixel coordinates (x, y)
         function getPointCoordinates(graphKey, t) {
             const canvas = graphKey === 'x' ? document.getElementById('studio-canvas-pos') : document.getElementById('studio-canvas-vel');
             if (!canvas) return null;
@@ -2086,7 +2087,6 @@
             const gw = w - padLeft - padRight;
             const gh = h - padTop - padBottom;
 
-            // Match exact value in calculated history
             const pts = studioState.calculatedPoints;
             let matchedPt = pts[0];
             let minDiff = Infinity;
@@ -2098,22 +2098,16 @@
                 }
             });
 
-            // Calculate ratios
             const targetX = padLeft + (t / 30) * gw;
-            
-            let minVal, maxVal;
-            if (graphKey === 'x') {
-                minVal = -20; maxVal = 240;
-            } else {
+            let minVal = -20, maxVal = 240;
+            if (graphKey === 'v') {
                 minVal = -30; maxVal = 30;
             }
 
             const targetY = padTop + gh * (1 - (matchedPt[graphKey] - minVal) / (maxVal - minVal));
-
             return { x: targetX, y: targetY };
         }
 
-        // Draw pointer connector line on stacked canvas matching reference
         function drawPointerArrowOnCanvas(graphKey, targetX, targetY, bubbleX, bubbleY) {
             const canvas = graphKey === 'x' ? document.getElementById('studio-canvas-pos') : document.getElementById('studio-canvas-vel');
             if (!canvas) return;
@@ -2125,18 +2119,15 @@
             ctx.save();
             ctx.scale(dpr, dpr);
 
-            // Connect arrow from center edge of annotation box to actual curve point
             ctx.strokeStyle = theme.bubbleBorder;
             ctx.fillStyle = theme.bubbleBg;
             ctx.lineWidth = 1.2;
 
-            // Simple point connection line
             ctx.beginPath();
-            ctx.moveTo(bubbleX + 60, bubbleY + 20); // bubble offset anchor
+            ctx.moveTo(bubbleX + 60, bubbleY + 20);
             ctx.lineTo(targetX, targetY);
             ctx.stroke();
 
-            // Arrow tip head
             const angle = Math.atan2(targetY - (bubbleY + 20), targetX - (bubbleX + 60));
             ctx.beginPath();
             ctx.moveTo(targetX, targetY);
@@ -2149,7 +2140,6 @@
             ctx.restore();
         }
 
-        // Drag and drop mechanics for layout adjustments
         function setupAnnotationDrag(elem, index) {
             let startX, startY;
             let currentX, currentY;
@@ -2160,10 +2150,8 @@
             function dragStart(e) {
                 const clientX = e.clientX || (e.touches && e.touches[0].clientX);
                 const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-
                 startX = clientX;
                 startY = clientY;
-
                 currentX = studioState.annotations[index].offsetX;
                 currentY = studioState.annotations[index].offsetY;
 
@@ -2187,7 +2175,6 @@
                 elem.style.left = `${getPointCoordinates(studioState.annotations[index].graph, studioState.annotations[index].t).x + studioState.annotations[index].offsetX}px`;
                 elem.style.top = `${getPointCoordinates(studioState.annotations[index].graph, studioState.annotations[index].t).y + studioState.annotations[index].offsetY}px`;
 
-                // Redraw canvases synchronously to reposition lines instantly
                 const canvasX = document.getElementById('studio-canvas-pos');
                 const canvasV = document.getElementById('studio-canvas-vel');
                 const canvasA = document.getElementById('studio-canvas-accel');
@@ -2197,7 +2184,6 @@
                 plotStackedCurve(canvasV, 'v', theme.curve, 'Velocity v (m/s)', false);
                 plotStackedCurve(canvasA, 'a', theme.curve, 'Acceleration a (m/s²)', false);
 
-                // Quick redraw pointer lines
                 studioState.annotations.forEach((annot) => {
                     const coord = getPointCoordinates(annot.graph, annot.t);
                     if (coord) {
@@ -2214,7 +2200,6 @@
             }
         }
 
-        // Inline double-click annotating writing
         function editAnnotationText(index, e) {
             e.stopPropagation();
             const currentText = studioState.annotations[index].text;
@@ -2235,7 +2220,6 @@
             renderDiagramWorkspace();
         }
 
-        // Adds custom annotations at specific points
         function addAnnotationAtTime(graphKey, time, textStr) {
             const text = textStr || "Constant slope means zero acceleration.";
             studioState.annotations.push({
@@ -2247,41 +2231,31 @@
             });
             renderDiagramWorkspace();
         }
-    </script>
 
-    <script>
-        // High fidelity rasterizer compiles Stack, labels, and boxes into a download ready PNG
         function exportDiagramToPNG() {
             const exportCanvas = document.createElement('canvas');
             const exportCtx = exportCanvas.getContext('2d');
-
             const w = 900;
             const h = 720;
             exportCanvas.width = w;
             exportCanvas.height = h;
 
             const theme = studioThemes[studioState.currentTheme];
-
-            // Fill page background
             exportCtx.fillStyle = theme.bg;
             exportCtx.fillRect(0, 0, w, h);
 
-            // Fetch stacked canvases
             const canvasX = document.getElementById('studio-canvas-pos');
             const canvasV = document.getElementById('studio-canvas-vel');
             const canvasA = document.getElementById('studio-canvas-accel');
 
-            // Copy and composite stacked canvas contents onto virtual page
             exportCtx.drawImage(canvasX, 0, 0, w, 210);
             exportCtx.drawImage(canvasV, 0, 220, w, 210);
             exportCtx.drawImage(canvasA, 0, 440, w, 180);
 
-            // Re-render and burn speech bubbles directly into PNG image payload
             studioState.annotations.forEach(annot => {
                 const coord = getPointCoordinates(annot.graph, annot.t);
                 if (!coord) return;
 
-                // Adapt coordinate positions based on composite vertical offset shifts
                 let yShift = 0;
                 if (annot.graph === 'v') yShift = 220;
                 if (annot.graph === 'a') yShift = 440;
@@ -2290,7 +2264,6 @@
                 const bubbleXComp = coord.x + annot.offsetX;
                 const bubbleYComp = coord.y + annot.offsetY + yShift;
 
-                // 1. Draw composite connector arrow pointer line
                 exportCtx.strokeStyle = theme.bubbleBorder;
                 exportCtx.fillStyle = theme.bubbleBg;
                 exportCtx.lineWidth = 1.5;
@@ -2300,7 +2273,6 @@
                 exportCtx.lineTo(coord.x, targetYComp);
                 exportCtx.stroke();
 
-                // Arrow head
                 const angle = Math.atan2(targetYComp - (bubbleYComp + 20), coord.x - (bubbleXComp + 65));
                 exportCtx.beginPath();
                 exportCtx.moveTo(coord.x, targetYComp);
@@ -2310,7 +2282,6 @@
                 exportCtx.fill();
                 exportCtx.stroke();
 
-                // 2. Draw composite rounded callout rect bubble
                 const bw = 150;
                 const bh = 55;
                 const rx = bubbleXComp;
@@ -2325,22 +2296,18 @@
                 exportCtx.fill();
                 exportCtx.stroke();
 
-                // 3. Draw wrapped text
                 exportCtx.fillStyle = theme.bubbleText;
                 exportCtx.font = 'bold 10px Arial, sans-serif';
-                exportCtx.textAlign = 'left';
                 exportCtx.textBaseline = 'top';
 
                 wrapText(exportCtx, annot.text, rx + 8, ry + 8, bw - 16, 12);
             });
 
-            // Composite dynamic pedagogical footnote
             exportCtx.fillStyle = theme.border;
             exportCtx.font = '11px monospace';
             exportCtx.textAlign = 'center';
             exportCtx.fillText('Kinematics Textbook Diagram Stack | Aligned Time Plot (0s - 30s)', w / 2, h - 30);
 
-            // Initiate client download
             try {
                 const link = document.createElement('a');
                 link.download = 'kinematics_textbook_diagram.png';
@@ -2351,7 +2318,6 @@
             }
         }
 
-        // Helper to draw clean wrapping texts in canvas composite callouts
         function wrapText(context, text, x, y, maxWidth, lineHeight) {
             const words = text.split(' ');
             let line = '';
@@ -2371,13 +2337,16 @@
             }
             context.fillText(line, x, currentY);
         }
-    </script>
 
-    <script>
-        // Window Load Bootstrapper
-        window.onload = function() {
-            initApp();
-        };
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // Run studio scripts setups
+        setupStudioScrubberEvents();
     </script>
 </body>
 </html>
