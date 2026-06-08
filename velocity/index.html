@@ -71,7 +71,7 @@
     <!-- Main Workspace -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Left Column: Camera Viewport & Controls -->
+        <!-- Left Column: Camera Viewport, Charts & Controls -->
         <div class="lg:col-span-8 flex flex-col space-y-4">
             
             <!-- Main Video Container -->
@@ -127,6 +127,43 @@
                     <button id="clear-tracking-btn" class="px-3 py-2 text-xs bg-gray-800 hover:bg-red-950/40 hover:text-red-400 border border-gray-700 rounded-xl font-medium transition-all">
                         Reset Trackers
                     </button>
+                </div>
+            </div>
+
+            <!-- Live Telemetry Charts Block -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg flex flex-col space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-200">Real-Time Telemetry Analytics</h3>
+                    </div>
+                    <span id="chart-mode-badge" class="text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-bold uppercase">Dynamic Mode</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Distance vs Time -->
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-400">
+                            <span>Distance vs. Time (s-t)</span>
+                            <span class="text-sky-400 font-mono" id="live-distance-readout">Cumulative: 0.00 m</span>
+                        </div>
+                        <div class="bg-gray-950 rounded-xl p-3 border border-gray-800 h-44 relative overflow-hidden">
+                            <canvas id="distance-chart-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Speed vs Time -->
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-400">
+                            <span>Speed vs. Time (v-t)</span>
+                            <span class="text-emerald-400 font-mono" id="live-speed-readout">Velocity: 0.00 m/s</span>
+                        </div>
+                        <div class="bg-gray-950 rounded-xl p-3 border border-gray-800 h-44 relative overflow-hidden">
+                            <canvas id="speed-chart-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -480,7 +517,14 @@
                 lastFrameTime: 0,
                 currentSpeed: 0,
                 maxSpeed: 0,
+                cumulativeDistance: 0, // Cumulative physical distance covered (m)
                 trackingStartTime: 0
+            },
+
+            // Telemetry Live Chart Buffers
+            telemetry: {
+                history: [], // array of objects: { time: Number, speed: Number, distance: Number }
+                maxHistorySec: 10, // display window depth of 10 seconds
             },
 
             // UI Speed Outputs
@@ -549,8 +593,28 @@
             closeModalBtn: document.getElementById('close-modal-btn'),
             modalAckBtn: document.getElementById('modal-ack-btn'),
             logList: document.getElementById('log-list'),
-            clearLogsBtn: document.getElementById('clear-logs-btn')
+            clearLogsBtn: document.getElementById('clear-logs-btn'),
+
+            // Live Telemetry Elements
+            chartModeBadge: document.getElementById('chart-mode-badge'),
+            liveDistanceReadout: document.getElementById('live-distance-readout'),
+            liveSpeedReadout: document.getElementById('live-speed-readout'),
+            distanceCanvas: document.getElementById('distance-chart-canvas'),
+            speedCanvas: document.getElementById('speed-chart-canvas')
         };
+
+        // Initialize Telemetry Canvas sizes for high-definition rendering
+        function setupTelemetryCanvases() {
+            const ratio = window.devicePixelRatio || 1;
+            [elements.distanceCanvas, elements.speedCanvas].forEach(canvas => {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio;
+            });
+        }
+
+        // Window resize event handler for dynamic layout alignment
+        window.addEventListener('resize', setupTelemetryCanvases);
 
         // --- Core UI Setup and Handlers ---
 
@@ -568,6 +632,8 @@
             elements.configColorView.classList.add('hidden');
             elements.metricLabel.textContent = "Time Traversed";
             elements.metricSubtext.textContent = "Chronometer Gates";
+            elements.chartModeBadge.textContent = "Gates Mode";
+            elements.chartModeBadge.className = "text-[10px] bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-full font-bold uppercase";
             resetGateTimers();
         });
 
@@ -579,6 +645,8 @@
             elements.configGateView.classList.add('hidden');
             elements.metricLabel.textContent = "Object Speed";
             elements.metricSubtext.textContent = "Color Centroid Tracking";
+            elements.chartModeBadge.textContent = "Live Track Mode";
+            elements.chartModeBadge.className = "text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-bold uppercase";
             resetLiveTracker();
         });
 
@@ -643,6 +711,7 @@
 
             logEvent(`Calibrated Ruler: ${pxDistance.toFixed(0)} pixels = ${val} ${unit}`);
             exitCalibration();
+            resetLiveTracker();
         });
 
         // Speed Gate input distance settings
@@ -667,13 +736,14 @@
             state.outputUnits = e.target.value;
             elements.speedUnitText.textContent = state.outputUnits;
             updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+            renderTelemetryCharts();
         });
 
         // Reset trackers button
         elements.clearTrackingBtn.addEventListener('click', () => {
             resetGateTimers();
             resetLiveTracker();
-            logEvent("All trackers and peak speeds reset to zero.");
+            logEvent("All trackers, logs, and live graph histories reset.");
             playChime(330, "square", 0.1, 0.05);
         });
 
@@ -778,6 +848,9 @@
                     elements.canvas.height = state.canvasHeight;
                     elements.camResIndicator.textContent = `${state.canvasWidth}x${state.canvasHeight}`;
 
+                    // Setup charts pixel width dimensions
+                    setupTelemetryCanvases();
+
                     // Auto place Gates and Calibration marks neatly inside frame sizes
                     state.gates.gate1X = Math.round(state.canvasWidth * 0.3);
                     state.gates.gate2X = Math.round(state.canvasWidth * 0.7);
@@ -841,6 +914,17 @@
             }
         }
 
+        // Convert distance in meters to calibration base scale physical units
+        function convertDistance(meters) {
+            if (!state.scale.isSet) return meters; // Defaults to meters
+            
+            const units = state.scale.physicalUnits;
+            if (units === 'cm') return meters * 100;
+            if (units === 'inches') return meters * 39.3701;
+            if (units === 'feet') return meters * 3.28084;
+            return meters;
+        }
+
         // Synchronize displays with converted outputs
         function updateSpeedDisplays(current, max) {
             const displayCur = convertSpeed(current);
@@ -856,8 +940,12 @@
             state.gates.gate2Tripped = false;
             state.gates.gate1TripTime = 0;
             state.gates.gate2TripTime = 0;
+            state.telemetry.history = [];
             elements.elapsedTimeValue.textContent = "0.0s";
+            elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+            elements.liveSpeedReadout.textContent = `Velocity: 0.00 ${state.outputUnits}`;
             updateSpeedDisplays(0, 0);
+            renderTelemetryCharts();
         }
 
         // Resets centroid tracker variable trails
@@ -866,8 +954,14 @@
             state.colorTracking.lastCentroid = null;
             state.colorTracking.maxSpeed = 0;
             state.colorTracking.currentSpeed = 0;
+            state.colorTracking.cumulativeDistance = 0;
             state.colorTracking.trackingStartTime = performance.now();
+            state.telemetry.history = [];
+            elements.elapsedTimeValue.textContent = "0.0s";
+            elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+            elements.liveSpeedReadout.textContent = `Velocity: 0.00 ${state.outputUnits}`;
             updateSpeedDisplays(0, 0);
+            renderTelemetryCharts();
         }
 
         // Manual or algorithm-tripped gate handling
@@ -881,6 +975,10 @@
                 logEvent("Gate 1 TRIPPED!");
                 playChime(523.25, "square", 0.1, 0.08); // C5 Chime
                 
+                // Clear telemetry history and initialize starting point
+                state.telemetry.history = [{ time: 0, speed: 0, distance: 0 }];
+                renderTelemetryCharts();
+
                 // Reset second gate just in case they are running again
                 state.gates.gate2Tripped = false;
                 state.gates.gate2TripTime = 0;
@@ -906,11 +1004,11 @@
                 elements.elapsedTimeValue.textContent = `${elapsedSec.toFixed(3)}s`;
 
                 // Calculate scale factors
-                let scaleToMeters = 1.0;
+                let calculatedSpeedMPS = 0;
+                let calculatedDistanceMeters = 0;
                 
                 // Get real world physical size converted to Meters
                 if (state.scale.isSet) {
-                    let pixelSizeInMeters = 0;
                     const physVal = state.scale.physicalVal;
                     const physUnits = state.scale.physicalUnits;
 
@@ -924,14 +1022,8 @@
                     
                     // Pixels distance between Speed Gates
                     const gatePxDistance = Math.abs(state.gates.gate2X - state.gates.gate1X);
-                    const gateMetersCalculated = gatePxDistance / pixelsPerMeter;
-
-                    const speedMPS = gateMetersCalculated / elapsedSec;
-                    updateSpeedDisplays(speedMPS, speedMPS);
-                    
-                    const unitValueStr = `${convertSpeed(speedMPS).toFixed(2)} ${state.outputUnits}`;
-                    logEvent(`SUCCESS: Elapsed: ${elapsedSec.toFixed(3)}s. Calc Distance: ${gateMetersCalculated.toFixed(2)}m. Speed: ${unitValueStr}`);
-                    speakMessage(`${convertSpeed(speedMPS).toFixed(1)} ${state.outputUnits === 'm/s' ? 'meters per second' : state.outputUnits}`);
+                    calculatedDistanceMeters = gatePxDistance / pixelsPerMeter;
+                    calculatedSpeedMPS = calculatedDistanceMeters / elapsedSec;
                 } else {
                     // Fallback to uncalibrated distance configuration ratios directly
                     let gateDistanceInMeters = state.gates.gateDistance;
@@ -941,13 +1033,28 @@
                     else if (gUnits === 'inches') gateDistanceInMeters = state.gates.gateDistance * 0.0254;
                     else if (gUnits === 'feet') gateDistanceInMeters = state.gates.gateDistance * 0.3048;
 
-                    const speedMPS = gateDistanceInMeters / elapsedSec;
-                    updateSpeedDisplays(speedMPS, speedMPS);
-
-                    const unitValueStr = `${convertSpeed(speedMPS).toFixed(2)} ${state.outputUnits}`;
-                    logEvent(`SUCCESS: Elapsed: ${elapsedSec.toFixed(3)}s. User Scale: ${gateDistanceInMeters.toFixed(2)}m. Speed: ${unitValueStr}`);
-                    speakMessage(`${convertSpeed(speedMPS).toFixed(1)} ${state.outputUnits === 'm/s' ? 'meters per second' : state.outputUnits}`);
+                    calculatedDistanceMeters = gateDistanceInMeters;
+                    calculatedSpeedMPS = calculatedDistanceMeters / elapsedSec;
                 }
+
+                updateSpeedDisplays(calculatedSpeedMPS, calculatedSpeedMPS);
+                
+                const unitValueStr = `${convertSpeed(calculatedSpeedMPS).toFixed(2)} ${state.outputUnits}`;
+                const distUnitValueStr = `${convertDistance(calculatedDistanceMeters).toFixed(2)} ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+                
+                // Set final static telemetry state representing chronometer run
+                state.telemetry.history = [
+                    { time: 0, speed: 0, distance: 0 },
+                    { time: elapsedSec, speed: calculatedSpeedMPS, distance: calculatedDistanceMeters }
+                ];
+                renderTelemetryCharts();
+
+                // Dynamic metric readouts
+                elements.liveDistanceReadout.textContent = `Cumulative: ${distUnitValueStr}`;
+                elements.liveSpeedReadout.textContent = `Velocity: ${unitValueStr}`;
+
+                logEvent(`SUCCESS: Elapsed: ${elapsedSec.toFixed(3)}s. Calc Distance: ${calculatedDistanceMeters.toFixed(2)}m. Speed: ${unitValueStr}`);
+                speakMessage(`${convertSpeed(calculatedSpeedMPS).toFixed(1)} ${state.outputUnits === 'm/s' ? 'meters per second' : state.outputUnits}`);
             }
         }
 
@@ -1091,9 +1198,23 @@
             } else if (state.mode === 'gate') {
                 processGateDetection(ctx);
                 drawGates(ctx);
+                // Draw live chronometer clock tick sweeps to graph
+                if (state.gates.gate1Tripped && !state.gates.gate2Tripped) {
+                    const elapsedSec = (performance.now() - state.gates.gate1TripTime) / 1000;
+                    elements.elapsedTimeValue.textContent = `${elapsedSec.toFixed(2)}s`;
+                    
+                    // Live incrementing sweep coordinates
+                    state.telemetry.history.push({
+                        time: elapsedSec,
+                        speed: 0,
+                        distance: 0
+                    });
+                    renderTelemetryCharts();
+                }
             } else if (state.mode === 'color') {
                 processColorTracking(ctx);
                 drawColorTracking(ctx);
+                renderTelemetryCharts();
             }
 
             // Frame Rate Counter Math
@@ -1311,6 +1432,7 @@
                         const pxDistance = Math.sqrt(dx*dx + dy*dy);
 
                         let calculatedSpeedMPS = 0;
+                        let incrementalMeters = 0;
 
                         if (state.scale.isSet) {
                             // High precision Calibration mapping speed calculations
@@ -1322,12 +1444,16 @@
                             else if (physUnits === 'feet') refMeters = state.scale.physicalVal * 0.3048;
 
                             const metersPerPixel = refMeters / state.scale.pixels;
-                            const realWorldMeters = pxDistance * metersPerPixel;
-                            calculatedSpeedMPS = realWorldMeters / dt;
+                            incrementalMeters = pxDistance * metersPerPixel;
+                            calculatedSpeedMPS = incrementalMeters / dt;
                         } else {
                             // Fallback baseline ratio (assumes 1 pixel = 1mm equivalent index)
-                            calculatedSpeedMPS = (pxDistance * 0.001) / dt;
+                            incrementalMeters = pxDistance * 0.001;
+                            calculatedSpeedMPS = incrementalMeters / dt;
                         }
+
+                        // Accumulate physical distance traversed
+                        state.colorTracking.cumulativeDistance += incrementalMeters;
 
                         // Jitter elimination: Apply Exponential Moving Average filtering (low-pass smoothing)
                         const smoothingFactor = 0.25;
@@ -1348,6 +1474,25 @@
                         // Timer countdown metrics tracking
                         const elapsedSecs = (now - state.colorTracking.trackingStartTime) / 1000;
                         elements.elapsedTimeValue.textContent = `${elapsedSecs.toFixed(1)}s`;
+
+                        // Add to telemetry log buffer
+                        state.telemetry.history.push({
+                            time: elapsedSecs,
+                            speed: state.colorTracking.currentSpeed,
+                            distance: state.colorTracking.cumulativeDistance
+                        });
+
+                        // Prune oldest buffer data outside visual horizon
+                        const minTimeHorizon = elapsedSecs - state.telemetry.maxHistorySec;
+                        while (state.telemetry.history.length > 0 && state.telemetry.history[0].time < minTimeHorizon) {
+                            state.telemetry.history.shift();
+                        }
+
+                        // Dynamic text readouts updating
+                        const currentDistLabel = `${convertDistance(state.colorTracking.cumulativeDistance).toFixed(2)} ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+                        const currentSpeedLabel = `${convertSpeed(state.colorTracking.currentSpeed).toFixed(2)} ${state.outputUnits}`;
+                        elements.liveDistanceReadout.textContent = `Cumulative: ${currentDistLabel}`;
+                        elements.liveSpeedReadout.textContent = `Velocity: ${currentSpeedLabel}`;
                     }
                 }
 
@@ -1406,6 +1551,185 @@
             ctx.moveTo(current.x, current.y - 30); ctx.lineTo(current.x, current.y - 15);
             ctx.moveTo(current.x, current.y + 15); ctx.lineTo(current.x, current.y + 30);
             ctx.stroke();
+        }
+
+        // --- Custom Hardware Accelerated Chart Renderer ---
+        
+        function renderTelemetryCharts() {
+            const history = state.telemetry.history;
+            
+            // Build Labels
+            const speedUnit = state.outputUnits;
+            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
+
+            // Draw Distance Chart
+            drawTelemetryChart(
+                elements.distanceCanvas, 
+                history, 
+                'distance', 
+                'Distance vs Time', 
+                '#38bdf8', // sky-400
+                'rgba(56, 189, 248, 0.1)', 
+                distUnit,
+                convertDistance
+            );
+
+            // Draw Speed Chart
+            drawTelemetryChart(
+                elements.speedCanvas, 
+                history, 
+                'speed', 
+                'Speed vs Time', 
+                '#22c55e', // brand-500
+                'rgba(34, 197, 94, 0.1)', 
+                speedUnit,
+                convertSpeed
+            );
+        }
+
+        function drawTelemetryChart(canvas, data, yKey, label, strokeColor, fillColor, unitStr, conversionFn) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Clear Frame with smooth transparent backing
+            ctx.clearRect(0, 0, w, h);
+
+            // Setup chart offsets
+            const paddingLeft = 50;
+            const paddingRight = 15;
+            const paddingTop = 20;
+            const paddingBottom = 25;
+
+            const chartWidth = w - paddingLeft - paddingRight;
+            const chartHeight = h - paddingTop - paddingBottom;
+
+            // Draw Chart Border Box Outline
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.25)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(paddingLeft, paddingTop, chartWidth, chartHeight);
+
+            // Calculate Grid Dimensions
+            const xDivisions = 5;
+            const yDivisions = 4;
+
+            // Draw Grids
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.15)";
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([3, 3]);
+
+            // Vertical Grid lines
+            for (let i = 1; i < xDivisions; i++) {
+                const gx = paddingLeft + (chartWidth / xDivisions) * i;
+                ctx.beginPath();
+                ctx.moveTo(gx, paddingTop);
+                ctx.lineTo(gx, paddingTop + chartHeight);
+                ctx.stroke();
+            }
+
+            // Horizontal Grid lines
+            for (let i = 1; i < yDivisions; i++) {
+                const gy = paddingTop + (chartHeight / yDivisions) * i;
+                ctx.beginPath();
+                ctx.moveTo(paddingLeft, gy);
+                ctx.lineTo(paddingLeft + chartWidth, gy);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // If empty data, write waiting placeholder and exit
+            if (data.length === 0) {
+                ctx.fillStyle = "#6b7280";
+                ctx.font = "italic 11px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Awaiting track motion...", paddingLeft + chartWidth / 2, paddingTop + chartHeight / 2);
+                return;
+            }
+
+            // Determine Axis Ranges
+            let minTime = data[0].time;
+            let maxTime = data[data.length - 1].time;
+            if (maxTime - minTime < 1.0) {
+                maxTime = minTime + 1.0; // Prevent divide by zero / scaling squish
+            }
+
+            // Determine local extreme limits for Y axis
+            let maxYVal = 0.1;
+            data.forEach(pt => {
+                const val = conversionFn(pt[yKey]);
+                if (val > maxYVal) maxYVal = val;
+            });
+            maxYVal = maxYVal * 1.15; // Give 15% head room above trajectory peaks
+
+            // Draw Axis Labels
+            ctx.fillStyle = "#9ca3af";
+            ctx.font = "8px monospace";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+
+            // Y-Axis tick readouts
+            for (let i = 0; i <= yDivisions; i++) {
+                const percent = i / yDivisions;
+                const value = maxYVal * percent;
+                const gy = paddingTop + chartHeight - (chartHeight * percent);
+                ctx.fillText(value.toFixed(1), paddingLeft - 8, gy);
+            }
+
+            // X-Axis time tick readouts
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let i = 0; i <= xDivisions; i++) {
+                const percent = i / xDivisions;
+                const timeValue = minTime + (maxTime - minTime) * percent;
+                const gx = paddingLeft + (chartWidth * percent);
+                ctx.fillText(`${timeValue.toFixed(1)}s`, gx, paddingTop + chartHeight + 6);
+            }
+
+            // Map data points directly to Canvas coordinate grid space
+            const mappedPoints = data.map(pt => {
+                const xPct = (pt.time - minTime) / (maxTime - minTime);
+                const yPct = conversionFn(pt[yKey]) / maxYVal;
+
+                return {
+                    x: paddingLeft + chartWidth * xPct,
+                    y: paddingTop + chartHeight - (chartHeight * yPct)
+                };
+            });
+
+            // Draw Area Gradient under Line Chart
+            const fillGrad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+            fillGrad.addColorStop(0, fillColor);
+            fillGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+            ctx.fillStyle = fillGrad;
+            ctx.beginPath();
+            ctx.moveTo(mappedPoints[0].x, paddingTop + chartHeight);
+            mappedPoints.forEach(pt => {
+                ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.lineTo(mappedPoints[mappedPoints.length - 1].x, paddingTop + chartHeight);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw Primary Data Stroke Line
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(mappedPoints[0].x, mappedPoints[0].y);
+            for (let i = 1; i < mappedPoints.length; i++) {
+                ctx.lineTo(mappedPoints[i].x, mappedPoints[i].y);
+            }
+            ctx.stroke();
+
+            // Draw pulsing endpoint dot tracker
+            const lastPt = mappedPoints[mappedPoints.length - 1];
+            ctx.fillStyle = strokeColor;
+            ctx.beginPath();
+            ctx.arc(lastPt.x, lastPt.y, 4, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         // On document load startup sequences
