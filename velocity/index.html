@@ -56,7 +56,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-bold tracking-tight">CamSpeed <span class="text-brand-500 font-medium">Tracker</span></h1>
-                <p class="text-xs text-gray-400">Computer Vision Speedometer & Chronometer</p>
+                <p class="text-xs text-gray-400">HSV-Enhanced Computer Vision Speedometer</p>
             </div>
         </div>
         <div class="flex items-center space-x-4">
@@ -187,6 +187,192 @@
                         <span class="text-gray-500 block uppercase tracking-wider text-[9px]">Camera Res</span>
                         <span id="cam-res-indicator" class="text-gray-400 font-mono block mt-0.5">--x--</span>
                     </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Control Panel, Metrics & Logs -->
+        <div class="lg:col-span-4 flex flex-col space-y-6">
+
+            <!-- Primary Metric Display Card -->
+            <div class="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+                <div class="absolute -right-12 -bottom-12 w-32 h-32 bg-brand-500/5 rounded-full blur-2xl"></div>
+                
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-brand-500" id="metric-label">Object Speed</span>
+                    <span class="text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-semibold uppercase" id="metric-subtext">Live Tracking</span>
+                </div>
+                
+                <div class="flex items-baseline space-x-2 mt-4">
+                    <span id="speed-display-value" class="text-6xl font-black tracking-tight font-mono text-gray-50">0.00</span>
+                    <span id="speed-unit-text" class="text-xl font-bold text-gray-400">m/s</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-gray-850">
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Max Speed Peak</span>
+                        <span id="peak-speed-value" class="text-sm font-bold text-gray-300 font-mono">0.00 m/s</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Elapsed Tracking Time</span>
+                        <span id="elapsed-time-value" class="text-sm font-bold text-gray-300 font-mono">0.0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode Selector Panel -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                <div class="flex border-b border-gray-800">
+                    <button id="tab-gate" class="flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>1. Speed Gates</span>
+                    </button>
+                    <button id="tab-color" class="flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-3 0l-9.37-9.37a2.121 2.121 0 113-3l9.37 9.37z"/></svg>
+                        <span>2. Color Track</span>
+                    </button>
+                </div>
+
+                <div class="p-5">
+                    
+                    <!-- View A: Speed Gates Configuration -->
+                    <div id="config-gate-view" class="space-y-4">
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Sets up two visual vertical marker lines. Specify the real-world distance between them. High luminosity changes will trip the timers.
+                        </p>
+                        
+                        <!-- Configuration Form Fields -->
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate-to-Gate Distance</label>
+                                <div class="relative rounded-xl overflow-hidden flex shadow-inner">
+                                    <input type="number" id="gate-distance-input" value="1.0" step="0.1" min="0.01" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                    <select id="distance-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                        <option value="meters" selected>Meters</option>
+                                        <option value="cm">Centimeters</option>
+                                        <option value="inches">Inches</option>
+                                        <option value="feet">Feet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate Sensitivity</label>
+                                    <input type="range" id="gate-sensitivity" min="5" max="80" value="25" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-gray-400 block mt-5" id="sens-text">Val: 25</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual gate overrides/triggers -->
+                        <div class="pt-2">
+                            <span class="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Manual Trip Testing Controls</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="trip-gate-1" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 1</button>
+                                <button id="trip-gate-2" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 2</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View B: Color Tracker Settings (Hidden initially) -->
+                    <div id="config-color-view" class="space-y-4 hidden">
+                        <p class="text-xs text-gray-400 leading-relaxed font-semibold text-brand-400">
+                            HSV (Hue-Saturation-Value) Tracking Mode Active.
+                        </p>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Click directly on any colored item in the video frame. Our upgraded tracker isolates the specific hue, ignoring environmental room shadows.
+                        </p>
+
+                        <!-- Color Sample display -->
+                        <div class="flex items-center space-x-3 bg-gray-850/50 p-3 rounded-xl border border-gray-800">
+                            <div id="target-color-preview" class="w-10 h-10 rounded-lg border border-gray-700 shadow bg-red-500"></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold block" id="color-name-text">Red (Default)</span>
+                                    <span id="tracker-lock-badge" class="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Unlocked</span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 font-mono block" id="color-rgb-val">RGB: (220, 40, 40)</span>
+                                <span class="text-[10px] text-brand-400 font-mono block" id="color-hsv-val">HSV: (360°, 82%, 86%)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Color Match Tolerance</label>
+                                <input type="range" id="color-threshold" min="15" max="120" value="45" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                    <span>Selective Hue</span>
+                                    <span>Broad Match</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Calibration Configurations Modal/Section -->
+            <div id="calibration-options-panel" class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-bold text-gray-200">Scale Ruler Settings</h4>
+                    <button id="close-cal-btn" class="text-gray-500 hover:text-gray-300 text-xs">Close</button>
+                </div>
+                <p class="text-xs text-gray-400 mb-4 leading-relaxed">Drag the golden end-point markers in the camera preview window to encompass your calibrated reference object.</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Size of Reference Item</label>
+                        <div class="relative rounded-xl overflow-hidden flex shadow-inner">
+                            <input type="number" id="cal-physical-length" value="30" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <select id="cal-physical-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                <option value="cm" selected>cm</option>
+                                <option value="meters">meters</option>
+                                <option value="inches">inches</option>
+                                <option value="feet">feet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="save-calibration-btn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-black text-xs font-bold rounded-xl transition-all">
+                        Apply & Set Scaling Ruler
+                    </button>
+                </div>
+            </div>
+
+            <!-- General Configurations -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Global Output Settings</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Velocity Unit</label>
+                        <select id="speed-units" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <option value="m/s">Meters/Sec (m/s)</option>
+                            <option value="km/h">Kilometers/Hr (km/h)</option>
+                            <option value="mph">Miles/Hour (mph)</option>
+                            <option value="fps">Feet/Second (fps)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Audio Feedback</label>
+                        <select id="audio-setting" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <option value="chime">Chime sound</option>
+                            <option value="speech">Speak Speeds</option>
+                            <option value="silent">Mute sounds</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Panel -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex-1 min-h-[160px] flex flex-col">
+                <div class="px-5 py-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Speed Readings Log</span>
+                    <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
+                </div>
+                <div id="log-list" class="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-2 max-h-[220px]">
+                    <div class="text-gray-500 italic">No runs captured yet. Calibrate the grid and trigger a tracking mode to capture speeds here.</div>
                 </div>
             </div>
 
@@ -472,6 +658,24 @@
             }
         }
 
+        // High Performance RGB to HSV converter
+        function rgbToHsv(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0, s, v = max;
+            const d = max - min;
+            s = max === 0 ? 0 : d / max;
+            if (max !== min) {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), v: Math.round(v * 100) };
+        }
+
         // --- Core Application State ---
         const state = {
             webcamActive: false,
@@ -507,13 +711,17 @@
                 draggedGate: null
             },
 
-            // Color Object Tracker parameters
+            // Color Object Tracker parameters (HSV-enhanced)
             colorTracking: {
-                targetColor: { r: 220, g: 40, b: 40 }, // Default Bright Orange/Red
+                targetColor: { r: 220, g: 40, b: 40 }, // RGB backing
+                targetHSV: { h: 360, s: 82, v: 86 }, // HSV coordinates for illumination immunity
+                isAchromatic: false, // black/white/gray logic switch
                 threshold: 45,
                 trail: [], // rolling coordinates of captured centroids
                 maxTrailLength: 45,
                 lastCentroid: null,
+                roiRadius: 85, // local tracking bounding window radius (pixels)
+                isLocked: false, // indicates if ROI is actively locked on target
                 lastFrameTime: 0,
                 currentSpeed: 0,
                 maxSpeed: 0,
@@ -584,6 +792,8 @@
             targetColorPreview: document.getElementById('target-color-preview'),
             colorNameText: document.getElementById('color-name-text'),
             colorRgbVal: document.getElementById('color-rgb-val'),
+            colorHsvVal: document.getElementById('color-hsv-val'),
+            trackerLockBadge: document.getElementById('tracker-lock-badge'),
             speedUnitsSelect: document.getElementById('speed-units'),
             clearTrackingBtn: document.getElementById('clear-tracking-btn'),
             
@@ -955,11 +1165,16 @@
             state.colorTracking.maxSpeed = 0;
             state.colorTracking.currentSpeed = 0;
             state.colorTracking.cumulativeDistance = 0;
+            state.colorTracking.isLocked = false;
             state.colorTracking.trackingStartTime = performance.now();
             state.telemetry.history = [];
             elements.elapsedTimeValue.textContent = "0.0s";
             elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
             elements.liveSpeedReadout.textContent = `Velocity: 0.00 ${state.outputUnits}`;
+            
+            elements.trackerLockBadge.textContent = "Unlocked";
+            elements.trackerLockBadge.className = "text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
+
             updateSpeedDisplays(0, 0);
             renderTelemetryCharts();
         }
@@ -1102,25 +1317,36 @@
             // 3. Color Selection Mode: Sample color under cursor click
             if (state.mode === 'color') {
                 const imgData = elements.ctx.getImageData(coords.x, coords.y, 1, 1).data;
-                state.colorTracking.targetColor = { r: imgData[0], g: imgData[1], b: imgData[2] };
+                const r = imgData[0], g = imgData[1], b = imgData[2];
+                
+                // Store RGB and calculate HSV components
+                state.colorTracking.targetColor = { r, g, b };
+                const hsv = rgbToHsv(r, g, b);
+                state.colorTracking.targetHSV = hsv;
+
+                // Determine if target is Achromatic (grayscale/black/white) to trigger fallback tracking
+                state.colorTracking.isAchromatic = (hsv.s < 15 || hsv.v < 15 || hsv.v > 92);
                 
                 // Update Color Picker display card styling
-                elements.targetColorPreview.style.backgroundColor = `rgb(${imgData[0]}, ${imgData[1]}, ${imgData[2]})`;
-                elements.colorRgbVal.textContent = `RGB: (${imgData[0]}, ${imgData[1]}, ${imgData[2]})`;
+                elements.targetColorPreview.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                elements.colorRgbVal.textContent = `RGB: (${r}, ${g}, ${b})`;
+                elements.colorHsvVal.textContent = `HSV: (${hsv.h}°, ${hsv.s}%, ${hsv.v}%)`;
                 
                 // Simple RGB color descriptor
                 let name = "Selected Target";
-                const {r, g, b} = state.colorTracking.targetColor;
-                if (r > 150 && g < 100 && b < 100) name = "Vibrant Red";
-                else if (g > 150 && r < 100 && b < 100) name = "Neon Green";
-                else if (b > 150 && r < 100 && g < 100) name = "Vivid Blue";
-                else if (r > 150 && g > 150 && b < 100) name = "Bright Yellow";
-                else if (r < 70 && g < 70 && b < 70) name = "Dark/Shadow";
-                else if (r > 200 && g > 200 && b > 200) name = "Bright White";
+                if (state.colorTracking.isAchromatic) {
+                    name = hsv.v < 20 ? "Dark Charcoal/Black" : (hsv.v > 85 ? "Bright White" : "Gray Scale");
+                } else if (hsv.h >= 340 || hsv.h < 18) name = "Vibrant Red";
+                else if (hsv.h >= 18 && hsv.h < 45) name = "Bright Orange";
+                else if (hsv.h >= 45 && hsv.h < 75) name = "Neon Yellow";
+                else if (hsv.h >= 75 && hsv.h < 165) name = "Vivid Green";
+                else if (hsv.h >= 165 && hsv.h < 255) name = "Vivid Blue";
+                else if (hsv.h >= 255 && hsv.h < 340) name = "Vivid Purple";
+                
                 elements.colorNameText.textContent = name;
 
                 resetLiveTracker();
-                logEvent(`Locked target tracking color RGB: (${r}, ${g}, ${b})`);
+                logEvent(`Locked target tracking color RGB: (${r}, ${g}, ${b}) | HSV: (${hsv.h}°, ${hsv.s}%, ${hsv.v}%)`);
                 playChime(800, "sine", 0.1, 0.05);
             }
         });
@@ -1386,30 +1612,77 @@
             ctx.fillText(state.gates.gate2Tripped ? "GATE 2 [TRIP]" : "GATE 2 (END)", g2X - 29, 29);
         }
 
-        // Core Color Tracking Search centroid calculation
+        // Core Color Tracking Search Centroid Calculation (HSV-Enhanced)
         function processColorTracking(ctx) {
             const imgData = ctx.getImageData(0, 0, state.canvasWidth, state.canvasHeight);
             const data = imgData.data;
-            const target = state.colorTracking.targetColor;
+            const targetColor = state.colorTracking.targetColor;
+            const targetHSV = state.colorTracking.targetHSV;
+            const isAchromatic = state.colorTracking.isAchromatic;
             const thresh = parseInt(elements.colorThresholdInput.value);
 
             let sumX = 0;
             let sumY = 0;
             let matchCount = 0;
 
-            // Scan pixels skipping step sequences to balance tracking fidelity with browser processing speed
-            const skip = 3; 
-            for (let y = 0; y < state.canvasHeight; y += skip) {
-                for (let x = 0; x < state.canvasWidth; x += skip) {
+            // Determine if tracker has locked onto the target's recent centroid. 
+            // If locked, restrict scan to a localized window around the centroid (ROI Bounding Window).
+            // This ignores duplicate colors elsewhere in the frame.
+            const lastCentroid = state.colorTracking.lastCentroid;
+            const useROI = lastCentroid !== null;
+            const rRadius = state.colorTracking.roiRadius;
+
+            let minX = 0, maxX = state.canvasWidth;
+            let minY = 0, maxY = state.canvasHeight;
+
+            if (useROI) {
+                minX = Math.max(0, Math.round(lastCentroid.x - rRadius));
+                maxX = Math.min(state.canvasWidth, Math.round(lastCentroid.x + rRadius));
+                minY = Math.max(0, Math.round(lastCentroid.y - rRadius));
+                maxY = Math.min(state.canvasHeight, Math.round(lastCentroid.y + rRadius));
+            }
+
+            // Perform color pixel matching run
+            const skip = 2; // Step 2 offers double the scanning density (higher tracking fidelity)
+            
+            for (let y = minY; y < maxY; y += skip) {
+                for (let x = minX; x < maxX; x += skip) {
                     const idx = (y * state.canvasWidth + x) * 4;
                     const r = data[idx];
                     const g = data[idx+1];
                     const b = data[idx+2];
 
-                    // Euclidean color matching index calculations
-                    const dist = Math.sqrt((r - target.r)**2 + (g - target.g)**2 + (b - target.b)**2);
-                    
-                    if (dist < thresh) {
+                    let isMatch = false;
+
+                    if (isAchromatic) {
+                        // Grayscale matching fallback (Grayscale/Black/White doesn't have reliable Hues)
+                        const rDiff = Math.abs(r - targetColor.r);
+                        const gDiff = Math.abs(g - targetColor.g);
+                        const bDiff = Math.abs(b - targetColor.b);
+                        const rgbDist = Math.sqrt(rDiff*rDiff + gDiff*gDiff + bDiff*bDiff);
+                        isMatch = rgbDist < thresh;
+                    } else {
+                        // HSV color spectrum tracking (Robust to light changes and shadow sweeps)
+                        const hsv = rgbToHsv(r, g, b);
+                        
+                        // Hue difference (accounting for circular wrap-around at 360°)
+                        const dh = Math.abs(hsv.h - targetHSV.h);
+                        const hueDiff = Math.min(dh, 360 - dh);
+
+                        // Dynamic tolerances mapped based on user matching threshold slider
+                        const hueTolerance = thresh * 0.45; // lower is more restrictive
+                        const satTolerance = Math.max(25, thresh * 0.7);
+                        const valTolerance = Math.max(30, thresh * 0.8);
+
+                        // Only count pixels matching the target hue while ignoring background shadows (low V) and gray walls (low S)
+                        isMatch = (hueDiff < hueTolerance) && 
+                                  (hsv.s > 14) && // ignores gray background artifacts
+                                  (hsv.v > 12) && // ignores dark shadows
+                                  (Math.abs(hsv.s - targetHSV.s) < satTolerance) &&
+                                  (Math.abs(hsv.v - targetHSV.v) < valTolerance);
+                    }
+
+                    if (isMatch) {
                         sumX += x;
                         sumY += y;
                         matchCount++;
@@ -1417,13 +1690,61 @@
                 }
             }
 
+            // Recovery protocol: if object moved too fast and exited the ROI search window, 
+            // fallback immediately to a full frame scan in the same frame so tracking is never lost.
+            if (matchCount < 6 && useROI) {
+                sumX = 0; sumY = 0; matchCount = 0;
+                for (let y = 0; y < state.canvasHeight; y += skip) {
+                    for (let x = 0; x < state.canvasWidth; x += skip) {
+                        const idx = (y * state.canvasWidth + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx+1];
+                        const b = data[idx+2];
+
+                        let isMatch = false;
+
+                        if (isAchromatic) {
+                            const rgbDist = Math.sqrt((r - targetColor.r)**2 + (g - targetColor.g)**2 + (b - targetColor.b)**2);
+                            isMatch = rgbDist < thresh;
+                        } else {
+                            const hsv = rgbToHsv(r, g, b);
+                            const dh = Math.abs(hsv.h - targetHSV.h);
+                            const hueDiff = Math.min(dh, 360 - dh);
+
+                            const hueTolerance = thresh * 0.45;
+                            const satTolerance = Math.max(25, thresh * 0.7);
+                            const valTolerance = Math.max(30, thresh * 0.8);
+
+                            isMatch = (hueDiff < hueTolerance) && 
+                                      (hsv.s > 14) && 
+                                      (hsv.v > 12) && 
+                                      (Math.abs(hsv.s - targetHSV.s) < satTolerance) &&
+                                      (Math.abs(hsv.v - targetHSV.v) < valTolerance);
+                        }
+
+                        if (isMatch) {
+                            sumX += x;
+                            sumY += y;
+                            matchCount++;
+                        }
+                    }
+                }
+            }
+
             // Verify minimum tracking volume bounding threshold meets limits
-            if (matchCount > 15) {
+            if (matchCount > 10) {
                 const centroidX = sumX / matchCount;
                 const centroidY = sumY / matchCount;
                 const now = performance.now();
 
                 const newCentroid = { x: centroidX, y: centroidY, time: now };
+                
+                // Track Lock Confirmation
+                if (!state.colorTracking.isLocked) {
+                    state.colorTracking.isLocked = true;
+                    elements.trackerLockBadge.textContent = "Locked";
+                    elements.trackerLockBadge.className = "text-[9px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
+                }
 
                 // Calculate speed of centroids
                 if (state.colorTracking.lastCentroid) {
@@ -1460,7 +1781,7 @@
                         state.colorTracking.cumulativeDistance += incrementalMeters;
 
                         // Jitter elimination: Apply Exponential Moving Average filtering (low-pass smoothing)
-                        const smoothingFactor = 0.25;
+                        const smoothingFactor = 0.3; // faster response time
                         state.colorTracking.currentSpeed = (calculatedSpeedMPS * smoothingFactor) + (state.colorTracking.currentSpeed * (1 - smoothingFactor));
 
                         // Prevent artificial micro-shake noise
@@ -1508,6 +1829,13 @@
                     state.colorTracking.trail.shift();
                 }
             } else {
+                // Tracking Lock Dropped
+                if (state.colorTracking.isLocked) {
+                    state.colorTracking.isLocked = false;
+                    elements.trackerLockBadge.textContent = "Searching";
+                    elements.trackerLockBadge.className = "text-[9px] bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
+                }
+                
                 // Slowly decay tracking readings if visual centroid loses locks
                 state.colorTracking.currentSpeed *= 0.85;
                 if (state.colorTracking.currentSpeed < 0.05) state.colorTracking.currentSpeed = 0;
@@ -1518,9 +1846,26 @@
         // Draw Tracker overlays and fading tails
         function drawColorTracking(ctx) {
             const trail = state.colorTracking.trail;
+            const rRadius = state.colorTracking.roiRadius;
+            const lastCentroid = state.colorTracking.lastCentroid;
+
+            // 1. Draw Active Region of Interest (ROI) Lock-On search box
+            if (state.colorTracking.isLocked && lastCentroid) {
+                ctx.strokeStyle = "rgba(34, 197, 94, 0.25)"; // semi-translucent green
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.strokeRect(lastCentroid.x - rRadius, lastCentroid.y - rRadius, rRadius * 2, rRadius * 2);
+                ctx.setLineDash([]);
+                
+                // Draw ROI text label
+                ctx.fillStyle = "rgba(34, 197, 94, 0.4)";
+                ctx.font = "9px monospace";
+                ctx.fillText("ROI SEARCH WINDOW", lastCentroid.x - rRadius + 4, lastCentroid.y - rRadius + 12);
+            }
+
             if (trail.length === 0) return;
 
-            // Draw target tracking tail path lines
+            // 2. Draw target tracking tail path lines
             ctx.lineWidth = 4;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
@@ -1534,7 +1879,7 @@
                 ctx.stroke();
             }
 
-            // Draw locked tracking target box circle
+            // 3. Draw locked tracking target reticle
             const current = trail[trail.length - 1];
             ctx.strokeStyle = "#eab308"; // Gold tracker reticle
             ctx.lineWidth = 2.5;
