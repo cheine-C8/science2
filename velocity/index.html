@@ -1189,8 +1189,12 @@
             const width = state.canvasWidth;
             const height = state.canvasHeight;
 
-            // Draw current webcam frame to rendering canvas
+            // Mirror the webcam frame horizontally for a natural preview orientation
+            ctx.save();
+            ctx.translate(width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(elements.video, 0, 0, width, height);
+            ctx.restore();
 
             // Analyze frames based on active layout modes
             if (state.calibrating) {
