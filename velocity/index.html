@@ -109,12 +109,12 @@
 
             <!-- Playback & Calibration Quickbar -->
             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-wrap gap-4 items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <button id="toggle-camera-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all">
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button id="toggle-camera-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
                         <span id="camera-btn-text">Start Camera</span>
                     </button>
-                    <select id="camera-source" class="bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl px-3 py-2 text-xs font-medium text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500 max-w-[180px]">
+                    <select id="camera-source" class="bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl px-3 py-2 text-xs font-medium text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500 flex-1 sm:flex-initial max-w-[220px]">
                         <option value="">Default Camera</option>
                     </select>
                 </div>
@@ -135,7 +135,7 @@
                 <div class="flex items-center justify-between pb-2 border-b border-gray-800">
                     <div class="flex items-center space-x-2">
                         <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2-2V12a2 2 0 002 2z" />
                         </svg>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-gray-200">Real-Time Telemetry Analytics</h3>
                     </div>
@@ -315,209 +315,130 @@
                 </div>
             </div>
 
-            <!-- Calibration Configurations Modal/Section -->
+            <!-- Calibration Interactive Step-by-Step Wizard Section -->
             <div id="calibration-options-panel" class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg hidden">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-sm font-bold text-gray-200">Scale Ruler Settings</h4>
-                    <button id="close-cal-btn" class="text-gray-500 hover:text-gray-300 text-xs">Close</button>
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-850">
+                    <h4 class="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                        <span>Calibration Wizard</span>
+                    </h4>
+                    <button id="close-cal-btn" class="text-gray-500 hover:text-gray-300 text-xs">Exit Calibration</button>
                 </div>
-                <p class="text-xs text-gray-400 mb-4 leading-relaxed">Drag the golden end-point markers in the camera preview window to encompass your calibrated reference object.</p>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Size of Reference Item</label>
-                        <div class="relative rounded-xl overflow-hidden flex shadow-inner">
-                            <input type="number" id="cal-physical-length" value="30" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
-                            <select id="cal-physical-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
-                                <option value="cm" selected>cm</option>
-                                <option value="meters">meters</option>
-                                <option value="inches">inches</option>
-                                <option value="feet">feet</option>
-                            </select>
+
+                <!-- Wizard Progress Indicator Bar -->
+                <div class="flex items-center justify-between mb-5 px-1 text-[11px]">
+                    <div id="cal-step-1-indicator" class="flex items-center space-x-1.5 font-bold text-brand-500">
+                        <span class="w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold">1</span>
+                        <span>Align Markers</span>
+                    </div>
+                    <div id="cal-divider-1-2" class="flex-1 h-[2px] bg-gray-850 mx-2"></div>
+                    <div id="cal-step-2-indicator" class="flex items-center space-x-1.5 font-medium text-gray-500">
+                        <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs">2</span>
+                        <span>Define Size</span>
+                    </div>
+                    <div id="cal-divider-2-3" class="flex-1 h-[2px] bg-gray-850 mx-2"></div>
+                    <div id="cal-step-3-indicator" class="flex items-center space-x-1.5 font-medium text-gray-500">
+                        <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs">3</span>
+                        <span>Confirm</span>
+                    </div>
+                </div>
+
+                <!-- Wizard Step Content Holders -->
+                <!-- STEP 1: Aligning Anchor Handles -->
+                <div id="cal-step-1-content" class="space-y-4">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Place an object of precisely known physical length (e.g. a meter stick, a 30cm ruler, or a standard letter sheet) flat in your tracking field.
+                    </p>
+                    <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-850 space-y-2">
+                        <span class="text-[10px] uppercase tracking-wider text-brand-500 font-bold block">Live Span Coordinates</span>
+                        <div class="flex justify-between items-center text-xs text-gray-300 font-mono">
+                            <span>P1 <span class="text-gray-500">(Start)</span>:</span>
+                            <span id="cal-p1-coord">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-300 font-mono border-t border-gray-900 pt-1.5">
+                            <span>P2 <span class="text-gray-500">(End)</span>:</span>
+                            <span id="cal-p2-coord">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-brand-400 font-bold font-mono border-t border-gray-900 pt-1.5">
+                            <span>Total Pixel Distance:</span>
+                            <span id="cal-pixel-span">-- pixels</span>
                         </div>
                     </div>
-                    <button id="save-calibration-btn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-black text-xs font-bold rounded-xl transition-all">
-                        Apply & Set Scaling Ruler
-                    </button>
-                </div>
-            </div>
-
-            <!-- General Configurations -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg">
-                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Global Output Settings</h4>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Velocity Unit</label>
-                        <select id="speed-units" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
-                            <option value="m/s">Meters/Sec (m/s)</option>
-                            <option value="km/h">Kilometers/Hr (km/h)</option>
-                            <option value="mph">Miles/Hour (mph)</option>
-                            <option value="fps">Feet/Second (fps)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Audio Feedback</label>
-                        <select id="audio-setting" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
-                            <option value="chime">Chime sound</option>
-                            <option value="speech">Speak Speeds</option>
-                            <option value="silent">Mute sounds</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Log Panel -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex-1 min-h-[160px] flex flex-col">
-                <div class="px-5 py-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Speed Readings Log</span>
-                    <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
-                </div>
-                <div id="log-list" class="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-2 max-h-[220px]">
-                    <div class="text-gray-500 italic">No runs captured yet. Calibrate the grid and trigger a tracking mode to capture speeds here.</div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Right Column: Control Panel, Metrics & Logs -->
-        <div class="lg:col-span-4 flex flex-col space-y-6">
-
-            <!-- Primary Metric Display Card -->
-            <div class="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-                <div class="absolute -right-12 -bottom-12 w-32 h-32 bg-brand-500/5 rounded-full blur-2xl"></div>
-                
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-bold uppercase tracking-widest text-brand-500" id="metric-label">Object Speed</span>
-                    <span class="text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-semibold uppercase" id="metric-subtext">Live Tracking</span>
-                </div>
-                
-                <div class="flex items-baseline space-x-2 mt-4">
-                    <span id="speed-display-value" class="text-6xl font-black tracking-tight font-mono text-gray-50">0.00</span>
-                    <span id="speed-unit-text" class="text-xl font-bold text-gray-400">m/s</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-gray-850">
-                    <div>
-                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Max Speed Peak</span>
-                        <span id="peak-speed-value" class="text-sm font-bold text-gray-300 font-mono">0.00 m/s</span>
-                    </div>
-                    <div>
-                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Elapsed Tracking Time</span>
-                        <span id="elapsed-time-value" class="text-sm font-bold text-gray-300 font-mono">0.0s</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mode Selector Panel -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg">
-                <div class="flex border-b border-gray-800">
-                    <button id="tab-gate" class="flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>1. Speed Gates</span>
-                    </button>
-                    <button id="tab-color" class="flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-3 0l-9.37-9.37a2.121 2.121 0 113-3l9.37 9.37z"/></svg>
-                        <span>2. Color Track</span>
+                    <p class="text-[11px] text-yellow-500 italic bg-yellow-500/10 p-2.5 rounded-lg border border-yellow-500/20">
+                        👉 Drag the golden anchors P1 and P2 in the camera feed until they encompass the physical boundary of your reference object.
+                    </p>
+                    <button id="cal-next-to-2-btn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-lg shadow-brand-900/10">
+                        <span>Continue to Step 2</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </button>
                 </div>
 
-                <div class="p-5">
+                <!-- STEP 2: Input Scale Values -->
+                <div id="cal-step-2-content" class="space-y-4 hidden">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        What is the precise real-world physical dimension of the reference object between the golden endpoints?
+                    </p>
                     
-                    <!-- View A: Speed Gates Configuration -->
-                    <div id="config-gate-view" class="space-y-4">
-                        <p class="text-xs text-gray-400 leading-relaxed">
-                            Sets up two visual vertical marker lines. Specify the real-world distance between them. High luminosity changes will trip the timers.
-                        </p>
-                        
-                        <!-- Configuration Form Fields -->
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate-to-Gate Distance</label>
-                                <div class="relative rounded-xl overflow-hidden flex shadow-inner">
-                                    <input type="number" id="gate-distance-input" value="1.0" step="0.1" min="0.01" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
-                                    <select id="distance-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
-                                        <option value="meters" selected>Meters</option>
-                                        <option value="cm">Centimeters</option>
-                                        <option value="inches">Inches</option>
-                                        <option value="feet">Feet</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate Sensitivity</label>
-                                    <input type="range" id="gate-sensitivity" min="5" max="80" value="25" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-xs text-gray-400 block mt-5" id="sens-text">Val: 25</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Manual gate overrides/triggers -->
-                        <div class="pt-2">
-                            <span class="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Manual Trip Testing Controls</span>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button id="trip-gate-1" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 1</button>
-                                <button id="trip-gate-2" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 2</button>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Physical Size</label>
+                            <div class="relative rounded-xl overflow-hidden flex border border-gray-850 shadow-inner">
+                                <input type="number" id="cal-physical-length" value="30" step="0.1" min="0.01" class="flex-1 bg-gray-950 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                <select id="cal-physical-units" class="bg-gray-800 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                    <option value="cm" selected>cm</option>
+                                    <option value="meters">meters</option>
+                                    <option value="inches">inches</option>
+                                    <option value="feet">feet</option>
+                                </select>
                             </div>
                         </div>
                     </div>
 
-                    <!-- View B: Color Tracker Settings (Hidden initially) -->
-                    <div id="config-color-view" class="space-y-4 hidden">
-                        <p class="text-xs text-gray-400 leading-relaxed">
-                            Click anywhere on the live video frame above to lock onto a target color. Ensure high-contrast objects for best tracking fidelity.
-                        </p>
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button id="cal-back-to-1-btn" class="py-2.5 bg-gray-850 hover:bg-gray-800 text-gray-300 font-semibold text-xs rounded-xl border border-gray-750 transition-all flex items-center justify-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <span>Back</span>
+                        </button>
+                        <button id="cal-next-to-3-btn" class="py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-lg shadow-brand-900/10">
+                            <span>Next Step</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
 
-                        <!-- Color Sample display -->
-                        <div class="flex items-center space-x-3 bg-gray-850/50 p-3 rounded-xl border border-gray-800">
-                            <div id="target-color-preview" class="w-10 h-10 rounded-lg border border-gray-700 shadow bg-red-500"></div>
-                            <div class="flex-1">
-                                <span class="text-xs font-bold block" id="color-name-text">Red (Selected)</span>
-                                <span class="text-[10px] text-gray-500 font-mono" id="color-rgb-val">RGB: (230, 40, 40)</span>
-                            </div>
+                <!-- STEP 3: Summarize & Confirm -->
+                <div id="cal-step-3-content" class="space-y-4 hidden">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Review the calculated resolution configuration below. If this looks correct, apply to finalize calibration scaling.
+                    </p>
+
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-500">Pixel Span:</span>
+                            <span id="summary-pixels" class="font-mono text-gray-200">-- pixels</span>
                         </div>
-
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Color Color Match Threshold</label>
-                                <input type="range" id="color-threshold" min="10" max="150" value="45" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
-                                <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-                                    <span>Exact Match</span>
-                                    <span>Permissive</span>
-                                </div>
-                            </div>
+                        <div class="flex justify-between items-center text-xs border-t border-gray-900 pt-2">
+                            <span class="text-gray-500">Real-World Size:</span>
+                            <span id="summary-real-size" class="font-mono text-gray-200">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-gray-900 pt-2 font-bold text-brand-400">
+                            <span>Computed Scale Density:</span>
+                            <span id="summary-density" class="font-mono">-- px/m</span>
                         </div>
                     </div>
 
-                </div>
-            </div>
-
-            <!-- Calibration Configurations Modal/Section -->
-            <div id="calibration-options-panel" class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg hidden">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-sm font-bold text-gray-200">Scale Ruler Settings</h4>
-                    <button id="close-cal-btn" class="text-gray-500 hover:text-gray-300 text-xs">Close</button>
-                </div>
-                <p class="text-xs text-gray-400 mb-4 leading-relaxed">Drag the golden end-point markers in the camera preview window to encompass your calibrated reference object.</p>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Size of Reference Item</label>
-                        <div class="relative rounded-xl overflow-hidden flex shadow-inner">
-                            <input type="number" id="cal-physical-length" value="30" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
-                            <select id="cal-physical-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
-                                <option value="cm" selected>cm</option>
-                                <option value="meters">meters</option>
-                                <option value="inches">inches</option>
-                                <option value="feet">feet</option>
-                            </select>
-                        </div>
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button id="cal-back-to-2-btn" class="py-2.5 bg-gray-850 hover:bg-gray-800 text-gray-300 font-semibold text-xs rounded-xl border border-gray-750 transition-all flex items-center justify-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <span>Back</span>
+                        </button>
+                        <button id="save-calibration-btn" class="py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-brand-900/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            <span>Save & Calibrate</span>
+                        </button>
                     </div>
-                    <button id="save-calibration-btn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-black text-xs font-bold rounded-xl transition-all">
-                        Apply & Set Scaling Ruler
-                    </button>
                 </div>
+
             </div>
 
             <!-- General Configurations -->
@@ -763,7 +684,7 @@
             configGateView: document.getElementById('config-gate-view'),
             configColorView: document.getElementById('config-color-view'),
             
-            // Calibrate Sub-components
+            // Calibrate Sub-components & Wizard Steps
             calModeBtn: document.getElementById('cal-mode-btn'),
             calibrationPanel: document.getElementById('calibration-options-panel'),
             saveCalBtn: document.getElementById('save-calibration-btn'),
@@ -772,6 +693,28 @@
             calPhysicalUnits: document.getElementById('cal-physical-units'),
             calStatusIndicator: document.getElementById('cal-status-indicator'),
             camResIndicator: document.getElementById('cam-res-indicator'),
+
+            // Steps Layout Nodes
+            step1Indicator: document.getElementById('cal-step-1-indicator'),
+            step2Indicator: document.getElementById('cal-step-2-indicator'),
+            step3Indicator: document.getElementById('cal-step-3-indicator'),
+            divider1to2: document.getElementById('cal-divider-1-2'),
+            divider2to3: document.getElementById('cal-divider-2-3'),
+            step1Content: document.getElementById('cal-step-1-content'),
+            step2Content: document.getElementById('cal-step-2-content'),
+            step3Content: document.getElementById('cal-step-3-content'),
+            p1CoordText: document.getElementById('cal-p1-coord'),
+            p2CoordText: document.getElementById('cal-p2-coord'),
+            pixelSpanText: document.getElementById('cal-pixel-span'),
+            btnNextTo2: document.getElementById('cal-next-to-2-btn'),
+            btnBackTo1: document.getElementById('cal-back-to-1-btn'),
+            btnNextTo3: document.getElementById('cal-next-to-3-btn'),
+            btnBackTo2: document.getElementById('cal-back-to-2-btn'),
+
+            // Summary Text Slots
+            summaryPixels: document.getElementById('summary-pixels'),
+            summaryRealSize: document.getElementById('summary-real-size'),
+            summaryDensity: document.getElementById('summary-density'),
 
             // Metrics Displays
             speedDisplayVal: document.getElementById('speed-display-value'),
@@ -860,7 +803,7 @@
             resetLiveTracker();
         });
 
-        // Trigger Calibration interface toggles
+        // Trigger Calibration interface toggles & Reset Wizard Steps
         elements.calModeBtn.addEventListener('click', () => {
             state.calibrating = !state.calibrating;
             if (state.calibrating) {
@@ -869,7 +812,10 @@
                     <svg class="w-4 h-4 text-brand-500 fill-brand-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
                     <span>Calibration Active</span>
                 `;
-                elements.canvasPrompt.innerHTML = "Drag the golden circles to align with a ruler, then apply scaling values.";
+                elements.canvasPrompt.innerHTML = "Follow the wizard steps on the right side to align markers with your reference object.";
+                
+                // Initialize/Reset Calibration Wizard to Step 1
+                setCalibrationStep(1);
                 playChime(440, "sine", 0.1, 0.05);
             } else {
                 exitCalibration();
@@ -890,7 +836,93 @@
                 "Click on any colored object inside the video preview to lock live tracking.";
         }
 
-        // Apply visual metric ruler calibration scales
+        // --- Calibration Wizard Steps Switcher ---
+        function setCalibrationStep(stepNum) {
+            // Hide all step blocks
+            elements.step1Content.classList.add('hidden');
+            elements.step2Content.classList.add('hidden');
+            elements.step3Content.classList.add('hidden');
+
+            // Reset step layout styles
+            elements.step1Indicator.className = "flex items-center space-x-1.5 font-medium text-gray-500";
+            elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs";
+            
+            elements.step2Indicator.className = "flex items-center space-x-1.5 font-medium text-gray-500";
+            elements.step2Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs";
+            
+            elements.step3Indicator.className = "flex items-center space-x-1.5 font-medium text-gray-500";
+            elements.step3Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs";
+            
+            elements.divider1to2.className = "flex-1 h-[2px] bg-gray-850 mx-2";
+            elements.divider2to3.className = "flex-1 h-[2px] bg-gray-850 mx-2";
+
+            if (stepNum === 1) {
+                elements.step1Content.classList.remove('hidden');
+                elements.step1Indicator.className = "flex items-center space-x-1.5 font-bold text-brand-500";
+                elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold";
+            } 
+            else if (stepNum === 2) {
+                elements.step2Content.classList.remove('hidden');
+                
+                elements.step1Indicator.className = "flex items-center space-x-1.5 font-medium text-brand-500";
+                elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-900 text-brand-500 flex items-center justify-center text-xs";
+                elements.divider1to2.className = "flex-1 h-[2px] bg-brand-500/50 mx-2";
+
+                elements.step2Indicator.className = "flex items-center space-x-1.5 font-bold text-brand-500";
+                elements.step2Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold";
+            } 
+            else if (stepNum === 3) {
+                elements.step3Content.classList.remove('hidden');
+                
+                elements.step1Indicator.className = "flex items-center space-x-1.5 font-medium text-brand-500";
+                elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-900 text-brand-500 flex items-center justify-center text-xs";
+                
+                elements.step2Indicator.className = "flex items-center space-x-1.5 font-medium text-brand-500";
+                elements.step2Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-900 text-brand-500 flex items-center justify-center text-xs";
+                
+                elements.divider1to2.className = "flex-1 h-[2px] bg-brand-500/50 mx-2";
+                elements.divider2to3.className = "flex-1 h-[2px] bg-brand-500/50 mx-2";
+
+                elements.step3Indicator.className = "flex items-center space-x-1.5 font-bold text-brand-500";
+                elements.step3Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold";
+
+                // Compute parameters summary for Step 3 confirmation screen
+                const dx = state.scale.point2.x - state.scale.point1.x;
+                const dy = state.scale.point2.y - state.scale.point1.y;
+                const pxDistance = Math.sqrt(dx * dx + dy * dy);
+                const physVal = parseFloat(elements.calPhysicalLength.value) || 30;
+                const physUnits = elements.calPhysicalUnits.value;
+
+                elements.summaryPixels.textContent = `${pxDistance.toFixed(1)} px`;
+                elements.summaryRealSize.textContent = `${physVal} ${physUnits}`;
+
+                // Calculate computed physical scale density
+                let refMeters = physVal;
+                if (physUnits === 'cm') refMeters = physVal / 100;
+                else if (physUnits === 'inches') refMeters = physVal * 0.0254;
+                else if (physUnits === 'feet') refMeters = physVal * 0.3048;
+
+                const pixelsPerMeter = pxDistance / refMeters;
+                elements.summaryDensity.textContent = `${pixelsPerMeter.toFixed(1)} px / meter`;
+            }
+
+            playChime(500 + stepNum * 100, "sine", 0.1, 0.04);
+        }
+
+        // Connect step transition buttons listeners
+        elements.btnNextTo2.addEventListener('click', () => setCalibrationStep(2));
+        elements.btnBackTo1.addEventListener('click', () => setCalibrationStep(1));
+        elements.btnNextTo3.addEventListener('click', () => {
+            const val = parseFloat(elements.calPhysicalLength.value);
+            if (isNaN(val) || val <= 0) {
+                alertUser("Input error", "Please enter a valid length greater than 0.");
+                return;
+            }
+            setCalibrationStep(3);
+        });
+        elements.btnBackTo2.addEventListener('click', () => setCalibrationStep(2));
+
+        // Finalize visual metric ruler calibration scales
         elements.saveCalBtn.addEventListener('click', () => {
             const val = parseFloat(elements.calPhysicalLength.value);
             const unit = elements.calPhysicalUnits.value;
@@ -904,7 +936,7 @@
             const pxDistance = Math.sqrt(dx * dx + dy * dy);
 
             if (pxDistance < 15) {
-                alertUser("Calibration line too small", "Please separate the measurement points further to calibrate high fidelity dimensions.");
+                alertUser("Calibration error", "Please separate the measurement points further to calibrate high fidelity dimensions.");
                 return;
             }
 
@@ -1069,7 +1101,7 @@
 
                     // Set camera button text change
                     elements.cameraBtnText.textContent = "Stop Camera";
-                    elements.toggleCameraBtn.className = "px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all";
+                    elements.toggleCameraBtn.className = "px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all shrink-0";
                     
                     elements.statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
                     elements.statusText.textContent = "Tracking Live Feed";
@@ -1098,7 +1130,7 @@
             }
             state.webcamActive = false;
             elements.cameraBtnText.textContent = "Start Camera";
-            elements.toggleCameraBtn.className = "px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all";
+            elements.toggleCameraBtn.className = "px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all shrink-0";
             
             elements.statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
             elements.statusText.textContent = "Webcam Inactive";
@@ -1110,6 +1142,15 @@
 
         elements.toggleCameraBtn.addEventListener('click', startCamera);
         elements.directStartBtn.addEventListener('click', startCamera);
+
+        // Instant Switch on Camera Source Dropdown Changes
+        elements.cameraSource.addEventListener('change', async () => {
+            if (state.webcamActive) {
+                logEvent("Switching camera source...");
+                stopCamera();
+                await startCamera();
+            }
+        });
 
 
         // --- Tracking Algorithms ---
@@ -1288,16 +1329,18 @@
 
         // Mouse Down Handles Mapping
         elements.canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Crucial to prevent browser from entering drag/selection mode on the canvas element
             const coords = getCanvasMouseCoords(e);
 
             // 1. Check if user is calibrating (dragging golden ruler end points)
             if (state.calibrating) {
+                // Increased snap hit-box radius from 25 to 45 for better accuracy
                 const dist1 = Math.hypot(coords.x - state.scale.point1.x, coords.y - state.scale.point1.y);
                 const dist2 = Math.hypot(coords.x - state.scale.point2.x, coords.y - state.scale.point2.y);
 
-                if (dist1 < 25) {
+                if (dist1 < 45) {
                     state.scale.draggedPoint = 'point1';
-                } else if (dist2 < 25) {
+                } else if (dist2 < 45) {
                     state.scale.draggedPoint = 'point2';
                 }
                 return;
@@ -1316,6 +1359,7 @@
 
             // 3. Color Selection Mode: Sample color under cursor click
             if (state.mode === 'color') {
+                if (!state.webcamActive) return; // Prevent sampling if webcam offline
                 const imgData = elements.ctx.getImageData(coords.x, coords.y, 1, 1).data;
                 const r = imgData[0], g = imgData[1], b = imgData[2];
                 
@@ -1353,12 +1397,22 @@
 
         // Mouse Move coordinates dragging loop
         elements.canvas.addEventListener('mousemove', (e) => {
-            if (!state.webcamActive) return;
             const coords = getCanvasMouseCoords(e);
 
             // Handle Calibration Markers repositioning
             if (state.calibrating && state.scale.draggedPoint) {
                 state.scale[state.scale.draggedPoint] = coords;
+                
+                // Keep live coordinate wizard readouts in sync
+                const p1 = state.scale.point1;
+                const p2 = state.scale.point2;
+                elements.p1CoordText.textContent = `(${Math.round(p1.x)}, ${Math.round(p1.y)})`;
+                elements.p2CoordText.textContent = `(${Math.round(p2.x)}, ${Math.round(p2.y)})`;
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const span = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+                elements.pixelSpanText.textContent = `${span} pixels`;
                 return;
             }
 
@@ -1379,26 +1433,28 @@
             state.gates.draggedGate = null;
         });
 
-        // Adapt Dragging Controls to mobile touch inputs
+        // Adapt Dragging Controls to mobile touch inputs with strict preventDefault
         elements.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
+                e.preventDefault(); // Blocks mobile body scroll intercepts
                 const mouseEvent = new MouseEvent('mousedown', {
                     clientX: e.touches[0].clientX,
                     clientY: e.touches[0].clientY
                 });
                 elements.canvas.dispatchEvent(mouseEvent);
             }
-        }, { passive: true });
+        }, { passive: false });
 
         elements.canvas.addEventListener('touchmove', (e) => {
             if (e.touches.length === 1) {
+                e.preventDefault(); // Blocks zoom/bounce sweeps while dragging
                 const mouseEvent = new MouseEvent('mousemove', {
                     clientX: e.touches[0].clientX,
                     clientY: e.touches[0].clientY
                 });
                 elements.canvas.dispatchEvent(mouseEvent);
             }
-        }, { passive: true });
+        }, { passive: false });
 
         window.addEventListener('touchend', () => {
             state.scale.draggedPoint = null;
@@ -1425,6 +1481,17 @@
             // Analyze frames based on active layout modes
             if (state.calibrating) {
                 drawCalibrationTool(ctx);
+                
+                // Keep step 1 coordinate stats updated dynamically
+                const p1 = state.scale.point1;
+                const p2 = state.scale.point2;
+                elements.p1CoordText.textContent = `(${Math.round(p1.x)}, ${Math.round(p1.y)})`;
+                elements.p2CoordText.textContent = `(${Math.round(p2.x)}, ${Math.round(p2.y)})`;
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const span = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+                elements.pixelSpanText.textContent = `${span} pixels`;
             } else if (state.mode === 'gate') {
                 processGateDetection(ctx);
                 drawGates(ctx);
@@ -1843,7 +1910,7 @@
             }
         }
 
-        // Draw Tracker overlays and fading tails
+        // Draw Tracker overlays and fading trails
         function drawColorTracking(ctx) {
             const trail = state.colorTracking.trail;
             const rRadius = state.colorTracking.roiRadius;
