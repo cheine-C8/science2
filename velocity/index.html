@@ -124,6 +124,11 @@
                         <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
                         <span>Calibrate Grid Ruler</span>
                     </button>
+                    <!-- Toggle Mirror Button -->
+                    <button id="toggle-mirror-btn" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-black border border-brand-500 rounded-xl text-sm font-semibold transition-all flex items-center space-x-1.5 shadow-lg shadow-brand-900/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742l1.325-1.324m0 0l-1.325-1.325m1.325 1.325L3 13.844m12.316-3.1L14 9.418m0 0l1.316-1.316L14 9.418L21 13.844M12 3v18"/></svg>
+                        <span id="mirror-btn-text">Mirror: ON</span>
+                    </button>
                     <button id="clear-tracking-btn" class="px-3 py-2 text-xs bg-gray-800 hover:bg-red-950/40 hover:text-red-400 border border-gray-700 rounded-xl font-medium transition-all">
                         Reset Trackers
                     </button>
@@ -135,7 +140,7 @@
                 <div class="flex items-center justify-between pb-2 border-b border-gray-800">
                     <div class="flex items-center space-x-2">
                         <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2-2V12a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-gray-200">Real-Time Telemetry Analytics</h3>
                     </div>
@@ -429,11 +434,11 @@
 
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         <button id="cal-back-to-2-btn" class="py-2.5 bg-gray-850 hover:bg-gray-800 text-gray-300 font-semibold text-xs rounded-xl border border-gray-750 transition-all flex items-center justify-center space-x-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                             <span>Back</span>
                         </button>
                         <button id="save-calibration-btn" class="py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-brand-900/10">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             <span>Save & Calibrate</span>
                         </button>
                     </div>
@@ -605,6 +610,7 @@
             canvasHeight: 480,
             mode: 'gate', // 'gate' or 'color'
             calibrating: false,
+            mirrorFeed: true, // Default to true (mirrored) for intuitive previewing
             
             // Pixels to unit conversion scale (Calibration)
             scale: {
@@ -686,6 +692,8 @@
             
             // Calibrate Sub-components & Wizard Steps
             calModeBtn: document.getElementById('cal-mode-btn'),
+            toggleMirrorBtn: document.getElementById('toggle-mirror-btn'),
+            mirrorBtnText: document.getElementById('mirror-btn-text'),
             calibrationPanel: document.getElementById('calibration-options-panel'),
             saveCalBtn: document.getElementById('save-calibration-btn'),
             closeCalBtn: document.getElementById('close-cal-btn'),
@@ -1152,6 +1160,21 @@
             }
         });
 
+        // Mirror Toggle Button Listener
+        elements.toggleMirrorBtn.addEventListener('click', () => {
+            state.mirrorFeed = !state.mirrorFeed;
+            if (state.mirrorFeed) {
+                elements.toggleMirrorBtn.className = "px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-black border border-brand-500 rounded-xl text-sm font-semibold transition-all flex items-center space-x-1.5 shadow-lg shadow-brand-900/10";
+                elements.mirrorBtnText.textContent = "Mirror: ON";
+                logEvent("Camera preview mirroring ENABLED.");
+            } else {
+                elements.toggleMirrorBtn.className = "px-3.5 py-2 bg-gray-800 hover:bg-gray-750 text-gray-300 border border-gray-700 rounded-xl text-sm font-medium transition-all flex items-center space-x-1.5";
+                elements.mirrorBtnText.textContent = "Mirror: OFF";
+                logEvent("Camera preview mirroring DISABLED.");
+            }
+            playChime(600, "sine", 0.1, 0.05);
+        });
+
 
         // --- Tracking Algorithms ---
 
@@ -1471,10 +1494,12 @@
             const width = state.canvasWidth;
             const height = state.canvasHeight;
 
-            // Mirror the webcam frame horizontally for a natural preview orientation
+            // Conditionally mirror the webcam frame horizontally based on user state
             ctx.save();
-            ctx.translate(width, 0);
-            ctx.scale(-1, 1);
+            if (state.mirrorFeed) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
             ctx.drawImage(elements.video, 0, 0, width, height);
             ctx.restore();
 
