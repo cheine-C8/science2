@@ -74,7 +74,7 @@
         <!-- Left Column: Camera Viewport, Charts & Controls -->
         <div class="lg:col-span-8 flex flex-col space-y-4">
             
-            <!-- Main Video Container -->
+            <!-- Main Video / Workbench Container -->
             <div class="relative bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-2xl aspect-video w-full flex items-center justify-center group">
                 
                 <!-- HTML5 Video Component (Hidden, feeds Canvas) -->
@@ -83,8 +83,43 @@
                 <!-- Render Canvas (Main Interaction Surface) -->
                 <canvas id="render-canvas" class="w-full h-full object-contain cursor-crosshair"></canvas>
                 
+                <!-- Interactive Student Data Workbench Container (Replaces Video feed when in Workshop Mode) -->
+                <div id="workbench-container" class="absolute inset-0 bg-gray-950 flex flex-col hidden p-4 transition-all z-10">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <span class="text-xs bg-brand-500/15 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Student Data Workbench</span>
+                            <span class="text-xs text-gray-400 ml-2">Drag Crop Handles to isolate ranges</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="flex items-center space-x-1 text-xs text-gray-300">
+                                <input type="checkbox" id="show-speed-toggle" checked class="rounded border-gray-700 text-brand-500 focus:ring-0 bg-gray-800">
+                                <span class="text-emerald-400">Speed</span>
+                            </label>
+                            <label class="flex items-center space-x-1 text-xs text-gray-300">
+                                <input type="checkbox" id="show-distance-toggle" checked class="rounded border-gray-700 text-brand-500 focus:ring-0 bg-gray-800">
+                                <span class="text-sky-400">Distance</span>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Workbench Interactive graph canvas -->
+                    <div class="flex-1 min-h-0 bg-gray-900/60 rounded-xl border border-gray-800 relative overflow-hidden">
+                        <canvas id="workbench-canvas" class="w-full h-full cursor-pointer"></canvas>
+                    </div>
+                    <!-- Workbench status info bar -->
+                    <div class="flex justify-between items-center mt-2 text-[11px] text-gray-400 px-1">
+                        <div class="flex space-x-4">
+                            <span>Crop Range: <b id="workbench-crop-readout" class="text-white font-mono">0.00s - 10.00s</b></span>
+                            <span>Selected Points: <b id="workbench-points-count" class="text-white font-mono">0</b></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <span id="workbench-hover-tooltip" class="font-mono text-gray-200">Hover graph to inspect values</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Top Left Status Bar -->
-                <div class="absolute top-4 left-4 flex flex-col space-y-2 pointer-events-none">
+                <div class="absolute top-4 left-4 flex flex-col space-y-2 pointer-events-none z-20">
                     <div id="status-badge" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-yellow-400">
                         <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></span>
                         <span id="status-text">Webcam Inactive</span>
@@ -92,12 +127,12 @@
                 </div>
 
                 <!-- Touch & Mouse Helper Guides (Overlay) -->
-                <div id="canvas-prompt" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-700/60 text-xs text-center text-gray-200 pointer-events-none transition-all duration-300 shadow-xl max-w-md">
+                <div id="canvas-prompt" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-700/60 text-xs text-center text-gray-200 pointer-events-none transition-all duration-300 shadow-xl max-w-md z-20">
                     Click the "Start Camera" button below to initialize your speed tracking setup.
                 </div>
 
                 <!-- Video Loading/Placeholder Screen -->
-                <div id="placeholder-screen" class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center p-8 transition-all duration-500">
+                <div id="placeholder-screen" class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center p-8 transition-all duration-500 z-20">
                     <div class="w-16 h-16 rounded-full border-4 border-dashed border-brand-500/30 border-t-brand-500 animate-spin mb-6"></div>
                     <h3 class="text-lg font-bold text-gray-200">Waiting for Camera Initialization</h3>
                     <p class="text-sm text-gray-400 text-center mt-2 max-w-xs">Grant camera permissions when prompted to enable real-time velocity calculations.</p>
@@ -236,13 +271,17 @@
             <!-- Mode Selector Panel -->
             <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg">
                 <div class="flex border-b border-gray-800">
-                    <button id="tab-gate" class="flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>1. Speed Gates</span>
+                    <button id="tab-gate" class="flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>1. Gates</span>
                     </button>
-                    <button id="tab-color" class="flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-3 0l-9.37-9.37a2.121 2.121 0 113-3l9.37 9.37z"/></svg>
+                    <button id="tab-color" class="flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-3 0l-9.37-9.37a2.121 2.121 0 113-3l9.37 9.37z"/></svg>
                         <span>2. Color Track</span>
+                    </button>
+                    <button id="tab-workshop" class="flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>3. Workshop</span>
                     </button>
                 </div>
 
@@ -320,6 +359,82 @@
                                     <span>Selective Hue</span>
                                     <span>Broad Match</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View C: Data Workshop Panel (Editor controls for post processing) -->
+                    <div id="config-workshop-view" class="space-y-4 hidden">
+                        <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-850 space-y-2.5">
+                            <h5 class="text-xs font-bold tracking-wider uppercase text-brand-400 flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                                <span>Dataset Operations</span>
+                            </h5>
+                            
+                            <!-- Crop datasets button -->
+                            <div>
+                                <button id="apply-crop-btn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all shadow-lg shadow-brand-900/10 flex items-center justify-center space-x-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z"/></svg>
+                                    <span>Crop Dataset to Range</span>
+                                </button>
+                                <label class="flex items-center space-x-2 mt-2 cursor-pointer">
+                                    <input type="checkbox" id="shift-time-zero-checkbox" checked class="rounded border-gray-700 text-brand-500 focus:ring-0 bg-gray-900">
+                                    <span class="text-[10px] text-gray-400">Shift cropped start time to t=0.00s</span>
+                                </label>
+                            </div>
+
+                            <!-- Mathematical smoothing and offset modifiers -->
+                            <div class="border-t border-gray-900 pt-2.5 space-y-2.5">
+                                <div>
+                                    <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
+                                        <span class="font-bold">LOW-PASS SMOOTHING FILTER</span>
+                                        <span id="smoothing-level-text">Level: 3</span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <input type="range" id="workshop-smooth-input" min="2" max="10" value="3" class="flex-1 accent-brand-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer mt-2">
+                                        <button id="apply-smooth-btn" class="px-3 py-1 bg-gray-800 hover:bg-gray-750 text-white font-semibold text-[10px] border border-gray-700 rounded-lg transition-all">Smooth</button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 uppercase mb-0.5">Scale Calibration</label>
+                                        <div class="flex space-x-1">
+                                            <input type="number" id="workshop-scale-input" value="1.0" step="0.05" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-xs text-white font-mono focus:outline-none">
+                                            <button id="apply-scale-btn" class="px-2 py-1 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-lg text-[10px] transition-all">Scale</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 uppercase mb-0.5">Time Shift Offset</label>
+                                        <div class="flex space-x-1">
+                                            <input type="number" id="workshop-shift-input" value="0.0" step="0.1" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-xs text-white font-mono focus:outline-none">
+                                            <button id="apply-shift-btn" class="px-2 py-1 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-lg text-[10px] transition-all">Shift</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-900">
+                                <button id="workshop-undo-btn" class="py-1.5 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all flex items-center justify-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/></svg>
+                                    <span>Undo Edit</span>
+                                </button>
+                                <button id="workshop-reset-btn" class="py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/30 text-xs font-semibold rounded-xl text-red-400 transition-all flex items-center justify-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15.07M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/></svg>
+                                    <span>Restore Raw</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Manual Outlier Data Table Inspector -->
+                        <div class="flex flex-col border border-gray-800 rounded-xl overflow-hidden bg-gray-950">
+                            <div class="px-3.5 py-2 bg-gray-900/50 border-b border-gray-850 flex justify-between items-center">
+                                <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Manual Point Inspector</span>
+                                <span class="text-[9px] bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-mono" id="points-table-count">0 Pts</span>
+                            </div>
+                            <div class="overflow-y-auto max-h-[140px] text-[10px] font-mono divide-y divide-gray-900" id="workbench-table-body">
+                                <!-- Populated dynamically by JS -->
+                                <div class="text-center p-4 text-gray-500 italic">No points to edit. Capture a dataset first.</div>
                             </div>
                         </div>
                     </div>
@@ -481,11 +596,7 @@
             <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex-1 min-h-[160px] flex flex-col">
                 <div class="px-5 py-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Speed Readings Log</span>
-                    <div class="flex items-center space-x-2">
-                        <!-- Export Log Button -->
-                        <button id="export-log-btn" class="text-[10px] text-brand-400 hover:text-brand-300 font-semibold uppercase tracking-wider border border-gray-800 hover:border-gray-700 bg-gray-850 px-2 py-1 rounded-md transition-all">Export Log</button>
-                        <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
-                    </div>
+                    <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
                 </div>
                 <div id="log-list" class="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-2 max-h-[220px]">
                     <div class="text-gray-500 italic">No runs captured yet. Calibrate the grid and trigger a tracking mode to capture speeds here.</div>
@@ -613,36 +724,16 @@
             return { h: Math.round(h * 360), s: Math.round(s * 100), v: Math.round(v * 100) };
         }
 
-        // Client-side local file downloader
-        function downloadFile(content, fileName, contentType) {
-            try {
-                const blob = new Blob([content], { type: contentType });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(a.href);
-            } catch (err) {
-                console.error("Failed to generate download file", err);
-                alertUser("Export Error", "Browser sandbox restricted local file system downloads.");
-            }
-        }
-
         // --- Core Application State ---
         const state = {
             webcamActive: false,
             videoStream: null,
             canvasWidth: 640,
             canvasHeight: 480,
-            mode: 'gate', // 'gate' or 'color'
+            mode: 'gate', // 'gate', 'color', or 'workshop'
             calibrating: false,
             mirrorFeed: true, // Default to true (mirrored) for intuitive previewing
             
-            // Log Export Tracker Array
-            logData: [],
-
             // Pixels to unit conversion scale (Calibration)
             scale: {
                 isSet: false,
@@ -687,10 +778,21 @@
                 trackingStartTime: 0
             },
 
-            // Telemetry Live Chart Buffers
+            // Telemetry Live Chart Buffers & Workshop post-processing data blocks
             telemetry: {
                 history: [], // array of objects: { time: Number, speed: Number, distance: Number }
                 maxHistorySec: 10, // display window depth of 10 seconds
+                
+                // Student Workshop Data modification stack
+                rawBackup: [], // Frozen copy of unmodified, original captured telemetry run
+                undoStack: [], // Undo modifications history
+                cropStartPercent: 0, // Left crop slider handle percentage (0.0 to 1.0)
+                cropEndPercent: 1.0, // Right crop slider handle percentage (0.0 to 1.0)
+                draggedWorkshopHandle: null, // 'start', 'end', or null
+                curves: {
+                    speed: true,
+                    distance: true
+                }
             },
 
             // UI Speed Outputs
@@ -718,8 +820,35 @@
             // Mode selectors
             tabGate: document.getElementById('tab-gate'),
             tabColor: document.getElementById('tab-color'),
+            tabWorkshop: document.getElementById('tab-workshop'),
             configGateView: document.getElementById('config-gate-view'),
             configColorView: document.getElementById('config-color-view'),
+            configWorkshopView: document.getElementById('config-workshop-view'),
+            
+            // Workbench view container (Data Editor)
+            workbenchContainer: document.getElementById('workbench-container'),
+            workbenchCanvas: document.getElementById('workbench-canvas'),
+            workbenchCtx: document.getElementById('workbench-canvas').getContext('2d'),
+            workbenchCropReadout: document.getElementById('workbench-crop-readout'),
+            workbenchPointsCount: document.getElementById('workbench-points-count'),
+            workbenchHoverTooltip: document.getElementById('workbench-hover-tooltip'),
+            pointsTableCount: document.getElementById('points-table-count'),
+            workbenchTableBody: document.getElementById('workbench-table-body'),
+            showSpeedToggle: document.getElementById('show-speed-toggle'),
+            showDistanceToggle: document.getElementById('show-distance-toggle'),
+
+            // Workshop controls
+            applyCropBtn: document.getElementById('apply-crop-btn'),
+            shiftTimeZeroCheckbox: document.getElementById('shift-time-zero-checkbox'),
+            workshopSmoothInput: document.getElementById('workshop-smooth-input'),
+            applySmoothBtn: document.getElementById('apply-smooth-btn'),
+            workshopScaleInput: document.getElementById('workshop-scale-input'),
+            applyScaleBtn: document.getElementById('apply-scale-btn'),
+            workshopShiftInput: document.getElementById('workshop-shift-input'),
+            applyShiftBtn: document.getElementById('apply-shift-btn'),
+            workshopUndoBtn: document.getElementById('workshop-undo-btn'),
+            workshopResetBtn: document.getElementById('workshop-reset-btn'),
+            smoothingLevelText: document.getElementById('smoothing-level-text'),
             
             // Calibrate Sub-components & Wizard Steps
             calModeBtn: document.getElementById('cal-mode-btn'),
@@ -779,15 +908,13 @@
             speedUnitsSelect: document.getElementById('speed-units'),
             clearTrackingBtn: document.getElementById('clear-tracking-btn'),
             
-            // Modals, Logs, & Data Extraction Handles
+            // Modals & Logs
             helpBtn: document.getElementById('help-btn'),
             instructionsModal: document.getElementById('instructions-modal'),
             closeModalBtn: document.getElementById('close-modal-btn'),
             modalAckBtn: document.getElementById('modal-ack-btn'),
             logList: document.getElementById('log-list'),
             clearLogsBtn: document.getElementById('clear-logs-btn'),
-            exportCsvBtn: document.getElementById('export-csv-btn'),
-            exportLogBtn: document.getElementById('export-log-btn'),
 
             // Live Telemetry Elements
             chartModeBadge: document.getElementById('chart-mode-badge'),
@@ -800,11 +927,14 @@
         // Initialize Telemetry Canvas sizes for high-definition rendering
         function setupTelemetryCanvases() {
             const ratio = window.devicePixelRatio || 1;
-            [elements.distanceCanvas, elements.speedCanvas].forEach(canvas => {
+            [elements.distanceCanvas, elements.speedCanvas, elements.workbenchCanvas].forEach(canvas => {
                 const rect = canvas.getBoundingClientRect();
                 canvas.width = rect.width * ratio;
                 canvas.height = rect.height * ratio;
             });
+            if (state.mode === 'workshop') {
+                drawWorkbenchChart();
+            }
         }
 
         // Window resize event handler for dynamic layout alignment
@@ -817,13 +947,16 @@
         elements.closeModalBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
         elements.modalAckBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
 
-        // Toggle Speed gates and Color tracking panels
+        // Tab routing switches
         elements.tabGate.addEventListener('click', () => {
             state.mode = 'gate';
-            elements.tabGate.className = "flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5";
-            elements.tabColor.className = "flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5";
+            elements.tabGate.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
+            elements.tabColor.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.tabWorkshop.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
             elements.configGateView.classList.remove('hidden');
             elements.configColorView.classList.add('hidden');
+            elements.configWorkshopView.classList.add('hidden');
+            elements.workbenchContainer.classList.add('hidden');
             elements.metricLabel.textContent = "Time Traversed";
             elements.metricSubtext.textContent = "Chronometer Gates";
             elements.chartModeBadge.textContent = "Gates Mode";
@@ -833,15 +966,47 @@
 
         elements.tabColor.addEventListener('click', () => {
             state.mode = 'color';
-            elements.tabColor.className = "flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5";
-            elements.tabGate.className = "flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5";
+            elements.tabColor.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
+            elements.tabGate.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.tabWorkshop.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
             elements.configColorView.classList.remove('hidden');
             elements.configGateView.classList.add('hidden');
+            elements.configWorkshopView.classList.add('hidden');
+            elements.workbenchContainer.classList.add('hidden');
             elements.metricLabel.textContent = "Object Speed";
             elements.metricSubtext.textContent = "Color Centroid Tracking";
             elements.chartModeBadge.textContent = "Live Track Mode";
             elements.chartModeBadge.className = "text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-bold uppercase";
             resetLiveTracker();
+        });
+
+        elements.tabWorkshop.addEventListener('click', () => {
+            state.mode = 'workshop';
+            elements.tabWorkshop.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
+            elements.tabGate.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.tabColor.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.configWorkshopView.classList.remove('hidden');
+            elements.configGateView.classList.add('hidden');
+            elements.configColorView.classList.add('hidden');
+            elements.workbenchContainer.classList.remove('hidden');
+            elements.metricLabel.textContent = "Dataset Range";
+            elements.metricSubtext.textContent = "Workshop Active";
+            elements.chartModeBadge.textContent = "Workbench Mode";
+            elements.chartModeBadge.className = "text-[10px] bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full font-bold uppercase";
+
+            // If we have live data, back it up so user can reset edits safely
+            if (state.telemetry.history.length > 0 && state.telemetry.rawBackup.length === 0) {
+                state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+            }
+            
+            // Adjust slider default boundaries to fit current timeframe
+            state.telemetry.cropStartPercent = 0.0;
+            state.telemetry.cropEndPercent = 1.0;
+            
+            setupTelemetryCanvases();
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            playChime(580, "sine", 0.15, 0.06);
         });
 
         // Trigger Calibration interface toggles & Reset Wizard Steps
@@ -1020,14 +1185,21 @@
             elements.speedUnitText.textContent = state.outputUnits;
             updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
             renderTelemetryCharts();
+            if (state.mode === 'workshop') drawWorkbenchChart();
         });
 
         // Reset trackers button
         elements.clearTrackingBtn.addEventListener('click', () => {
             resetGateTimers();
             resetLiveTracker();
+            state.telemetry.rawBackup = [];
+            state.telemetry.undoStack = [];
             logEvent("All trackers, logs, and live graph histories reset.");
             playChime(330, "square", 0.1, 0.05);
+            if (state.mode === 'workshop') {
+                refreshWorkbenchTable();
+                drawWorkbenchChart();
+            }
         });
 
         // Trigger manual simulation gate passes (ideal for debug/demonstration!)
@@ -1037,15 +1209,10 @@
         // Logs Manager
         elements.clearLogsBtn.addEventListener('click', () => {
             elements.logList.innerHTML = `<div class="text-gray-500 italic">Logs wiped clean. Ready for new speed sweeps.</div>`;
-            state.logData = [];
         });
 
         function logEvent(message) {
             const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
-            // Push structured log string into export state array
-            state.logData.push(`[${timeStr}] ${message}`);
-
             const item = document.createElement('div');
             item.className = "bg-gray-850 p-2 rounded border border-gray-800 text-gray-300 flex justify-between";
             item.innerHTML = `
@@ -1364,6 +1531,10 @@
                     { time: 0, speed: 0, distance: 0 },
                     { time: elapsedSec, speed: calculatedSpeedMPS, distance: calculatedDistanceMeters }
                 ];
+                
+                // Sync data into rawWorkshop backup instantly so the student can edit it
+                state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+                
                 renderTelemetryCharts();
 
                 // Dynamic metric readouts
@@ -1390,6 +1561,7 @@
 
         // Mouse Down Handles Mapping
         elements.canvas.addEventListener('mousedown', (e) => {
+            if (state.mode === 'workshop') return; // Handled separately by workbench canvas
             e.preventDefault(); // Crucial to prevent browser from entering drag/selection mode on the canvas element
             const coords = getCanvasMouseCoords(e);
 
@@ -1458,6 +1630,7 @@
 
         // Mouse Move coordinates dragging loop
         elements.canvas.addEventListener('mousemove', (e) => {
+            if (state.mode === 'workshop') return;
             const coords = getCanvasMouseCoords(e);
 
             // Handle Calibration Markers repositioning
@@ -1496,6 +1669,7 @@
 
         // Adapt Dragging Controls to mobile touch inputs with strict preventDefault
         elements.canvas.addEventListener('touchstart', (e) => {
+            if (state.mode === 'workshop') return;
             if (e.touches.length === 1) {
                 e.preventDefault(); // Blocks mobile body scroll intercepts
                 const mouseEvent = new MouseEvent('mousedown', {
@@ -1507,6 +1681,7 @@
         }, { passive: false });
 
         elements.canvas.addEventListener('touchmove', (e) => {
+            if (state.mode === 'workshop') return;
             if (e.touches.length === 1) {
                 e.preventDefault(); // Blocks zoom/bounce sweeps while dragging
                 const mouseEvent = new MouseEvent('mousemove', {
@@ -1527,6 +1702,12 @@
 
         function renderLoop() {
             if (!state.webcamActive) return;
+
+            // Stop webcam canvas drawing if the Student Data Workshop workbench is currently overlaying
+            if (state.mode === 'workshop') {
+                requestAnimationFrame(renderLoop);
+                return;
+            }
 
             const ctx = elements.ctx;
             const width = state.canvasWidth;
@@ -1569,6 +1750,10 @@
                         speed: 0,
                         distance: 0
                     });
+                    
+                    // Sync live data to workbench backing on the fly
+                    state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+                    
                     renderTelemetryCharts();
                 }
             } else if (state.mode === 'color') {
@@ -1937,6 +2122,9 @@
                             distance: state.colorTracking.cumulativeDistance
                         });
 
+                        // Copy telemetry to rawWorkshop cache on the fly
+                        state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+
                         // Prune oldest buffer data outside visual horizon
                         const minTimeHorizon = elapsedSecs - state.telemetry.maxHistorySec;
                         while (state.telemetry.history.length > 0 && state.telemetry.history[0].time < minTimeHorizon) {
@@ -2218,53 +2406,594 @@
             elements.instructionsModal.classList.remove('hidden');
         });
 
-        // --- Data Extraction Trigger Handlers ---
 
-        // 1. Export Current Telemetry Data Points (CSV Format)
-        elements.exportCsvBtn.addEventListener('click', () => {
+        // --- STREAMING_CHUNK: Drawing the interactive Workbench Chart... ---
+        // --- STUDENT DATA WORKSHOP ENGINEERING PIPELINE ---
+
+        function drawWorkbenchChart() {
+            const canvas = elements.workbenchCanvas;
+            const ctx = elements.workbenchCtx;
+            const w = canvas.width;
+            const h = canvas.height;
             const history = state.telemetry.history;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const padLeft = 55;
+            const padRight = 20;
+            const padTop = 25;
+            const padBottom = 30;
+
+            const plotW = w - padLeft - padRight;
+            const plotH = h - padTop - padBottom;
+
+            // Draw workspace outer bounds
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.3)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+            // Draw visual background grids
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.15)";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            for (let i = 1; i < 5; i++) {
+                const gx = padLeft + (plotW / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(gx, padTop);
+                ctx.lineTo(gx, padTop + plotH);
+                ctx.stroke();
+
+                const gy = padTop + (plotH / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padLeft, gy);
+                ctx.lineTo(padLeft + plotW, gy);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
             if (history.length === 0) {
-                alertUser("No Telemetry Data", "Please capture a tracking sweep or run before exporting data points.");
+                ctx.fillStyle = "#6b7280";
+                ctx.font = "italic 12px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Workbench empty. Capture telemetry speed runs first in Gate or Color mode.", w/2, h/2);
+                elements.workbenchPointsCount.textContent = "0";
                 return;
             }
 
-            const speedUnit = state.outputUnits;
-            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
+            // Map data bounds
+            const times = history.map(d => d.time);
+            const tMin = times[0];
+            const tMax = times[times.length - 1];
+            const tSpan = tMax - tMin || 1;
 
-            // Generate structured spreadsheet-friendly CSV content strings
-            let csv = "Time (seconds),Speed (meters/sec),Distance (meters),Speed (" + speedUnit + "),Distance (" + distUnit + ")\n";
-            history.forEach(row => {
-                const convertedSpeedVal = convertSpeed(row.speed);
-                const convertedDistanceVal = convertDistance(row.distance);
-                csv += `${row.time.toFixed(4)},${row.speed.toFixed(4)},${row.distance.toFixed(4)},${convertedSpeedVal.toFixed(4)},${convertedDistanceVal.toFixed(4)}\n`;
+            let maxSpeed = Math.max(...history.map(d => convertSpeed(d.speed)), 0.1) * 1.15;
+            let maxDist = Math.max(...history.map(d => convertDistance(d.distance)), 0.1) * 1.15;
+
+            // Render Axis details
+            ctx.fillStyle = "#9ca3af";
+            ctx.font = "8px monospace";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+
+            // Left axis labels (Speed in green)
+            if (state.telemetry.curves.speed) {
+                ctx.fillStyle = "#22c55e";
+                for (let i = 0; i <= 5; i++) {
+                    const val = maxSpeed * (i / 5);
+                    const gy = padTop + plotH - (plotH * (i / 5));
+                    ctx.fillText(val.toFixed(1), padLeft - 8, gy);
+                }
+            }
+
+            // Right axis labels (Distance in blue)
+            if (state.telemetry.curves.distance) {
+                ctx.fillStyle = "#38bdf8";
+                ctx.textAlign = "left";
+                for (let i = 0; i <= 5; i++) {
+                    const val = maxDist * (i / 5);
+                    const gy = padTop + plotH - (plotH * (i / 5));
+                    ctx.fillText(val.toFixed(1), padLeft + plotW + 6, gy);
+                }
+            }
+
+            // X-Axis time indicators
+            ctx.fillStyle = "#9ca3af";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let i = 0; i <= 5; i++) {
+                const val = tMin + tSpan * (i / 5);
+                const gx = padLeft + plotW * (i / 5);
+                ctx.fillText(`${val.toFixed(2)}s`, gx, padTop + plotH + 6);
+            }
+
+            // Map and Draw Curves
+            const speedPoints = [];
+            const distPoints = [];
+
+            history.forEach(pt => {
+                const xPct = (pt.time - tMin) / tSpan;
+                const gx = padLeft + plotW * xPct;
+
+                if (state.telemetry.curves.speed) {
+                    const sVal = convertSpeed(pt.speed);
+                    const yPct = sVal / maxSpeed;
+                    const gy = padTop + plotH - (plotH * yPct);
+                    speedPoints.push({ x: gx, y: gy });
+                }
+
+                if (state.telemetry.curves.distance) {
+                    const dVal = convertDistance(pt.distance);
+                    const yPct = dVal / maxDist;
+                    const gy = padTop + plotH - (plotH * yPct);
+                    distPoints.push({ x: gx, y: gy });
+                }
             });
 
-            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-            downloadFile(csv, `camspeed_telemetry_${timestamp}.csv`, "text/csv");
-            logEvent("Exported high-precision telemetry CSV file successfully.");
-        });
+            // Draw Speed curve path
+            if (speedPoints.length > 1) {
+                ctx.strokeStyle = "rgba(34, 197, 94, 0.85)";
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(speedPoints[0].x, speedPoints[0].y);
+                for (let i = 1; i < speedPoints.length; i++) {
+                    ctx.lineTo(speedPoints[i].x, speedPoints[i].y);
+                }
+                ctx.stroke();
+            }
 
-        // 2. Export Entire Active Capture Log (TXT Format)
-        elements.exportLogBtn.addEventListener('click', () => {
-            if (state.logData.length === 0) {
-                alertUser("No Log Records", "The tracking runs list is currently empty. Record a few sweeps first!");
+            // Draw Distance curve path
+            if (distPoints.length > 1) {
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(distPoints[0].x, distPoints[0].y);
+                for (let i = 1; i < distPoints.length; i++) {
+                    ctx.lineTo(distPoints[i].x, distPoints[i].y);
+                }
+                ctx.stroke();
+            }
+
+            // Shading unselected cropped areas
+            const handle1X = padLeft + plotW * state.telemetry.cropStartPercent;
+            const handle2X = padLeft + plotW * state.telemetry.cropEndPercent;
+
+            ctx.fillStyle = "rgba(17, 24, 39, 0.65)";
+            // Left shaded block
+            if (handle1X > padLeft) {
+                ctx.fillRect(padLeft, padTop, handle1X - padLeft, plotH);
+            }
+            // Right shaded block
+            if (handle2X < padLeft + plotW) {
+                ctx.fillRect(handle2X, padTop, (padLeft + plotW) - handle2X, plotH);
+            }
+
+            // Draggable Crop Marker Bars
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 2]);
+            
+            // Start Crop handle line
+            ctx.strokeStyle = "#eab308"; // Golden Orange
+            ctx.beginPath();
+            ctx.moveTo(handle1X, padTop);
+            ctx.lineTo(handle1X, padTop + plotH);
+            ctx.stroke();
+
+            // End Crop handle line
+            ctx.strokeStyle = "#f43f5e"; // Pinkish Red
+            ctx.beginPath();
+            ctx.moveTo(handle2X, padTop);
+            ctx.lineTo(handle2X, padTop + plotH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Interactive Slider Handles
+            drawSliderHandle(ctx, handle1X, padTop + plotH, "#eab308", "START");
+            drawSliderHandle(ctx, handle2X, padTop + plotH, "#f43f5e", "END");
+
+            // Update live metadata readouts
+            const cropStartTime = tMin + tSpan * state.telemetry.cropStartPercent;
+            const cropEndTime = tMin + tSpan * state.telemetry.cropEndPercent;
+            elements.workbenchCropReadout.textContent = `${cropStartTime.toFixed(2)}s - ${cropEndTime.toFixed(2)}s`;
+            
+            // Calculate points inside range
+            const pointsCount = history.filter(d => d.time >= cropStartTime && d.time <= cropEndTime).length;
+            elements.workbenchPointsCount.textContent = pointsCount;
+        }
+
+        function drawSliderHandle(ctx, cx, cy, fillStyle, label) {
+            ctx.fillStyle = fillStyle;
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1.5;
+            
+            // Drawing a beautiful marker slider button shape
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 8);
+            ctx.lineTo(cx - 10, cy + 6);
+            ctx.lineTo(cx + 10, cy + 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = fillStyle;
+            ctx.font = "bold 8px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(label, cx, cy + 15);
+        }
+
+        // --- STREAMING_CHUNK: Implementing data modification algorithms... ---
+        // Save current history steps to supporting Undo arrays
+        function saveUndoState() {
+            state.telemetry.undoStack.push(JSON.parse(JSON.stringify(state.telemetry.history)));
+            if (state.telemetry.undoStack.length > 20) {
+                state.telemetry.undoStack.shift(); // Max 20 steps deep
+            }
+        }
+
+        // Action: Crop Telemetry Range
+        elements.applyCropBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) return;
+
+            saveUndoState();
+
+            const times = history.map(d => d.time);
+            const tMin = times[0];
+            const tMax = times[times.length - 1];
+            const tSpan = tMax - tMin || 1;
+
+            const tStart = tMin + tSpan * state.telemetry.cropStartPercent;
+            const tEnd = tMin + tSpan * state.telemetry.cropEndPercent;
+
+            // Filtering datasets
+            let cropped = history.filter(d => d.time >= tStart && d.time <= tEnd);
+
+            if (cropped.length === 0) {
+                alertUser("Empty Range Selected", "Your crop range must cover at least 1 telemetry timestamp.");
                 return;
             }
 
-            // Generate clean timestamped run report
-            let textOutput = `==================================================\n`;
-            textOutput += ` CAMSPEED RUN ANALYTICS LOG\n`;
-            textOutput += ` Captured: ${new Date().toLocaleString()}\n`;
-            textOutput += ` Resolution: ${state.canvasWidth}x${state.canvasHeight} px\n`;
-            textOutput += ` Calibration: ${state.scale.isSet ? 'Set (' + state.scale.physicalVal + state.scale.physicalUnits + ')' : 'Unset (SI Fallback)'}\n`;
-            textOutput += `==================================================\n\n`;
-            textOutput += state.logData.join('\n');
-            textOutput += `\n\n==================================================\n`;
-            textOutput += ` End of File Report\n`;
+            // Optional Shift times to t=0
+            if (elements.shiftTimeZeroCheckbox.checked) {
+                const shiftOffset = cropped[0].time;
+                cropped = cropped.map(d => {
+                    return {
+                        time: Number((d.time - shiftOffset).toFixed(4)),
+                        speed: d.speed,
+                        distance: Number((d.distance - cropped[0].distance).toFixed(4))
+                    };
+                });
+            }
 
-            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-            downloadFile(textOutput, `camspeed_runs_log_${timestamp}.txt`, "text/plain");
-            logEvent("Exported captures text log report successfully.");
+            state.telemetry.history = cropped;
+            
+            // Reset sliding crop percentages
+            state.telemetry.cropStartPercent = 0;
+            state.telemetry.cropEndPercent = 1.0;
+
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Data cropped. ${cropped.length} points remain.`);
+            playChime(640, "sine", 0.15, 0.05);
+        });
+
+        // Action: Apply low pass filtering (smoothing rolling weights)
+        elements.applySmoothBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length < 3) return;
+
+            saveUndoState();
+            const level = parseInt(elements.workshopSmoothInput.value);
+
+            // Rolling moving average calculation
+            const smoothed = history.map((pt, index) => {
+                let sumSpeed = 0;
+                let sumDist = 0;
+                let count = 0;
+
+                for (let i = index - level; i <= index + level; i++) {
+                    if (i >= 0 && i < history.length) {
+                        sumSpeed += history[i].speed;
+                        sumDist += history[i].distance;
+                        count++;
+                    }
+                }
+
+                return {
+                    time: pt.time,
+                    speed: Number((sumSpeed / count).toFixed(4)),
+                    distance: Number((sumDist / count).toFixed(4))
+                };
+            });
+
+            state.telemetry.history = smoothed;
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Moving average filter applied with window size: ${level}`);
+            playChime(500, "sine", 0.1, 0.05);
+        });
+
+        elements.workshopSmoothInput.addEventListener('input', (e) => {
+            elements.smoothingLevelText.textContent = `Level: ${e.target.value}`;
+        });
+
+        // Action: Scale Calibration multipliers
+        elements.applyScaleBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) return;
+
+            const scale = parseFloat(elements.workshopScaleInput.value);
+            if (isNaN(scale) || scale <= 0) {
+                alertUser("Input Error", "Please supply a positive multiplication scale.");
+                return;
+            }
+
+            saveUndoState();
+            state.telemetry.history = history.map(d => {
+                return {
+                    time: d.time,
+                    speed: Number((d.speed * scale).toFixed(4)),
+                    distance: Number((d.distance * scale).toFixed(4))
+                };
+            });
+
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Dataset values scaled by multiplier: ${scale}x`);
+            playChime(700, "sine", 0.12, 0.05);
+        });
+
+        // Action: Time Shift offsets
+        elements.applyShiftBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) return;
+
+            const shift = parseFloat(elements.workshopShiftInput.value);
+            if (isNaN(shift)) return;
+
+            saveUndoState();
+            state.telemetry.history = history.map(d => {
+                return {
+                    time: Number((d.time + shift).toFixed(4)),
+                    speed: d.speed,
+                    distance: d.distance
+                };
+            });
+
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Timeline shifted by: ${shift} seconds`);
+            playChime(720, "sine", 0.1, 0.05);
+        });
+
+        // Action: Undo Edit operations
+        elements.workshopUndoBtn.addEventListener('click', () => {
+            if (state.telemetry.undoStack.length === 0) {
+                alertUser("Undo stack empty", "There are no previous edits recorded.");
+                return;
+            }
+            state.telemetry.history = state.telemetry.undoStack.pop();
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent("Last data operation undone.");
+            playChime(420, "sine", 0.1, 0.05);
+        });
+
+        // Action: Full Reset Restore
+        elements.workshopResetBtn.addEventListener('click', () => {
+            if (state.telemetry.rawBackup.length === 0) {
+                alertUser("Raw cache empty", "No original telemetry logs recorded to restore.");
+                return;
+            }
+            saveUndoState();
+            state.telemetry.history = JSON.parse(JSON.stringify(state.telemetry.rawBackup));
+            state.telemetry.cropStartPercent = 0.0;
+            state.telemetry.cropEndPercent = 1.0;
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent("Original capture data restored.");
+            playChime(300, "square", 0.15, 0.05);
+        });
+
+        // Workbench display curve checkboxes
+        elements.showSpeedToggle.addEventListener('change', (e) => {
+            state.telemetry.curves.speed = e.target.checked;
+            drawWorkbenchChart();
+        });
+        elements.showDistanceToggle.addEventListener('change', (e) => {
+            state.telemetry.curves.distance = e.target.checked;
+            drawWorkbenchChart();
+        });
+
+
+        // --- STREAMING_CHUNK: Adding manual point editor table... ---
+        // Dynamically populate point lists for direct deletion of tracking jitter
+        function refreshWorkbenchTable() {
+            const history = state.telemetry.history;
+            elements.pointsTableCount.textContent = `${history.length} Pts`;
+
+            if (history.length === 0) {
+                elements.workbenchTableBody.innerHTML = `
+                    <div class="text-center p-4 text-gray-500 italic">No points to edit. Capture a dataset first.</div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="w-full text-[10px] text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-900 text-gray-400 border-b border-gray-800">
+                            <th class="p-1 px-2">Idx</th>
+                            <th class="p-1">Time (s)</th>
+                            <th class="p-1">Speed (${state.outputUnits})</th>
+                            <th class="p-1">Distance (${state.scale.isSet ? state.scale.physicalUnits : 'm'})</th>
+                            <th class="p-1 text-right pr-2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-900">
+            `;
+
+            history.forEach((pt, i) => {
+                const spd = convertSpeed(pt.speed).toFixed(2);
+                const dist = convertDistance(pt.distance).toFixed(2);
+                html += `
+                    <tr class="hover:bg-gray-900 group">
+                        <td class="p-1 px-2 text-gray-500">${i}</td>
+                        <td class="p-1 text-gray-300">${pt.time.toFixed(2)}</td>
+                        <td class="p-1 text-emerald-400 font-bold">${spd}</td>
+                        <td class="p-1 text-sky-400">${dist}</td>
+                        <td class="p-1 text-right pr-2">
+                            <button onclick="deletePointAtIndex(${i})" class="text-red-500 hover:text-red-400 hover:underline">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            elements.workbenchTableBody.innerHTML = html;
+        }
+
+        // Global access point for table callbacks
+        window.deletePointAtIndex = function(idx) {
+            const history = state.telemetry.history;
+            if (idx >= 0 && idx < history.length) {
+                saveUndoState();
+                state.telemetry.history.splice(idx, 1);
+                refreshWorkbenchTable();
+                drawWorkbenchChart();
+                logEvent(`Deleted point index: ${idx}`);
+                playChime(350, "square", 0.08, 0.05);
+            }
+        };
+
+
+        // --- STREAMING_CHUNK: Wiring up workbench canvas event handlers... ---
+        // Mouse Coordinate Mappings & Draggable Sliders for Workshop Canvas
+        function getWorkbenchMouseCoords(e) {
+            const canvas = elements.workbenchCanvas;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        elements.workbenchCanvas.addEventListener('mousedown', (e) => {
+            const coords = getWorkbenchMouseCoords(e);
+            const w = elements.workbenchCanvas.width;
+            const h = elements.workbenchCanvas.height;
+
+            const padLeft = 55;
+            const padRight = 20;
+            const plotW = w - padLeft - padRight;
+
+            const xStart = padLeft + plotW * state.telemetry.cropStartPercent;
+            const xEnd = padLeft + plotW * state.telemetry.cropEndPercent;
+
+            // Hit box detection tolerances (20 pixels snap region width)
+            const snapLimit = 20;
+
+            if (Math.abs(coords.x - xStart) < snapLimit) {
+                state.telemetry.draggedWorkshopHandle = 'start';
+            } else if (Math.abs(coords.x - xEnd) < snapLimit) {
+                state.telemetry.draggedWorkshopHandle = 'end';
+            }
+        });
+
+        elements.workbenchCanvas.addEventListener('mousemove', (e) => {
+            const coords = getWorkbenchMouseCoords(e);
+            const w = elements.workbenchCanvas.width;
+            const h = elements.workbenchCanvas.height;
+
+            const padLeft = 55;
+            const padRight = 20;
+            const plotW = w - padLeft - padRight;
+
+            // Cursor changing effect on slide coordinates
+            const xStart = padLeft + plotW * state.telemetry.cropStartPercent;
+            const xEnd = padLeft + plotW * state.telemetry.cropEndPercent;
+            const snapLimit = 20;
+
+            if (Math.abs(coords.x - xStart) < snapLimit || Math.abs(coords.x - xEnd) < snapLimit) {
+                elements.workbenchCanvas.style.cursor = 'ew-resize';
+            } else {
+                elements.workbenchCanvas.style.cursor = 'default';
+            }
+
+            // Move crop boundaries if active
+            if (state.telemetry.draggedWorkshopHandle) {
+                let targetPct = (coords.x - padLeft) / plotW;
+                targetPct = Math.max(0, Math.min(1.0, targetPct));
+
+                if (state.telemetry.draggedWorkshopHandle === 'start') {
+                    // Prevent start crossing over end
+                    state.telemetry.cropStartPercent = Math.min(targetPct, state.telemetry.cropEndPercent - 0.05);
+                } else {
+                    // Prevent end crossing over start
+                    state.telemetry.cropEndPercent = Math.max(targetPct, state.telemetry.cropStartPercent + 0.05);
+                }
+                drawWorkbenchChart();
+                return;
+            }
+
+            // Render hover coordinate inspecting tooltip
+            const history = state.telemetry.history;
+            if (history.length > 0 && coords.x >= padLeft && coords.x <= padLeft + plotW) {
+                const tMin = history[0].time;
+                const tMax = history[history.length - 1].time;
+                const tSpan = tMax - tMin || 1;
+
+                const hoverPct = (coords.x - padLeft) / plotW;
+                const hoverTime = tMin + tSpan * hoverPct;
+
+                // Find closest timestamp point in dataset
+                let closestPt = history[0];
+                let minDiff = Math.abs(closestPt.time - hoverTime);
+
+                history.forEach(pt => {
+                    const d = Math.abs(pt.time - hoverTime);
+                    if (d < minDiff) {
+                        minDiff = d;
+                        closestPt = pt;
+                    }
+                });
+
+                const spdStr = convertSpeed(closestPt.speed).toFixed(2);
+                const dUnits = state.scale.isSet ? state.scale.physicalUnits : 'm';
+                const distStr = convertDistance(closestPt.distance).toFixed(2);
+                elements.workbenchHoverTooltip.innerHTML = `t: <span class="text-white font-bold">${closestPt.time.toFixed(2)}s</span> | v: <span class="text-emerald-400 font-bold">${spdStr} ${state.outputUnits}</span> | s: <span class="text-sky-400 font-bold">${distStr} ${dUnits}</span>`;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            state.telemetry.draggedWorkshopHandle = null;
+        });
+
+        // Connect Touch Support for Workshop Slide Markers
+        elements.workbenchCanvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.workbenchCanvas.dispatchEvent(mouseEvent);
+            }
+        });
+
+        elements.workbenchCanvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.workbenchCanvas.dispatchEvent(mouseEvent);
+            }
+        });
+
+        window.addEventListener('touchend', () => {
+            state.telemetry.draggedWorkshopHandle = null;
         });
 
     </script>
