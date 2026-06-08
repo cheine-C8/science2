@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Speed Tracker & Chronometer</title>
+    <!-- Tailwind CSS for high fidelity layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-black">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-900/30">
+                <!-- SVG Speedometer Icon -->
+                <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V12h6.5m-14.5 0a8.5 8.5 0 1117 0 8.5 8.5 0 01-17 0z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight">CamSpeed <span class="text-brand-500 font-medium">Tracker</span></h1>
+                <p class="text-xs text-gray-400">Computer Vision Speedometer & Chronometer</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span id="fps-counter" class="text-xs font-mono bg-gray-800 px-2 py-1 rounded border border-gray-700 text-gray-300">FPS: --</span>
+            <button id="help-btn" class="text-xs bg-gray-800 hover:bg-gray-750 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
+                <span>How to Calibrate</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Camera Viewport & Controls -->
+        <div class="lg:col-span-8 flex flex-col space-y-4">
+            
+            <!-- Main Video Container -->
+            <div class="relative bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-2xl aspect-video w-full flex items-center justify-center group">
+                
+                <!-- HTML5 Video Component (Hidden, feeds Canvas) -->
+                <video id="video-feed" autoplay playsinline muted class="hidden"></video>
+                
+                <!-- Render Canvas (Main Interaction Surface) -->
+                <canvas id="render-canvas" class="w-full h-full object-contain cursor-crosshair"></canvas>
+                
+                <!-- Top Left Status Bar -->
+                <div class="absolute top-4 left-4 flex flex-col space-y-2 pointer-events-none">
+                    <div id="status-badge" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-yellow-400">
+                        <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></span>
+                        <span id="status-text">Webcam Inactive</span>
+                    </div>
+                </div>
+
+                <!-- Touch & Mouse Helper Guides (Overlay) -->
+                <div id="canvas-prompt" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-700/60 text-xs text-center text-gray-200 pointer-events-none transition-all duration-300 shadow-xl max-w-md">
+                    Click the "Start Camera" button below to initialize your speed tracking setup.
+                </div>
+
+                <!-- Video Loading/Placeholder Screen -->
+                <div id="placeholder-screen" class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center p-8 transition-all duration-500">
+                    <div class="w-16 h-16 rounded-full border-4 border-dashed border-brand-500/30 border-t-brand-500 animate-spin mb-6"></div>
+                    <h3 class="text-lg font-bold text-gray-200">Waiting for Camera Initialization</h3>
+                    <p class="text-sm text-gray-400 text-center mt-2 max-w-xs">Grant camera permissions when prompted to enable real-time velocity calculations.</p>
+                    <button id="direct-start-btn" class="mt-6 px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-semibold rounded-xl shadow-lg shadow-brand-900/20 transition-all">
+                        Allow and Start Camera
+                    </button>
+                </div>
+            </div>
+
+            <!-- Playback & Calibration Quickbar -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <button id="toggle-camera-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                        <span id="camera-btn-text">Start Camera</span>
+                    </button>
+                    <select id="camera-source" class="bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl px-3 py-2 text-xs font-medium text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500 max-w-[180px]">
+                        <option value="">Default Camera</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="cal-mode-btn" class="px-3.5 py-2 bg-gray-800 hover:bg-gray-750 border border-gray-700 text-gray-200 text-sm rounded-xl font-medium flex items-center space-x-2 transition-all">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
+                        <span>Calibrate Grid Ruler</span>
+                    </button>
+                    <button id="clear-tracking-btn" class="px-3 py-2 text-xs bg-gray-800 hover:bg-red-950/40 hover:text-red-400 border border-gray-700 rounded-xl font-medium transition-all">
+                        Reset Trackers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Informational Status / Instructions Footer -->
+            <div class="bg-gray-900/50 border border-gray-850 rounded-2xl p-4 text-xs text-gray-400 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start space-x-2">
+                    <svg class="w-4 h-4 text-brand-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8.21 13.89L7 12.68c-.39-.39-.39-1.02 0-1.41l1.21-1.21c.39-.39 1.02-.39 1.41 0l1.21 1.21c.39.39.39 1.02 0 1.41l-1.21 1.21c-.39.39-1.02.39-1.41 0zm8.58 0l-1.21-1.21c-.39-.39-.39-1.02 0-1.41l1.21-1.21c.39-.39 1.02-.39 1.41 0l1.21 1.21c.39.39.39 1.02 0 1.41l-1.21 1.21c-.39.39-1.02.39-1.41 0z"/></svg>
+                    <div>
+                        <span class="font-semibold text-gray-300 block mb-0.5">Quick Setup Guide:</span>
+                        <span class="block">1. Use a tripod or secure your computer camera so it is perfectly still.</span>
+                        <span class="block">2. Place an item of known physical length in the video frame (like a meter stick).</span>
+                        <span class="block">3. Click 'Calibrate' to drag the alignment lines over it and tell the system its size.</span>
+                    </div>
+                </div>
+                <div class="shrink-0 flex space-x-2">
+                    <div class="bg-gray-800 border border-gray-700 rounded-lg p-2 text-center min-w-[70px]">
+                        <span class="text-gray-500 block uppercase tracking-wider text-[9px]">Calibrated</span>
+                        <span id="cal-status-indicator" class="text-red-400 font-bold block mt-0.5">UNSET</span>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 rounded-lg p-2 text-center min-w-[70px]">
+                        <span class="text-gray-500 block uppercase tracking-wider text-[9px]">Camera Res</span>
+                        <span id="cam-res-indicator" class="text-gray-400 font-mono block mt-0.5">--x--</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Control Panel, Metrics & Logs -->
+        <div class="lg:col-span-4 flex flex-col space-y-6">
+
+            <!-- Primary Metric Display Card -->
+            <div class="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+                <div class="absolute -right-12 -bottom-12 w-32 h-32 bg-brand-500/5 rounded-full blur-2xl"></div>
+                
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-brand-500" id="metric-label">Object Speed</span>
+                    <span class="text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-semibold uppercase" id="metric-subtext">Live Tracking</span>
+                </div>
+                
+                <div class="flex items-baseline space-x-2 mt-4">
+                    <span id="speed-display-value" class="text-6xl font-black tracking-tight font-mono text-gray-50">0.00</span>
+                    <span id="speed-unit-text" class="text-xl font-bold text-gray-400">m/s</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-gray-850">
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Max Speed Peak</span>
+                        <span id="peak-speed-value" class="text-sm font-bold text-gray-300 font-mono">0.00 m/s</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Elapsed Tracking Time</span>
+                        <span id="elapsed-time-value" class="text-sm font-bold text-gray-300 font-mono">0.0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode Selector Panel -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                <div class="flex border-b border-gray-800">
+                    <button id="tab-gate" class="flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>1. Speed Gates</span>
+                    </button>
+                    <button id="tab-color" class="flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-3 0l-9.37-9.37a2.121 2.121 0 113-3l9.37 9.37z"/></svg>
+                        <span>2. Color Track</span>
+                    </button>
+                </div>
+
+                <div class="p-5">
+                    
+                    <!-- View A: Speed Gates Configuration -->
+                    <div id="config-gate-view" class="space-y-4">
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Sets up two visual vertical marker lines. Specify the real-world distance between them. High luminosity changes will trip the timers.
+                        </p>
+                        
+                        <!-- Configuration Form Fields -->
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate-to-Gate Distance</label>
+                                <div class="relative rounded-xl overflow-hidden flex shadow-inner">
+                                    <input type="number" id="gate-distance-input" value="1.0" step="0.1" min="0.01" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                    <select id="distance-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                        <option value="meters" selected>Meters</option>
+                                        <option value="cm">Centimeters</option>
+                                        <option value="inches">Inches</option>
+                                        <option value="feet">Feet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate Sensitivity</label>
+                                    <input type="range" id="gate-sensitivity" min="5" max="80" value="25" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-gray-400 block mt-5" id="sens-text">Val: 25</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual gate overrides/triggers -->
+                        <div class="pt-2">
+                            <span class="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Manual Trip Testing Controls</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="trip-gate-1" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 1</button>
+                                <button id="trip-gate-2" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 2</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View B: Color Tracker Settings (Hidden initially) -->
+                    <div id="config-color-view" class="space-y-4 hidden">
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Click anywhere on the live video frame above to lock onto a target color. Ensure high-contrast objects for best tracking fidelity.
+                        </p>
+
+                        <!-- Color Sample display -->
+                        <div class="flex items-center space-x-3 bg-gray-850/50 p-3 rounded-xl border border-gray-800">
+                            <div id="target-color-preview" class="w-10 h-10 rounded-lg border border-gray-700 shadow bg-red-500"></div>
+                            <div class="flex-1">
+                                <span class="text-xs font-bold block" id="color-name-text">Red (Selected)</span>
+                                <span class="text-[10px] text-gray-500 font-mono" id="color-rgb-val">RGB: (230, 40, 40)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Color Color Match Threshold</label>
+                                <input type="range" id="color-threshold" min="10" max="150" value="45" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                    <span>Exact Match</span>
+                                    <span>Permissive</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Calibration Configurations Modal/Section -->
+            <div id="calibration-options-panel" class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-bold text-gray-200">Scale Ruler Settings</h4>
+                    <button id="close-cal-btn" class="text-gray-500 hover:text-gray-300 text-xs">Close</button>
+                </div>
+                <p class="text-xs text-gray-400 mb-4 leading-relaxed">Drag the golden end-point markers in the camera preview window to encompass your calibrated reference object.</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Size of Reference Item</label>
+                        <div class="relative rounded-xl overflow-hidden flex shadow-inner">
+                            <input type="number" id="cal-physical-length" value="30" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <select id="cal-physical-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                <option value="cm" selected>cm</option>
+                                <option value="meters">meters</option>
+                                <option value="inches">inches</option>
+                                <option value="feet">feet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="save-calibration-btn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-black text-xs font-bold rounded-xl transition-all">
+                        Apply & Set Scaling Ruler
+                    </button>
+                </div>
+            </div>
+
+            <!-- General Configurations -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Global Output Settings</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Velocity Unit</label>
+                        <select id="speed-units" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <option value="m/s">Meters/Sec (m/s)</option>
+                            <option value="km/h">Kilometers/Hr (km/h)</option>
+                            <option value="mph">Miles/Hour (mph)</option>
+                            <option value="fps">Feet/Second (fps)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Audio Feedback</label>
+                        <select id="audio-setting" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <option value="chime">Chime sound</option>
+                            <option value="speech">Speak Speeds</option>
+                            <option value="silent">Mute sounds</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Panel -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex-1 min-h-[160px] flex flex-col">
+                <div class="px-5 py-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Speed Readings Log</span>
+                    <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
+                </div>
+                <div id="log-list" class="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-2 max-h-[220px]">
+                    <div class="text-gray-500 italic">No runs captured yet. Calibrate the grid and trigger a tracking mode to capture speeds here.</div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Calibration Info Modal Overlay -->
+    <div id="instructions-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-100 flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Fidelity & Accuracy Tips</span>
+                </h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-gray-300 leading-relaxed max-h-[70vh] overflow-y-auto">
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">1</span>
+                        <span>Ensure 2D Linear Motion</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">For maximum accuracy, objects must move left-to-right (or vice versa) perpendicular to the camera frame. Objects moving towards or away from the camera violate perspective ratios and report skewed tracking values.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">2</span>
+                        <span>Scale Calibration is Critical</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">The webcam is 2D. You must drag the custom calibration golden handles over an item in the video frame whose length you know exactly (like a 30cm ruler, standard paper sheet, etc.). The closer your tracked object is to this reference distance, the more exact your measurements are.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">3</span>
+                        <span>Optimize Lighting & Shadows</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">In <strong>Speed Gates mode</strong>, the app monitors sudden spikes in pixel color brightness/depth along the lines. Glare, moving camera shadows, or shaky camera positioning can cause false positive gate trips.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">4</span>
+                        <span>Avoid Frame Blurring</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">Webcams automatically lengthen exposure times in dark rooms, creating "ghosting" or motion blur. Perform tracking in bright rooms to keep camera shutter speed high and blur low.</p>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-850/50 border-t border-gray-800 text-right">
+                <button id="modal-ack-btn" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all">Got it, let's track!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Footer Credits -->
+    <footer class="mt-auto border-t border-gray-900 bg-gray-950/90 py-4 text-center text-[10px] text-gray-500">
+        CamSpeed utilizes browser-side canvas rendering pipelines & high resolution timing performance headers. No tracking data leaves your local sandbox.
+    </footer>
+
+    <!-- Audio Synthesizer Engine & Tracking Algorithm Logic -->
+    <script>
+        // --- Web Audio API Utility Engine ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playChime(freq, type="sine", duration=0.15, volume=0.1) {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.warn('Audio feedback failed to play.', e);
+            }
+        }
+
+        // Voice Readout Engine
+        function speakMessage(message) {
+            const selectValue = document.getElementById('audio-setting').value;
+            if (selectValue !== 'speech') return;
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Stop old speech
+                    const utterance = new SpeechSynthesisUtterance(message);
+                    utterance.rate = 1.1;
+                    utterance.volume = 0.8;
+                    window.speechSynthesis.speak(utterance);
+                }
+            } catch(e) {
+                console.warn('Speech engine unavailable');
+            }
+        }
+
+        // --- Core Application State ---
+        const state = {
+            webcamActive: false,
+            videoStream: null,
+            canvasWidth: 640,
+            canvasHeight: 480,
+            mode: 'gate', // 'gate' or 'color'
+            calibrating: false,
+            
+            // Pixels to unit conversion scale (Calibration)
+            scale: {
+                isSet: false,
+                pixels: 100, // how many pixels
+                physicalVal: 30, // matching physical dimension value
+                physicalUnits: 'cm', // centimeters, inches, etc.
+                point1: { x: 100, y: 240 }, // Line endpoint coordinates
+                point2: { x: 300, y: 240 },
+                draggedPoint: null // point key currently being repositioned
+            },
+
+            // Speed Gate Mode Parameters
+            gates: {
+                gate1X: 180, // percentage of canvas (0 to 100) -> actual drawn position is mapped dynamically
+                gate2X: 460,
+                gateDistance: 1.0, // Distance between gates 
+                distanceUnits: 'meters',
+                gate1LastLums: [], // rolling frames of intensity averages for thresholding
+                gate2LastLums: [],
+                gate1Tripped: false,
+                gate2Tripped: false,
+                gate1TripTime: 0,
+                gate2TripTime: 0,
+                draggedGate: null
+            },
+
+            // Color Object Tracker parameters
+            colorTracking: {
+                targetColor: { r: 220, g: 40, b: 40 }, // Default Bright Orange/Red
+                threshold: 45,
+                trail: [], // rolling coordinates of captured centroids
+                maxTrailLength: 45,
+                lastCentroid: null,
+                lastFrameTime: 0,
+                currentSpeed: 0,
+                maxSpeed: 0,
+                trackingStartTime: 0
+            },
+
+            // UI Speed Outputs
+            outputUnits: 'm/s',
+            fps: 0,
+            lastFpsUpdate: 0
+        };
+
+        // DOM elements
+        const elements = {
+            video: document.getElementById('video-feed'),
+            canvas: document.getElementById('render-canvas'),
+            ctx: document.getElementById('render-canvas').getContext('2d', { willReadFrequently: true }),
+            toggleCameraBtn: document.getElementById('toggle-camera-btn'),
+            cameraBtnText: document.getElementById('camera-btn-text'),
+            cameraSource: document.getElementById('camera-source'),
+            fpsCounter: document.getElementById('fps-counter'),
+            statusBadge: document.getElementById('status-badge'),
+            statusDot: document.getElementById('status-dot'),
+            statusText: document.getElementById('status-text'),
+            placeholderScreen: document.getElementById('placeholder-screen'),
+            directStartBtn: document.getElementById('direct-start-btn'),
+            canvasPrompt: document.getElementById('canvas-prompt'),
+            
+            // Mode selectors
+            tabGate: document.getElementById('tab-gate'),
+            tabColor: document.getElementById('tab-color'),
+            configGateView: document.getElementById('config-gate-view'),
+            configColorView: document.getElementById('config-color-view'),
+            
+            // Calibrate Sub-components
+            calModeBtn: document.getElementById('cal-mode-btn'),
+            calibrationPanel: document.getElementById('calibration-options-panel'),
+            saveCalBtn: document.getElementById('save-calibration-btn'),
+            closeCalBtn: document.getElementById('close-cal-btn'),
+            calPhysicalLength: document.getElementById('cal-physical-length'),
+            calPhysicalUnits: document.getElementById('cal-physical-units'),
+            calStatusIndicator: document.getElementById('cal-status-indicator'),
+            camResIndicator: document.getElementById('cam-res-indicator'),
+
+            // Metrics Displays
+            speedDisplayVal: document.getElementById('speed-display-value'),
+            speedUnitText: document.getElementById('speed-unit-text'),
+            peakSpeedValue: document.getElementById('peak-speed-value'),
+            elapsedTimeValue: document.getElementById('elapsed-time-value'),
+            metricLabel: document.getElementById('metric-label'),
+            metricSubtext: document.getElementById('metric-subtext'),
+
+            // Form Configurations
+            gateDistanceInput: document.getElementById('gate-distance-input'),
+            distanceUnitsSelect: document.getElementById('distance-units'),
+            gateSensitivityInput: document.getElementById('gate-sensitivity'),
+            gateSensValueText: document.getElementById('sens-text'),
+            tripGate1Btn: document.getElementById('trip-gate-1'),
+            tripGate2Btn: document.getElementById('trip-gate-2'),
+            colorThresholdInput: document.getElementById('color-threshold'),
+            targetColorPreview: document.getElementById('target-color-preview'),
+            colorNameText: document.getElementById('color-name-text'),
+            colorRgbVal: document.getElementById('color-rgb-val'),
+            speedUnitsSelect: document.getElementById('speed-units'),
+            clearTrackingBtn: document.getElementById('clear-tracking-btn'),
+            
+            // Modals & Logs
+            helpBtn: document.getElementById('help-btn'),
+            instructionsModal: document.getElementById('instructions-modal'),
+            closeModalBtn: document.getElementById('close-modal-btn'),
+            modalAckBtn: document.getElementById('modal-ack-btn'),
+            logList: document.getElementById('log-list'),
+            clearLogsBtn: document.getElementById('clear-logs-btn')
+        };
+
+        // --- Core UI Setup and Handlers ---
+
+        // Show/Hide Instructions modal
+        elements.helpBtn.addEventListener('click', () => elements.instructionsModal.classList.remove('hidden'));
+        elements.closeModalBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
+        elements.modalAckBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
+
+        // Toggle Speed gates and Color tracking panels
+        elements.tabGate.addEventListener('click', () => {
+            state.mode = 'gate';
+            elements.tabGate.className = "flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5";
+            elements.tabColor.className = "flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5";
+            elements.configGateView.classList.remove('hidden');
+            elements.configColorView.classList.add('hidden');
+            elements.metricLabel.textContent = "Time Traversed";
+            elements.metricSubtext.textContent = "Chronometer Gates";
+            resetGateTimers();
+        });
+
+        elements.tabColor.addEventListener('click', () => {
+            state.mode = 'color';
+            elements.tabColor.className = "flex-1 py-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1.5";
+            elements.tabGate.className = "flex-1 py-3 text-sm font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1.5";
+            elements.configColorView.classList.remove('hidden');
+            elements.configGateView.classList.add('hidden');
+            elements.metricLabel.textContent = "Object Speed";
+            elements.metricSubtext.textContent = "Color Centroid Tracking";
+            resetLiveTracker();
+        });
+
+        // Trigger Calibration interface toggles
+        elements.calModeBtn.addEventListener('click', () => {
+            state.calibrating = !state.calibrating;
+            if (state.calibrating) {
+                elements.calibrationPanel.classList.remove('hidden');
+                elements.calModeBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-brand-500 fill-brand-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
+                    <span>Calibration Active</span>
+                `;
+                elements.canvasPrompt.innerHTML = "Drag the golden circles to align with a ruler, then apply scaling values.";
+                playChime(440, "sine", 0.1, 0.05);
+            } else {
+                exitCalibration();
+            }
+        });
+
+        elements.closeCalBtn.addEventListener('click', exitCalibration);
+        
+        function exitCalibration() {
+            state.calibrating = false;
+            elements.calibrationPanel.classList.add('hidden');
+            elements.calModeBtn.innerHTML = `
+                <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
+                <span>Calibrate Grid Ruler</span>
+            `;
+            elements.canvasPrompt.innerHTML = state.mode === 'gate' ? 
+                "Move objects through the vertical green speed gates to measure speeds." : 
+                "Click on any colored object inside the video preview to lock live tracking.";
+        }
+
+        // Apply visual metric ruler calibration scales
+        elements.saveCalBtn.addEventListener('click', () => {
+            const val = parseFloat(elements.calPhysicalLength.value);
+            const unit = elements.calPhysicalUnits.value;
+            if (isNaN(val) || val <= 0) {
+                alertUser("Calibration error", "Please supply a positive numerical length scale.");
+                return;
+            }
+
+            const dx = state.scale.point2.x - state.scale.point1.x;
+            const dy = state.scale.point2.y - state.scale.point1.y;
+            const pxDistance = Math.sqrt(dx * dx + dy * dy);
+
+            if (pxDistance < 15) {
+                alertUser("Calibration line too small", "Please separate the measurement points further to calibrate high fidelity dimensions.");
+                return;
+            }
+
+            state.scale.pixels = pxDistance;
+            state.scale.physicalVal = val;
+            state.scale.physicalUnits = unit;
+            state.scale.isSet = true;
+
+            elements.calStatusIndicator.textContent = `${val}${unit}`;
+            elements.calStatusIndicator.className = "text-brand-500 font-bold block mt-0.5";
+
+            playChime(660, "sine", 0.2, 0.08);
+            setTimeout(() => playChime(880, "sine", 0.15, 0.08), 80);
+
+            logEvent(`Calibrated Ruler: ${pxDistance.toFixed(0)} pixels = ${val} ${unit}`);
+            exitCalibration();
+        });
+
+        // Speed Gate input distance settings
+        elements.gateDistanceInput.addEventListener('change', updateGateInputs);
+        elements.distanceUnitsSelect.addEventListener('change', updateGateInputs);
+
+        function updateGateInputs() {
+            const distance = parseFloat(elements.gateDistanceInput.value);
+            if (!isNaN(distance) && distance > 0) {
+                state.gates.gateDistance = distance;
+                state.gates.distanceUnits = elements.distanceUnitsSelect.value;
+                logEvent(`Gate dimensions updated: ${distance} ${state.gates.distanceUnits}`);
+            }
+        }
+
+        elements.gateSensitivityInput.addEventListener('input', (e) => {
+            elements.gateSensValueText.textContent = `Val: ${e.target.value}`;
+        });
+
+        // Speed Units Conversion and display handler
+        elements.speedUnitsSelect.addEventListener('change', (e) => {
+            state.outputUnits = e.target.value;
+            elements.speedUnitText.textContent = state.outputUnits;
+            updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+        });
+
+        // Reset trackers button
+        elements.clearTrackingBtn.addEventListener('click', () => {
+            resetGateTimers();
+            resetLiveTracker();
+            logEvent("All trackers and peak speeds reset to zero.");
+            playChime(330, "square", 0.1, 0.05);
+        });
+
+        // Trigger manual simulation gate passes (ideal for debug/demonstration!)
+        elements.tripGate1Btn.addEventListener('click', () => tripGate(1));
+        elements.tripGate2Btn.addEventListener('click', () => tripGate(2));
+
+        // Logs Manager
+        elements.clearLogsBtn.addEventListener('click', () => {
+            elements.logList.innerHTML = `<div class="text-gray-500 italic">Logs wiped clean. Ready for new speed sweeps.</div>`;
+        });
+
+        function logEvent(message) {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const item = document.createElement('div');
+            item.className = "bg-gray-850 p-2 rounded border border-gray-800 text-gray-300 flex justify-between";
+            item.innerHTML = `
+                <span class="text-brand-400 font-bold shrink-0 mr-2">[${timeStr}]</span>
+                <span class="text-left flex-1 break-all">${message}</span>
+            `;
+            
+            // Remove placeholder if exists
+            const placeholder = elements.logList.querySelector('.italic');
+            if (placeholder) placeholder.remove();
+
+            elements.logList.insertBefore(item, elements.logList.firstChild);
+        }
+
+        // Custom notification system (replaces blocked browser alert alerts)
+        function alertUser(title, text) {
+            const container = document.createElement('div');
+            container.className = "fixed top-6 right-6 bg-red-950 border border-red-500 p-4 rounded-xl shadow-2xl z-50 max-w-sm transition-all duration-300 transform translate-x-12 opacity-0";
+            container.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <svg class="w-6 h-6 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <div>
+                        <h4 class="font-bold text-white text-sm">${title}</h4>
+                        <p class="text-xs text-red-200 mt-1">${text}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(container);
+            setTimeout(() => {
+                container.classList.remove('translate-x-12', 'opacity-0');
+            }, 50);
+            setTimeout(() => {
+                container.classList.add('translate-x-12', 'opacity-0');
+                setTimeout(() => container.remove(), 400);
+            }, 4000);
+        }
+
+
+        // --- Camera Feed Pipeline ---
+
+        // Fetch cameras and populate settings dropdown
+        async function loadCameraDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                elements.cameraSource.innerHTML = '<option value="">Default Camera</option>';
+                videoDevices.forEach((device, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = device.deviceId;
+                    opt.textContent = device.label || `Camera ${index + 1}`;
+                    elements.cameraSource.appendChild(opt);
+                });
+            } catch (err) {
+                console.warn('Enumerating cameras failed', err);
+            }
+        }
+
+        // Initialize user device video
+        async function startCamera() {
+            if (state.webcamActive) {
+                stopCamera();
+                return;
+            }
+
+            elements.placeholderScreen.classList.remove('hidden');
+            const targetCamId = elements.cameraSource.value;
+            const constraints = {
+                video: targetCamId ? { deviceId: { exact: targetCamId } } : { facingMode: 'environment' },
+                audio: false
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                state.videoStream = stream;
+                elements.video.srcObject = stream;
+                
+                // Wait for video meta properties to finish resolving
+                elements.video.onloadedmetadata = () => {
+                    elements.video.play();
+                    state.webcamActive = true;
+                    
+                    // Match visual element coordinates
+                    state.canvasWidth = elements.video.videoWidth || 640;
+                    state.canvasHeight = elements.video.videoHeight || 480;
+                    
+                    elements.canvas.width = state.canvasWidth;
+                    elements.canvas.height = state.canvasHeight;
+                    elements.camResIndicator.textContent = `${state.canvasWidth}x${state.canvasHeight}`;
+
+                    // Auto place Gates and Calibration marks neatly inside frame sizes
+                    state.gates.gate1X = Math.round(state.canvasWidth * 0.3);
+                    state.gates.gate2X = Math.round(state.canvasWidth * 0.7);
+                    state.scale.point1 = { x: Math.round(state.canvasWidth * 0.25), y: Math.round(state.canvasHeight * 0.8) };
+                    state.scale.point2 = { x: Math.round(state.canvasWidth * 0.75), y: Math.round(state.canvasHeight * 0.8) };
+
+                    // Set camera button text change
+                    elements.cameraBtnText.textContent = "Stop Camera";
+                    elements.toggleCameraBtn.className = "px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all";
+                    
+                    elements.statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                    elements.statusText.textContent = "Tracking Live Feed";
+                    elements.statusBadge.className = "bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-emerald-400";
+                    elements.canvasPrompt.innerHTML = "Click anywhere on the preview to sample tracking colors, or trigger manual gate timings.";
+
+                    elements.placeholderScreen.classList.add('hidden');
+                    loadCameraDevices(); // Refresh lists with device labels (if system permission finally populated them)
+
+                    // Execute frames renderer
+                    requestAnimationFrame(renderLoop);
+                    logEvent(`Camera stream active at resolution: ${state.canvasWidth}x${state.canvasHeight}`);
+                };
+            } catch (err) {
+                console.error("Camera acquisition error: ", err);
+                alertUser("Camera Blocked", "Unable to establish webcam connect. Ensure app permissions are granted.");
+                elements.placeholderScreen.classList.remove('hidden');
+                stopCamera();
+            }
+        }
+
+        function stopCamera() {
+            if (state.videoStream) {
+                state.videoStream.getTracks().forEach(track => track.stop());
+                state.videoStream = null;
+            }
+            state.webcamActive = false;
+            elements.cameraBtnText.textContent = "Start Camera";
+            elements.toggleCameraBtn.className = "px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all";
+            
+            elements.statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
+            elements.statusText.textContent = "Webcam Inactive";
+            elements.statusBadge.className = "bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-red-500";
+            elements.canvasPrompt.innerHTML = "Click the 'Start Camera' button below to initialize your speed tracking setup.";
+
+            elements.placeholderScreen.classList.remove('hidden');
+        }
+
+        elements.toggleCameraBtn.addEventListener('click', startCamera);
+        elements.directStartBtn.addEventListener('click', startCamera);
+
+
+        // --- Tracking Algorithms ---
+
+        // Convert speed base metric (m/s) to target configuration unit
+        function convertSpeed(metersPerSec) {
+            switch(state.outputUnits) {
+                case 'km/h': return metersPerSec * 3.6;
+                case 'mph': return metersPerSec * 2.23694;
+                case 'fps': return metersPerSec * 3.28084;
+                default: return metersPerSec; // m/s
+            }
+        }
+
+        // Synchronize displays with converted outputs
+        function updateSpeedDisplays(current, max) {
+            const displayCur = convertSpeed(current);
+            const displayMax = convertSpeed(max);
+
+            elements.speedDisplayVal.textContent = displayCur.toFixed(2);
+            elements.peakSpeedValue.textContent = `${displayMax.toFixed(2)} ${state.outputUnits}`;
+        }
+
+        // Resets Chronometer variables
+        function resetGateTimers() {
+            state.gates.gate1Tripped = false;
+            state.gates.gate2Tripped = false;
+            state.gates.gate1TripTime = 0;
+            state.gates.gate2TripTime = 0;
+            elements.elapsedTimeValue.textContent = "0.0s";
+            updateSpeedDisplays(0, 0);
+        }
+
+        // Resets centroid tracker variable trails
+        function resetLiveTracker() {
+            state.colorTracking.trail = [];
+            state.colorTracking.lastCentroid = null;
+            state.colorTracking.maxSpeed = 0;
+            state.colorTracking.currentSpeed = 0;
+            state.colorTracking.trackingStartTime = performance.now();
+            updateSpeedDisplays(0, 0);
+        }
+
+        // Manual or algorithm-tripped gate handling
+        function tripGate(gateNum) {
+            if (!state.webcamActive) return;
+            const now = performance.now();
+
+            if (gateNum === 1) {
+                state.gates.gate1Tripped = true;
+                state.gates.gate1TripTime = now;
+                logEvent("Gate 1 TRIPPED!");
+                playChime(523.25, "square", 0.1, 0.08); // C5 Chime
+                
+                // Reset second gate just in case they are running again
+                state.gates.gate2Tripped = false;
+                state.gates.gate2TripTime = 0;
+            } 
+            else if (gateNum === 2) {
+                if (!state.gates.gate1Tripped) {
+                    // Reverse pass or trigger order bypass fallback
+                    state.gates.gate2Tripped = true;
+                    state.gates.gate2TripTime = now;
+                    logEvent("Gate 2 TRIPPED! Waiting for Gate 1...");
+                    playChime(587.33, "square", 0.1, 0.08); // D5 Chime
+                    return;
+                }
+
+                state.gates.gate2Tripped = true;
+                state.gates.gate2TripTime = now;
+                logEvent("Gate 2 TRIPPED!");
+                playChime(659.25, "square", 0.12, 0.08); // E5 Chime
+
+                // Math: Calculate Speed!
+                const elapsedMs = state.gates.gate2TripTime - state.gates.gate1TripTime;
+                const elapsedSec = elapsedMs / 1000;
+                elements.elapsedTimeValue.textContent = `${elapsedSec.toFixed(3)}s`;
+
+                // Calculate scale factors
+                let scaleToMeters = 1.0;
+                
+                // Get real world physical size converted to Meters
+                if (state.scale.isSet) {
+                    let pixelSizeInMeters = 0;
+                    const physVal = state.scale.physicalVal;
+                    const physUnits = state.scale.physicalUnits;
+
+                    // Convert reference ruler size to meters
+                    let refMeters = physVal;
+                    if (physUnits === 'cm') refMeters = physVal / 100;
+                    else if (physUnits === 'inches') refMeters = physVal * 0.0254;
+                    else if (physUnits === 'feet') refMeters = physVal * 0.3048;
+
+                    const pixelsPerMeter = state.scale.pixels / refMeters;
+                    
+                    // Pixels distance between Speed Gates
+                    const gatePxDistance = Math.abs(state.gates.gate2X - state.gates.gate1X);
+                    const gateMetersCalculated = gatePxDistance / pixelsPerMeter;
+
+                    const speedMPS = gateMetersCalculated / elapsedSec;
+                    updateSpeedDisplays(speedMPS, speedMPS);
+                    
+                    const unitValueStr = `${convertSpeed(speedMPS).toFixed(2)} ${state.outputUnits}`;
+                    logEvent(`SUCCESS: Elapsed: ${elapsedSec.toFixed(3)}s. Calc Distance: ${gateMetersCalculated.toFixed(2)}m. Speed: ${unitValueStr}`);
+                    speakMessage(`${convertSpeed(speedMPS).toFixed(1)} ${state.outputUnits === 'm/s' ? 'meters per second' : state.outputUnits}`);
+                } else {
+                    // Fallback to uncalibrated distance configuration ratios directly
+                    let gateDistanceInMeters = state.gates.gateDistance;
+                    const gUnits = state.gates.distanceUnits;
+                    
+                    if (gUnits === 'cm') gateDistanceInMeters = state.gates.gateDistance / 100;
+                    else if (gUnits === 'inches') gateDistanceInMeters = state.gates.gateDistance * 0.0254;
+                    else if (gUnits === 'feet') gateDistanceInMeters = state.gates.gateDistance * 0.3048;
+
+                    const speedMPS = gateDistanceInMeters / elapsedSec;
+                    updateSpeedDisplays(speedMPS, speedMPS);
+
+                    const unitValueStr = `${convertSpeed(speedMPS).toFixed(2)} ${state.outputUnits}`;
+                    logEvent(`SUCCESS: Elapsed: ${elapsedSec.toFixed(3)}s. User Scale: ${gateDistanceInMeters.toFixed(2)}m. Speed: ${unitValueStr}`);
+                    speakMessage(`${convertSpeed(speedMPS).toFixed(1)} ${state.outputUnits === 'm/s' ? 'meters per second' : state.outputUnits}`);
+                }
+            }
+        }
+
+
+        // --- Dynamic Mouse / Touch Drag and Drop Coordinates Mapping ---
+        
+        function getCanvasMouseCoords(event) {
+            const rect = elements.canvas.getBoundingClientRect();
+            const scaleX = state.canvasWidth / rect.width;
+            const scaleY = state.canvasHeight / rect.height;
+            return {
+                x: (event.clientX - rect.left) * scaleX,
+                y: (event.clientY - rect.top) * scaleY
+            };
+        }
+
+        // Mouse Down Handles Mapping
+        elements.canvas.addEventListener('mousedown', (e) => {
+            const coords = getCanvasMouseCoords(e);
+
+            // 1. Check if user is calibrating (dragging golden ruler end points)
+            if (state.calibrating) {
+                const dist1 = Math.hypot(coords.x - state.scale.point1.x, coords.y - state.scale.point1.y);
+                const dist2 = Math.hypot(coords.x - state.scale.point2.x, coords.y - state.scale.point2.y);
+
+                if (dist1 < 25) {
+                    state.scale.draggedPoint = 'point1';
+                } else if (dist2 < 25) {
+                    state.scale.draggedPoint = 'point2';
+                }
+                return;
+            }
+
+            // 2. Check if user is adjusting Chronometer Gates
+            if (state.mode === 'gate') {
+                const clickTolerance = 30; // pixels width allowance
+                if (Math.abs(coords.x - state.gates.gate1X) < clickTolerance) {
+                    state.gates.draggedGate = 'gate1';
+                } else if (Math.abs(coords.x - state.gates.gate2X) < clickTolerance) {
+                    state.gates.draggedGate = 'gate2';
+                }
+                return;
+            }
+
+            // 3. Color Selection Mode: Sample color under cursor click
+            if (state.mode === 'color') {
+                const imgData = elements.ctx.getImageData(coords.x, coords.y, 1, 1).data;
+                state.colorTracking.targetColor = { r: imgData[0], g: imgData[1], b: imgData[2] };
+                
+                // Update Color Picker display card styling
+                elements.targetColorPreview.style.backgroundColor = `rgb(${imgData[0]}, ${imgData[1]}, ${imgData[2]})`;
+                elements.colorRgbVal.textContent = `RGB: (${imgData[0]}, ${imgData[1]}, ${imgData[2]})`;
+                
+                // Simple RGB color descriptor
+                let name = "Selected Target";
+                const {r, g, b} = state.colorTracking.targetColor;
+                if (r > 150 && g < 100 && b < 100) name = "Vibrant Red";
+                else if (g > 150 && r < 100 && b < 100) name = "Neon Green";
+                else if (b > 150 && r < 100 && g < 100) name = "Vivid Blue";
+                else if (r > 150 && g > 150 && b < 100) name = "Bright Yellow";
+                else if (r < 70 && g < 70 && b < 70) name = "Dark/Shadow";
+                else if (r > 200 && g > 200 && b > 200) name = "Bright White";
+                elements.colorNameText.textContent = name;
+
+                resetLiveTracker();
+                logEvent(`Locked target tracking color RGB: (${r}, ${g}, ${b})`);
+                playChime(800, "sine", 0.1, 0.05);
+            }
+        });
+
+        // Mouse Move coordinates dragging loop
+        elements.canvas.addEventListener('mousemove', (e) => {
+            if (!state.webcamActive) return;
+            const coords = getCanvasMouseCoords(e);
+
+            // Handle Calibration Markers repositioning
+            if (state.calibrating && state.scale.draggedPoint) {
+                state.scale[state.scale.draggedPoint] = coords;
+                return;
+            }
+
+            // Handle Gate lines positioning repositioning
+            if (state.mode === 'gate' && state.gates.draggedGate) {
+                const targetX = Math.max(10, Math.min(state.canvasWidth - 10, coords.x));
+                if (state.gates.draggedGate === 'gate1') {
+                    state.gates.gate1X = targetX;
+                } else {
+                    state.gates.gate2X = targetX;
+                }
+            }
+        });
+
+        // Release dragging handles
+        window.addEventListener('mouseup', () => {
+            state.scale.draggedPoint = null;
+            state.gates.draggedGate = null;
+        });
+
+        // Adapt Dragging Controls to mobile touch inputs
+        elements.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.canvas.dispatchEvent(mouseEvent);
+            }
+        }, { passive: true });
+
+        elements.canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.canvas.dispatchEvent(mouseEvent);
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            state.scale.draggedPoint = null;
+            state.gates.draggedGate = null;
+        });
+
+
+        // --- Unified Frame Render Loop & CV Analysis Engine ---
+
+        function renderLoop() {
+            if (!state.webcamActive) return;
+
+            const ctx = elements.ctx;
+            const width = state.canvasWidth;
+            const height = state.canvasHeight;
+
+            // Draw current webcam frame to rendering canvas
+            ctx.drawImage(elements.video, 0, 0, width, height);
+
+            // Analyze frames based on active layout modes
+            if (state.calibrating) {
+                drawCalibrationTool(ctx);
+            } else if (state.mode === 'gate') {
+                processGateDetection(ctx);
+                drawGates(ctx);
+            } else if (state.mode === 'color') {
+                processColorTracking(ctx);
+                drawColorTracking(ctx);
+            }
+
+            // Frame Rate Counter Math
+            const now = performance.now();
+            if (state.lastFpsUpdate === 0) {
+                state.lastFpsUpdate = now;
+            } else {
+                const delta = now - state.lastFpsUpdate;
+                state.fps = Math.round(1000 / delta);
+                state.lastFpsUpdate = now;
+                elements.fpsCounter.textContent = `FPS: ${state.fps}`;
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Processing Speed Gate Frame Changes
+        function processGateDetection(ctx) {
+            const sensitivity = parseInt(elements.gateSensitivityInput.value);
+            const gate1X = Math.round(state.gates.gate1X);
+            const gate2X = Math.round(state.gates.gate2X);
+
+            // Calculate current average brightness (luminance) along each vertical gate line
+            const sampleWidth = 4; // Check small column width for stability
+            
+            const g1Data = ctx.getImageData(gate1X - 2, 0, sampleWidth, state.canvasHeight).data;
+            const g2Data = ctx.getImageData(gate2X - 2, 0, sampleWidth, state.canvasHeight).data;
+
+            let g1LumSum = 0;
+            let g2LumSum = 0;
+            const totalPixels = state.canvasHeight * sampleWidth;
+
+            for (let i = 0; i < g1Data.length; i += 4) {
+                // Standard visual human luminance formulas
+                g1LumSum += (g1Data[i] * 0.299 + g1Data[i+1] * 0.587 + g1Data[i+2] * 0.114);
+                g2LumSum += (g2Data[i] * 0.299 + g2Data[i+1] * 0.587 + g2Data[i+2] * 0.114);
+            }
+
+            const g1Avg = g1LumSum / totalPixels;
+            const g2Avg = g2LumSum / totalPixels;
+
+            // Analyze relative frame differences to determine motion trips
+            detectIndividualGateTrip(1, g1Avg, sensitivity);
+            detectIndividualGateTrip(2, g2Avg, sensitivity);
+        }
+
+        function detectIndividualGateTrip(gateIndex, currentAvg, sensitivity) {
+            const gateKey = gateIndex === 1 ? 'gate1LastLums' : 'gate2LastLums';
+            const history = state.gates[gateKey];
+
+            // Store running background average (rolling 15 frames)
+            if (history.length < 15) {
+                history.push(currentAvg);
+                return;
+            }
+
+            // Compute background average excluding anomalies
+            const bgAvg = history.reduce((a, b) => a + b, 0) / history.length;
+            
+            // Append current frame and shift oldest frame out
+            history.push(currentAvg);
+            history.shift();
+
+            // Contrast check: trigger if difference from baseline surpasses sensitivity limits
+            const diff = Math.abs(currentAvg - bgAvg);
+            const alreadyTripped = gateIndex === 1 ? state.gates.gate1Tripped : state.gates.gate2Tripped;
+
+            if (diff > sensitivity && !alreadyTripped) {
+                // Check sequence timers to ensure logical sequence
+                if (gateIndex === 2 && !state.gates.gate1Tripped) {
+                    // Ignore gate 2 trips if gate 1 hasn't gone yet (prevents out-of-order false trips)
+                    return;
+                }
+                tripGate(gateIndex);
+            }
+        }
+
+        // Draw Interactive calibration visual elements
+        function drawCalibrationTool(ctx) {
+            const p1 = state.scale.point1;
+            const p2 = state.scale.point2;
+
+            // Dim background for overlay contrast
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.fillRect(0,0,state.canvasWidth, state.canvasHeight);
+
+            // Connective rule lines
+            ctx.strokeStyle = "#eab308"; // Golden orange
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+
+            // Dash alignment guides
+            ctx.strokeStyle = "rgba(234, 179, 8, 0.4)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            
+            ctx.beginPath();
+            ctx.moveTo(p1.x, 0); ctx.lineTo(p1.x, state.canvasHeight);
+            ctx.moveTo(p2.x, 0); ctx.lineTo(p2.x, state.canvasHeight);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw anchor points
+            [p1, p2].forEach((p, idx) => {
+                ctx.fillStyle = "#eab308";
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 10, 0, Math.PI*2);
+                ctx.fill();
+                
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 14, 0, Math.PI*2);
+                ctx.stroke();
+
+                ctx.fillStyle = "white";
+                ctx.font = "bold 11px sans-serif";
+                ctx.fillText(`P${idx+1}`, p.x - 7, p.y - 18);
+            });
+
+            // Pixels metric distance overlay
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const pxDistance = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+            
+            ctx.fillStyle = "black";
+            ctx.fillRect((p1.x + p2.x)/2 - 55, (p1.y + p2.y)/2 - 25, 110, 20);
+            ctx.fillStyle = "#eab308";
+            ctx.font = "bold 10px monospace";
+            ctx.fillText(`${pxDistance} PIXELS`, (p1.x + p2.x)/2 - 45, (p1.y + p2.y)/2 - 12);
+        }
+
+        // Draw Interactive Speed Gate Visual Markers
+        function drawGates(ctx) {
+            const g1X = state.gates.gate1X;
+            const g2X = state.gates.gate2X;
+
+            // Gate 1 Render
+            ctx.strokeStyle = state.gates.gate1Tripped ? "#ef4444" : "#22c55e"; // red vs brand green
+            ctx.lineWidth = state.gates.gate1Tripped ? 5 : 3;
+            ctx.beginPath();
+            ctx.moveTo(g1X, 0);
+            ctx.lineTo(g1X, state.canvasHeight);
+            ctx.stroke();
+
+            // Gate 2 Render
+            ctx.strokeStyle = state.gates.gate2Tripped ? "#ef4444" : "#22c55e";
+            ctx.lineWidth = state.gates.gate2Tripped ? 5 : 3;
+            ctx.beginPath();
+            ctx.moveTo(g2X, 0);
+            ctx.lineTo(g2X, state.canvasHeight);
+            ctx.stroke();
+
+            // Text Labels Overlay
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(g1X - 35, 15, 70, 22);
+            ctx.fillRect(g2X - 35, 15, 70, 22);
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 10px sans-serif";
+            ctx.fillText(state.gates.gate1Tripped ? "GATE 1 [TRIP]" : "GATE 1 (START)", g1X - 31, 29);
+            ctx.fillText(state.gates.gate2Tripped ? "GATE 2 [TRIP]" : "GATE 2 (END)", g2X - 29, 29);
+        }
+
+        // Core Color Tracking Search centroid calculation
+        function processColorTracking(ctx) {
+            const imgData = ctx.getImageData(0, 0, state.canvasWidth, state.canvasHeight);
+            const data = imgData.data;
+            const target = state.colorTracking.targetColor;
+            const thresh = parseInt(elements.colorThresholdInput.value);
+
+            let sumX = 0;
+            let sumY = 0;
+            let matchCount = 0;
+
+            // Scan pixels skipping step sequences to balance tracking fidelity with browser processing speed
+            const skip = 3; 
+            for (let y = 0; y < state.canvasHeight; y += skip) {
+                for (let x = 0; x < state.canvasWidth; x += skip) {
+                    const idx = (y * state.canvasWidth + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx+1];
+                    const b = data[idx+2];
+
+                    // Euclidean color matching index calculations
+                    const dist = Math.sqrt((r - target.r)**2 + (g - target.g)**2 + (b - target.b)**2);
+                    
+                    if (dist < thresh) {
+                        sumX += x;
+                        sumY += y;
+                        matchCount++;
+                    }
+                }
+            }
+
+            // Verify minimum tracking volume bounding threshold meets limits
+            if (matchCount > 15) {
+                const centroidX = sumX / matchCount;
+                const centroidY = sumY / matchCount;
+                const now = performance.now();
+
+                const newCentroid = { x: centroidX, y: centroidY, time: now };
+
+                // Calculate speed of centroids
+                if (state.colorTracking.lastCentroid) {
+                    const last = state.colorTracking.lastCentroid;
+                    const dt = (now - last.time) / 1000; // time in seconds
+
+                    if (dt > 0.005) { // Protect division-by-zero anomalies
+                        const dx = centroidX - last.x;
+                        const dy = centroidY - last.y;
+                        const pxDistance = Math.sqrt(dx*dx + dy*dy);
+
+                        let calculatedSpeedMPS = 0;
+
+                        if (state.scale.isSet) {
+                            // High precision Calibration mapping speed calculations
+                            let refMeters = state.scale.physicalVal;
+                            const physUnits = state.scale.physicalUnits;
+
+                            if (physUnits === 'cm') refMeters = state.scale.physicalVal / 100;
+                            else if (physUnits === 'inches') refMeters = state.scale.physicalVal * 0.0254;
+                            else if (physUnits === 'feet') refMeters = state.scale.physicalVal * 0.3048;
+
+                            const metersPerPixel = refMeters / state.scale.pixels;
+                            const realWorldMeters = pxDistance * metersPerPixel;
+                            calculatedSpeedMPS = realWorldMeters / dt;
+                        } else {
+                            // Fallback baseline ratio (assumes 1 pixel = 1mm equivalent index)
+                            calculatedSpeedMPS = (pxDistance * 0.001) / dt;
+                        }
+
+                        // Jitter elimination: Apply Exponential Moving Average filtering (low-pass smoothing)
+                        const smoothingFactor = 0.25;
+                        state.colorTracking.currentSpeed = (calculatedSpeedMPS * smoothingFactor) + (state.colorTracking.currentSpeed * (1 - smoothingFactor));
+
+                        // Prevent artificial micro-shake noise
+                        if (state.colorTracking.currentSpeed < 0.04) {
+                            state.colorTracking.currentSpeed = 0;
+                        }
+
+                        if (state.colorTracking.currentSpeed > state.colorTracking.maxSpeed) {
+                            state.colorTracking.maxSpeed = state.colorTracking.currentSpeed;
+                        }
+
+                        // Sync displays
+                        updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+                        
+                        // Timer countdown metrics tracking
+                        const elapsedSecs = (now - state.colorTracking.trackingStartTime) / 1000;
+                        elements.elapsedTimeValue.textContent = `${elapsedSecs.toFixed(1)}s`;
+                    }
+                }
+
+                state.colorTracking.lastCentroid = newCentroid;
+
+                // Enqueue trail paths
+                state.colorTracking.trail.push({ x: centroidX, y: centroidY });
+                if (state.colorTracking.trail.length > state.colorTracking.maxTrailLength) {
+                    state.colorTracking.trail.shift();
+                }
+            } else {
+                // Slowly decay tracking readings if visual centroid loses locks
+                state.colorTracking.currentSpeed *= 0.85;
+                if (state.colorTracking.currentSpeed < 0.05) state.colorTracking.currentSpeed = 0;
+                updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+            }
+        }
+
+        // Draw Tracker overlays and fading tails
+        function drawColorTracking(ctx) {
+            const trail = state.colorTracking.trail;
+            if (trail.length === 0) return;
+
+            // Draw target tracking tail path lines
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                ctx.strokeStyle = `rgba(34, 197, 94, ${alpha})`; // fading neon green
+                ctx.beginPath();
+                ctx.moveTo(trail[i-1].x, trail[i-1].y);
+                ctx.lineTo(trail[i].x, trail[i].y);
+                ctx.stroke();
+            }
+
+            // Draw locked tracking target box circle
+            const current = trail[trail.length - 1];
+            ctx.strokeStyle = "#eab308"; // Gold tracker reticle
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(current.x, current.y, 22, 0, Math.PI*2);
+            ctx.stroke();
+
+            // Draw center dot
+            ctx.fillStyle = "#eab308";
+            ctx.beginPath();
+            ctx.arc(current.x, current.y, 4, 0, Math.PI*2);
+            ctx.fill();
+
+            // Small reticle corner lines
+            ctx.beginPath();
+            ctx.moveTo(current.x - 30, current.y); ctx.lineTo(current.x - 15, current.y);
+            ctx.moveTo(current.x + 15, current.y); ctx.lineTo(current.x + 30, current.y);
+            ctx.moveTo(current.x, current.y - 30); ctx.lineTo(current.x, current.y - 15);
+            ctx.moveTo(current.x, current.y + 15); ctx.lineTo(current.x, current.y + 30);
+            ctx.stroke();
+        }
+
+        // On document load startup sequences
+        window.addEventListener('load', () => {
+            loadCameraDevices();
+            // Show guide instructions initially
+            elements.instructionsModal.classList.remove('hidden');
+        });
+
+    </script>
+</body>
+</html>
