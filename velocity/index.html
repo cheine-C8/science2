@@ -1419,6 +1419,8 @@
             state.gates.gate2Tripped = false;
             state.gates.gate1TripTime = 0;
             state.gates.gate2TripTime = 0;
+            state.gates.gate1LastLums = [];
+            state.gates.gate2LastLums = [];
             state.telemetry.history = [];
             elements.elapsedTimeValue.textContent = "0.0s";
             elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
@@ -1466,6 +1468,7 @@
                 // Reset second gate just in case they are running again
                 state.gates.gate2Tripped = false;
                 state.gates.gate2TripTime = 0;
+                state.gates.gate2LastLums = []; // flush so gate2 baseline re-accumulates cleanly
             } 
             else if (gateNum === 2) {
                 if (!state.gates.gate1Tripped) {
@@ -1810,13 +1813,20 @@
             const gateKey = gateIndex === 1 ? 'gate1LastLums' : 'gate2LastLums';
             const history = state.gates[gateKey];
 
+            const alreadyTripped = gateIndex === 1 ? state.gates.gate1Tripped : state.gates.gate2Tripped;
+
+            // If this gate is already tripped, don't accumulate skewed lum data into the baseline.
+            // The history will be cleared when the gate resets (tripGate resets gate2 on gate1 trip,
+            // and resetGateTimers clears both). Skip until re-armed.
+            if (alreadyTripped) return;
+
             // Store running background average (rolling 15 frames)
             if (history.length < 15) {
                 history.push(currentAvg);
                 return;
             }
 
-            // Compute background average excluding anomalies
+            // Compute background average from stable baseline window
             const bgAvg = history.reduce((a, b) => a + b, 0) / history.length;
             
             // Append current frame and shift oldest frame out
@@ -1825,14 +1835,16 @@
 
             // Contrast check: trigger if difference from baseline surpasses sensitivity limits
             const diff = Math.abs(currentAvg - bgAvg);
-            const alreadyTripped = gateIndex === 1 ? state.gates.gate1Tripped : state.gates.gate2Tripped;
 
-            if (diff > sensitivity && !alreadyTripped) {
-                // Check sequence timers to ensure logical sequence
+            if (diff > sensitivity) {
+                // Gate 2 can only fire after Gate 1 (direction enforcement)
                 if (gateIndex === 2 && !state.gates.gate1Tripped) {
-                    // Ignore gate 2 trips if gate 1 hasn't gone yet (prevents out-of-order false trips)
+                    // Clear gate 2 history so it doesn't re-trigger immediately when gate 1 does fire
+                    state.gates.gate2LastLums = [];
                     return;
                 }
+                // Clear own lum history so baseline is clean after the trip
+                state.gates[gateKey] = [];
                 tripGate(gateIndex);
             }
         }
