@@ -433,7 +433,7 @@
             <!-- Calibration overlay notice -->
             <div id="calibration-notice" class="hidden bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl text-xs space-y-2">
                 <div class="flex items-center space-x-1.5 font-bold">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>Grid Ruler Calibration Mode Active</span>
                 </div>
                 <p class="leading-relaxed">
@@ -1249,25 +1249,28 @@
             }
 
             // 3. Process Speed Gates (Motion detection logic on gate coordinate vertical lines)
+            // Average horizontal row luminosities around coordinates
+            let g1Avg = state.gates.g1LastAvg;
+            let g2Avg = state.gates.g2LastAvg;
+
             if (state.activeTab === 'gate') {
                 try {
                     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imgData.data;
                     const w = imgData.width;
 
-                    // Average horizontal row luminosities around coordinates
-                    let g1Avg = 0, g2Avg = 0;
+                    let g1Sum = 0, g2Sum = 0;
                     const sampleRows = [90, 180, 270];
 
                     sampleRows.forEach(row => {
                         const idx1 = Math.round((row * w + state.gates.g1) * 4);
                         const idx2 = Math.round((row * w + state.gates.g2) * 4);
                         
-                        g1Avg += (data[idx1] + data[idx1+1] + data[idx1+2]) / 3;
-                        g2Avg += (data[idx2] + data[idx2+1] + data[idx2+2]) / 3;
+                        g1Sum += (data[idx1] + data[idx1+1] + data[idx1+2]) / 3;
+                        g2Sum += (data[idx2] + data[idx2+1] + data[idx2+2]) / 3;
                     });
-                    g1Avg /= sampleRows.length;
-                    g2Avg /= sampleRows.length;
+                    g1Avg = g1Sum / sampleRows.length;
+                    g2Avg = g2Sum / sampleRows.length;
 
                     // Assess light delta triggers vs threshold
                     const d1 = Math.abs(g1Avg - state.gates.g1LastAvg);
