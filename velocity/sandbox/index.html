@@ -1,0 +1,3089 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Speed Tracker & Chronometer</title>
+    <!-- Tailwind CSS for high fidelity layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-black">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-900/30">
+                <!-- SVG Speedometer Icon -->
+                <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V12h6.5m-14.5 0a8.5 8.5 0 1117 0 8.5 8.5 0 01-17 0z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight">CamSpeed <span class="text-brand-500 font-medium">Tracker</span></h1>
+                <p class="text-xs text-gray-400">HSV-Enhanced Computer Vision Speedometer</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span id="fps-counter" class="text-xs font-mono bg-gray-800 px-2 py-1 rounded border border-gray-700 text-gray-300">FPS: --</span>
+            <button id="help-btn" class="text-xs bg-gray-800 hover:bg-gray-750 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
+                <span>How to Calibrate</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Camera Viewport, Charts & Controls -->
+        <div class="lg:col-span-8 flex flex-col space-y-4">
+            
+            <!-- Main Video / Workbench Container -->
+            <div class="relative bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-2xl aspect-video w-full flex items-center justify-center group">
+                
+                <!-- HTML5 Video Component (Hidden, feeds Canvas) -->
+                <video id="video-feed" autoplay playsinline muted class="hidden"></video>
+                
+                <!-- Render Canvas (Main Interaction Surface) -->
+                <canvas id="render-canvas" class="w-full h-full object-contain cursor-crosshair"></canvas>
+                
+                <!-- Interactive Student Data Workbench Container (Replaces Video feed when in Workshop Mode) -->
+                <div id="workbench-container" class="absolute inset-0 bg-gray-950 flex flex-col hidden p-4 transition-all z-10">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <span class="text-xs bg-brand-500/15 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Student Data Workbench</span>
+                            <span class="text-xs text-gray-400 ml-2">Drag Crop Handles to isolate ranges</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="flex items-center space-x-1 text-xs text-gray-300">
+                                <input type="checkbox" id="show-speed-toggle" checked class="rounded border-gray-700 text-brand-500 focus:ring-0 bg-gray-800">
+                                <span class="text-emerald-400">Speed</span>
+                            </label>
+                            <label class="flex items-center space-x-1 text-xs text-gray-300">
+                                <input type="checkbox" id="show-distance-toggle" checked class="rounded border-gray-700 text-brand-500 focus:ring-0 bg-gray-800">
+                                <span class="text-sky-400">Distance</span>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Workbench Interactive graph canvas -->
+                    <div class="flex-1 min-h-0 bg-gray-900/60 rounded-xl border border-gray-800 relative overflow-hidden">
+                        <canvas id="workbench-canvas" class="w-full h-full cursor-pointer"></canvas>
+                    </div>
+                    <!-- Workbench status info bar -->
+                    <div class="flex justify-between items-center mt-2 text-[11px] text-gray-400 px-1">
+                        <div class="flex space-x-4">
+                            <span>Crop Range: <b id="workbench-crop-readout" class="text-white font-mono">0.00s - 10.00s</b></span>
+                            <span>Selected Points: <b id="workbench-points-count" class="text-white font-mono">0</b></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <span id="workbench-hover-tooltip" class="font-mono text-gray-200">Hover graph to inspect values</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Left Status Bar -->
+                <div class="absolute top-4 left-4 flex flex-col space-y-2 pointer-events-none z-20">
+                    <div id="status-badge" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-yellow-400">
+                        <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></span>
+                        <span id="status-text">Webcam Inactive</span>
+                    </div>
+                </div>
+
+                <!-- Touch & Mouse Helper Guides (Overlay) -->
+                <div id="canvas-prompt" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-700/60 text-xs text-center text-gray-200 pointer-events-none transition-all duration-300 shadow-xl max-w-md z-20">
+                    Click the "Start Camera" button below to initialize your speed tracking setup.
+                </div>
+
+                <!-- Video Loading/Placeholder Screen -->
+                <div id="placeholder-screen" class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center p-8 transition-all duration-500 z-20">
+                    <div class="w-16 h-16 rounded-full border-4 border-dashed border-brand-500/30 border-t-brand-500 animate-spin mb-6"></div>
+                    <h3 class="text-lg font-bold text-gray-200">Waiting for Camera Initialization</h3>
+                    <p class="text-sm text-gray-400 text-center mt-2 max-w-xs">Grant camera permissions when prompted to enable real-time velocity calculations.</p>
+                    <button id="direct-start-btn" class="mt-6 px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-semibold rounded-xl shadow-lg shadow-brand-900/20 transition-all">
+                        Allow and Start Camera
+                    </button>
+                </div>
+            </div>
+
+            <!-- Playback & Calibration Quickbar -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button id="toggle-camera-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                        <span id="camera-btn-text">Start Camera</span>
+                    </button>
+                    <select id="camera-source" class="bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl px-3 py-2 text-xs font-medium text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500 flex-1 sm:flex-initial max-w-[220px]">
+                        <option value="">Default Camera</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="cal-mode-btn" class="px-3.5 py-2 bg-gray-800 hover:bg-gray-750 border border-gray-700 text-gray-200 text-sm rounded-xl font-medium flex items-center space-x-2 transition-all">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
+                        <span>Calibrate Grid Ruler</span>
+                    </button>
+                    <!-- Toggle Mirror Button -->
+                    <button id="toggle-mirror-btn" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-black border border-brand-500 rounded-xl text-sm font-semibold transition-all flex items-center space-x-1.5 shadow-lg shadow-brand-900/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742l1.325-1.324m0 0l-1.325-1.325m1.325 1.325L3 13.844m12.316-3.1L14 9.418m0 0l1.316-1.316L14 9.418L21 13.844M12 3v18"/></svg>
+                        <span id="mirror-btn-text">Mirror: ON</span>
+                    </button>
+                    <button id="clear-tracking-btn" class="px-3 py-2 text-xs bg-gray-800 hover:bg-red-950/40 hover:text-red-400 border border-gray-700 rounded-xl font-medium transition-all">
+                        Reset Trackers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Telemetry Charts Block -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg flex flex-col space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-200">Real-Time Telemetry Analytics</h3>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <!-- Export Telemetry Button -->
+                        <button id="export-csv-btn" class="text-xs bg-gray-800 hover:bg-gray-750 text-brand-400 hover:text-brand-300 border border-gray-700 px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 font-semibold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Export CSV</span>
+                        </button>
+                        <span id="chart-mode-badge" class="text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-bold uppercase">Gates Mode</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Distance vs Time -->
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-400">
+                            <span>Distance vs. Time (s-t)</span>
+                            <span class="text-sky-400 font-mono" id="live-distance-readout">Cumulative: 0.00 m</span>
+                        </div>
+                        <div class="bg-gray-950 rounded-xl p-3 border border-gray-800 h-44 relative overflow-hidden">
+                            <canvas id="distance-chart-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Speed vs Time -->
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-400">
+                            <span>Speed vs. Time (v-t)</span>
+                            <span class="text-emerald-400 font-mono" id="live-speed-readout">Velocity: 0.00 m/s</span>
+                        </div>
+                        <div class="bg-gray-950 rounded-xl p-3 border border-gray-800 h-44 relative overflow-hidden">
+                            <canvas id="speed-chart-canvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informational Status / Instructions Footer -->
+            <div class="bg-gray-900/50 border border-gray-850 rounded-2xl p-4 text-xs text-gray-400 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start space-x-2">
+                    <svg class="w-4 h-4 text-brand-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8.21 13.89L7 12.68c-.39-.39-.39-1.02 0-1.41l1.21-1.21c.39-.39 1.02-.39 1.41 0l1.21 1.21c.39.39.39 1.02 0 1.41l-1.21 1.21c-.39.39-1.02.39-1.41 0zm8.58 0l-1.21-1.21c-.39-.39-.39-1.02 0-1.41l1.21-1.21c.39-.39 1.02-.39 1.41 0l1.21 1.21c.39.39.39 1.02 0 1.41l-1.21 1.21c-.39.39-1.02.39-1.41 0z"/></svg>
+                    <div>
+                        <span class="font-semibold text-gray-300 block mb-0.5">Quick Setup Guide:</span>
+                        <span class="block">1. Use a tripod or secure your computer camera so it is perfectly still.</span>
+                        <span class="block">2. Place an item of known physical length in the video frame (like a meter stick).</span>
+                        <span class="block">3. Click 'Calibrate' to drag the alignment lines over it and tell the system its size.</span>
+                    </div>
+                </div>
+                <div class="shrink-0 flex space-x-2">
+                    <div class="bg-gray-800 border border-gray-700 rounded-lg p-2 text-center min-w-[70px]">
+                        <span class="text-gray-500 block uppercase tracking-wider text-[9px]">Calibrated</span>
+                        <span id="cal-status-indicator" class="text-red-400 font-bold block mt-0.5">UNSET</span>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 rounded-lg p-2 text-center min-w-[70px]">
+                        <span class="text-gray-500 block uppercase tracking-wider text-[9px]">Camera Res</span>
+                        <span id="cam-res-indicator" class="text-gray-400 font-mono block mt-0.5">--x--</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Control Panel, Metrics & Logs -->
+        <div class="lg:col-span-4 flex flex-col space-y-6">
+
+            <!-- Primary Metric Display Card -->
+            <div class="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+                <div class="absolute -right-12 -bottom-12 w-32 h-32 bg-brand-500/5 rounded-full blur-2xl"></div>
+                
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-brand-500" id="metric-label">Object Speed</span>
+                    <span class="text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-semibold uppercase" id="metric-subtext">Live Tracking</span>
+                </div>
+                
+                <div class="flex items-baseline space-x-2 mt-4">
+                    <span id="speed-display-value" class="text-6xl font-black tracking-tight font-mono text-gray-50">0.00</span>
+                    <span id="speed-unit-text" class="text-xl font-bold text-gray-400">m/s</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-gray-850">
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Max Speed Peak</span>
+                        <span id="peak-speed-value" class="text-sm font-bold text-gray-300 font-mono">0.00 m/s</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-semibold">Elapsed Tracking Time</span>
+                        <span id="elapsed-time-value" class="text-sm font-bold text-gray-300 font-mono">0.0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode Selector Panel -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                <div class="flex border-b border-gray-800">
+                    <button id="tab-gate" class="flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>1. Gates</span>
+                    </button>
+                    <button id="tab-color" class="flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-3 0l-9.37-9.37a2.121 2.121 0 113-3l9.37 9.37z"/></svg>
+                        <span>2. Color Track</span>
+                    </button>
+                    <button id="tab-workshop" class="flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>3. Workshop</span>
+                    </button>
+                </div>
+
+                <div class="p-5">
+                    
+                    <!-- View A: Speed Gates Configuration -->
+                    <div id="config-gate-view" class="space-y-4">
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Sets up two visual vertical marker lines. Specify the real-world distance between them. High luminosity changes will trip the timers.
+                        </p>
+                        
+                        <!-- Configuration Form Fields -->
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate-to-Gate Distance</label>
+                                <div class="relative rounded-xl overflow-hidden flex shadow-inner">
+                                    <input type="number" id="gate-distance-input" value="1.0" step="0.1" min="0.01" class="flex-1 bg-gray-800 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                    <select id="distance-units" class="bg-gray-750 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                        <option value="meters" selected>Meters</option>
+                                        <option value="cm">Centimeters</option>
+                                        <option value="inches">Inches</option>
+                                        <option value="feet">Feet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Gate Sensitivity</label>
+                                    <input type="range" id="gate-sensitivity" min="5" max="80" value="25" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-gray-400 block mt-5" id="sens-text">Val: 25</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual gate overrides/triggers -->
+                        <div class="pt-2">
+                            <span class="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Manual Trip Testing Controls</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="trip-gate-1" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 1</button>
+                                <button id="trip-gate-2" class="py-2 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all">Trip Gate 2</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View B: Color Tracker Settings (Hidden initially) -->
+                    <div id="config-color-view" class="space-y-4 hidden">
+                        <p class="text-xs text-gray-400 leading-relaxed font-semibold text-brand-400">
+                            HSV (Hue-Saturation-Value) Tracking Mode Active.
+                        </p>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Click directly on any colored item in the video frame. Our upgraded tracker isolates the specific hue, ignoring environmental room shadows.
+                        </p>
+
+                        <!-- Color Sample display -->
+                        <div class="flex items-center space-x-3 bg-gray-850/50 p-3 rounded-xl border border-gray-800">
+                            <div id="target-color-preview" class="w-10 h-10 rounded-lg border border-gray-700 shadow bg-red-500"></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold block" id="color-name-text">Red (Default)</span>
+                                    <span id="tracker-lock-badge" class="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Unlocked</span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 font-mono block" id="color-rgb-val">RGB: (220, 40, 40)</span>
+                                <span class="text-[10px] text-brand-400 font-mono block" id="color-hsv-val">HSV: (360°, 82%, 86%)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Color Match Tolerance</label>
+                                <input type="range" id="color-threshold" min="15" max="120" value="45" class="w-full accent-brand-500 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                    <span>Selective Hue</span>
+                                    <span>Broad Match</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View C: Data Workshop Panel (Editor controls for post processing) -->
+                    <div id="config-workshop-view" class="space-y-4 hidden">
+                        <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-850 space-y-2.5">
+                            <h5 class="text-xs font-bold tracking-wider uppercase text-brand-400 flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                                <span>Dataset Operations</span>
+                            </h5>
+                            
+                            <!-- Crop datasets button -->
+                            <div>
+                                <button id="apply-crop-btn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all shadow-lg shadow-brand-900/10 flex items-center justify-center space-x-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z"/></svg>
+                                    <span>Crop Dataset to Range</span>
+                                </button>
+                                <label class="flex items-center space-x-2 mt-2 cursor-pointer">
+                                    <input type="checkbox" id="shift-time-zero-checkbox" checked class="rounded border-gray-700 text-brand-500 focus:ring-0 bg-gray-900">
+                                    <span class="text-[10px] text-gray-400">Shift cropped start time to t=0.00s</span>
+                                </label>
+                            </div>
+
+                            <!-- Mathematical smoothing and offset modifiers -->
+                            <div class="border-t border-gray-900 pt-2.5 space-y-2.5">
+                                <div>
+                                    <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
+                                        <span class="font-bold">LOW-PASS SMOOTHING FILTER</span>
+                                        <span id="smoothing-level-text">Level: 10</span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <input type="range" id="workshop-smooth-input" min="2" max="15" value="10" class="flex-1 accent-brand-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer mt-2 animate-none">
+                                        <button id="apply-smooth-btn" class="px-3 py-1 bg-gray-800 hover:bg-gray-750 text-white font-semibold text-[10px] border border-gray-700 rounded-lg transition-all">Smooth</button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 uppercase mb-0.5">Scale Calibration</label>
+                                        <div class="flex space-x-1">
+                                            <input type="number" id="workshop-scale-input" value="1.0" step="0.05" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-xs text-white font-mono focus:outline-none">
+                                            <button id="apply-scale-btn" class="px-2 py-1 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-lg text-[10px] transition-all">Scale</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 uppercase mb-0.5">Time Shift Offset</label>
+                                        <div class="flex space-x-1">
+                                            <input type="number" id="workshop-shift-input" value="0.0" step="0.1" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-xs text-white font-mono focus:outline-none">
+                                            <button id="apply-shift-btn" class="px-2 py-1 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-lg text-[10px] transition-all">Shift</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selected Range Export Tools -->
+                            <div class="border-t border-gray-900 pt-2.5 space-y-2">
+                                <span class="block text-[9px] font-bold text-gray-400 uppercase">Export Selected Range</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button id="workshop-export-csv-btn" class="py-2 bg-gray-850 hover:bg-gray-800 text-brand-400 font-semibold text-[10px] border border-gray-700 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-md">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        <span>Selected CSV</span>
+                                    </button>
+                                    <button id="workshop-export-img-btn" class="py-2 bg-gray-850 hover:bg-gray-800 text-sky-400 font-semibold text-[10px] border border-gray-700 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-md">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <span>Export Image</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-900">
+                                <button id="workshop-undo-btn" class="py-1.5 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all flex items-center justify-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/></svg>
+                                    <span>Undo Edit</span>
+                                </button>
+                                <button id="workshop-reset-btn" class="py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/30 text-xs font-semibold rounded-xl text-red-400 transition-all flex items-center justify-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15.07M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/></svg>
+                                    <span>Restore Raw</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Manual Outlier Data Table Inspector -->
+                        <div class="flex flex-col border border-gray-800 rounded-xl overflow-hidden bg-gray-950">
+                            <div class="px-3.5 py-2 bg-gray-900/50 border-b border-gray-850 flex justify-between items-center">
+                                <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Manual Point Inspector</span>
+                                <span class="text-[9px] bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-mono" id="points-table-count">0 Pts</span>
+                            </div>
+                            <div class="overflow-y-auto max-h-[140px] text-[10px] font-mono divide-y divide-gray-900" id="workbench-table-body">
+                                <div class="text-center p-4 text-gray-500 italic">No points to edit. Capture a dataset first.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Calibration Interactive Step-by-Step Wizard Section -->
+            <div id="calibration-options-panel" class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg hidden">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-850">
+                    <h4 class="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                        <span>Calibration Wizard</span>
+                    </h4>
+                    <button id="close-cal-btn" class="text-gray-500 hover:text-gray-300 text-xs">Exit Calibration</button>
+                </div>
+
+                <!-- Wizard Progress Indicator Bar -->
+                <div class="flex items-center justify-between mb-5 px-1 text-[11px]">
+                    <div id="cal-step-1-indicator" class="flex items-center space-x-1.5 font-bold text-brand-500">
+                        <span class="w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold">1</span>
+                        <span>Align Markers</span>
+                    </div>
+                    <div id="cal-divider-1-2" class="flex-1 h-[2px] bg-gray-850 mx-2"></div>
+                    <div id="cal-step-2-indicator" class="flex items-center space-x-1.5 font-medium text-gray-500">
+                        <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs">2</span>
+                        <span>Define Size</span>
+                    </div>
+                    <div id="cal-divider-2-3" class="flex-1 h-[2px] bg-gray-850 mx-2"></div>
+                    <div id="cal-step-3-indicator" class="flex items-center space-x-1.5 font-medium text-gray-500">
+                        <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs">3</span>
+                        <span>Confirm</span>
+                    </div>
+                </div>
+
+                <!-- Wizard Step Content Holders -->
+                <!-- STEP 1: Aligning Anchor Handles -->
+                <div id="cal-step-1-content" class="space-y-4">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Place an object of precisely known physical length (e.g. a meter stick, a 30cm ruler, or a standard letter sheet) flat in your tracking field.
+                    </p>
+                    <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-850 space-y-2">
+                        <span class="text-[10px] uppercase tracking-wider text-brand-500 font-bold block">Live Span Coordinates</span>
+                        <div class="flex justify-between items-center text-xs text-gray-300 font-mono">
+                            <span>P1 <span class="text-gray-500">(Start)</span>:</span>
+                            <span id="cal-p1-coord">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-300 font-mono border-t border-gray-900 pt-1.5">
+                            <span>P2 <span class="text-gray-500">(End)</span>:</span>
+                            <span id="cal-p2-coord">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-brand-400 font-bold font-mono border-t border-gray-900 pt-1.5">
+                            <span>Total Pixel Distance:</span>
+                            <span id="cal-pixel-span">-- pixels</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-yellow-500 italic bg-yellow-500/10 p-2.5 rounded-lg border border-yellow-500/20">
+                        👉 Drag the golden anchors P1 and P2 in the camera feed until they encompass the physical boundary of your reference object.
+                    </p>
+                    <button id="cal-next-to-2-btn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-lg shadow-brand-900/10">
+                        <span>Continue to Step 2</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                <!-- STEP 2: Input Scale Values -->
+                <div id="cal-step-2-content" class="space-y-4 hidden">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        What is the precise real-world physical dimension of the reference object between the golden endpoints?
+                    </p>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Physical Size</label>
+                            <div class="relative rounded-xl overflow-hidden flex border border-gray-850 shadow-inner">
+                                <input type="number" id="cal-physical-length" value="30" step="0.1" min="0.01" class="flex-1 bg-gray-950 border-0 text-white font-mono text-sm px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                <select id="cal-physical-units" class="bg-gray-800 text-xs text-gray-300 font-bold px-3 border-l border-gray-700">
+                                    <option value="cm" selected>cm</option>
+                                    <option value="meters">meters</option>
+                                    <option value="inches">inches</option>
+                                    <option value="feet">feet</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button id="cal-back-to-1-btn" class="py-2.5 bg-gray-850 hover:bg-gray-800 text-gray-300 font-semibold text-xs rounded-xl border border-gray-750 transition-all flex items-center justify-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <span>Back</span>
+                        </button>
+                        <button id="cal-next-to-3-btn" class="py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-lg shadow-brand-900/10">
+                            <span>Next Step</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Summarize & Confirm -->
+                <div id="cal-step-3-content" class="space-y-4 hidden">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Review the calculated resolution configuration below. If this looks correct, apply to finalize calibration scaling.
+                    </p>
+
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-500">Pixel Span:</span>
+                            <span id="summary-pixels" class="font-mono text-gray-200">-- pixels</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-gray-900 pt-2">
+                            <span class="text-gray-500">Real-World Size:</span>
+                            <span id="summary-real-size" class="font-mono text-gray-200">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-gray-900 pt-2 font-bold text-brand-400">
+                            <span>Computed Scale Density:</span>
+                            <span id="summary-density" class="font-mono">-- px/m</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button id="cal-back-to-2-btn" class="py-2.5 bg-gray-850 hover:bg-gray-800 text-gray-300 font-semibold text-xs rounded-xl border border-gray-750 transition-all flex items-center justify-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                            <span>Back</span>
+                        </button>
+                        <button id="save-calibration-btn" class="py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-brand-900/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span>Save & Calibrate</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- General Configurations -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Global Output Settings</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Velocity Unit</label>
+                        <select id="speed-units" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <option value="m/s">Meters/Sec (m/s)</option>
+                            <option value="km/h">Kilometers/Hr (km/h)</option>
+                            <option value="mph">Miles/Hour (mph)</option>
+                            <option value="fps">Feet/Second (fps)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Audio Feedback</label>
+                        <select id="audio-setting" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                            <option value="chime">Chime sound</option>
+                            <option value="speech">Speak Speeds</option>
+                            <option value="silent">Mute sounds</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Panel -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex-1 min-h-[160px] flex flex-col">
+                <div class="px-5 py-3 border-b border-gray-850 bg-gray-900/50 flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Speed Readings Log</span>
+                    <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
+                </div>
+                <div id="log-list" class="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-2 max-h-[220px]">
+                    <div class="text-gray-500 italic">No runs captured yet. Calibrate the grid and trigger a tracking mode to capture speeds here.</div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Calibration Info Modal Overlay -->
+    <div id="instructions-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-100 flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Fidelity & Accuracy Tips</span>
+                </h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-gray-300 leading-relaxed max-h-[70vh] overflow-y-auto">
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">1</span>
+                        <span>Ensure 2D Linear Motion</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">For maximum accuracy, objects must move left-to-right (or vice versa) perpendicular to the camera frame. Objects moving towards or away from the camera violate perspective ratios and report skewed tracking values.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">2</span>
+                        <span>Scale Calibration is Critical</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">The webcam is 2D. You must drag the custom calibration golden handles over an item in the video frame whose length you know exactly (like a 30cm ruler, standard paper sheet, etc.). The closer your tracked object is to this reference distance, the more exact your measurements are.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">3</span>
+                        <span>Optimize Lighting & Shadows</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">In <strong>Speed Gates mode</strong>, the app monitors sudden spikes in pixel color brightness/depth along the lines. Glare, moving camera shadows, or shaky camera positioning can cause false positive gate trips.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 flex items-center space-x-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 text-xs flex items-center justify-center">4</span>
+                        <span>Avoid Frame Blurring</span>
+                    </h4>
+                    <p class="text-xs text-gray-400 pl-7">Webcams automatically lengthen exposure times in dark rooms, creating "ghosting" or motion blur. Perform tracking in bright rooms to keep camera shutter speed high and blur low.</p>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-850/50 border-t border-gray-800 text-right">
+                <button id="modal-ack-btn" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all">Got it, let's track!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Footer Credits -->
+    <footer class="mt-auto border-t border-gray-900 bg-gray-950/90 py-4 text-center text-[10px] text-gray-500">
+        CamSpeed utilizes browser-side canvas rendering pipelines & high resolution timing performance headers. No tracking data leaves your local sandbox.
+    </footer>
+
+    <!-- Audio Synthesizer Engine & Tracking Algorithm Logic -->
+    <script>
+        // --- Web Audio API Utility Engine ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playChime(freq, type="sine", duration=0.15, volume=0.1) {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.warn('Audio feedback failed to play.', e);
+            }
+        }
+
+        // Voice Readout Engine
+        function speakMessage(message) {
+            const selectValue = document.getElementById('audio-setting').value;
+            if (selectValue !== 'speech') return;
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Stop old speech
+                    const utterance = new SpeechSynthesisUtterance(message);
+                    utterance.rate = 1.1;
+                    utterance.volume = 0.8;
+                    window.speechSynthesis.speak(utterance);
+                }
+            } catch(e) {
+                console.warn('Speech engine unavailable');
+            }
+        }
+
+        // High Performance RGB to HSV converter
+        function rgbToHsv(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0, s, v = max;
+            const d = max - min;
+            s = max === 0 ? 0 : d / max;
+            if (max !== min) {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), v: Math.round(v * 100) };
+        }
+
+        // --- Core Application State ---
+        const state = {
+            webcamActive: false,
+            videoStream: null,
+            canvasWidth: 640,
+            canvasHeight: 480,
+            mode: 'gate', // 'gate', 'color', or 'workshop'
+            calibrating: false,
+            mirrorFeed: true, // Default to true (mirrored) for intuitive previewing
+            
+            // Pixels to unit conversion scale (Calibration)
+            scale: {
+                isSet: false,
+                pixels: 100, // how many pixels
+                physicalVal: 30, // matching physical dimension value
+                physicalUnits: 'cm', // centimeters, inches, etc.
+                point1: { x: 100, y: 240 }, // Line endpoint coordinates
+                point2: { x: 300, y: 240 },
+                draggedPoint: null // point key currently being repositioned
+            },
+
+            // Speed Gate Mode Parameters
+            gates: {
+                gate1X: 180, // percentage of canvas (0 to 100) -> actual drawn position is mapped dynamically
+                gate2X: 460,
+                gateDistance: 1.0, // Distance between gates 
+                distanceUnits: 'meters',
+                gate1LastLums: [], // rolling frames of intensity averages for thresholding
+                gate2LastLums: [],
+                gate1Tripped: false,
+                gate2Tripped: false,
+                gate1TripTime: 0,
+                gate2TripTime: 0,
+                draggedGate: null
+            },
+
+            // Color Object Tracker parameters (HSV-enhanced)
+            colorTracking: {
+                targetColor: { r: 220, g: 40, b: 40 }, // RGB backing
+                targetHSV: { h: 360, s: 82, v: 86 }, // HSV coordinates for illumination immunity
+                isAchromatic: false, // black/white/gray logic switch
+                threshold: 45,
+                trail: [], // rolling coordinates of captured centroids
+                maxTrailLength: 45,
+                lastCentroid: null,
+                roiRadius: 85, // local tracking bounding window radius (pixels)
+                isLocked: false, // indicates if ROI is actively locked on target
+                lastFrameTime: 0,
+                currentSpeed: 0,
+                maxSpeed: 0,
+                cumulativeDistance: 0, // Cumulative physical distance covered (m)
+                trackingStartTime: 0
+            },
+
+            // Telemetry Live Chart Buffers & Workshop post-processing data blocks
+            telemetry: {
+                history: [], // array of objects: { time: Number, speed: Number, distance: Number }
+                maxHistorySec: 10, // display window depth of 10 seconds
+                
+                // Student Workshop Data modification stack
+                rawBackup: [], // Frozen copy of unmodified, original captured telemetry run
+                undoStack: [], // Undo modifications history
+                cropStartPercent: 0, // Left crop slider handle percentage (0.0 to 1.0)
+                cropEndPercent: 1.0, // Right crop slider handle percentage (0.0 to 1.0)
+                draggedWorkshopHandle: null, // 'start', 'end', or null
+                curves: {
+                    speed: true,
+                    distance: true
+                }
+            },
+
+            // UI Speed Outputs
+            outputUnits: 'm/s',
+            fps: 0,
+            lastFpsUpdate: 0
+        };
+
+        // DOM elements
+        const elements = {
+            video: document.getElementById('video-feed'),
+            canvas: document.getElementById('render-canvas'),
+            ctx: document.getElementById('render-canvas').getContext('2d', { willReadFrequently: true }),
+            toggleCameraBtn: document.getElementById('toggle-camera-btn'),
+            cameraBtnText: document.getElementById('camera-btn-text'),
+            cameraSource: document.getElementById('camera-source'),
+            fpsCounter: document.getElementById('fps-counter'),
+            statusBadge: document.getElementById('status-badge'),
+            statusDot: document.getElementById('status-dot'),
+            statusText: document.getElementById('status-text'),
+            placeholderScreen: document.getElementById('placeholder-screen'),
+            directStartBtn: document.getElementById('direct-start-btn'),
+            canvasPrompt: document.getElementById('canvas-prompt'),
+            
+            // Mode selectors
+            tabGate: document.getElementById('tab-gate'),
+            tabColor: document.getElementById('tab-color'),
+            tabWorkshop: document.getElementById('tab-workshop'),
+            configGateView: document.getElementById('config-gate-view'),
+            configColorView: document.getElementById('config-color-view'),
+            configWorkshopView: document.getElementById('config-workshop-view'),
+            
+            // Workbench view container (Data Editor)
+            workbenchContainer: document.getElementById('workbench-container'),
+            workbenchCanvas: document.getElementById('workbench-canvas'),
+            workbenchCtx: document.getElementById('workbench-canvas').getContext('2d'),
+            workbenchCropReadout: document.getElementById('workbench-crop-readout'),
+            workbenchPointsCount: document.getElementById('workbench-points-count'),
+            workbenchHoverTooltip: document.getElementById('workbench-hover-tooltip'),
+            pointsTableCount: document.getElementById('points-table-count'),
+            workbenchTableBody: document.getElementById('workbench-table-body'),
+            showSpeedToggle: document.getElementById('show-speed-toggle'),
+            showDistanceToggle: document.getElementById('show-distance-toggle'),
+
+            // Workshop controls
+            applyCropBtn: document.getElementById('apply-crop-btn'),
+            shiftTimeZeroCheckbox: document.getElementById('shift-time-zero-checkbox'),
+            workshopSmoothInput: document.getElementById('workshop-smooth-input'),
+            applySmoothBtn: document.getElementById('apply-smooth-btn'),
+            workshopScaleInput: document.getElementById('workshop-scale-input'),
+            applyScaleBtn: document.getElementById('apply-scale-btn'),
+            workshopShiftInput: document.getElementById('workshop-shift-input'),
+            applyShiftBtn: document.getElementById('apply-shift-btn'),
+            workshopUndoBtn: document.getElementById('workshop-undo-btn'),
+            workshopResetBtn: document.getElementById('workshop-reset-btn'),
+            smoothingLevelText: document.getElementById('smoothing-level-text'),
+            workshopExportCsvBtn: document.getElementById('workshop-export-csv-btn'),
+            workshopExportImgBtn: document.getElementById('workshop-export-img-btn'),
+            
+            // Calibrate Sub-components & Wizard Steps
+            calModeBtn: document.getElementById('cal-mode-btn'),
+            toggleMirrorBtn: document.getElementById('toggle-mirror-btn'),
+            mirrorBtnText: document.getElementById('mirror-btn-text'),
+            calibrationPanel: document.getElementById('calibration-options-panel'),
+            saveCalBtn: document.getElementById('save-calibration-btn'),
+            closeCalBtn: document.getElementById('close-cal-btn'),
+            calPhysicalLength: document.getElementById('cal-physical-length'),
+            calPhysicalUnits: document.getElementById('cal-physical-units'),
+            calStatusIndicator: document.getElementById('cal-status-indicator'),
+            camResIndicator: document.getElementById('cam-res-indicator'),
+
+            // Steps Layout Nodes
+            step1Indicator: document.getElementById('cal-step-1-indicator'),
+            step2Indicator: document.getElementById('cal-step-2-indicator'),
+            step3Indicator: document.getElementById('cal-step-3-indicator'),
+            divider1to2: document.getElementById('cal-divider-1-2'),
+            divider2to3: document.getElementById('cal-divider-2-3'),
+            step1Content: document.getElementById('cal-step-1-content'),
+            step2Content: document.getElementById('cal-step-2-content'),
+            step3Content: document.getElementById('cal-step-3-content'),
+            p1CoordText: document.getElementById('cal-p1-coord'),
+            p2CoordText: document.getElementById('cal-p2-coord'),
+            pixelSpanText: document.getElementById('cal-pixel-span'),
+            btnNextTo2: document.getElementById('cal-next-to-2-btn'),
+            btnBackTo1: document.getElementById('cal-back-to-1-btn'),
+            btnNextTo3: document.getElementById('cal-next-to-3-btn'),
+            btnBackTo2: document.getElementById('cal-back-to-2-btn'),
+
+            // Summary Text Slots
+            summaryPixels: document.getElementById('summary-pixels'),
+            summaryRealSize: document.getElementById('summary-real-size'),
+            summaryDensity: document.getElementById('summary-density'),
+
+            // Metrics Displays
+            speedDisplayVal: document.getElementById('speed-display-value'),
+            speedUnitText: document.getElementById('speed-unit-text'),
+            peakSpeedValue: document.getElementById('peak-speed-value'),
+            elapsedTimeValue: document.getElementById('elapsed-time-value'),
+            metricLabel: document.getElementById('metric-label'),
+            metricSubtext: document.getElementById('metric-subtext'),
+
+            // Form Configurations
+            gateDistanceInput: document.getElementById('gate-distance-input'),
+            distanceUnitsSelect: document.getElementById('distance-units'),
+            gateSensitivityInput: document.getElementById('gate-sensitivity'),
+            gateSensValueText: document.getElementById('sens-text'),
+            tripGate1Btn: document.getElementById('trip-gate-1'),
+            tripGate2Btn: document.getElementById('trip-gate-2'),
+            colorThresholdInput: document.getElementById('color-threshold'),
+            targetColorPreview: document.getElementById('target-color-preview'),
+            colorNameText: document.getElementById('color-name-text'),
+            colorRgbVal: document.getElementById('color-rgb-val'),
+            colorHsvVal: document.getElementById('color-hsv-val'),
+            trackerLockBadge: document.getElementById('tracker-lock-badge'),
+            speedUnitsSelect: document.getElementById('speed-units'),
+            clearTrackingBtn: document.getElementById('clear-tracking-btn'),
+            
+            // Modals & Logs
+            helpBtn: document.getElementById('help-btn'),
+            instructionsModal: document.getElementById('instructions-modal'),
+            closeModalBtn: document.getElementById('close-modal-btn'),
+            modalAckBtn: document.getElementById('modal-ack-btn'),
+            logList: document.getElementById('log-list'),
+            clearLogsBtn: document.getElementById('clear-logs-btn'),
+            exportCsvBtn: document.getElementById('export-csv-btn'), // Remapped selection element
+
+            // Live Telemetry Elements
+            chartModeBadge: document.getElementById('chart-mode-badge'),
+            liveDistanceReadout: document.getElementById('live-distance-readout'),
+            liveSpeedReadout: document.getElementById('live-speed-readout'),
+            distanceCanvas: document.getElementById('distance-chart-canvas'),
+            speedCanvas: document.getElementById('speed-chart-canvas')
+        };
+
+        // Initialize Telemetry Canvas sizes for high-definition rendering
+        function setupTelemetryCanvases() {
+            const ratio = window.devicePixelRatio || 1;
+            [elements.distanceCanvas, elements.speedCanvas, elements.workbenchCanvas].forEach(canvas => {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio;
+            });
+            if (state.mode === 'workshop') {
+                drawWorkbenchChart();
+            }
+        }
+
+        // Window resize event handler for dynamic layout alignment
+        window.addEventListener('resize', setupTelemetryCanvases);
+
+        // --- Core UI Setup and Handlers ---
+
+        // Show/Hide Instructions modal
+        elements.helpBtn.addEventListener('click', () => elements.instructionsModal.classList.remove('hidden'));
+        elements.closeModalBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
+        elements.modalAckBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
+
+        // Toggle Speed gates and Color tracking panels
+        elements.tabGate.addEventListener('click', () => {
+            state.mode = 'gate';
+            elements.tabGate.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
+            elements.tabColor.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.tabWorkshop.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.configGateView.classList.remove('hidden');
+            elements.configColorView.classList.add('hidden');
+            elements.configWorkshopView.classList.add('hidden');
+            elements.workbenchContainer.classList.add('hidden');
+            elements.metricLabel.textContent = "Time Traversed";
+            elements.metricSubtext.textContent = "Chronometer Gates";
+            elements.chartModeBadge.textContent = "Gates Mode";
+            elements.chartModeBadge.className = "text-[10px] bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-full font-bold uppercase";
+            resetGateTimers();
+        });
+
+        elements.tabColor.addEventListener('click', () => {
+            state.mode = 'color';
+            elements.tabColor.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
+            elements.tabGate.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.tabWorkshop.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.configColorView.classList.remove('hidden');
+            elements.configGateView.classList.add('hidden');
+            elements.configWorkshopView.classList.add('hidden');
+            elements.workbenchContainer.classList.add('hidden');
+            elements.metricLabel.textContent = "Object Speed";
+            elements.metricSubtext.textContent = "Color Centroid Tracking";
+            elements.chartModeBadge.textContent = "Live Track Mode";
+            elements.chartModeBadge.className = "text-[10px] bg-brand-500/10 text-brand-400 px-2 py-0.5 rounded-full font-bold uppercase";
+            resetLiveTracker();
+        });
+
+        elements.tabWorkshop.addEventListener('click', () => {
+            state.mode = 'workshop';
+            elements.tabWorkshop.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
+            elements.tabGate.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.tabColor.className = "flex-1 py-3 text-xs font-semibold text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:bg-gray-850 transition-all flex items-center justify-center space-x-1";
+            elements.configWorkshopView.classList.remove('hidden');
+            elements.configGateView.classList.add('hidden');
+            elements.configColorView.classList.add('hidden');
+            elements.workbenchContainer.classList.remove('hidden');
+            elements.metricLabel.textContent = "Dataset Range";
+            elements.metricSubtext.textContent = "Workshop Active";
+            elements.chartModeBadge.textContent = "Workbench Mode";
+            elements.chartModeBadge.className = "text-[10px] bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full font-bold uppercase";
+
+            // If we have live data, back it up so user can reset edits safely
+            if (state.telemetry.history.length > 0 && state.telemetry.rawBackup.length === 0) {
+                state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+            }
+            
+            // Adjust slider default boundaries to fit current timeframe
+            state.telemetry.cropStartPercent = 0.0;
+            state.telemetry.cropEndPercent = 1.0;
+            
+            setupTelemetryCanvases();
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            playChime(580, "sine", 0.15, 0.06);
+        });
+
+        // Trigger Calibration interface toggles & Reset Wizard Steps
+        elements.calModeBtn.addEventListener('click', () => {
+            state.calibrating = !state.calibrating;
+            if (state.calibrating) {
+                elements.calibrationPanel.classList.remove('hidden');
+                elements.calModeBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-brand-500 fill-brand-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
+                    <span>Calibration Active</span>
+                `;
+                elements.canvasPrompt.innerHTML = "Follow the wizard steps on the right side to align markers with your reference object.";
+                
+                // Initialize/Reset Calibration Wizard to Step 1
+                setCalibrationStep(1);
+                playChime(440, "sine", 0.1, 0.05);
+            } else {
+                exitCalibration();
+            }
+        });
+
+        elements.closeCalBtn.addEventListener('click', exitCalibration);
+        
+        function exitCalibration() {
+            state.calibrating = false;
+            elements.calibrationPanel.classList.add('hidden');
+            elements.calModeBtn.innerHTML = `
+                <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v16.5m16.5-16.5v16.5M12 3.75M12 12m-9 0h18" /></svg>
+                <span>Calibrate Grid Ruler</span>
+            `;
+            elements.canvasPrompt.innerHTML = state.mode === 'gate' ? 
+                "Move objects through the vertical green speed gates to measure speeds." : 
+                "Click on any colored object inside the video preview to lock live tracking.";
+        }
+
+        // --- Calibration Wizard Steps Switcher ---
+        function setCalibrationStep(stepNum) {
+            // Hide all step blocks
+            elements.step1Content.classList.add('hidden');
+            elements.step2Content.classList.add('hidden');
+            elements.step3Content.classList.add('hidden');
+
+            // Reset step layout styles
+            elements.step1Indicator.className = "flex items-center space-x-1.5 font-medium text-gray-500";
+            elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs";
+            
+            elements.step2Indicator.className = "flex items-center space-x-1.5 font-medium text-gray-500";
+            elements.step2Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs";
+            
+            elements.step3Indicator.className = "flex items-center space-x-1.5 font-medium text-gray-500";
+            elements.step3Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs";
+            
+            elements.divider1to2.className = "flex-1 h-[2px] bg-gray-850 mx-2";
+            elements.divider2to3.className = "flex-1 h-[2px] bg-gray-850 mx-2";
+
+            if (stepNum === 1) {
+                elements.step1Content.classList.remove('hidden');
+                elements.step1Indicator.className = "flex items-center space-x-1.5 font-bold text-brand-500";
+                elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold";
+            } 
+            else if (stepNum === 2) {
+                elements.step2Content.classList.remove('hidden');
+                
+                elements.step1Indicator.className = "flex items-center space-x-1.5 font-medium text-brand-500";
+                elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-900 text-brand-500 flex items-center justify-center text-xs";
+                elements.divider1to2.className = "flex-1 h-[2px] bg-brand-500/50 mx-2";
+
+                elements.step2Indicator.className = "flex items-center space-x-1.5 font-bold text-brand-500";
+                elements.step2Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold";
+            } 
+            else if (stepNum === 3) {
+                elements.step3Content.classList.remove('hidden');
+                
+                elements.step1Indicator.className = "flex items-center space-x-1.5 font-medium text-brand-500";
+                elements.step1Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-900 text-brand-500 flex items-center justify-center text-xs";
+                
+                elements.step2Indicator.className = "flex items-center space-x-1.5 font-medium text-brand-500";
+                elements.step2Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-900 text-brand-500 flex items-center justify-center text-xs";
+                
+                elements.divider1to2.className = "flex-1 h-[2px] bg-brand-500/50 mx-2";
+                elements.divider2to3.className = "flex-1 h-[2px] bg-brand-500/50 mx-2";
+
+                elements.step3Indicator.className = "flex items-center space-x-1.5 font-bold text-brand-500";
+                elements.step3Indicator.querySelector('span').className = "w-5 h-5 rounded-full bg-brand-500 text-black flex items-center justify-center text-xs font-bold";
+
+                // Compute parameters summary for Step 3 confirmation screen
+                const dx = state.scale.point2.x - state.scale.point1.x;
+                const dy = state.scale.point2.y - state.scale.point1.y;
+                const pxDistance = Math.sqrt(dx * dx + dy * dy);
+                const physVal = parseFloat(elements.calPhysicalLength.value) || 30;
+                const physUnits = elements.calPhysicalUnits.value;
+
+                elements.summaryPixels.textContent = `${pxDistance.toFixed(1)} px`;
+                elements.summaryRealSize.textContent = `${physVal} ${physUnits}`;
+
+                // Calculate computed physical scale density
+                let refMeters = physVal;
+                if (physUnits === 'cm') refMeters = physVal / 100;
+                else if (physUnits === 'inches') refMeters = physVal * 0.0254;
+                else if (physUnits === 'feet') refMeters = physVal * 0.3048;
+
+                const pixelsPerMeter = pxDistance / refMeters;
+                elements.summaryDensity.textContent = `${pixelsPerMeter.toFixed(1)} px / meter`;
+            }
+
+            playChime(500 + stepNum * 100, "sine", 0.1, 0.04);
+        }
+
+        // Connect step transition buttons listeners
+        elements.btnNextTo2.addEventListener('click', () => setCalibrationStep(2));
+        elements.btnBackTo1.addEventListener('click', () => setCalibrationStep(1));
+        elements.btnNextTo3.addEventListener('click', () => {
+            const val = parseFloat(elements.calPhysicalLength.value);
+            if (isNaN(val) || val <= 0) {
+                alertUser("Input error", "Please enter a valid length greater than 0.");
+                return;
+            }
+            setCalibrationStep(3);
+        });
+        elements.btnBackTo2.addEventListener('click', () => setCalibrationStep(2));
+
+        // Finalize visual metric ruler calibration scales
+        elements.saveCalBtn.addEventListener('click', () => {
+            const val = parseFloat(elements.calPhysicalLength.value);
+            const unit = elements.calPhysicalUnits.value;
+            if (isNaN(val) || val <= 0) {
+                alertUser("Calibration error", "Please supply a positive numerical length scale.");
+                return;
+            }
+
+            const dx = state.scale.point2.x - state.scale.point1.x;
+            const dy = state.scale.point2.y - state.scale.point1.y;
+            const pxDistance = Math.sqrt(dx * dx + dy * dy);
+
+            if (pxDistance < 15) {
+                alertUser("Calibration error", "Please separate the measurement points further to calibrate high fidelity dimensions.");
+                return;
+            }
+
+            state.scale.pixels = pxDistance;
+            state.scale.physicalVal = val;
+            state.scale.physicalUnits = unit;
+            state.scale.isSet = true;
+
+            elements.calStatusIndicator.textContent = `${val}${unit}`;
+            elements.calStatusIndicator.className = "text-brand-500 font-bold block mt-0.5";
+
+            playChime(660, "sine", 0.2, 0.08);
+            setTimeout(() => playChime(880, "sine", 0.15, 0.08), 80);
+
+            logEvent(`Calibrated Ruler: ${pxDistance.toFixed(0)} pixels = ${val} ${unit}`);
+            exitCalibration();
+            resetLiveTracker();
+        });
+
+        // Speed Gate input distance settings
+        elements.gateDistanceInput.addEventListener('change', updateGateInputs);
+        elements.distanceUnitsSelect.addEventListener('change', updateGateInputs);
+
+        function updateGateInputs() {
+            const distance = parseFloat(elements.gateDistanceInput.value);
+            if (!isNaN(distance) && distance > 0) {
+                state.gates.gateDistance = distance;
+                state.gates.distanceUnits = elements.distanceUnitsSelect.value;
+                logEvent(`Gate dimensions updated: ${distance} ${state.gates.distanceUnits}`);
+            }
+        }
+
+        elements.gateSensitivityInput.addEventListener('input', (e) => {
+            elements.gateSensValueText.textContent = `Val: ${e.target.value}`;
+        });
+
+        // Speed Units Conversion and display handler
+        elements.speedUnitsSelect.addEventListener('change', (e) => {
+            state.outputUnits = e.target.value;
+            elements.speedUnitText.textContent = state.outputUnits;
+            updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+            renderTelemetryCharts();
+        });
+
+        // Reset trackers button
+        elements.clearTrackingBtn.addEventListener('click', () => {
+            resetGateTimers();
+            resetLiveTracker();
+            logEvent("All trackers, logs, and live graph histories reset.");
+            playChime(330, "square", 0.1, 0.05);
+        });
+
+        // Trigger manual simulation gate passes (ideal for debug/demonstration!)
+        elements.tripGate1Btn.addEventListener('click', () => tripGate(1));
+        elements.tripGate2Btn.addEventListener('click', () => tripGate(2));
+
+        // Logs Manager
+        elements.clearLogsBtn.addEventListener('click', () => {
+            elements.logList.innerHTML = `<div class="text-gray-500 italic">Logs wiped clean. Ready for new speed sweeps.</div>`;
+        });
+
+        function logEvent(message) {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const item = document.createElement('div');
+            item.className = "bg-gray-850 p-2 rounded border border-gray-800 text-gray-300 flex justify-between";
+            item.innerHTML = `
+                <span class="text-brand-400 font-bold shrink-0 mr-2">[${timeStr}]</span>
+                <span class="text-left flex-1 break-all">${message}</span>
+            `;
+            
+            // Remove placeholder if exists
+            const placeholder = elements.logList.querySelector('.italic');
+            if (placeholder) placeholder.remove();
+
+            elements.logList.insertBefore(item, elements.logList.firstChild);
+        }
+
+        // Custom notification system (replaces blocked browser alert alerts)
+        function alertUser(title, text) {
+            const container = document.createElement('div');
+            container.className = "fixed top-6 right-6 bg-red-950 border border-red-500 p-4 rounded-xl shadow-2xl z-50 max-w-sm transition-all duration-300 transform translate-x-12 opacity-0";
+            container.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <svg class="w-6 h-6 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <div>
+                        <h4 class="font-bold text-white text-sm">${title}</h4>
+                        <p class="text-xs text-red-200 mt-1">${text}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(container);
+            setTimeout(() => {
+                container.classList.remove('translate-x-12', 'opacity-0');
+            }, 50);
+            setTimeout(() => {
+                container.classList.add('translate-x-12', 'opacity-0');
+                setTimeout(() => container.remove(), 400);
+            }, 4000);
+        }
+
+
+        // --- Camera Feed Pipeline ---
+
+        // Fetch cameras and populate settings dropdown
+        async function loadCameraDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                elements.cameraSource.innerHTML = '<option value="">Default Camera</option>';
+                videoDevices.forEach((device, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = device.deviceId;
+                    opt.textContent = device.label || `Camera ${index + 1}`;
+                    elements.cameraSource.appendChild(opt);
+                });
+            } catch (err) {
+                console.warn('Enumerating cameras failed', err);
+            }
+        }
+
+        // Initialize user device video
+        async function startCamera() {
+            if (state.webcamActive) {
+                stopCamera();
+                return;
+            }
+
+            elements.placeholderScreen.classList.remove('hidden');
+            const targetCamId = elements.cameraSource.value;
+            const constraints = {
+                video: targetCamId ? { deviceId: { exact: targetCamId } } : { facingMode: 'environment' },
+                audio: false
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                state.videoStream = stream;
+                elements.video.srcObject = stream;
+                
+                // Wait for video meta properties to finish resolving
+                elements.video.onloadedmetadata = () => {
+                    elements.video.play();
+                    state.webcamActive = true;
+                    
+                    // Match visual element coordinates
+                    state.canvasWidth = elements.video.videoWidth || 640;
+                    state.canvasHeight = elements.video.videoHeight || 480;
+                    
+                    elements.canvas.width = state.canvasWidth;
+                    elements.canvas.height = state.canvasHeight;
+                    elements.camResIndicator.textContent = `${state.canvasWidth}x${state.canvasHeight}`;
+
+                    // Setup charts pixel width dimensions
+                    setupTelemetryCanvases();
+
+                    // Auto place Gates and Calibration marks neatly inside frame sizes
+                    state.gates.gate1X = Math.round(state.canvasWidth * 0.3);
+                    state.gates.gate2X = Math.round(state.canvasWidth * 0.7);
+                    state.scale.point1 = { x: Math.round(state.canvasWidth * 0.25), y: Math.round(state.canvasHeight * 0.8) };
+                    state.scale.point2 = { x: Math.round(state.canvasWidth * 0.75), y: Math.round(state.canvasHeight * 0.8) };
+
+                    // Set camera button text change
+                    elements.cameraBtnText.textContent = "Stop Camera";
+                    elements.toggleCameraBtn.className = "px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all shrink-0";
+                    
+                    elements.statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                    elements.statusText.textContent = "Tracking Live Feed";
+                    elements.statusBadge.className = "bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-emerald-400";
+                    elements.canvasPrompt.innerHTML = "Click anywhere on the preview to sample tracking colors, or trigger manual gate timings.";
+
+                    elements.placeholderScreen.classList.add('hidden');
+                    loadCameraDevices(); // Refresh lists with device labels (if system permission finally populated them)
+
+                    // Execute frames renderer
+                    requestAnimationFrame(renderLoop);
+                    logEvent(`Camera stream active at resolution: ${state.canvasWidth}x${state.canvasHeight}`);
+                };
+            } catch (err) {
+                console.error("Camera acquisition error: ", err);
+                alertUser("Camera Blocked", "Unable to establish webcam connect. Ensure app permissions are granted.");
+                elements.placeholderScreen.classList.remove('hidden');
+                stopCamera();
+            }
+        }
+
+        function stopCamera() {
+            if (state.videoStream) {
+                state.videoStream.getTracks().forEach(track => track.stop());
+                state.videoStream = null;
+            }
+            state.webcamActive = false;
+            elements.cameraBtnText.textContent = "Start Camera";
+            elements.toggleCameraBtn.className = "px-4 py-2 bg-brand-600 hover:bg-brand-500 text-black font-semibold text-sm rounded-xl flex items-center space-x-2 transition-all shrink-0";
+            
+            elements.statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
+            elements.statusText.textContent = "Webcam Inactive";
+            elements.statusBadge.className = "bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase border border-gray-700/50 flex items-center space-x-2 text-red-500";
+            elements.canvasPrompt.innerHTML = "Click the 'Start Camera' button below to initialize your speed tracking setup.";
+
+            elements.placeholderScreen.classList.remove('hidden');
+        }
+
+        elements.toggleCameraBtn.addEventListener('click', startCamera);
+        elements.directStartBtn.addEventListener('click', startCamera);
+
+        // Instant Switch on Camera Source Dropdown Changes
+        elements.cameraSource.addEventListener('change', async () => {
+            if (state.webcamActive) {
+                logEvent("Switching camera source...");
+                stopCamera();
+                await startCamera();
+            }
+        });
+
+        // Mirror Toggle Button Listener
+        elements.toggleMirrorBtn.addEventListener('click', () => {
+            state.mirrorFeed = !state.mirrorFeed;
+            if (state.mirrorFeed) {
+                elements.toggleMirrorBtn.className = "px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-black border border-brand-500 rounded-xl text-sm font-semibold transition-all flex items-center space-x-1.5 shadow-lg shadow-brand-900/10";
+                elements.mirrorBtnText.textContent = "Mirror: ON";
+                logEvent("Camera preview mirroring ENABLED.");
+            } else {
+                elements.toggleMirrorBtn.className = "px-3.5 py-2 bg-gray-800 hover:bg-gray-750 text-gray-300 border border-gray-700 rounded-xl text-sm font-medium transition-all flex items-center space-x-1.5";
+                elements.mirrorBtnText.textContent = "Mirror: OFF";
+                logEvent("Camera preview mirroring DISABLED.");
+            }
+            playChime(600, "sine", 0.1, 0.05);
+        });
+
+
+        // --- Tracking Algorithms ---
+
+        // Convert speed base metric (m/s) to target configuration unit
+        function convertSpeed(metersPerSec) {
+            switch(state.outputUnits) {
+                case 'km/h': return metersPerSec * 3.6;
+                case 'mph': return metersPerSec * 2.23694;
+                case 'fps': return metersPerSec * 3.28084;
+                default: return metersPerSec; // m/s
+            }
+        }
+
+        // Convert distance in meters to calibration base scale physical units
+        function convertDistance(meters) {
+            if (!state.scale.isSet) return meters; // Defaults to meters
+            
+            const units = state.scale.physicalUnits;
+            if (units === 'cm') return meters * 100;
+            if (units === 'inches') return meters * 39.3701;
+            if (units === 'feet') return meters * 3.28084;
+            return meters;
+        }
+
+        // Synchronize displays with converted outputs
+        function updateSpeedDisplays(current, max) {
+            const displayCur = convertSpeed(current);
+            const displayMax = convertSpeed(max);
+
+            elements.speedDisplayVal.textContent = displayCur.toFixed(2);
+            elements.peakSpeedValue.textContent = `${displayMax.toFixed(2)} ${state.outputUnits}`;
+        }
+
+        // Resets Chronometer variables
+        function resetGateTimers() {
+            state.gates.gate1Tripped = false;
+            state.gates.gate2Tripped = false;
+            state.gates.gate1TripTime = 0;
+            state.gates.gate2TripTime = 0;
+            state.telemetry.history = [];
+            elements.elapsedTimeValue.textContent = "0.0s";
+            elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+            elements.liveSpeedReadout.textContent = `Velocity: 0.00 ${state.outputUnits}`;
+            updateSpeedDisplays(0, 0);
+            renderTelemetryCharts();
+        }
+
+        // Resets centroid tracker variable trails
+        function resetLiveTracker() {
+            state.colorTracking.trail = [];
+            state.colorTracking.lastCentroid = null;
+            state.colorTracking.maxSpeed = 0;
+            state.colorTracking.currentSpeed = 0;
+            state.colorTracking.cumulativeDistance = 0;
+            state.colorTracking.isLocked = false;
+            state.colorTracking.trackingStartTime = performance.now();
+            state.telemetry.history = [];
+            elements.elapsedTimeValue.textContent = "0.0s";
+            elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+            elements.liveSpeedReadout.textContent = `Velocity: 0.00 ${state.outputUnits}`;
+            
+            elements.trackerLockBadge.textContent = "Unlocked";
+            elements.trackerLockBadge.className = "text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
+
+            updateSpeedDisplays(0, 0);
+            renderTelemetryCharts();
+        }
+
+        // Manual or algorithm-tripped gate handling
+        function tripGate(gateNum) {
+            if (!state.webcamActive) return;
+            const now = performance.now();
+
+            if (gateNum === 1) {
+                state.gates.gate1Tripped = true;
+                state.gates.gate1TripTime = now;
+                logEvent("Gate 1 TRIPPED!");
+                playChime(523.25, "square", 0.1, 0.08); // C5 Chime
+                
+                // Clear telemetry history and initialize starting point
+                state.telemetry.history = [{ time: 0, speed: 0, distance: 0 }];
+                renderTelemetryCharts();
+
+                // Reset second gate just in case they are running again
+                state.gates.gate2Tripped = false;
+                state.gates.gate2TripTime = 0;
+            } 
+            else if (gateNum === 2) {
+                if (!state.gates.gate1Tripped) {
+                    // Reverse pass or trigger order bypass fallback
+                    state.gates.gate2Tripped = true;
+                    state.gates.gate2TripTime = now;
+                    logEvent("Gate 2 TRIPPED! Waiting for Gate 1...");
+                    playChime(587.33, "square", 0.1, 0.08); // D5 Chime
+                    return;
+                }
+
+                state.gates.gate2Tripped = true;
+                state.gates.gate2TripTime = now;
+                logEvent("Gate 2 TRIPPED!");
+                playChime(659.25, "square", 0.12, 0.08); // E5 Chime
+
+                // Math: Calculate Speed!
+                const elapsedMs = state.gates.gate2TripTime - state.gates.gate1TripTime;
+                const elapsedSec = elapsedMs / 1000;
+                elements.elapsedTimeValue.textContent = `${elapsedSec.toFixed(3)}s`;
+
+                // Calculate scale factors
+                let calculatedSpeedMPS = 0;
+                let calculatedDistanceMeters = 0;
+                
+                // Get real world physical size converted to Meters
+                if (state.scale.isSet) {
+                    const physVal = state.scale.physicalVal;
+                    const physUnits = state.scale.physicalUnits;
+
+                    // Convert reference ruler size to meters
+                    let refMeters = physVal;
+                    if (physUnits === 'cm') refMeters = physVal / 100;
+                    else if (physUnits === 'inches') refMeters = physVal * 0.0254;
+                    else if (physUnits === 'feet') refMeters = physVal * 0.3048;
+
+                    const pixelsPerMeter = state.scale.pixels / refMeters;
+                    
+                    // Pixels distance between Speed Gates
+                    const gatePxDistance = Math.abs(state.gates.gate2X - state.gates.gate1X);
+                    calculatedDistanceMeters = gatePxDistance / pixelsPerMeter;
+                    calculatedSpeedMPS = calculatedDistanceMeters / elapsedSec;
+                } else {
+                    // Fallback to uncalibrated distance configuration ratios directly
+                    let gateDistanceInMeters = state.gates.gateDistance;
+                    const gUnits = state.gates.distanceUnits;
+                    
+                    if (gUnits === 'cm') gateDistanceInMeters = state.gates.gateDistance / 100;
+                    else if (gUnits === 'inches') gateDistanceInMeters = state.gates.gateDistance * 0.0254;
+                    else if (gUnits === 'feet') gateDistanceInMeters = state.gates.gateDistance * 0.3048;
+
+                    calculatedDistanceMeters = gateDistanceInMeters;
+                    calculatedSpeedMPS = calculatedDistanceMeters / elapsedSec;
+                }
+
+                updateSpeedDisplays(calculatedSpeedMPS, calculatedSpeedMPS);
+                
+                const unitValueStr = `${convertSpeed(calculatedSpeedMPS).toFixed(2)} ${state.outputUnits}`;
+                const distUnitValueStr = `${convertDistance(calculatedDistanceMeters).toFixed(2)} ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+                
+                // Set final static telemetry state representing chronometer run
+                state.telemetry.history = [
+                    { time: 0, speed: 0, distance: 0 },
+                    { time: elapsedSec, speed: calculatedSpeedMPS, distance: calculatedDistanceMeters }
+                ];
+                
+                // Sync data into rawWorkshop backup instantly so the student can edit it
+                state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+                
+                renderTelemetryCharts();
+
+                // Dynamic metric readouts
+                elements.liveDistanceReadout.textContent = `Cumulative: ${distUnitValueStr}`;
+                elements.liveSpeedReadout.textContent = `Velocity: ${unitValueStr}`;
+
+                logEvent(`SUCCESS: Elapsed: ${elapsedSec.toFixed(3)}s. Calc Distance: ${calculatedDistanceMeters.toFixed(2)}m. Speed: ${unitValueStr}`);
+                speakMessage(`${convertSpeed(calculatedSpeedMPS).toFixed(1)} ${state.outputUnits === 'm/s' ? 'meters per second' : state.outputUnits}`);
+            }
+        }
+
+
+        // --- Dynamic Mouse / Touch Drag and Drop Coordinates Mapping ---
+        
+        function getCanvasMouseCoords(event) {
+            const rect = elements.canvas.getBoundingClientRect();
+            const scaleX = state.canvasWidth / rect.width;
+            const scaleY = state.canvasHeight / rect.height;
+            return {
+                x: (event.clientX - rect.left) * scaleX,
+                y: (event.clientY - rect.top) * scaleY
+            };
+        }
+
+        // Mouse Down Handles Mapping
+        elements.canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Crucial to prevent browser from entering drag/selection mode on the canvas element
+            const coords = getCanvasMouseCoords(e);
+
+            // 1. Check if user is calibrating (dragging golden ruler end points)
+            if (state.calibrating) {
+                // Increased snap hit-box radius from 25 to 45 for better accuracy
+                const dist1 = Math.hypot(coords.x - state.scale.point1.x, coords.y - state.scale.point1.y);
+                const dist2 = Math.hypot(coords.x - state.scale.point2.x, coords.y - state.scale.point2.y);
+
+                if (dist1 < 45) {
+                    state.scale.draggedPoint = 'point1';
+                } else if (dist2 < 45) {
+                    state.scale.draggedPoint = 'point2';
+                }
+                return;
+            }
+
+            // 2. Check if user is adjusting Chronometer Gates
+            if (state.mode === 'gate') {
+                const clickTolerance = 30; // pixels width allowance
+                if (Math.abs(coords.x - state.gates.gate1X) < clickTolerance) {
+                    state.gates.draggedGate = 'gate1';
+                } else if (Math.abs(coords.x - state.gates.gate2X) < clickTolerance) {
+                    state.gates.draggedGate = 'gate2';
+                }
+                return;
+            }
+
+            // 3. Color Selection Mode: Sample color under cursor click
+            if (state.mode === 'color') {
+                if (!state.webcamActive) return; // Prevent sampling if webcam offline
+                const imgData = elements.ctx.getImageData(coords.x, coords.y, 1, 1).data;
+                const r = imgData[0], g = imgData[1], b = imgData[2];
+                
+                // Store RGB and calculate HSV components
+                state.colorTracking.targetColor = { r, g, b };
+                const hsv = rgbToHsv(r, g, b);
+                state.colorTracking.targetHSV = hsv;
+
+                // Determine if target is Achromatic (grayscale/black/white) to trigger fallback tracking
+                state.colorTracking.isAchromatic = (hsv.s < 15 || hsv.v < 15 || hsv.v > 92);
+                
+                // Update Color Picker display card styling
+                elements.targetColorPreview.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                elements.colorRgbVal.textContent = `RGB: (${r}, ${g}, ${b})`;
+                elements.colorHsvVal.textContent = `HSV: (${hsv.h}°, ${hsv.s}%, ${hsv.v}%)`;
+                
+                // Simple RGB color descriptor
+                let name = "Selected Target";
+                if (state.colorTracking.isAchromatic) {
+                    name = hsv.v < 20 ? "Dark Charcoal/Black" : (hsv.v > 85 ? "Bright White" : "Gray Scale");
+                } else if (hsv.h >= 340 || hsv.h < 18) name = "Vibrant Red";
+                else if (hsv.h >= 18 && hsv.h < 45) name = "Bright Orange";
+                else if (hsv.h >= 45 && hsv.h < 75) name = "Neon Yellow";
+                else if (hsv.h >= 75 && hsv.h < 165) name = "Vivid Green";
+                else if (hsv.h >= 165 && hsv.h < 255) name = "Vivid Blue";
+                else if (hsv.h >= 255 && hsv.h < 340) name = "Vivid Purple";
+                
+                elements.colorNameText.textContent = name;
+
+                resetLiveTracker();
+                logEvent(`Locked target tracking color RGB: (${r}, ${g}, ${b}) | HSV: (${hsv.h}°, ${hsv.s}%, ${hsv.v}%)`);
+                playChime(800, "sine", 0.1, 0.05);
+            }
+        });
+
+        // Mouse Move coordinates dragging loop
+        elements.canvas.addEventListener('mousemove', (e) => {
+            const coords = getCanvasMouseCoords(e);
+
+            // Handle Calibration Markers repositioning
+            if (state.calibrating && state.scale.draggedPoint) {
+                state.scale[state.scale.draggedPoint] = coords;
+                
+                // Keep live coordinate wizard readouts in sync
+                const p1 = state.scale.point1;
+                const p2 = state.scale.point2;
+                elements.p1CoordText.textContent = `(${Math.round(p1.x)}, ${Math.round(p1.y)})`;
+                elements.p2CoordText.textContent = `(${Math.round(p2.x)}, ${Math.round(p2.y)})`;
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const span = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+                elements.pixelSpanText.textContent = `${span} pixels`;
+                return;
+            }
+
+            // Handle Gate lines positioning repositioning
+            if (state.mode === 'gate' && state.gates.draggedGate) {
+                const targetX = Math.max(10, Math.min(state.canvasWidth - 10, coords.x));
+                if (state.gates.draggedGate === 'gate1') {
+                    state.gates.gate1X = targetX;
+                } else {
+                    state.gates.gate2X = targetX;
+                }
+            }
+        });
+
+        // Release dragging handles
+        window.addEventListener('mouseup', () => {
+            state.scale.draggedPoint = null;
+            state.gates.draggedGate = null;
+        });
+
+        // Adapt Dragging Controls to mobile touch inputs with strict preventDefault
+        elements.canvas.addEventListener('touchstart', (e) => {
+            if (state.mode === 'workshop') return;
+            if (e.touches.length === 1) {
+                e.preventDefault(); // Blocks mobile body scroll intercepts
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.canvas.dispatchEvent(mouseEvent);
+            }
+        }, { passive: false });
+
+        elements.canvas.addEventListener('touchmove', (e) => {
+            if (state.mode === 'workshop') return;
+            if (e.touches.length === 1) {
+                e.preventDefault(); // Blocks zoom/bounce sweeps while dragging
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.canvas.dispatchEvent(mouseEvent);
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            state.scale.draggedPoint = null;
+            state.gates.draggedGate = null;
+        });
+
+
+        // --- Unified Frame Render Loop & CV Analysis Engine ---
+
+        function renderLoop() {
+            if (!state.webcamActive) return;
+
+            // Stop webcam canvas drawing if the Student Data Workshop workbench is currently overlaying
+            if (state.mode === 'workshop') {
+                requestAnimationFrame(renderLoop);
+                return;
+            }
+
+            const ctx = elements.ctx;
+            const width = state.canvasWidth;
+            const height = state.canvasHeight;
+
+            // Conditionally mirror the webcam frame horizontally based on user state
+            ctx.save();
+            if (state.mirrorFeed) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(elements.video, 0, 0, width, height);
+            ctx.restore();
+
+            // Analyze frames based on active layout modes
+            if (state.calibrating) {
+                drawCalibrationTool(ctx);
+                
+                // Keep step 1 coordinate stats updated dynamically
+                const p1 = state.scale.point1;
+                const p2 = state.scale.point2;
+                elements.p1CoordText.textContent = `(${Math.round(p1.x)}, ${Math.round(p1.y)})`;
+                elements.p2CoordText.textContent = `(${Math.round(p2.x)}, ${Math.round(p2.y)})`;
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const span = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+                elements.pixelSpanText.textContent = `${span} pixels`;
+            } else if (state.mode === 'gate') {
+                processGateDetection(ctx);
+                drawGates(ctx);
+                // Draw live chronometer clock tick sweeps to graph
+                if (state.gates.gate1Tripped && !state.gates.gate2Tripped) {
+                    const elapsedSec = (performance.now() - state.gates.gate1TripTime) / 1000;
+                    elements.elapsedTimeValue.textContent = `${elapsedSec.toFixed(2)}s`;
+                    
+                    // Live incrementing sweep coordinates
+                    state.telemetry.history.push({
+                        time: elapsedSec,
+                        speed: 0,
+                        distance: 0
+                    });
+                    
+                    // Sync live data to workbench backing on the fly
+                    state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+                    
+                    renderTelemetryCharts();
+                }
+            } else if (state.mode === 'color') {
+                processColorTracking(ctx);
+                drawColorTracking(ctx);
+                renderTelemetryCharts();
+            }
+
+            // Frame Rate Counter Math
+            const now = performance.now();
+            if (state.lastFpsUpdate === 0) {
+                state.lastFpsUpdate = now;
+            } else {
+                const delta = now - state.lastFpsUpdate;
+                state.fps = Math.round(1000 / delta);
+                state.lastFpsUpdate = now;
+                elements.fpsCounter.textContent = `FPS: ${state.fps}`;
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Processing Speed Gate Frame Changes
+        function processGateDetection(ctx) {
+            const sensitivity = parseInt(elements.gateSensitivityInput.value);
+            const gate1X = Math.round(state.gates.gate1X);
+            const gate2X = Math.round(state.gates.gate2X);
+
+            // Calculate current average brightness (luminance) along each vertical gate line
+            const sampleWidth = 4; // Check small column width for stability
+            
+            const g1Data = ctx.getImageData(gate1X - 2, 0, sampleWidth, state.canvasHeight).data;
+            const g2Data = ctx.getImageData(gate2X - 2, 0, sampleWidth, state.canvasHeight).data;
+
+            let g1LumSum = 0;
+            let g2LumSum = 0;
+            const totalPixels = state.canvasHeight * sampleWidth;
+
+            for (let i = 0; i < g1Data.length; i += 4) {
+                // Standard visual human luminance formulas
+                g1LumSum += (g1Data[i] * 0.299 + g1Data[i+1] * 0.587 + g1Data[i+2] * 0.114);
+                g2LumSum += (g2Data[i] * 0.299 + g2Data[i+1] * 0.587 + g2Data[i+2] * 0.114);
+            }
+
+            const g1Avg = g1LumSum / totalPixels;
+            const g2Avg = g2LumSum / totalPixels;
+
+            // Analyze relative frame differences to determine motion trips
+            detectIndividualGateTrip(1, g1Avg, sensitivity);
+            detectIndividualGateTrip(2, g2Avg, sensitivity);
+        }
+
+        function detectIndividualGateTrip(gateIndex, currentAvg, sensitivity) {
+            const gateKey = gateIndex === 1 ? 'gate1LastLums' : 'gate2LastLums';
+            const history = state.gates[gateKey];
+
+            // Store running background average (rolling 15 frames)
+            if (history.length < 15) {
+                history.push(currentAvg);
+                return;
+            }
+
+            // Compute background average excluding anomalies
+            const bgAvg = history.reduce((a, b) => a + b, 0) / history.length;
+            
+            // Append current frame and shift oldest frame out
+            history.push(currentAvg);
+            history.shift();
+
+            // Contrast check: trigger if difference from baseline surpasses sensitivity limits
+            const diff = Math.abs(currentAvg - bgAvg);
+            const alreadyTripped = gateIndex === 1 ? state.gates.gate1Tripped : state.gates.gate2Tripped;
+
+            if (diff > sensitivity && !alreadyTripped) {
+                // Check sequence timers to ensure logical sequence
+                if (gateIndex === 2 && !state.gates.gate1Tripped) {
+                    // Ignore gate 2 trips if gate 1 hasn't gone yet (prevents out-of-order false trips)
+                    return;
+                }
+                tripGate(gateIndex);
+            }
+        }
+
+        // Draw Interactive calibration visual elements
+        function drawCalibrationTool(ctx) {
+            const p1 = state.scale.point1;
+            const p2 = state.scale.point2;
+
+            // Dim background for overlay contrast
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.fillRect(0,0,state.canvasWidth, state.canvasHeight);
+
+            // Connective rule lines
+            ctx.strokeStyle = "#eab308"; // Golden orange
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+
+            // Dash alignment guides
+            ctx.strokeStyle = "rgba(234, 179, 8, 0.4)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            
+            ctx.beginPath();
+            ctx.moveTo(p1.x, 0); ctx.lineTo(p1.x, state.canvasHeight);
+            ctx.moveTo(p2.x, 0); ctx.lineTo(p2.x, state.canvasHeight);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw anchor points
+            [p1, p2].forEach((p, idx) => {
+                ctx.fillStyle = "#eab308";
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 10, 0, Math.PI*2);
+                ctx.fill();
+                
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 14, 0, Math.PI*2);
+                ctx.stroke();
+
+                ctx.fillStyle = "white";
+                ctx.font = "bold 11px sans-serif";
+                ctx.fillText(`P${idx+1}`, p.x - 7, p.y - 18);
+            });
+
+            // Pixels metric distance overlay
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const pxDistance = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+            
+            ctx.fillStyle = "black";
+            ctx.fillRect((p1.x + p2.x)/2 - 55, (p1.y + p2.y)/2 - 25, 110, 20);
+            ctx.fillStyle = "#eab308";
+            ctx.font = "bold 10px monospace";
+            ctx.fillText(`${pxDistance} PIXELS`, (p1.x + p2.x)/2 - 45, (p1.y + p2.y)/2 - 12);
+        }
+
+        // Draw Interactive Speed Gate Visual Markers
+        function drawGates(ctx) {
+            const g1X = state.gates.gate1X;
+            const g2X = state.gates.gate2X;
+
+            // Gate 1 Render
+            ctx.strokeStyle = state.gates.gate1Tripped ? "#ef4444" : "#22c55e"; // red vs brand green
+            ctx.lineWidth = state.gates.gate1Tripped ? 5 : 3;
+            ctx.beginPath();
+            ctx.moveTo(g1X, 0);
+            ctx.lineTo(g1X, state.canvasHeight);
+            ctx.stroke();
+
+            // Gate 2 Render
+            ctx.strokeStyle = state.gates.gate2Tripped ? "#ef4444" : "#22c55e";
+            ctx.lineWidth = state.gates.gate2Tripped ? 5 : 3;
+            ctx.beginPath();
+            ctx.moveTo(g2X, 0);
+            ctx.lineTo(g2X, state.canvasHeight);
+            ctx.stroke();
+
+            // Text Labels Overlay
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(g1X - 35, 15, 70, 22);
+            ctx.fillRect(g2X - 35, 15, 70, 22);
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 10px sans-serif";
+            ctx.fillText(state.gates.gate1Tripped ? "GATE 1 [TRIP]" : "GATE 1 (START)", g1X - 31, 29);
+            ctx.fillText(state.gates.gate2Tripped ? "GATE 2 [TRIP]" : "GATE 2 (END)", g2X - 29, 29);
+        }
+
+        // Core Color Tracking Search Centroid Calculation (HSV-Enhanced)
+        function processColorTracking(ctx) {
+            const imgData = ctx.getImageData(0, 0, state.canvasWidth, state.canvasHeight);
+            const data = imgData.data;
+            const targetColor = state.colorTracking.targetColor;
+            const targetHSV = state.colorTracking.targetHSV;
+            const isAchromatic = state.colorTracking.isAchromatic;
+            const thresh = parseInt(elements.colorThresholdInput.value);
+
+            let sumX = 0;
+            let sumY = 0;
+            let matchCount = 0;
+
+            // Determine if tracker has locked onto the target's recent centroid. 
+            // If locked, restrict scan to a localized window around the centroid (ROI Bounding Window).
+            // This ignores duplicate colors elsewhere in the frame.
+            const lastCentroid = state.colorTracking.lastCentroid;
+            const useROI = lastCentroid !== null;
+            const rRadius = state.colorTracking.roiRadius;
+
+            let minX = 0, maxX = state.canvasWidth;
+            let minY = 0, maxY = state.canvasHeight;
+
+            if (useROI) {
+                minX = Math.max(0, Math.round(lastCentroid.x - rRadius));
+                maxX = Math.min(state.canvasWidth, Math.round(lastCentroid.x + rRadius));
+                minY = Math.max(0, Math.round(lastCentroid.y - rRadius));
+                maxY = Math.min(state.canvasHeight, Math.round(lastCentroid.y + rRadius));
+            }
+
+            // Perform color pixel matching run
+            const skip = 2; // Step 2 offers double the scanning density (higher tracking fidelity)
+            
+            for (let y = minY; y < maxY; y += skip) {
+                for (let x = minX; x < maxX; x += skip) {
+                    const idx = (y * state.canvasWidth + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx+1];
+                    const b = data[idx+2];
+
+                    let isMatch = false;
+
+                    if (isAchromatic) {
+                        // Grayscale matching fallback (Grayscale/Black/White doesn't have reliable Hues)
+                        const rDiff = Math.abs(r - targetColor.r);
+                        const gDiff = Math.abs(g - targetColor.g);
+                        const bDiff = Math.abs(b - targetColor.b);
+                        const rgbDist = Math.sqrt(rDiff*rDiff + gDiff*gDiff + bDiff*bDiff);
+                        isMatch = rgbDist < thresh;
+                    } else {
+                        // HSV color spectrum tracking (Robust to light changes and shadow sweeps)
+                        const hsv = rgbToHsv(r, g, b);
+                        
+                        // Hue difference (accounting for circular wrap-around at 360°)
+                        const dh = Math.abs(hsv.h - targetHSV.h);
+                        const hueDiff = Math.min(dh, 360 - dh);
+
+                        // Dynamic tolerances mapped based on user matching threshold slider
+                        const hueTolerance = thresh * 0.45; // lower is more restrictive
+                        const satTolerance = Math.max(25, thresh * 0.7);
+                        const valTolerance = Math.max(30, thresh * 0.8);
+
+                        // Only count pixels matching the target hue while ignoring background shadows (low V) and gray walls (low S)
+                        isMatch = (hueDiff < hueTolerance) && 
+                                  (hsv.s > 14) && // ignores gray background artifacts
+                                  (hsv.v > 12) && // ignores dark shadows
+                                  (Math.abs(hsv.s - targetHSV.s) < satTolerance) &&
+                                  (Math.abs(hsv.v - targetHSV.v) < valTolerance);
+                    }
+
+                    if (isMatch) {
+                        sumX += x;
+                        sumY += y;
+                        matchCount++;
+                    }
+                }
+            }
+
+            // Recovery protocol: if object moved too fast and exited the ROI search window, 
+            // fallback immediately to a full frame scan in the same frame so tracking is never lost.
+            if (matchCount < 6 && useROI) {
+                sumX = 0; sumY = 0; matchCount = 0;
+                for (let y = 0; y < state.canvasHeight; y += skip) {
+                    for (let x = 0; x < state.canvasWidth; x += skip) {
+                        const idx = (y * state.canvasWidth + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx+1];
+                        const b = data[idx+2];
+
+                        let isMatch = false;
+
+                        if (isAchromatic) {
+                            const rgbDist = Math.sqrt((r - targetColor.r)**2 + (g - targetColor.g)**2 + (b - targetColor.b)**2);
+                            isMatch = rgbDist < thresh;
+                        } else {
+                            const hsv = rgbToHsv(r, g, b);
+                            const dh = Math.abs(hsv.h - targetHSV.h);
+                            const hueDiff = Math.min(dh, 360 - dh);
+
+                            const hueTolerance = thresh * 0.45;
+                            const satTolerance = Math.max(25, thresh * 0.7);
+                            const valTolerance = Math.max(30, thresh * 0.8);
+
+                            isMatch = (hueDiff < hueTolerance) && 
+                                      (hsv.s > 14) && 
+                                      (hsv.v > 12) && 
+                                      (Math.abs(hsv.s - targetHSV.s) < satTolerance) &&
+                                      (Math.abs(hsv.v - targetHSV.v) < valTolerance);
+                        }
+
+                        if (isMatch) {
+                            sumX += x;
+                            sumY += y;
+                            matchCount++;
+                        }
+                    }
+                }
+            }
+
+            // Verify minimum tracking volume bounding threshold meets limits
+            if (matchCount > 10) {
+                const centroidX = sumX / matchCount;
+                const centroidY = sumY / matchCount;
+                const now = performance.now();
+
+                const newCentroid = { x: centroidX, y: centroidY, time: now };
+                
+                // Track Lock Confirmation
+                if (!state.colorTracking.isLocked) {
+                    state.colorTracking.isLocked = true;
+                    elements.trackerLockBadge.textContent = "Locked";
+                    elements.trackerLockBadge.className = "text-[9px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
+                }
+
+                // Calculate speed of centroids
+                if (state.colorTracking.lastCentroid) {
+                    const last = state.colorTracking.lastCentroid;
+                    const dt = (now - last.time) / 1000; // time in seconds
+
+                    if (dt > 0.005) { // Protect division-by-zero anomalies
+                        const dx = centroidX - last.x;
+                        const dy = centroidY - last.y;
+                        const pxDistance = Math.sqrt(dx*dx + dy*dy);
+
+                        let calculatedSpeedMPS = 0;
+                        let incrementalMeters = 0;
+
+                        if (state.scale.isSet) {
+                            // High precision Calibration mapping speed calculations
+                            let refMeters = state.scale.physicalVal;
+                            const physUnits = state.scale.physicalUnits;
+
+                            if (physUnits === 'cm') refMeters = state.scale.physicalVal / 100;
+                            else if (physUnits === 'inches') refMeters = state.scale.physicalVal * 0.0254;
+                            else if (physUnits === 'feet') refMeters = state.scale.physicalVal * 0.3048;
+
+                            const metersPerPixel = refMeters / state.scale.pixels;
+                            incrementalMeters = pxDistance * metersPerPixel;
+                            calculatedSpeedMPS = incrementalMeters / dt;
+                        } else {
+                            // Fallback baseline ratio (assumes 1 pixel = 1mm equivalent index)
+                            incrementalMeters = pxDistance * 0.001;
+                            calculatedSpeedMPS = incrementalMeters / dt;
+                        }
+
+                        // Accumulate physical distance traversed
+                        state.colorTracking.cumulativeDistance += incrementalMeters;
+
+                        // Jitter elimination: Apply Exponential Moving Average filtering (low-pass smoothing)
+                        const smoothingFactor = 0.3; // faster response time
+                        state.colorTracking.currentSpeed = (calculatedSpeedMPS * smoothingFactor) + (state.colorTracking.currentSpeed * (1 - smoothingFactor));
+
+                        // Prevent artificial micro-shake noise
+                        if (state.colorTracking.currentSpeed < 0.04) {
+                            state.colorTracking.currentSpeed = 0;
+                        }
+
+                        if (state.colorTracking.currentSpeed > state.colorTracking.maxSpeed) {
+                            state.colorTracking.maxSpeed = state.colorTracking.currentSpeed;
+                        }
+
+                        // Sync displays
+                        updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+                        
+                        // Timer countdown metrics tracking
+                        const elapsedSecs = (now - state.colorTracking.trackingStartTime) / 1000;
+                        elements.elapsedTimeValue.textContent = `${elapsedSecs.toFixed(1)}s`;
+
+                        // Add to telemetry log buffer
+                        state.telemetry.history.push({
+                            time: elapsedSecs,
+                            speed: state.colorTracking.currentSpeed,
+                            distance: state.colorTracking.cumulativeDistance
+                        });
+
+                        // Copy telemetry to rawWorkshop cache on the fly
+                        state.telemetry.rawBackup = JSON.parse(JSON.stringify(state.telemetry.history));
+
+                        // Prune oldest buffer data outside visual horizon
+                        const minTimeHorizon = elapsedSecs - state.telemetry.maxHistorySec;
+                        while (state.telemetry.history.length > 0 && state.telemetry.history[0].time < minTimeHorizon) {
+                            state.telemetry.history.shift();
+                        }
+
+                        // Dynamic text readouts updating
+                        const currentDistLabel = `${convertDistance(state.colorTracking.cumulativeDistance).toFixed(2)} ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
+                        const currentSpeedLabel = `${convertSpeed(state.colorTracking.currentSpeed).toFixed(2)} ${state.outputUnits}`;
+                        elements.liveDistanceReadout.textContent = `Cumulative: ${currentDistLabel}`;
+                        elements.liveSpeedReadout.textContent = `Velocity: ${currentSpeedLabel}`;
+                    }
+                }
+
+                state.colorTracking.lastCentroid = newCentroid;
+
+                // Enqueue trail paths
+                state.colorTracking.trail.push({ x: centroidX, y: centroidY });
+                if (state.colorTracking.trail.length > state.colorTracking.maxTrailLength) {
+                    state.colorTracking.trail.shift();
+                }
+            } else {
+                // Tracking Lock Dropped
+                if (state.colorTracking.isLocked) {
+                    state.colorTracking.isLocked = false;
+                    elements.trackerLockBadge.textContent = "Searching";
+                    elements.trackerLockBadge.className = "text-[9px] bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
+                }
+                
+                // Slowly decay tracking readings if visual centroid loses locks
+                state.colorTracking.currentSpeed *= 0.85;
+                if (state.colorTracking.currentSpeed < 0.05) state.colorTracking.currentSpeed = 0;
+                updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
+            }
+        }
+
+        // Draw Tracker overlays and fading trails
+        function drawColorTracking(ctx) {
+            const trail = state.colorTracking.trail;
+            const rRadius = state.colorTracking.roiRadius;
+            const lastCentroid = state.colorTracking.lastCentroid;
+
+            // 1. Draw Active Region of Interest (ROI) Lock-On search box
+            if (state.colorTracking.isLocked && lastCentroid) {
+                ctx.strokeStyle = "rgba(34, 197, 94, 0.25)"; // semi-translucent green
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.strokeRect(lastCentroid.x - rRadius, lastCentroid.y - rRadius, rRadius * 2, rRadius * 2);
+                ctx.setLineDash([]);
+                
+                // Draw ROI text label
+                ctx.fillStyle = "rgba(34, 197, 94, 0.4)";
+                ctx.font = "9px monospace";
+                ctx.fillText("ROI SEARCH WINDOW", lastCentroid.x - rRadius + 4, lastCentroid.y - rRadius + 12);
+            }
+
+            if (trail.length === 0) return;
+
+            // 2. Draw target tracking tail path lines
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                ctx.strokeStyle = `rgba(34, 197, 94, ${alpha})`; // fading neon green
+                ctx.beginPath();
+                ctx.moveTo(trail[i-1].x, trail[i-1].y);
+                ctx.lineTo(trail[i].x, trail[i].y);
+                ctx.stroke();
+            }
+
+            // 3. Draw locked tracking target reticle
+            const current = trail[trail.length - 1];
+            ctx.strokeStyle = "#eab308"; // Gold tracker reticle
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(current.x, current.y, 22, 0, Math.PI*2);
+            ctx.stroke();
+
+            // Draw center dot
+            ctx.fillStyle = "#eab308";
+            ctx.beginPath();
+            ctx.arc(current.x, current.y, 4, 0, Math.PI*2);
+            ctx.fill();
+
+            // Small reticle corner lines
+            ctx.beginPath();
+            ctx.moveTo(current.x - 30, current.y); ctx.lineTo(current.x - 15, current.y);
+            ctx.moveTo(current.x + 15, current.y); ctx.lineTo(current.x + 30, current.y);
+            ctx.moveTo(current.x, current.y - 30); ctx.lineTo(current.x, current.y - 15);
+            ctx.moveTo(current.x, current.y + 15); ctx.lineTo(current.x, current.y + 30);
+            ctx.stroke();
+        }
+
+        // --- Custom Hardware Accelerated Chart Renderer ---
+        
+        function renderTelemetryCharts() {
+            const history = state.telemetry.history;
+            
+            // Build Labels
+            const speedUnit = state.outputUnits;
+            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
+
+            // Draw Distance Chart
+            drawTelemetryChart(
+                elements.distanceCanvas, 
+                history, 
+                'distance', 
+                'Distance vs Time', 
+                '#38bdf8', // sky-400
+                'rgba(56, 189, 248, 0.1)', 
+                distUnit,
+                convertDistance
+            );
+
+            // Draw Speed Chart
+            drawTelemetryChart(
+                elements.speedCanvas, 
+                history, 
+                'speed', 
+                'Speed vs Time', 
+                '#22c55e', // brand-500
+                'rgba(34, 197, 94, 0.1)', 
+                speedUnit,
+                convertSpeed
+            );
+        }
+
+        function drawTelemetryChart(canvas, data, yKey, label, strokeColor, fillColor, unitStr, conversionFn) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Clear Frame with smooth transparent backing
+            ctx.clearRect(0, 0, w, h);
+
+            // Setup chart offsets
+            const paddingLeft = 50;
+            const paddingRight = 15;
+            const paddingTop = 20;
+            const paddingBottom = 25;
+
+            const chartWidth = w - paddingLeft - paddingRight;
+            const chartHeight = h - paddingTop - paddingBottom;
+
+            // Draw Chart Border Box Outline
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.25)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(paddingLeft, paddingTop, chartWidth, chartHeight);
+
+            // Calculate Grid Dimensions
+            const xDivisions = 5;
+            const yDivisions = 4;
+
+            // Draw Grids
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.15)";
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([3, 3]);
+
+            // Vertical Grid lines
+            for (let i = 1; i < xDivisions; i++) {
+                const gx = paddingLeft + (chartWidth / xDivisions) * i;
+                ctx.beginPath();
+                ctx.moveTo(gx, paddingTop);
+                ctx.lineTo(gx, paddingTop + chartHeight);
+                ctx.stroke();
+            }
+
+            // Horizontal Grid lines
+            for (let i = 1; i < yDivisions; i++) {
+                const gy = paddingTop + (chartHeight / yDivisions) * i;
+                ctx.beginPath();
+                ctx.moveTo(paddingLeft, gy);
+                ctx.lineTo(paddingLeft + chartWidth, gy);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // If empty data, write waiting placeholder and exit
+            if (data.length === 0) {
+                ctx.fillStyle = "#6b7280";
+                ctx.font = "italic 11px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Awaiting track motion...", paddingLeft + chartWidth / 2, paddingTop + chartHeight / 2);
+                return;
+            }
+
+            // Determine Axis Ranges
+            let minTime = data[0].time;
+            let maxTime = data[data.length - 1].time;
+            if (maxTime - minTime < 1.0) {
+                maxTime = minTime + 1.0; // Prevent divide by zero / scaling squish
+            }
+
+            // Determine local extreme limits for Y axis
+            let maxYVal = 0.1;
+            data.forEach(pt => {
+                const val = conversionFn(pt[yKey]);
+                if (val > maxYVal) maxYVal = val;
+            });
+            maxYVal = maxYVal * 1.15; // Give 15% head room above trajectory peaks
+
+            // Draw Axis Labels
+            ctx.fillStyle = "#9ca3af";
+            ctx.font = "8px monospace";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+
+            // Y-Axis tick readouts
+            for (let i = 0; i <= yDivisions; i++) {
+                const percent = i / yDivisions;
+                const value = maxYVal * percent;
+                const gy = paddingTop + chartHeight - (chartHeight * percent);
+                ctx.fillText(value.toFixed(1), paddingLeft - 8, gy);
+            }
+
+            // X-Axis time tick readouts
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let i = 0; i <= xDivisions; i++) {
+                const percent = i / xDivisions;
+                const timeValue = minTime + (maxTime - minTime) * percent;
+                const gx = paddingLeft + (chartWidth * percent);
+                ctx.fillText(`${timeValue.toFixed(1)}s`, gx, paddingTop + chartHeight + 6);
+            }
+
+            // Map data points directly to Canvas coordinate grid space
+            const mappedPoints = data.map(pt => {
+                const xPct = (pt.time - minTime) / (maxTime - minTime);
+                const yPct = conversionFn(pt[yKey]) / maxYVal;
+
+                return {
+                    x: paddingLeft + chartWidth * xPct,
+                    y: paddingTop + chartHeight - (chartHeight * yPct)
+                };
+            });
+
+            // Draw Area Gradient under Line Chart
+            const fillGrad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+            fillGrad.addColorStop(0, fillColor);
+            fillGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+            ctx.fillStyle = fillGrad;
+            ctx.beginPath();
+            ctx.moveTo(mappedPoints[0].x, paddingTop + chartHeight);
+            mappedPoints.forEach(pt => {
+                ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.lineTo(mappedPoints[mappedPoints.length - 1].x, paddingTop + chartHeight);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw Primary Data Stroke Line
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(mappedPoints[0].x, mappedPoints[0].y);
+            for (let i = 1; i < mappedPoints.length; i++) {
+                ctx.lineTo(mappedPoints[i].x, mappedPoints[i].y);
+            }
+            ctx.stroke();
+
+            // Draw pulsing endpoint dot tracker
+            const lastPt = mappedPoints[mappedPoints.length - 1];
+            ctx.fillStyle = strokeColor;
+            ctx.beginPath();
+            ctx.arc(lastPt.x, lastPt.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // On document load startup sequences
+        window.addEventListener('load', () => {
+            loadCameraDevices();
+            // Show guide instructions initially
+            elements.instructionsModal.classList.remove('hidden');
+        });
+
+
+        // --- STUDENT DATA WORKSHOP ENGINEERING PIPELINE ---
+
+        function drawWorkbenchChart() {
+            const canvas = elements.workbenchCanvas;
+            const ctx = elements.workbenchCtx;
+            const w = canvas.width;
+            const h = canvas.height;
+            const history = state.telemetry.history;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const padLeft = 55;
+            const padRight = 20;
+            const padTop = 25;
+            const padBottom = 30;
+
+            const plotW = w - padLeft - padRight;
+            const plotH = h - padTop - padBottom;
+
+            // Draw workspace outer bounds
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.3)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+            // Draw visual background grids
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.15)";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            for (let i = 1; i < 5; i++) {
+                const gx = padLeft + (plotW / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(gx, padTop);
+                ctx.lineTo(gx, padTop + plotH);
+                ctx.stroke();
+
+                const gy = padTop + (plotH / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padLeft, gy);
+                ctx.lineTo(padLeft + plotW, gy);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            if (history.length === 0) {
+                ctx.fillStyle = "#6b7280";
+                ctx.font = "italic 12px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Workbench empty. Capture telemetry speed runs first in Gate or Color mode.", w/2, h/2);
+                elements.workbenchPointsCount.textContent = "0";
+                return;
+            }
+
+            // Map data bounds
+            const times = history.map(d => d.time);
+            const tMin = times[0];
+            const tMax = times[times.length - 1];
+            const tSpan = tMax - tMin || 1;
+
+            let maxSpeed = Math.max(...history.map(d => convertSpeed(d.speed)), 0.1) * 1.15;
+            let maxDist = Math.max(...history.map(d => convertDistance(d.distance)), 0.1) * 1.15;
+
+            // Render Axis details
+            ctx.fillStyle = "#9ca3af";
+            ctx.font = "8px monospace";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+
+            // Left axis labels (Speed in green)
+            if (state.telemetry.curves.speed) {
+                ctx.fillStyle = "#22c55e";
+                for (let i = 0; i <= 5; i++) {
+                    const val = maxSpeed * (i / 5);
+                    const gy = padTop + plotH - (plotH * (i / 5));
+                    ctx.fillText(val.toFixed(1), padLeft - 8, gy);
+                }
+            }
+
+            // Right axis labels (Distance in blue)
+            if (state.telemetry.curves.distance) {
+                ctx.fillStyle = "#38bdf8";
+                ctx.textAlign = "left";
+                for (let i = 0; i <= 5; i++) {
+                    const val = maxDist * (i / 5);
+                    const gy = padTop + plotH - (plotH * (i / 5));
+                    ctx.fillText(val.toFixed(1), padLeft + plotW + 6, gy);
+                }
+            }
+
+            // X-Axis time indicators
+            ctx.fillStyle = "#9ca3af";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let i = 0; i <= 5; i++) {
+                const val = tMin + tSpan * (i / 5);
+                const gx = padLeft + plotW * (i / 5);
+                ctx.fillText(`${val.toFixed(2)}s`, gx, padTop + plotH + 6);
+            }
+
+            // Map and Draw Curves
+            const speedPoints = [];
+            const distPoints = [];
+
+            history.forEach(pt => {
+                const xPct = (pt.time - tMin) / tSpan;
+                const gx = padLeft + plotW * xPct;
+
+                if (state.telemetry.curves.speed) {
+                    const sVal = convertSpeed(pt.speed);
+                    const yPct = sVal / maxSpeed;
+                    const gy = padTop + plotH - (plotH * yPct);
+                    speedPoints.push({ x: gx, y: gy });
+                }
+
+                if (state.telemetry.curves.distance) {
+                    const dVal = convertDistance(pt.distance);
+                    const yPct = dVal / maxDist;
+                    const gy = padTop + plotH - (plotH * yPct);
+                    distPoints.push({ x: gx, y: gy });
+                }
+            });
+
+            // Draw Speed curve path
+            if (speedPoints.length > 1) {
+                ctx.strokeStyle = "rgba(34, 197, 94, 0.85)";
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(speedPoints[0].x, speedPoints[0].y);
+                for (let i = 1; i < speedPoints.length; i++) {
+                    ctx.lineTo(speedPoints[i].x, speedPoints[i].y);
+                }
+                ctx.stroke();
+            }
+
+            // Draw Distance curve path
+            if (distPoints.length > 1) {
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(distPoints[0].x, distPoints[0].y);
+                for (let i = 1; i < distPoints.length; i++) {
+                    ctx.lineTo(distPoints[i].x, distPoints[i].y);
+                }
+                ctx.stroke();
+            }
+
+            // Shading unselected cropped areas
+            const handle1X = padLeft + plotW * state.telemetry.cropStartPercent;
+            const handle2X = padLeft + plotW * state.telemetry.cropEndPercent;
+
+            ctx.fillStyle = "rgba(17, 24, 39, 0.65)";
+            // Left shaded block
+            if (handle1X > padLeft) {
+                ctx.fillRect(padLeft, padTop, handle1X - padLeft, plotH);
+            }
+            // Right shaded block
+            if (handle2X < padLeft + plotW) {
+                ctx.fillRect(handle2X, padTop, (padLeft + plotW) - handle2X, plotH);
+            }
+
+            // Draggable Crop Marker Bars
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 2]);
+            
+            // Start Crop handle line
+            ctx.strokeStyle = "#eab308"; // Golden Orange
+            ctx.beginPath();
+            ctx.moveTo(handle1X, padTop);
+            ctx.lineTo(handle1X, padTop + plotH);
+            ctx.stroke();
+
+            // End Crop handle line
+            ctx.strokeStyle = "#f43f5e"; // Pinkish Red
+            ctx.beginPath();
+            ctx.moveTo(handle2X, padTop);
+            ctx.lineTo(handle2X, padTop + plotH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Interactive Slider Handles
+            drawSliderHandle(ctx, handle1X, padTop + plotH, "#eab308", "START");
+            drawSliderHandle(ctx, handle2X, padTop + plotH, "#f43f5e", "END");
+
+            // Update live metadata readouts
+            const cropStartTime = tMin + tSpan * state.telemetry.cropStartPercent;
+            const cropEndTime = tMin + tSpan * state.telemetry.cropEndPercent;
+            elements.workbenchCropReadout.textContent = `${cropStartTime.toFixed(2)}s - ${cropEndTime.toFixed(2)}s`;
+            
+            // Calculate points inside range
+            const pointsCount = history.filter(d => d.time >= cropStartTime && d.time <= cropEndTime).length;
+            elements.workbenchPointsCount.textContent = pointsCount;
+        }
+
+        function drawSliderHandle(ctx, cx, cy, fillStyle, label) {
+            ctx.fillStyle = fillStyle;
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1.5;
+            
+            // Drawing a beautiful marker slider button shape
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 8);
+            ctx.lineTo(cx - 10, cy + 6);
+            ctx.lineTo(cx + 10, cy + 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = fillStyle;
+            ctx.font = "bold 8px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(label, cx, cy + 15);
+        }
+
+        // Save current history steps to supporting Undo arrays
+        function saveUndoState() {
+            state.telemetry.undoStack.push(JSON.parse(JSON.stringify(state.telemetry.history)));
+            if (state.telemetry.undoStack.length > 20) {
+                state.telemetry.undoStack.shift(); // Max 20 steps deep
+            }
+        }
+
+        // Action: Crop Telemetry Range
+        elements.applyCropBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) return;
+
+            saveUndoState();
+
+            const times = history.map(d => d.time);
+            const tMin = times[0];
+            const tMax = times[times.length - 1];
+            const tSpan = tMax - tMin || 1;
+
+            const tStart = tMin + tSpan * state.telemetry.cropStartPercent;
+            const tEnd = tMin + tSpan * state.telemetry.cropEndPercent;
+
+            // Filtering datasets
+            let cropped = history.filter(d => d.time >= tStart && d.time <= tEnd);
+
+            if (cropped.length === 0) {
+                alertUser("Empty Range Selected", "Your crop range must cover at least 1 telemetry timestamp.");
+                return;
+            }
+
+            // Optional Shift times to t=0
+            if (elements.shiftTimeZeroCheckbox.checked) {
+                const shiftOffset = cropped[0].time;
+                cropped = cropped.map(d => {
+                    return {
+                        time: Number((d.time - shiftOffset).toFixed(4)),
+                        speed: d.speed,
+                        distance: Number((d.distance - cropped[0].distance).toFixed(4))
+                    };
+                });
+            }
+
+            state.telemetry.history = cropped;
+            
+            // Reset sliding crop percentages
+            state.telemetry.cropStartPercent = 0;
+            state.telemetry.cropEndPercent = 1.0;
+
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Data cropped. ${cropped.length} points remain.`);
+            playChime(640, "sine", 0.15, 0.05);
+        });
+
+        // Action: Apply low pass filtering (smoothing rolling weights)
+        elements.applySmoothBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length < 3) return;
+
+            saveUndoState();
+            const level = parseInt(elements.workshopSmoothInput.value);
+
+            // Rolling moving average calculation
+            const smoothed = history.map((pt, index) => {
+                let sumSpeed = 0;
+                let sumDist = 0;
+                let count = 0;
+
+                for (let i = index - level; i <= index + level; i++) {
+                    if (i >= 0 && i < history.length) {
+                        sumSpeed += history[i].speed;
+                        sumDist += history[i].distance;
+                        count++;
+                    }
+                }
+
+                return {
+                    time: pt.time,
+                    speed: Number((sumSpeed / count).toFixed(4)),
+                    distance: Number((sumDist / count).toFixed(4))
+                };
+            });
+
+            state.telemetry.history = smoothed;
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Moving average filter applied with window size: ${level}`);
+            playChime(500, "sine", 0.1, 0.05);
+        });
+
+        elements.workshopSmoothInput.addEventListener('input', (e) => {
+            elements.smoothingLevelText.textContent = `Level: ${e.target.value}`;
+        });
+
+        // Action: Scale Calibration multipliers
+        elements.applyScaleBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) return;
+
+            const scale = parseFloat(elements.workshopScaleInput.value);
+            if (isNaN(scale) || scale <= 0) {
+                alertUser("Input Error", "Please supply a positive multiplication scale.");
+                return;
+            }
+
+            saveUndoState();
+            state.telemetry.history = history.map(d => {
+                return {
+                    time: d.time,
+                    speed: Number((d.speed * scale).toFixed(4)),
+                    distance: Number((d.distance * scale).toFixed(4))
+                };
+            });
+
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Dataset values scaled by multiplier: ${scale}x`);
+            playChime(700, "sine", 0.12, 0.05);
+        });
+
+        // Action: Time Shift offsets
+        elements.applyShiftBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) return;
+
+            const shift = parseFloat(elements.workshopShiftInput.value);
+            if (isNaN(shift)) return;
+
+            saveUndoState();
+            state.telemetry.history = history.map(d => {
+                return {
+                    time: Number((d.time + shift).toFixed(4)),
+                    speed: d.speed,
+                    distance: d.distance
+                };
+            });
+
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent(`Timeline shifted by: ${shift} seconds`);
+            playChime(720, "sine", 0.1, 0.05);
+        });
+
+        // Action: Undo Edit operations
+        elements.workshopUndoBtn.addEventListener('click', () => {
+            if (state.telemetry.undoStack.length === 0) {
+                alertUser("Undo stack empty", "There are no previous edits recorded.");
+                return;
+            }
+            state.telemetry.history = state.telemetry.undoStack.pop();
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent("Last data operation undone.");
+            playChime(420, "sine", 0.1, 0.05);
+        });
+
+        // Action: Full Reset Restore
+        elements.workshopResetBtn.addEventListener('click', () => {
+            if (state.telemetry.rawBackup.length === 0) {
+                alertUser("Raw cache empty", "No original telemetry logs recorded to restore.");
+                return;
+            }
+            saveUndoState();
+            state.telemetry.history = JSON.parse(JSON.stringify(state.telemetry.rawBackup));
+            state.telemetry.cropStartPercent = 0.0;
+            state.telemetry.cropEndPercent = 1.0;
+            refreshWorkbenchTable();
+            drawWorkbenchChart();
+            logEvent("Original capture data restored.");
+            playChime(300, "square", 0.15, 0.05);
+        });
+
+        // Workbench display curve checkboxes
+        elements.showSpeedToggle.addEventListener('change', (e) => {
+            state.telemetry.curves.speed = e.target.checked;
+            drawWorkbenchChart();
+        });
+        elements.showDistanceToggle.addEventListener('change', (e) => {
+            state.telemetry.curves.distance = e.target.checked;
+            drawWorkbenchChart();
+        });
+
+        // Dynamically populate point lists for direct deletion of tracking jitter
+        function refreshWorkbenchTable() {
+            const history = state.telemetry.history;
+            elements.pointsTableCount.textContent = `${history.length} Pts`;
+
+            if (history.length === 0) {
+                elements.workbenchTableBody.innerHTML = `
+                    <div class="text-center p-4 text-gray-500 italic">No points to edit. Capture a dataset first.</div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="w-full text-[10px] text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-900 text-gray-400 border-b border-gray-850 text-xs">
+                            <th class="p-1.5 px-2">Idx</th>
+                            <th class="p-1.5">Time (s)</th>
+                            <th class="p-1.5">Speed (${state.outputUnits})</th>
+                            <th class="p-1.5">Distance (${state.scale.isSet ? state.scale.physicalUnits : 'm'})</th>
+                            <th class="p-1.5 text-right pr-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-900">
+            `;
+
+            history.forEach((pt, i) => {
+                const spd = convertSpeed(pt.speed).toFixed(2);
+                const dist = convertDistance(pt.distance).toFixed(2);
+                html += `
+                    <tr class="hover:bg-gray-900 group">
+                        <td class="p-1.5 px-2 text-gray-500">${i}</td>
+                        <td class="p-1.5 text-gray-300">${pt.time.toFixed(2)}</td>
+                        <td class="p-1.5 text-emerald-400 font-bold">${spd}</td>
+                        <td class="p-1.5 text-sky-400">${dist}</td>
+                        <td class="p-1.5 text-right pr-3">
+                            <button onclick="deletePointAtIndex(${i})" class="text-red-500 hover:text-red-400 hover:underline">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            elements.workbenchTableBody.innerHTML = html;
+        }
+
+        // Global access point for table callbacks
+        window.deletePointAtIndex = function(idx) {
+            const history = state.telemetry.history;
+            if (idx >= 0 && idx < history.length) {
+                saveUndoState();
+                state.telemetry.history.splice(idx, 1);
+                refreshWorkbenchTable();
+                drawWorkbenchChart();
+                logEvent(`Deleted point index: ${idx}`);
+                playChime(350, "square", 0.08, 0.05);
+            }
+        };
+
+        // Mouse Coordinate Mappings & Draggable Sliders for Workshop Canvas
+        function getWorkbenchMouseCoords(e) {
+            const canvas = elements.workbenchCanvas;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        elements.workbenchCanvas.addEventListener('mousedown', (e) => {
+            const coords = getWorkbenchMouseCoords(e);
+            const w = elements.workbenchCanvas.width;
+            const h = elements.workbenchCanvas.height;
+
+            const padLeft = 55;
+            const padRight = 20;
+            const plotW = w - padLeft - padRight;
+
+            const xStart = padLeft + plotW * state.telemetry.cropStartPercent;
+            const xEnd = padLeft + plotW * state.telemetry.cropEndPercent;
+
+            // Hit box detection tolerances (20 pixels snap region width)
+            const snapLimit = 20;
+
+            if (Math.abs(coords.x - xStart) < snapLimit) {
+                state.telemetry.draggedWorkshopHandle = 'start';
+            } else if (Math.abs(coords.x - xEnd) < snapLimit) {
+                state.telemetry.draggedWorkshopHandle = 'end';
+            }
+        });
+
+        elements.workbenchCanvas.addEventListener('mousemove', (e) => {
+            const coords = getWorkbenchMouseCoords(e);
+            const w = elements.workbenchCanvas.width;
+            const h = elements.workbenchCanvas.height;
+
+            const padLeft = 55;
+            const padRight = 20;
+            const plotW = w - padLeft - padRight;
+
+            // Cursor changing effect on slide coordinates
+            const xStart = padLeft + plotW * state.telemetry.cropStartPercent;
+            const xEnd = padLeft + plotW * state.telemetry.cropEndPercent;
+            const snapLimit = 20;
+
+            if (Math.abs(coords.x - xStart) < snapLimit || Math.abs(coords.x - xEnd) < snapLimit) {
+                elements.workbenchCanvas.style.cursor = 'ew-resize';
+            } else {
+                elements.workbenchCanvas.style.cursor = 'default';
+            }
+
+            // Move crop boundaries if active
+            if (state.telemetry.draggedWorkshopHandle) {
+                let targetPct = (coords.x - padLeft) / plotW;
+                targetPct = Math.max(0, Math.min(1.0, targetPct));
+
+                if (state.telemetry.draggedWorkshopHandle === 'start') {
+                    // Prevent start crossing over end
+                    state.telemetry.cropStartPercent = Math.min(targetPct, state.telemetry.cropEndPercent - 0.05);
+                } else {
+                    // Prevent end crossing over start
+                    state.telemetry.cropEndPercent = Math.max(targetPct, state.telemetry.cropStartPercent + 0.05);
+                }
+                drawWorkbenchChart();
+                return;
+            }
+
+            // Render hover coordinate inspecting tooltip
+            const history = state.telemetry.history;
+            if (history.length > 0 && coords.x >= padLeft && coords.x <= padLeft + plotW) {
+                const tMin = history[0].time;
+                const tMax = history[history.length - 1].time;
+                const tSpan = tMax - tMin || 1;
+
+                const hoverPct = (coords.x - padLeft) / plotW;
+                const hoverTime = tMin + tSpan * hoverPct;
+
+                // Find closest timestamp point in dataset
+                let closestPt = history[0];
+                let minDiff = Math.abs(closestPt.time - hoverTime);
+
+                history.forEach(pt => {
+                    const d = Math.abs(pt.time - hoverTime);
+                    if (d < minDiff) {
+                        minDiff = d;
+                        closestPt = pt;
+                    }
+                });
+
+                const spdStr = convertSpeed(closestPt.speed).toFixed(2);
+                const dUnits = state.scale.isSet ? state.scale.physicalUnits : 'm';
+                const distStr = convertDistance(closestPt.distance).toFixed(2);
+                elements.workbenchHoverTooltip.innerHTML = `t: <span class="text-white font-bold">${closestPt.time.toFixed(2)}s</span> | v: <span class="text-emerald-400 font-bold">${spdStr} ${state.outputUnits}</span> | s: <span class="text-sky-400 font-bold">${distStr} ${dUnits}</span>`;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            state.telemetry.draggedWorkshopHandle = null;
+        });
+
+        // Connect Touch Support for Workshop Slide Markers
+        elements.workbenchCanvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.workbenchCanvas.dispatchEvent(mouseEvent);
+            }
+        });
+
+        elements.workbenchCanvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: e.touches[0].clientX,
+                    clientY: e.touches[0].clientY
+                });
+                elements.workbenchCanvas.dispatchEvent(mouseEvent);
+            }
+        });
+
+        window.addEventListener('touchend', () => {
+            state.telemetry.draggedWorkshopHandle = null;
+        });
+
+        // --- Data Extraction Trigger Handlers ---
+
+        // 1. Export Current Telemetry Data Points (CSV Format)
+        function triggerGeneralTelemetryCSV(history, prefix = "camspeed_telemetry") {
+            if (history.length === 0) {
+                alertUser("No Telemetry Data", "Please capture a tracking sweep or run before exporting data points.");
+                return;
+            }
+
+            const speedUnit = state.outputUnits;
+            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
+
+            // Generate structured spreadsheet-friendly CSV content strings
+            let csv = "Time (seconds),Speed (meters/sec),Distance (meters),Speed (" + speedUnit + "),Distance (" + distUnit + ")\n";
+            history.forEach(row => {
+                const convertedSpeedVal = convertSpeed(row.speed);
+                const convertedDistanceVal = convertDistance(row.distance);
+                csv += `${row.time.toFixed(4)},${row.speed.toFixed(4)},${row.distance.toFixed(4)},${convertedSpeedVal.toFixed(4)},${convertedDistanceVal.toFixed(4)}\n`;
+            });
+
+            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+            downloadFile(csv, `${prefix}_${timestamp}.csv`, "text/csv");
+        }
+
+        elements.exportCsvBtn.addEventListener('click', () => {
+            triggerGeneralTelemetryCSV(state.telemetry.history);
+            logEvent("Exported high-precision telemetry CSV file successfully.");
+        });
+
+        // Workshop Tool: Export ONLY Selected Crop Range points as CSV
+        elements.workshopExportCsvBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) {
+                alertUser("Empty Workbench", "Capture or restore some run data before exporting a range.");
+                return;
+            }
+
+            const times = history.map(d => d.time);
+            const tMin = times[0];
+            const tMax = times[times.length - 1];
+            const tSpan = tMax - tMin || 1;
+
+            const tStart = tMin + tSpan * state.telemetry.cropStartPercent;
+            const tEnd = tMin + tSpan * state.telemetry.cropEndPercent;
+
+            const selectedPoints = history.filter(pt => pt.time >= tStart && pt.time <= tEnd);
+
+            if (selectedPoints.length === 0) {
+                alertUser("No Points Selected", "Please expand your crop range handles to contain data points.");
+                return;
+            }
+
+            triggerGeneralTelemetryCSV(selectedPoints, "camspeed_selected_range");
+            logEvent(`Exported cropped range (${selectedPoints.length} points) as CSV.`);
+            playChime(900, "sine", 0.12, 0.05);
+        });
+
+        // Workshop Tool: Export Workbench Canvas Render as PNG Image File
+        elements.workshopExportImgBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) {
+                alertUser("Empty Workbench", "Capture some telemetry data to generate a graph image export.");
+                return;
+            }
+
+            try {
+                // Fetch canvas data URL reference
+                const dataUrl = elements.workbenchCanvas.toDataURL("image/png");
+                
+                // Trigger local client side sandbox download
+                const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+                const a = document.createElement("a");
+                a.href = dataUrl;
+                a.download = `camspeed_workbench_graph_${timestamp}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                logEvent("Exported snapshot of workbench telemetry curves as PNG.");
+                playChime(950, "sine", 0.15, 0.06);
+            } catch (err) {
+                console.error("Failed to capture workbench graph canvas", err);
+                alertUser("Image Capture Failure", "Browser security restrictions prevented capturing the drawing context.");
+            }
+        });
+
+    </script>
+</body>
+</html>
