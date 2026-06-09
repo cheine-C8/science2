@@ -388,10 +388,10 @@
                                 <div>
                                     <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
                                         <span class="font-bold">LOW-PASS SMOOTHING FILTER</span>
-                                        <span id="smoothing-level-text">Level: 3</span>
+                                        <span id="smoothing-level-text">Level: 10</span>
                                     </div>
                                     <div class="flex space-x-2">
-                                        <input type="range" id="workshop-smooth-input" min="2" max="10" value="3" class="flex-1 accent-brand-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer mt-2">
+                                        <input type="range" id="workshop-smooth-input" min="2" max="15" value="10" class="flex-1 accent-brand-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer mt-2 animate-none">
                                         <button id="apply-smooth-btn" class="px-3 py-1 bg-gray-800 hover:bg-gray-750 text-white font-semibold text-[10px] border border-gray-700 rounded-lg transition-all">Smooth</button>
                                     </div>
                                 </div>
@@ -414,6 +414,21 @@
                                 </div>
                             </div>
 
+                            <!-- Selected Range Export Tools -->
+                            <div class="border-t border-gray-900 pt-2.5 space-y-2">
+                                <span class="block text-[9px] font-bold text-gray-400 uppercase">Export Selected Range</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button id="workshop-export-csv-btn" class="py-2 bg-gray-850 hover:bg-gray-800 text-brand-400 font-semibold text-[10px] border border-gray-700 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-md">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        <span>Selected CSV</span>
+                                    </button>
+                                    <button id="workshop-export-img-btn" class="py-2 bg-gray-850 hover:bg-gray-800 text-sky-400 font-semibold text-[10px] border border-gray-700 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-md">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <span>Export Image</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-900">
                                 <button id="workshop-undo-btn" class="py-1.5 bg-gray-850 hover:bg-gray-800 border border-gray-700 text-xs font-semibold rounded-xl text-gray-300 transition-all flex items-center justify-center space-x-1">
                                     <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/></svg>
@@ -433,7 +448,6 @@
                                 <span class="text-[9px] bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-mono" id="points-table-count">0 Pts</span>
                             </div>
                             <div class="overflow-y-auto max-h-[140px] text-[10px] font-mono divide-y divide-gray-900" id="workbench-table-body">
-                                <!-- Populated dynamically by JS -->
                                 <div class="text-center p-4 text-gray-500 italic">No points to edit. Capture a dataset first.</div>
                             </div>
                         </div>
@@ -556,7 +570,7 @@
 
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         <button id="cal-back-to-2-btn" class="py-2.5 bg-gray-850 hover:bg-gray-800 text-gray-300 font-semibold text-xs rounded-xl border border-gray-750 transition-all flex items-center justify-center space-x-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                             <span>Back</span>
                         </button>
                         <button id="save-calibration-btn" class="py-2.5 bg-brand-600 hover:bg-brand-500 text-black font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-brand-900/10">
@@ -594,7 +608,7 @@
 
             <!-- Log Panel -->
             <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex-1 min-h-[160px] flex flex-col">
-                <div class="px-5 py-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
+                <div class="px-5 py-3 border-b border-gray-850 bg-gray-900/50 flex justify-between items-center">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Speed Readings Log</span>
                     <button id="clear-logs-btn" class="text-[10px] text-gray-500 hover:text-red-400 transition-all font-semibold uppercase">Clear</button>
                 </div>
@@ -849,6 +863,8 @@
             workshopUndoBtn: document.getElementById('workshop-undo-btn'),
             workshopResetBtn: document.getElementById('workshop-reset-btn'),
             smoothingLevelText: document.getElementById('smoothing-level-text'),
+            workshopExportCsvBtn: document.getElementById('workshop-export-csv-btn'),
+            workshopExportImgBtn: document.getElementById('workshop-export-img-btn'),
             
             // Calibrate Sub-components & Wizard Steps
             calModeBtn: document.getElementById('cal-mode-btn'),
@@ -915,6 +931,7 @@
             modalAckBtn: document.getElementById('modal-ack-btn'),
             logList: document.getElementById('log-list'),
             clearLogsBtn: document.getElementById('clear-logs-btn'),
+            exportCsvBtn: document.getElementById('export-csv-btn'), // Remapped selection element
 
             // Live Telemetry Elements
             chartModeBadge: document.getElementById('chart-mode-badge'),
@@ -947,7 +964,7 @@
         elements.closeModalBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
         elements.modalAckBtn.addEventListener('click', () => elements.instructionsModal.classList.add('hidden'));
 
-        // Tab routing switches
+        // Toggle Speed gates and Color tracking panels
         elements.tabGate.addEventListener('click', () => {
             state.mode = 'gate';
             elements.tabGate.className = "flex-1 py-3 text-xs font-bold border-b-2 border-brand-500 text-brand-400 bg-gray-900/50 transition-all flex items-center justify-center space-x-1";
@@ -1185,21 +1202,14 @@
             elements.speedUnitText.textContent = state.outputUnits;
             updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
             renderTelemetryCharts();
-            if (state.mode === 'workshop') drawWorkbenchChart();
         });
 
         // Reset trackers button
         elements.clearTrackingBtn.addEventListener('click', () => {
             resetGateTimers();
             resetLiveTracker();
-            state.telemetry.rawBackup = [];
-            state.telemetry.undoStack = [];
             logEvent("All trackers, logs, and live graph histories reset.");
             playChime(330, "square", 0.1, 0.05);
-            if (state.mode === 'workshop') {
-                refreshWorkbenchTable();
-                drawWorkbenchChart();
-            }
         });
 
         // Trigger manual simulation gate passes (ideal for debug/demonstration!)
@@ -1419,8 +1429,6 @@
             state.gates.gate2Tripped = false;
             state.gates.gate1TripTime = 0;
             state.gates.gate2TripTime = 0;
-            state.gates.gate1LastLums = [];
-            state.gates.gate2LastLums = [];
             state.telemetry.history = [];
             elements.elapsedTimeValue.textContent = "0.0s";
             elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
@@ -1468,7 +1476,6 @@
                 // Reset second gate just in case they are running again
                 state.gates.gate2Tripped = false;
                 state.gates.gate2TripTime = 0;
-                state.gates.gate2LastLums = []; // flush so gate2 baseline re-accumulates cleanly
             } 
             else if (gateNum === 2) {
                 if (!state.gates.gate1Tripped) {
@@ -1564,7 +1571,6 @@
 
         // Mouse Down Handles Mapping
         elements.canvas.addEventListener('mousedown', (e) => {
-            if (state.mode === 'workshop') return; // Handled separately by workbench canvas
             e.preventDefault(); // Crucial to prevent browser from entering drag/selection mode on the canvas element
             const coords = getCanvasMouseCoords(e);
 
@@ -1633,7 +1639,6 @@
 
         // Mouse Move coordinates dragging loop
         elements.canvas.addEventListener('mousemove', (e) => {
-            if (state.mode === 'workshop') return;
             const coords = getCanvasMouseCoords(e);
 
             // Handle Calibration Markers repositioning
@@ -1813,20 +1818,13 @@
             const gateKey = gateIndex === 1 ? 'gate1LastLums' : 'gate2LastLums';
             const history = state.gates[gateKey];
 
-            const alreadyTripped = gateIndex === 1 ? state.gates.gate1Tripped : state.gates.gate2Tripped;
-
-            // If this gate is already tripped, don't accumulate skewed lum data into the baseline.
-            // The history will be cleared when the gate resets (tripGate resets gate2 on gate1 trip,
-            // and resetGateTimers clears both). Skip until re-armed.
-            if (alreadyTripped) return;
-
             // Store running background average (rolling 15 frames)
             if (history.length < 15) {
                 history.push(currentAvg);
                 return;
             }
 
-            // Compute background average from stable baseline window
+            // Compute background average excluding anomalies
             const bgAvg = history.reduce((a, b) => a + b, 0) / history.length;
             
             // Append current frame and shift oldest frame out
@@ -1835,16 +1833,14 @@
 
             // Contrast check: trigger if difference from baseline surpasses sensitivity limits
             const diff = Math.abs(currentAvg - bgAvg);
+            const alreadyTripped = gateIndex === 1 ? state.gates.gate1Tripped : state.gates.gate2Tripped;
 
-            if (diff > sensitivity) {
-                // Gate 2 can only fire after Gate 1 (direction enforcement)
+            if (diff > sensitivity && !alreadyTripped) {
+                // Check sequence timers to ensure logical sequence
                 if (gateIndex === 2 && !state.gates.gate1Tripped) {
-                    // Clear gate 2 history so it doesn't re-trigger immediately when gate 1 does fire
-                    state.gates.gate2LastLums = [];
+                    // Ignore gate 2 trips if gate 1 hasn't gone yet (prevents out-of-order false trips)
                     return;
                 }
-                // Clear own lum history so baseline is clean after the trip
-                state.gates[gateKey] = [];
                 tripGate(gateIndex);
             }
         }
@@ -2419,7 +2415,6 @@
         });
 
 
-        // --- STREAMING_CHUNK: Drawing the interactive Workbench Chart... ---
         // --- STUDENT DATA WORKSHOP ENGINEERING PIPELINE ---
 
         function drawWorkbenchChart() {
@@ -2633,7 +2628,6 @@
             ctx.fillText(label, cx, cy + 15);
         }
 
-        // --- STREAMING_CHUNK: Implementing data modification algorithms... ---
         // Save current history steps to supporting Undo arrays
         function saveUndoState() {
             state.telemetry.undoStack.push(JSON.parse(JSON.stringify(state.telemetry.history)));
@@ -2817,8 +2811,6 @@
             drawWorkbenchChart();
         });
 
-
-        // --- STREAMING_CHUNK: Adding manual point editor table... ---
         // Dynamically populate point lists for direct deletion of tracking jitter
         function refreshWorkbenchTable() {
             const history = state.telemetry.history;
@@ -2834,12 +2826,12 @@
             let html = `
                 <table class="w-full text-[10px] text-left border-collapse">
                     <thead>
-                        <tr class="bg-gray-900 text-gray-400 border-b border-gray-800">
-                            <th class="p-1 px-2">Idx</th>
-                            <th class="p-1">Time (s)</th>
-                            <th class="p-1">Speed (${state.outputUnits})</th>
-                            <th class="p-1">Distance (${state.scale.isSet ? state.scale.physicalUnits : 'm'})</th>
-                            <th class="p-1 text-right pr-2">Action</th>
+                        <tr class="bg-gray-900 text-gray-400 border-b border-gray-850 text-xs">
+                            <th class="p-1.5 px-2">Idx</th>
+                            <th class="p-1.5">Time (s)</th>
+                            <th class="p-1.5">Speed (${state.outputUnits})</th>
+                            <th class="p-1.5">Distance (${state.scale.isSet ? state.scale.physicalUnits : 'm'})</th>
+                            <th class="p-1.5 text-right pr-3">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-900">
@@ -2850,11 +2842,11 @@
                 const dist = convertDistance(pt.distance).toFixed(2);
                 html += `
                     <tr class="hover:bg-gray-900 group">
-                        <td class="p-1 px-2 text-gray-500">${i}</td>
-                        <td class="p-1 text-gray-300">${pt.time.toFixed(2)}</td>
-                        <td class="p-1 text-emerald-400 font-bold">${spd}</td>
-                        <td class="p-1 text-sky-400">${dist}</td>
-                        <td class="p-1 text-right pr-2">
+                        <td class="p-1.5 px-2 text-gray-500">${i}</td>
+                        <td class="p-1.5 text-gray-300">${pt.time.toFixed(2)}</td>
+                        <td class="p-1.5 text-emerald-400 font-bold">${spd}</td>
+                        <td class="p-1.5 text-sky-400">${dist}</td>
+                        <td class="p-1.5 text-right pr-3">
                             <button onclick="deletePointAtIndex(${i})" class="text-red-500 hover:text-red-400 hover:underline">Delete</button>
                         </td>
                     </tr>
@@ -2878,8 +2870,6 @@
             }
         };
 
-
-        // --- STREAMING_CHUNK: Wiring up workbench canvas event handlers... ---
         // Mouse Coordinate Mappings & Draggable Sliders for Workshop Canvas
         function getWorkbenchMouseCoords(e) {
             const canvas = elements.workbenchCanvas;
@@ -3006,6 +2996,92 @@
 
         window.addEventListener('touchend', () => {
             state.telemetry.draggedWorkshopHandle = null;
+        });
+
+        // --- Data Extraction Trigger Handlers ---
+
+        // 1. Export Current Telemetry Data Points (CSV Format)
+        function triggerGeneralTelemetryCSV(history, prefix = "camspeed_telemetry") {
+            if (history.length === 0) {
+                alertUser("No Telemetry Data", "Please capture a tracking sweep or run before exporting data points.");
+                return;
+            }
+
+            const speedUnit = state.outputUnits;
+            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
+
+            // Generate structured spreadsheet-friendly CSV content strings
+            let csv = "Time (seconds),Speed (meters/sec),Distance (meters),Speed (" + speedUnit + "),Distance (" + distUnit + ")\n";
+            history.forEach(row => {
+                const convertedSpeedVal = convertSpeed(row.speed);
+                const convertedDistanceVal = convertDistance(row.distance);
+                csv += `${row.time.toFixed(4)},${row.speed.toFixed(4)},${row.distance.toFixed(4)},${convertedSpeedVal.toFixed(4)},${convertedDistanceVal.toFixed(4)}\n`;
+            });
+
+            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+            downloadFile(csv, `${prefix}_${timestamp}.csv`, "text/csv");
+        }
+
+        elements.exportCsvBtn.addEventListener('click', () => {
+            triggerGeneralTelemetryCSV(state.telemetry.history);
+            logEvent("Exported high-precision telemetry CSV file successfully.");
+        });
+
+        // Workshop Tool: Export ONLY Selected Crop Range points as CSV
+        elements.workshopExportCsvBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) {
+                alertUser("Empty Workbench", "Capture or restore some run data before exporting a range.");
+                return;
+            }
+
+            const times = history.map(d => d.time);
+            const tMin = times[0];
+            const tMax = times[times.length - 1];
+            const tSpan = tMax - tMin || 1;
+
+            const tStart = tMin + tSpan * state.telemetry.cropStartPercent;
+            const tEnd = tMin + tSpan * state.telemetry.cropEndPercent;
+
+            const selectedPoints = history.filter(pt => pt.time >= tStart && pt.time <= tEnd);
+
+            if (selectedPoints.length === 0) {
+                alertUser("No Points Selected", "Please expand your crop range handles to contain data points.");
+                return;
+            }
+
+            triggerGeneralTelemetryCSV(selectedPoints, "camspeed_selected_range");
+            logEvent(`Exported cropped range (${selectedPoints.length} points) as CSV.`);
+            playChime(900, "sine", 0.12, 0.05);
+        });
+
+        // Workshop Tool: Export Workbench Canvas Render as PNG Image File
+        elements.workshopExportImgBtn.addEventListener('click', () => {
+            const history = state.telemetry.history;
+            if (history.length === 0) {
+                alertUser("Empty Workbench", "Capture some telemetry data to generate a graph image export.");
+                return;
+            }
+
+            try {
+                // Fetch canvas data URL reference
+                const dataUrl = elements.workbenchCanvas.toDataURL("image/png");
+                
+                // Trigger local client side sandbox download
+                const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+                const a = document.createElement("a");
+                a.href = dataUrl;
+                a.download = `camspeed_workbench_graph_${timestamp}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                logEvent("Exported snapshot of workbench telemetry curves as PNG.");
+                playChime(950, "sine", 0.15, 0.06);
+            } catch (err) {
+                console.error("Failed to capture workbench graph canvas", err);
+                alertUser("Image Capture Failure", "Browser security restrictions prevented capturing the drawing context.");
+            }
         });
 
     </script>
