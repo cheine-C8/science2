@@ -738,6 +738,23 @@
             return { h: Math.round(h * 360), s: Math.round(s * 100), v: Math.round(v * 100) };
         }
 
+        // Client-side local file downloader
+        function downloadFile(content, fileName, contentType) {
+            try {
+                const blob = new Blob([content], { type: contentType });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            } catch (err) {
+                console.error("Failed to generate download file", err);
+                alertUser("Export Error", "Browser sandbox restricted local file system downloads.");
+            }
+        }
+
         // --- Core Application State ---
         const state = {
             webcamActive: false,
@@ -931,7 +948,7 @@
             modalAckBtn: document.getElementById('modal-ack-btn'),
             logList: document.getElementById('log-list'),
             clearLogsBtn: document.getElementById('clear-logs-btn'),
-            exportCsvBtn: document.getElementById('export-csv-btn'), // Remapped selection element
+            exportCsvBtn: document.getElementById('export-csv-btn'),
 
             // Live Telemetry Elements
             chartModeBadge: document.getElementById('chart-mode-badge'),
@@ -2104,7 +2121,7 @@
                         state.colorTracking.cumulativeDistance += incrementalMeters;
 
                         // Jitter elimination: Apply Exponential Moving Average filtering (low-pass smoothing)
-                        const smoothingFactor = 0.3; // faster response time
+                        const smoothingFactor = 0.20; // Slightly higher damping for robust, stable graphing curves
                         state.colorTracking.currentSpeed = (calculatedSpeedMPS * smoothingFactor) + (state.colorTracking.currentSpeed * (1 - smoothingFactor));
 
                         // Prevent artificial micro-shake noise
@@ -2237,7 +2254,20 @@
             const speedUnit = state.outputUnits;
             const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
 
-            // Draw Distance Chart
+            // Extract shared bounding boundaries so both graphs remain perfectly synced
+            let minTime = 0;
+            let maxTime = 3.0; // Minimum time scale floor of 3.0s
+
+            if (history.length > 0) {
+                minTime = history[0].time;
+                maxTime = history[history.length - 1].time;
+                const minTimeSpan = 3.0;
+                if (maxTime - minTime < minTimeSpan) {
+                    maxTime = minTime + minTimeSpan;
+                }
+            }
+
+            // Draw Distance Chart with unified shared timeline boundaries
             drawTelemetryChart(
                 elements.distanceCanvas, 
                 history, 
@@ -2246,10 +2276,12 @@
                 '#38bdf8', // sky-400
                 'rgba(56, 189, 248, 0.1)', 
                 distUnit,
-                convertDistance
+                convertDistance,
+                minTime,
+                maxTime
             );
 
-            // Draw Speed Chart
+            // Draw Speed Chart with unified shared timeline boundaries
             drawTelemetryChart(
                 elements.speedCanvas, 
                 history, 
@@ -2258,11 +2290,13 @@
                 '#22c55e', // brand-500
                 'rgba(34, 197, 94, 0.1)', 
                 speedUnit,
-                convertSpeed
+                convertSpeed,
+                minTime,
+                maxTime
             );
         }
 
-        function drawTelemetryChart(canvas, data, yKey, label, strokeColor, fillColor, unitStr, conversionFn) {
+        function drawTelemetryChart(canvas, data, yKey, label, strokeColor, fillColor, unitStr, conversionFn, minTime, maxTime) {
             const ctx = canvas.getContext('2d');
             const w = canvas.width;
             const h = canvas.height;
@@ -2322,20 +2356,32 @@
                 return;
             }
 
-            // Determine Axis Ranges
-            let minTime = data[0].time;
-            let maxTime = data[data.length - 1].time;
-            if (maxTime - minTime < 1.0) {
-                maxTime = minTime + 1.0; // Prevent divide by zero / scaling squish
-            }
-
-            // Determine local extreme limits for Y axis
-            let maxYVal = 0.1;
+            // Determine local extreme limits for Y axis (with a sensible unit-aware minimum baseline floor)
+            let maxYVal = 0.001;
             data.forEach(pt => {
                 const val = conversionFn(pt[yKey]);
                 if (val > maxYVal) maxYVal = val;
             });
-            maxYVal = maxYVal * 1.15; // Give 15% head room above trajectory peaks
+            
+            // Set dynamic baseline floors so low-value stationary jitter is never visually amplified
+            let minScaleFloor = 1.0;
+            if (yKey === 'speed') {
+                if (unitStr === 'km/h') minScaleFloor = 5.0;
+                else if (unitStr === 'mph') minScaleFloor = 3.0;
+                else if (unitStr === 'fps') minScaleFloor = 4.0;
+                else minScaleFloor = 1.0; // m/s
+            } else {
+                if (unitStr === 'cm') minScaleFloor = 50.0;
+                else if (unitStr === 'inches') minScaleFloor = 20.0;
+                else if (unitStr === 'feet') minScaleFloor = 3.0;
+                else minScaleFloor = 1.0; // meters
+            }
+
+            if (maxYVal < minScaleFloor) {
+                maxYVal = minScaleFloor;
+            } else {
+                maxYVal = maxYVal * 1.20; // 20% head room above actual peak values
+            }
 
             // Draw Axis Labels
             ctx.fillStyle = "#9ca3af";
@@ -2348,7 +2394,9 @@
                 const percent = i / yDivisions;
                 const value = maxYVal * percent;
                 const gy = paddingTop + chartHeight - (chartHeight * percent);
-                ctx.fillText(value.toFixed(1), paddingLeft - 8, gy);
+                // Clean decimals formatting to prevent overlaps
+                const formattedVal = value >= 10 ? value.toFixed(0) : value.toFixed(1);
+                ctx.fillText(formattedVal, paddingLeft - 8, gy);
             }
 
             // X-Axis time tick readouts
@@ -2474,8 +2522,25 @@
             const tMax = times[times.length - 1];
             const tSpan = tMax - tMin || 1;
 
-            let maxSpeed = Math.max(...history.map(d => convertSpeed(d.speed)), 0.1) * 1.15;
-            let maxDist = Math.max(...history.map(d => convertDistance(d.distance)), 0.1) * 1.15;
+            let maxSpeed = Math.max(...history.map(d => convertSpeed(d.speed)), 0.001);
+            let maxDist = Math.max(...history.map(d => convertDistance(d.distance)), 0.001);
+
+            // Apply dynamic baseline scaling floors on Student workbench chart curves
+            const speedUnit = state.outputUnits;
+            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
+
+            let minSpeedFloor = 1.0;
+            if (speedUnit === 'km/h') minSpeedFloor = 5.0;
+            else if (speedUnit === 'mph') minSpeedFloor = 3.0;
+            else if (speedUnit === 'fps') minSpeedFloor = 4.0;
+
+            let minDistFloor = 1.0;
+            if (distUnit === 'cm') minDistFloor = 50.0;
+            else if (distUnit === 'inches') minDistFloor = 20.0;
+            else if (distUnit === 'feet') minDistFloor = 3.0;
+
+            maxSpeed = maxSpeed < minSpeedFloor ? minSpeedFloor : maxSpeed * 1.20;
+            maxDist = maxDist < minDistFloor ? minDistFloor : maxDist * 1.20;
 
             // Render Axis details
             ctx.fillStyle = "#9ca3af";
@@ -2489,7 +2554,8 @@
                 for (let i = 0; i <= 5; i++) {
                     const val = maxSpeed * (i / 5);
                     const gy = padTop + plotH - (plotH * (i / 5));
-                    ctx.fillText(val.toFixed(1), padLeft - 8, gy);
+                    const formatted = val >= 10 ? val.toFixed(0) : val.toFixed(1);
+                    ctx.fillText(formatted, padLeft - 8, gy);
                 }
             }
 
@@ -2500,7 +2566,8 @@
                 for (let i = 0; i <= 5; i++) {
                     const val = maxDist * (i / 5);
                     const gy = padTop + plotH - (plotH * (i / 5));
-                    ctx.fillText(val.toFixed(1), padLeft + plotW + 6, gy);
+                    const formatted = val >= 10 ? val.toFixed(0) : val.toFixed(1);
+                    ctx.fillText(formatted, padLeft + plotW + 6, gy);
                 }
             }
 
@@ -2930,160 +2997,3 @@
                 targetPct = Math.max(0, Math.min(1.0, targetPct));
 
                 if (state.telemetry.draggedWorkshopHandle === 'start') {
-                    // Prevent start crossing over end
-                    state.telemetry.cropStartPercent = Math.min(targetPct, state.telemetry.cropEndPercent - 0.05);
-                } else {
-                    // Prevent end crossing over start
-                    state.telemetry.cropEndPercent = Math.max(targetPct, state.telemetry.cropStartPercent + 0.05);
-                }
-                drawWorkbenchChart();
-                return;
-            }
-
-            // Render hover coordinate inspecting tooltip
-            const history = state.telemetry.history;
-            if (history.length > 0 && coords.x >= padLeft && coords.x <= padLeft + plotW) {
-                const tMin = history[0].time;
-                const tMax = history[history.length - 1].time;
-                const tSpan = tMax - tMin || 1;
-
-                const hoverPct = (coords.x - padLeft) / plotW;
-                const hoverTime = tMin + tSpan * hoverPct;
-
-                // Find closest timestamp point in dataset
-                let closestPt = history[0];
-                let minDiff = Math.abs(closestPt.time - hoverTime);
-
-                history.forEach(pt => {
-                    const d = Math.abs(pt.time - hoverTime);
-                    if (d < minDiff) {
-                        minDiff = d;
-                        closestPt = pt;
-                    }
-                });
-
-                const spdStr = convertSpeed(closestPt.speed).toFixed(2);
-                const dUnits = state.scale.isSet ? state.scale.physicalUnits : 'm';
-                const distStr = convertDistance(closestPt.distance).toFixed(2);
-                elements.workbenchHoverTooltip.innerHTML = `t: <span class="text-white font-bold">${closestPt.time.toFixed(2)}s</span> | v: <span class="text-emerald-400 font-bold">${spdStr} ${state.outputUnits}</span> | s: <span class="text-sky-400 font-bold">${distStr} ${dUnits}</span>`;
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            state.telemetry.draggedWorkshopHandle = null;
-        });
-
-        // Connect Touch Support for Workshop Slide Markers
-        elements.workbenchCanvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                const mouseEvent = new MouseEvent('mousedown', {
-                    clientX: e.touches[0].clientX,
-                    clientY: e.touches[0].clientY
-                });
-                elements.workbenchCanvas.dispatchEvent(mouseEvent);
-            }
-        });
-
-        elements.workbenchCanvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1) {
-                const mouseEvent = new MouseEvent('mousemove', {
-                    clientX: e.touches[0].clientX,
-                    clientY: e.touches[0].clientY
-                });
-                elements.workbenchCanvas.dispatchEvent(mouseEvent);
-            }
-        });
-
-        window.addEventListener('touchend', () => {
-            state.telemetry.draggedWorkshopHandle = null;
-        });
-
-        // --- Data Extraction Trigger Handlers ---
-
-        // 1. Export Current Telemetry Data Points (CSV Format)
-        function triggerGeneralTelemetryCSV(history, prefix = "camspeed_telemetry") {
-            if (history.length === 0) {
-                alertUser("No Telemetry Data", "Please capture a tracking sweep or run before exporting data points.");
-                return;
-            }
-
-            const speedUnit = state.outputUnits;
-            const distUnit = state.scale.isSet ? state.scale.physicalUnits : 'm';
-
-            // Generate structured spreadsheet-friendly CSV content strings
-            let csv = "Time (seconds),Speed (meters/sec),Distance (meters),Speed (" + speedUnit + "),Distance (" + distUnit + ")\n";
-            history.forEach(row => {
-                const convertedSpeedVal = convertSpeed(row.speed);
-                const convertedDistanceVal = convertDistance(row.distance);
-                csv += `${row.time.toFixed(4)},${row.speed.toFixed(4)},${row.distance.toFixed(4)},${convertedSpeedVal.toFixed(4)},${convertedDistanceVal.toFixed(4)}\n`;
-            });
-
-            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-            downloadFile(csv, `${prefix}_${timestamp}.csv`, "text/csv");
-        }
-
-        elements.exportCsvBtn.addEventListener('click', () => {
-            triggerGeneralTelemetryCSV(state.telemetry.history);
-            logEvent("Exported high-precision telemetry CSV file successfully.");
-        });
-
-        // Workshop Tool: Export ONLY Selected Crop Range points as CSV
-        elements.workshopExportCsvBtn.addEventListener('click', () => {
-            const history = state.telemetry.history;
-            if (history.length === 0) {
-                alertUser("Empty Workbench", "Capture or restore some run data before exporting a range.");
-                return;
-            }
-
-            const times = history.map(d => d.time);
-            const tMin = times[0];
-            const tMax = times[times.length - 1];
-            const tSpan = tMax - tMin || 1;
-
-            const tStart = tMin + tSpan * state.telemetry.cropStartPercent;
-            const tEnd = tMin + tSpan * state.telemetry.cropEndPercent;
-
-            const selectedPoints = history.filter(pt => pt.time >= tStart && pt.time <= tEnd);
-
-            if (selectedPoints.length === 0) {
-                alertUser("No Points Selected", "Please expand your crop range handles to contain data points.");
-                return;
-            }
-
-            triggerGeneralTelemetryCSV(selectedPoints, "camspeed_selected_range");
-            logEvent(`Exported cropped range (${selectedPoints.length} points) as CSV.`);
-            playChime(900, "sine", 0.12, 0.05);
-        });
-
-        // Workshop Tool: Export Workbench Canvas Render as PNG Image File
-        elements.workshopExportImgBtn.addEventListener('click', () => {
-            const history = state.telemetry.history;
-            if (history.length === 0) {
-                alertUser("Empty Workbench", "Capture some telemetry data to generate a graph image export.");
-                return;
-            }
-
-            try {
-                // Fetch canvas data URL reference
-                const dataUrl = elements.workbenchCanvas.toDataURL("image/png");
-                
-                // Trigger local client side sandbox download
-                const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-                const a = document.createElement("a");
-                a.href = dataUrl;
-                a.download = `camspeed_workbench_graph_${timestamp}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                
-                logEvent("Exported snapshot of workbench telemetry curves as PNG.");
-                playChime(950, "sine", 0.15, 0.06);
-            } catch (err) {
-                console.error("Failed to capture workbench graph canvas", err);
-                alertUser("Image Capture Failure", "Browser security restrictions prevented capturing the drawing context.");
-            }
-        });
-
-    </script>
-</body>
-</html>
