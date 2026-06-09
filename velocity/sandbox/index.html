@@ -360,6 +360,26 @@
                                     <span>Broad Match</span>
                                 </div>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-800/60">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Sample Rate</label>
+                                    <select id="color-sample-rate" class="w-full bg-gray-850 border border-gray-700 rounded-xl px-2 py-1.5 text-[11px] text-gray-200 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                        <option value="5">5 Hz</option>
+                                        <option value="10" selected>10 Hz</option>
+                                        <option value="20">20 Hz</option>
+                                        <option value="30">30 Hz</option>
+                                        <option value="60">Max (60 Hz)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Smoothing</label>
+                                    <div class="flex items-center space-x-1.5 mt-1.5">
+                                        <input type="range" id="color-smoothing" min="0" max="95" value="40" class="flex-1 accent-brand-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                                        <span class="text-[10px] text-gray-400 font-mono w-7 text-right" id="color-smoothing-val">40%</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -806,7 +826,11 @@
                 currentSpeed: 0,
                 maxSpeed: 0,
                 cumulativeDistance: 0, // Cumulative physical distance covered (m)
-                trackingStartTime: 0
+                trackingStartTime: 0,
+                sampleRate: 10, // Hz
+                smoothingFactor: 0.40, // live EMA smoothing factor
+                lastSampleTime: 0, // ms
+                lastSampleDistance: 0 // meters
             },
 
             // Telemetry Live Chart Buffers & Workshop post-processing data blocks
@@ -933,6 +957,9 @@
             tripGate1Btn: document.getElementById('trip-gate-1'),
             tripGate2Btn: document.getElementById('trip-gate-2'),
             colorThresholdInput: document.getElementById('color-threshold'),
+            colorSampleRateInput: document.getElementById('color-sample-rate'),
+            colorSmoothingInput: document.getElementById('color-smoothing'),
+            colorSmoothingValText: document.getElementById('color-smoothing-val'),
             targetColorPreview: document.getElementById('target-color-preview'),
             colorNameText: document.getElementById('color-name-text'),
             colorRgbVal: document.getElementById('color-rgb-val'),
@@ -1229,6 +1256,18 @@
             playChime(330, "square", 0.1, 0.05);
         });
 
+        // Telemetry sample rate and smoothing settings listeners
+        elements.colorSampleRateInput.addEventListener('change', (e) => {
+            state.colorTracking.sampleRate = parseInt(e.target.value);
+            logEvent(`Telemetry sample rate updated to: ${state.colorTracking.sampleRate} Hz`);
+        });
+
+        elements.colorSmoothingInput.addEventListener('input', (e) => {
+            const pct = parseInt(e.target.value);
+            elements.colorSmoothingValText.textContent = `${pct}%`;
+            state.colorTracking.smoothingFactor = pct / 100;
+        });
+
         // Trigger manual simulation gate passes (ideal for debug/demonstration!)
         elements.tripGate1Btn.addEventListener('click', () => tripGate(1));
         elements.tripGate2Btn.addEventListener('click', () => tripGate(2));
@@ -1463,6 +1502,8 @@
             state.colorTracking.cumulativeDistance = 0;
             state.colorTracking.isLocked = false;
             state.colorTracking.trackingStartTime = performance.now();
+            state.colorTracking.lastSampleTime = 0;
+            state.colorTracking.lastSampleDistance = 0;
             state.telemetry.history = [];
             elements.elapsedTimeValue.textContent = "0.0s";
             elements.liveDistanceReadout.textContent = `Cumulative: 0.00 ${state.scale.isSet ? state.scale.physicalUnits : 'm'}`;
@@ -2086,43 +2127,54 @@
                     elements.trackerLockBadge.className = "text-[9px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider";
                 }
 
-                // Calculate speed of centroids
+                // Calculate incremental frame displacement & accumulate distance
                 if (state.colorTracking.lastCentroid) {
                     const last = state.colorTracking.lastCentroid;
-                    const dt = (now - last.time) / 1000; // time in seconds
+                    const frameDt = (now - last.time) / 1000;
 
-                    if (dt > 0.005) { // Protect division-by-zero anomalies
+                    if (frameDt > 0.005) {
                         const dx = centroidX - last.x;
                         const dy = centroidY - last.y;
                         const pxDistance = Math.sqrt(dx*dx + dy*dy);
 
-                        let calculatedSpeedMPS = 0;
                         let incrementalMeters = 0;
-
                         if (state.scale.isSet) {
-                            // High precision Calibration mapping speed calculations
                             let refMeters = state.scale.physicalVal;
                             const physUnits = state.scale.physicalUnits;
-
                             if (physUnits === 'cm') refMeters = state.scale.physicalVal / 100;
                             else if (physUnits === 'inches') refMeters = state.scale.physicalVal * 0.0254;
                             else if (physUnits === 'feet') refMeters = state.scale.physicalVal * 0.3048;
 
                             const metersPerPixel = refMeters / state.scale.pixels;
                             incrementalMeters = pxDistance * metersPerPixel;
-                            calculatedSpeedMPS = incrementalMeters / dt;
                         } else {
-                            // Fallback baseline ratio (assumes 1 pixel = 1mm equivalent index)
                             incrementalMeters = pxDistance * 0.001;
-                            calculatedSpeedMPS = incrementalMeters / dt;
                         }
 
-                        // Accumulate physical distance traversed
+                        // Accumulate physical distance traversed continuously
                         state.colorTracking.cumulativeDistance += incrementalMeters;
+                    }
+                }
+
+                // Initialize sample timing on first track lock
+                if (state.colorTracking.lastSampleTime === 0) {
+                    state.colorTracking.lastSampleTime = now;
+                    state.colorTracking.lastSampleDistance = state.colorTracking.cumulativeDistance;
+                }
+
+                // Check sample rate threshold downsampling
+                const sampleIntervalMs = 1000 / state.colorTracking.sampleRate;
+                const sampleDt = (now - state.colorTracking.lastSampleTime) / 1000;
+
+                if (now - state.colorTracking.lastSampleTime >= sampleIntervalMs || state.colorTracking.sampleRate >= 60) {
+                    if (sampleDt > 0.005) {
+                        // Calculate speed as average velocity over the sample interval
+                        const deltaDist = state.colorTracking.cumulativeDistance - state.colorTracking.lastSampleDistance;
+                        const calculatedSpeedMPS = deltaDist / sampleDt;
 
                         // Jitter elimination: Apply Exponential Moving Average filtering (low-pass smoothing)
-                        const smoothingFactor = 0.20; // Slightly higher damping for robust, stable graphing curves
-                        state.colorTracking.currentSpeed = (calculatedSpeedMPS * smoothingFactor) + (state.colorTracking.currentSpeed * (1 - smoothingFactor));
+                        const alpha = 1 - state.colorTracking.smoothingFactor;
+                        state.colorTracking.currentSpeed = (calculatedSpeedMPS * alpha) + (state.colorTracking.currentSpeed * (1 - alpha));
 
                         // Prevent artificial micro-shake noise
                         if (state.colorTracking.currentSpeed < 0.04) {
@@ -2132,6 +2184,10 @@
                         if (state.colorTracking.currentSpeed > state.colorTracking.maxSpeed) {
                             state.colorTracking.maxSpeed = state.colorTracking.currentSpeed;
                         }
+
+                        // Reset sample window markers
+                        state.colorTracking.lastSampleTime = now;
+                        state.colorTracking.lastSampleDistance = state.colorTracking.cumulativeDistance;
 
                         // Sync displays
                         updateSpeedDisplays(state.colorTracking.currentSpeed, state.colorTracking.maxSpeed);
@@ -2294,6 +2350,28 @@
                 minTime,
                 maxTime
             );
+        // Helper to trace a smooth Catmull-Rom spline curve passing through data points
+        function traceSplinePath(ctx, points, tension = 0.5) {
+            if (points.length === 0) return;
+            ctx.moveTo(points[0].x, points[0].y);
+            if (points.length < 2) return;
+            if (points.length === 2) {
+                ctx.lineTo(points[1].x, points[1].y);
+                return;
+            }
+            for (let i = 0; i < points.length - 1; i++) {
+                const p0 = i > 0 ? points[i - 1] : points[i];
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const p3 = i < points.length - 2 ? points[i + 2] : p2;
+                
+                const cp1x = p1.x + (p2.x - p0.x) / 6 * tension;
+                const cp1y = p1.y + (p2.y - p0.y) / 6 * tension;
+                const cp2x = p2.x - (p3.x - p1.x) / 6 * tension;
+                const cp2y = p2.y - (p3.y - p1.y) / 6 * tension;
+                
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+            }
         }
 
         function drawTelemetryChart(canvas, data, yKey, label, strokeColor, fillColor, unitStr, conversionFn, minTime, maxTime) {
@@ -2428,31 +2506,34 @@
             ctx.fillStyle = fillGrad;
             ctx.beginPath();
             ctx.moveTo(mappedPoints[0].x, paddingTop + chartHeight);
-            mappedPoints.forEach(pt => {
-                ctx.lineTo(pt.x, pt.y);
-            });
+            traceSplinePath(ctx, mappedPoints, 0.5);
             ctx.lineTo(mappedPoints[mappedPoints.length - 1].x, paddingTop + chartHeight);
             ctx.closePath();
             ctx.fill();
 
-            // Draw Primary Data Stroke Line
+            // Draw Primary Data Stroke Line with Glowing Effect
+            ctx.save();
             ctx.strokeStyle = strokeColor;
             ctx.lineWidth = 2.5;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = strokeColor;
             ctx.beginPath();
-            ctx.moveTo(mappedPoints[0].x, mappedPoints[0].y);
-            for (let i = 1; i < mappedPoints.length; i++) {
-                ctx.lineTo(mappedPoints[i].x, mappedPoints[i].y);
-            }
+            traceSplinePath(ctx, mappedPoints, 0.5);
             ctx.stroke();
+            ctx.restore();
 
             // Draw pulsing endpoint dot tracker
             const lastPt = mappedPoints[mappedPoints.length - 1];
             ctx.fillStyle = strokeColor;
+            ctx.save();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = strokeColor;
             ctx.beginPath();
             ctx.arc(lastPt.x, lastPt.y, 4, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
         }
 
         // On document load startup sequences
@@ -2460,6 +2541,11 @@
             loadCameraDevices();
             // Show guide instructions initially
             elements.instructionsModal.classList.remove('hidden');
+
+            // Initialize control inputs from initial state
+            elements.colorSampleRateInput.value = state.colorTracking.sampleRate;
+            elements.colorSmoothingInput.value = Math.round(state.colorTracking.smoothingFactor * 100);
+            elements.colorSmoothingValText.textContent = `${Math.round(state.colorTracking.smoothingFactor * 100)}%`;
         });
 
 
