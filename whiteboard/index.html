@@ -1,37 +1,4 @@
-
-<!-- ===================================================================================== -->
-<!-- BEGINNER COMMENTED VERSION -->
-<!-- ===================================================================================== -->
-<!--
-This file is a collaborative infinite whiteboard application.
-
-Major features:
-1. Drawing with pen, eraser, arrows, rectangles, and circles
-2. Zooming and panning around the canvas
-3. Firebase live syncing so multiple users can draw together
-4. Undo system
-5. Timer widget
-6. Bell schedule widget
-7. Touchscreen + mouse support
-8. Infinite canvas feel with grid background
-
-The comments added in this version are designed for beginners learning:
-- HTML structure
-- CSS styling
-- JavaScript organization
-- Canvas drawing
-- Firebase syncing
-- Event handling
-- Animation loops
-- UI state management
-
-IMPORTANT:
-- No functionality has been changed
-- The original logic is preserved exactly
-- Only comments were added
--->
-<!-- ===================================================================================== -->
-
+<!-- BEGINNER COMMENTED VERSION: functionality unchanged; comments added only -->
 <!-- updated 2026-04-01 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -42,13 +9,8 @@ IMPORTANT:
     <title>Infinite Whiteboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- ================================================================================= -->
-    <!-- CSS STYLES -->
-    <!-- Controls appearance of the whiteboard, toolbar, widgets, buttons, etc. -->
-    <!-- ================================================================================= -->
     <style>
-
+        /* ==================== CSS STYLES ==================== */
         body,
         html {
             margin: 0;
@@ -414,41 +376,21 @@ IMPORTANT:
         </div>
     </div>
 
-    
-    <!-- ================================================================================= -->
-    <!-- MAIN JAVASCRIPT APPLICATION -->
-    <!-- All whiteboard logic begins here -->
-    <!-- ================================================================================= -->
     <script type="module">
-
+        // ==================== MAIN APPLICATION CODE ====================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         lucide.createIcons();
 
-        
-        // =================================================================================
-        // APPLICATION STATE
-        // =================================================================================
-        // These variables store the current status of the whiteboard.
-        // Think of this as the "memory" of the application.
-        //
-        // Examples:
-        // - Which tool is selected?
-        // - What color is active?
-        // - What strokes exist?
-        // - What is the zoom level?
-        // =================================================================================
-
-        // ─── STATE
- ────────────────────────────────────────────────────────────────────
-        // Current tool settings selected by the user
+        // ==================== APPLICATION STATE ====================
+        // Stores tool settings, zoom level, strokes, and interaction state.
+        // ─── STATE ────────────────────────────────────────────────────────────────────
+        // Current selected tool and drawing settings
         const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true };
-        // Controls camera position and zoom level
         const view = { x: 0, y: 0, zoom: 1 };
 
-        // Stores every completed drawing stroke on the board
         let strokes = [];          // ground truth from Firestore
         let undoStack = [];        // array of {type:'add'|'delete', strokes:[...]} for undo
         let isDirty = true;
@@ -474,23 +416,11 @@ IMPORTANT:
         // Stroke-erase hit-test state
         let erasedThisGesture = new Set(); // ids erased so we don't double-erase
 
-        
-        // =================================================================================
-        // CANVAS SETUP
-        // =================================================================================
-        // The app uses TWO canvases:
-        //
-        // 1. mainCanvas
-        //    Stores finished drawings permanently.
-        //
-        // 2. overlayCanvas
-        //    Used for temporary previews while drawing.
-        //
-        // Using two canvases improves performance and creates smoother drawing.
-        // =================================================================================
-
-        // ─── CANVAS SETUP
- ─────────────────────────────────────────────────────────────
+        // ==================== CANVAS SETUP ====================
+        // Two canvases are used:
+        // 1. mainCanvas = permanent drawings
+        // 2. overlayCanvas = temporary previews while drawing
+        // ─── CANVAS SETUP ─────────────────────────────────────────────────────────────
         const container = document.getElementById('canvas-container');
         const mainCanvas = document.getElementById('mainCanvas');
         const mainCtx = mainCanvas.getContext('2d', { alpha: true });
@@ -506,20 +436,9 @@ IMPORTANT:
         window.addEventListener('resize', resize);
         resize();
 
-        
-        // =================================================================================
-        // FIREBASE SETUP
-        // =================================================================================
-        // Firebase is used for:
-        // - Authentication
-        // - Live syncing
-        // - Cloud storage of strokes
-        //
-        // This allows multiple users to draw together in real time.
-        // =================================================================================
-
-        // ─── FIREBASE
- ─────────────────────────────────────────────────────────────────
+        // ==================== FIREBASE ====================
+        // Handles authentication and real-time syncing.
+        // ─── FIREBASE ─────────────────────────────────────────────────────────────────
         let firebaseConfig;
         if (typeof __firebase_config !== 'undefined') {
             firebaseConfig = JSON.parse(__firebase_config);
@@ -582,20 +501,9 @@ IMPORTANT:
             }
         });
 
-        
-        // =================================================================================
-        // DRAWING HELPER FUNCTIONS
-        // =================================================================================
-        // These helper functions simplify drawing logic.
-        //
-        // Instead of repeating code everywhere, helper functions allow us to:
-        // - Reuse drawing logic
-        // - Keep code organized
-        // - Improve readability
-        // =================================================================================
-
-        // ─── DRAWING HELPERS
- ──────────────────────────────────────────────────────────
+        // ==================== DRAWING HELPERS ====================
+        // Reusable drawing functions for lines and shapes.
+        // ─── DRAWING HELPERS ──────────────────────────────────────────────────────────
         function simplifyPoints(points, tol = 1.5) {
             if (points.length <= 2) return points;
             const out = [points[0]];
@@ -664,26 +572,9 @@ IMPORTANT:
             else if (stroke.type === 'circle' && stroke.points.length > 1) drawCircle(ctx, stroke.points[0], stroke.points[1], stroke.color, stroke.thickness);
         }
 
-        
-        // =================================================================================
-        // RENDERING SYSTEM
-        // =================================================================================
-        // Rendering means drawing graphics to the screen.
-        //
-        // This app uses an OFFSCREEN CANVAS for performance.
-        //
-        // Why?
-        // Redrawing thousands of strokes every frame is expensive.
-        //
-        // Instead:
-        // 1. Draw everything once onto an offscreen canvas
-        // 2. Copy the result onto the visible canvas
-        //
-        // This greatly improves performance.
-        // =================================================================================
-
-        // ─── OFFSCREEN / MAIN RENDER
- ──────────────────────────────────────────────────
+        // ==================== RENDERING SYSTEM ====================
+        // Uses an offscreen canvas for performance.
+        // ─── OFFSCREEN / MAIN RENDER ──────────────────────────────────────────────────
         // We render all committed strokes to an offscreen canvas.
         // The main canvas composites offscreen.
 
@@ -721,27 +612,13 @@ IMPORTANT:
 
         function renderLoop() {
             if (isDirty) { redrawMain(); isDirty = false; }
-            // Starts the continuous rendering loop
-        requestAnimationFrame(renderLoop);
+            requestAnimationFrame(renderLoop);
         }
-        // Starts the continuous rendering loop
         requestAnimationFrame(renderLoop);
 
-        
-        // =================================================================================
-        // USER INPUT HANDLING
-        // =================================================================================
-        // This section handles:
-        // - Mouse input
-        // - Touch input
-        // - Stylus input
-        // - Multi-touch gestures
-        //
-        // Pointer Events are used because they work across all device types.
-        // =================================================================================
-
-        // ─── INPUT
- ────────────────────────────────────────────────────────────────────
+        // ==================== USER INPUT ====================
+        // Handles mouse, touch, stylus, and gestures.
+        // ─── INPUT ────────────────────────────────────────────────────────────────────
         function getCanvasPoint(clientX, clientY) {
             const rect = overlayCanvas.getBoundingClientRect();
             return { x: ((clientX - rect.left) - view.x) / view.zoom, y: ((clientY - rect.top) - view.y) / view.zoom };
@@ -1012,21 +889,7 @@ IMPORTANT:
             offscreenDirty = true; isDirty = true; updateZoomUI();
         }, { passive: false });
 
-        
-        // =================================================================================
-        // UNDO SYSTEM
-        // =================================================================================
-        // The undo system stores previous actions in a stack.
-        //
-        // Each action contains:
-        // - What happened
-        // - Which strokes were affected
-        //
-        // This allows actions to be reversed later.
-        // =================================================================================
-
-        // ─── UNDO
- ─────────────────────────────────────────────────────────────────────
+        // ─── UNDO ─────────────────────────────────────────────────────────────────────
         async function undo() {
             if (undoStack.length === 0) return;
             const action = undoStack.pop();
@@ -1053,21 +916,7 @@ IMPORTANT:
             offscreenDirty = true; isDirty = true;
         }
 
-        
-        // =================================================================================
-        // USER INTERFACE (UI)
-        // =================================================================================
-        // This section controls:
-        // - Toolbar buttons
-        // - Tool switching
-        // - Colors
-        // - Thickness slider
-        // - Cursor updates
-        // - Grid toggling
-        // =================================================================================
-
-        // ─── UI / TOOLBAR
- ─────────────────────────────────────────────────────────────
+        // ─── UI / TOOLBAR ─────────────────────────────────────────────────────────────
         function updateZoomUI() {
             document.getElementById('btn-zoom-reset').innerText = `${Math.round(view.zoom * 100)}%`;
         }
@@ -1158,21 +1007,7 @@ IMPORTANT:
 
         updateUI(); updateZoomUI();
 
-        
-        // =================================================================================
-        // BELL SCHEDULE DATA
-        // =================================================================================
-        // This is the schedule used by the bell schedule widget.
-        //
-        // Each object contains:
-        // - name  = period name
-        // - start = start time
-        // - end   = end time
-        // - label = display text
-        // =================================================================================
-
-        // ─── BELL SCHEDULE DATA
- ───────────────────────────────────────────────────────
+        // ─── BELL SCHEDULE DATA ───────────────────────────────────────────────────────
         const bellSchedule = [
             { name: "Homeroom",           start: "07:35", end: "07:58", label: "7:35 - 7:58"   },
             { name: "1st Period",         start: "08:01", end: "08:47", label: "8:01 - 8:47"   },
@@ -1185,17 +1020,7 @@ IMPORTANT:
             { name: "8th Period",         start: "13:44", end: "14:30", label: "1:44 - 2:30"   },
         ];
 
-        
-        // =================================================================================
-        // AUDIO SYSTEM
-        // =================================================================================
-        // Uses the Web Audio API to generate a bell sound.
-        //
-        // Oscillators generate sound waves mathematically.
-        // =================================================================================
-
-        // ─── AUDIO
- ────────────────────────────────────────────────────────────────────
+        // ─── AUDIO ────────────────────────────────────────────────────────────────────
         function playBell() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1209,19 +1034,7 @@ IMPORTANT:
             } catch(e) {}
         }
 
-        
-        // =================================================================================
-        // DRAGGABLE WINDOW SYSTEM
-        // =================================================================================
-        // Allows floating widgets to be dragged around the screen.
-        //
-        // Used for:
-        // - Timer widget
-        // - Bell schedule widget
-        // =================================================================================
-
-        // ─── DRAGGABLE HELPER
- ─────────────────────────────────────────────────────────
+        // ─── DRAGGABLE HELPER ─────────────────────────────────────────────────────────
         function makeDraggable(el, handle) {
             let ox = 0, oy = 0;
             handle.addEventListener('mousedown', e => {
@@ -1243,21 +1056,7 @@ IMPORTANT:
             });
         }
 
-        
-        // =================================================================================
-        // TIMER WIDGET
-        // =================================================================================
-        // A floating countdown timer.
-        //
-        // Features:
-        // - Start / pause
-        // - Reset
-        // - Custom time input
-        // - Audio bell when finished
-        // =================================================================================
-
-        // ─── TIMER WIDGET
- ─────────────────────────────────────────────────────────────
+        // ─── TIMER WIDGET ─────────────────────────────────────────────────────────────
         {
             const timerWidget  = document.getElementById('wb-timer-widget');
             const timerDisplay = document.getElementById('wb-timer-display');
@@ -1321,18 +1120,7 @@ IMPORTANT:
             };
         }
 
-        
-        // =================================================================================
-        // BELL SCHEDULE WIDGET
-        // =================================================================================
-        // Displays:
-        // - Current active class period
-        // - Time remaining
-        // - Full school schedule
-        // =================================================================================
-
-        // ─── BELL SCHEDULE WIDGET
- ─────────────────────────────────────────────────────
+        // ─── BELL SCHEDULE WIDGET ─────────────────────────────────────────────────────
         {
             const schedWidget  = document.getElementById('wb-schedule-widget');
             const largeTimer   = document.getElementById('wb-sched-large-timer');
@@ -1381,15 +1169,7 @@ IMPORTANT:
             };
         }
 
-        
-        // =================================================================================
-        // TOOLBAR WIDGET TOGGLES
-        // =================================================================================
-        // These buttons show/hide floating widgets.
-        // =================================================================================
-
-        // ─── TOOLBAR TOGGLE BUTTONS
- ───────────────────────────────────────────────────
+        // ─── TOOLBAR TOGGLE BUTTONS ───────────────────────────────────────────────────
         document.getElementById('btn-toggle-timer').onclick = () => {
             const w = document.getElementById('wb-timer-widget');
             const btn = document.getElementById('btn-toggle-timer');
