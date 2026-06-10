@@ -64,6 +64,152 @@
         .cursor-eraser {
             cursor: cell;
         }
+
+        /* Floating widget panels */
+        .wb-widget {
+            position: fixed;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            z-index: 60;
+            min-width: 200px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .wb-widget-handle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px 6px;
+            cursor: grab;
+            border-bottom: 1px solid rgba(99,102,241,0.15);
+        }
+        .wb-widget-handle:active { cursor: grabbing; }
+        .wb-widget-title {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #818cf8;
+        }
+        .wb-widget-close {
+            background: none;
+            border: none;
+            color: #475569;
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            border-radius: 4px;
+            transition: color 0.15s;
+        }
+        .wb-widget-close:hover { color: #e2e8f0; }
+        .wb-widget-body { padding: 10px 12px 12px; }
+
+        /* Timer widget */
+        #wb-timer-display {
+            font-family: 'Courier New', monospace;
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #f59e0b;
+            text-align: center;
+            letter-spacing: 0.04em;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+        .wb-timer-controls { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
+        .wb-timer-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .wb-timer-btn:hover { background: #334155; }
+        .wb-timer-btn.running {
+            background: #7f1d1d;
+            border-color: #991b1b;
+            color: #fca5a5;
+        }
+        .wb-duration-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .wb-duration-row label { font-size: 10px; color: #64748b; }
+        .wb-duration-input {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            color: #94a3b8;
+            font-size: 11px;
+            width: 48px;
+            padding: 2px 6px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .wb-duration-input:focus { outline: none; border-color: #4f46e5; color: #e2e8f0; }
+
+        /* Bell schedule widget */
+        #wb-schedule-widget { width: 270px; }
+        .wb-large-timer {
+            background: rgba(99,102,241,0.1);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .wb-large-timer-label { font-size: 9px; color: #818cf8; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+        .wb-large-timer-display { font-family: 'Courier New', monospace; font-size: 2rem; font-weight: 800; color: #34d399; letter-spacing: 0.04em; }
+        .wb-active-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #818cf8;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .wb-active-name {
+            background: rgba(99,102,241,0.2);
+            color: #a5b4fc;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 10px;
+        }
+        .wb-sched-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 4px;
+            border-bottom: 1px solid rgba(30,41,59,0.8);
+            font-size: 11px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .wb-sched-row.active-period {
+            background: rgba(99,102,241,0.12);
+            color: #a5b4fc;
+            font-weight: 700;
+        }
+        .wb-sched-row span:first-child { color: #94a3b8; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wb-sched-row.active-period span:first-child { color: #a5b4fc; }
+        .wb-sched-row span:last-child { font-family: 'Courier New', monospace; font-size: 9px; color: #475569; }
+        .wb-sched-row.active-period span:last-child { color: #818cf8; }
+
+        /* Widget toggle buttons in toolbar */
+        .wb-widget-toggle.active-widget {
+            background-color: #4f46e5 !important;
+            color: white !important;
+        }
     </style>
 </head>
 
@@ -150,6 +296,15 @@
         </div>
         <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
 
+        <!-- Widget Toggles -->
+        <button id="btn-toggle-timer"
+            class="wb-widget-toggle p-2 rounded-lg hover:bg-amber-50 text-amber-500 transition-all duration-200"
+            title="Toggle Timer"><i data-lucide="timer" class="w-5 h-5"></i></button>
+        <button id="btn-toggle-schedule"
+            class="wb-widget-toggle p-2 rounded-lg hover:bg-indigo-50 text-indigo-500 transition-all duration-200"
+            title="Toggle Bell Schedule"><i data-lucide="bell" class="w-5 h-5"></i></button>
+        <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
+
         <!-- Undo -->
         <button id="btn-undo"
             class="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all duration-200"
@@ -175,6 +330,48 @@
         <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
         <button id="btn-zoom-out" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"><i
                 data-lucide="minus" class="w-5 h-5"></i></button>
+    </div>
+
+    <!-- Timer Widget -->
+    <div id="wb-timer-widget" class="wb-widget hidden" style="top: 80px; right: 20px;">
+        <div class="wb-widget-handle" id="wb-timer-handle">
+            <span class="wb-widget-title">⏱ Timer</span>
+            <button class="wb-widget-close" id="wb-timer-close"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        </div>
+        <div class="wb-widget-body">
+            <div id="wb-timer-display">05:00</div>
+            <div class="wb-timer-controls">
+                <button class="wb-timer-btn" id="wb-timer-toggle">Start</button>
+                <button class="wb-timer-btn" id="wb-timer-reset">Reset</button>
+            </div>
+            <div class="wb-duration-row">
+                <label for="wb-timer-mins">Set:</label>
+                <input type="number" id="wb-timer-mins" class="wb-duration-input" value="5" min="0" max="99">
+                <label>min</label>
+                <input type="number" id="wb-timer-secs" class="wb-duration-input" value="0" min="0" max="59">
+                <label>sec</label>
+                <button class="wb-timer-btn" id="wb-timer-set" style="padding: 2px 8px; font-size:10px;">Set</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bell Schedule Widget -->
+    <div id="wb-schedule-widget" class="wb-widget hidden" style="top: 80px; left: 20px;">
+        <div class="wb-widget-handle" id="wb-schedule-handle">
+            <span class="wb-widget-title">🔔 Bell Schedule</span>
+            <button class="wb-widget-close" id="wb-schedule-close"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        </div>
+        <div class="wb-widget-body">
+            <div class="wb-large-timer">
+                <div class="wb-large-timer-label">Time Remaining</div>
+                <div class="wb-large-timer-display" id="wb-sched-large-timer">--:--</div>
+            </div>
+            <div class="wb-active-bar">
+                <span>Active</span>
+                <span class="wb-active-name" id="wb-sched-current">--</span>
+            </div>
+            <div id="wb-sched-list"></div>
+        </div>
     </div>
 
     <script type="module">
@@ -791,6 +988,182 @@
         });
 
         updateUI(); updateZoomUI();
+
+        // ─── BELL SCHEDULE DATA ───────────────────────────────────────────────────────
+        const bellSchedule = [
+            { name: "Homeroom",           start: "07:35", end: "07:58", label: "7:35 - 7:58"   },
+            { name: "1st Period",         start: "08:01", end: "08:47", label: "8:01 - 8:47"   },
+            { name: "2nd Period",         start: "08:50", end: "09:36", label: "8:50 - 9:36"   },
+            { name: "3rd Period",         start: "09:39", end: "10:25", label: "9:39 - 10:25"  },
+            { name: "4th Period",         start: "10:28", end: "11:14", label: "10:28 - 11:14" },
+            { name: "5th (7th Lunch)",    start: "11:17", end: "12:03", label: "11:17 - 12:03" },
+            { name: "6th (8th Lunch)",    start: "12:06", end: "12:52", label: "12:06 - 12:52" },
+            { name: "7th Period",         start: "12:55", end: "13:41", label: "12:55 - 1:41"  },
+            { name: "8th Period",         start: "13:44", end: "14:30", label: "1:44 - 2:30"   },
+        ];
+
+        // ─── AUDIO ────────────────────────────────────────────────────────────────────
+        function playBell() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const [o1, o2, gain] = [ctx.createOscillator(), ctx.createOscillator(), ctx.createGain()];
+                o1.type = 'sine';     o1.frequency.value = 880;
+                o2.type = 'triangle'; o2.frequency.value = 440;
+                gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+                [o1, o2].forEach(o => { o.connect(gain); o.start(); o.stop(ctx.currentTime + 1.2); });
+                gain.connect(ctx.destination);
+            } catch(e) {}
+        }
+
+        // ─── DRAGGABLE HELPER ─────────────────────────────────────────────────────────
+        function makeDraggable(el, handle) {
+            let ox = 0, oy = 0;
+            handle.addEventListener('mousedown', e => {
+                if (e.target.closest('button,input')) return;
+                e.preventDefault();
+                ox = e.clientX - el.offsetLeft;
+                oy = e.clientY - el.offsetTop;
+                const move = mv => {
+                    el.style.left = `${mv.clientX - ox}px`;
+                    el.style.top  = `${mv.clientY - oy}px`;
+                    el.style.right = 'auto';
+                };
+                const up = () => {
+                    document.removeEventListener('mousemove', move);
+                    document.removeEventListener('mouseup', up);
+                };
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+            });
+        }
+
+        // ─── TIMER WIDGET ─────────────────────────────────────────────────────────────
+        {
+            const timerWidget  = document.getElementById('wb-timer-widget');
+            const timerDisplay = document.getElementById('wb-timer-display');
+            const toggleBtn    = document.getElementById('wb-timer-toggle');
+            const resetBtn     = document.getElementById('wb-timer-reset');
+            const setBtn       = document.getElementById('wb-timer-set');
+            const minsInput    = document.getElementById('wb-timer-mins');
+            const secsInput    = document.getElementById('wb-timer-secs');
+
+            let tInterval = null;
+            let tDuration = 300; // seconds
+
+            const fmt = () => `${String(Math.floor(tDuration / 60)).padStart(2,'0')}:${String(tDuration % 60).padStart(2,'0')}`;
+
+            function setRunning(running) {
+                if (running) {
+                    toggleBtn.textContent = 'Pause';
+                    toggleBtn.classList.add('running');
+                } else {
+                    toggleBtn.textContent = 'Start';
+                    toggleBtn.classList.remove('running');
+                }
+            }
+
+            toggleBtn.onclick = () => {
+                if (tInterval) {
+                    clearInterval(tInterval); tInterval = null;
+                    setRunning(false);
+                } else {
+                    setRunning(true);
+                    tInterval = setInterval(() => {
+                        if (tDuration > 0) { tDuration--; timerDisplay.textContent = fmt(); }
+                        else {
+                            clearInterval(tInterval); tInterval = null;
+                            setRunning(false);
+                            playBell();
+                        }
+                    }, 1000);
+                }
+            };
+
+            resetBtn.onclick = () => {
+                clearInterval(tInterval); tInterval = null;
+                setRunning(false);
+                timerDisplay.textContent = fmt();
+            };
+
+            setBtn.onclick = () => {
+                clearInterval(tInterval); tInterval = null;
+                setRunning(false);
+                const m = Math.max(0, parseInt(minsInput.value) || 0);
+                const s = Math.max(0, Math.min(59, parseInt(secsInput.value) || 0));
+                tDuration = m * 60 + s;
+                timerDisplay.textContent = fmt();
+            };
+
+            makeDraggable(timerWidget, document.getElementById('wb-timer-handle'));
+            document.getElementById('wb-timer-close').onclick = () => {
+                timerWidget.classList.add('hidden');
+                document.getElementById('btn-toggle-timer').classList.remove('active-widget');
+            };
+        }
+
+        // ─── BELL SCHEDULE WIDGET ─────────────────────────────────────────────────────
+        {
+            const schedWidget  = document.getElementById('wb-schedule-widget');
+            const largeTimer   = document.getElementById('wb-sched-large-timer');
+            const activeName   = document.getElementById('wb-sched-current');
+            const listEl       = document.getElementById('wb-sched-list');
+
+            // Build rows
+            bellSchedule.forEach((s, i) => {
+                const row = document.createElement('div');
+                row.className = 'wb-sched-row';
+                row.id = `wb-sched-row-${i}`;
+                row.innerHTML = `<span>${s.name}</span><span>${s.label}</span>`;
+                listEl.appendChild(row);
+            });
+
+            function schedTick() {
+                const now  = new Date();
+                const secs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                let currentName = 'Passing Period', activeEnd = null;
+
+                bellSchedule.forEach((s, i) => {
+                    const [sh, sm] = s.start.split(':').map(Number);
+                    const [eh, em] = s.end.split(':').map(Number);
+                    const sSecs = sh * 3600 + sm * 60;
+                    const eSecs = eh * 3600 + em * 60;
+                    const row = document.getElementById(`wb-sched-row-${i}`);
+                    if (row) row.classList.toggle('active-period', secs >= sSecs && secs < eSecs);
+                    if (secs >= sSecs && secs < eSecs) { currentName = s.name; activeEnd = eSecs; }
+                });
+
+                activeName.textContent = currentName;
+                if (activeEnd !== null && activeEnd > secs) {
+                    const diff = activeEnd - secs;
+                    largeTimer.textContent = `${Math.floor(diff / 60)}:${String(diff % 60).padStart(2,'0')}`;
+                } else {
+                    largeTimer.textContent = '--:--';
+                }
+                setTimeout(schedTick, 1000);
+            }
+            schedTick();
+
+            makeDraggable(schedWidget, document.getElementById('wb-schedule-handle'));
+            document.getElementById('wb-schedule-close').onclick = () => {
+                schedWidget.classList.add('hidden');
+                document.getElementById('btn-toggle-schedule').classList.remove('active-widget');
+            };
+        }
+
+        // ─── TOOLBAR TOGGLE BUTTONS ───────────────────────────────────────────────────
+        document.getElementById('btn-toggle-timer').onclick = () => {
+            const w = document.getElementById('wb-timer-widget');
+            const btn = document.getElementById('btn-toggle-timer');
+            w.classList.toggle('hidden');
+            btn.classList.toggle('active-widget', !w.classList.contains('hidden'));
+        };
+        document.getElementById('btn-toggle-schedule').onclick = () => {
+            const w = document.getElementById('wb-schedule-widget');
+            const btn = document.getElementById('btn-toggle-schedule');
+            w.classList.toggle('hidden');
+            btn.classList.toggle('active-widget', !w.classList.contains('hidden'));
+        };
     </script>
 </body>
 
