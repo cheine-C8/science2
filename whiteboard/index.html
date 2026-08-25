@@ -1,5 +1,4 @@
-<!-- BEGINNER COMMENTED VERSION: functionality unchanged; comments added only -->
-<!-- updated 2026-04-01 -->
+<!-- updated 2026-08-25 — added Classroomscreen-style widgets -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,8 +8,8 @@
     <title>Infinite Whiteboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* ==================== CSS STYLES ==================== */
         body,
         html {
             margin: 0;
@@ -67,150 +66,233 @@
             cursor: cell;
         }
 
-        /* Floating widget panels */
-        .wb-widget {
-            position: fixed;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(99, 102, 241, 0.25);
-            border-radius: 14px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            z-index: 60;
-            min-width: 200px;
-            user-select: none;
-            -webkit-user-select: none;
+        /* ─── WIDGETS ─────────────────────────────────────────────────────────── */
+        #widget-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 30;
+            pointer-events: none;
+            overflow: hidden;
         }
-        .wb-widget-handle {
+
+        .widget {
+            position: absolute;
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            min-width: 180px;
+            min-height: 120px;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .widget.focused {
+            box-shadow: 0 0 0 2px #2563eb, 0 12px 36px rgba(0, 0, 0, 0.18);
+        }
+
+        .widget-head {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px 6px;
-            cursor: grab;
-            border-bottom: 1px solid rgba(99,102,241,0.15);
-        }
-        .wb-widget-handle:active { cursor: grabbing; }
-        .wb-widget-title {
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.12em;
+            gap: 6px;
+            padding: 6px 8px 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: .02em;
             text-transform: uppercase;
-            color: #818cf8;
+            cursor: grab;
+            border-bottom: 1px solid #f1f5f9;
+            touch-action: none;
         }
-        .wb-widget-close {
-            background: none;
-            border: none;
-            color: #475569;
-            cursor: pointer;
-            padding: 2px;
-            display: flex;
-            border-radius: 4px;
-            transition: color 0.15s;
-        }
-        .wb-widget-close:hover { color: #e2e8f0; }
-        .wb-widget-body { padding: 10px 12px 12px; }
 
-        /* Timer widget */
-        #wb-timer-display {
-            font-family: 'Courier New', monospace;
-            font-size: 2.4rem;
-            font-weight: 800;
-            color: #f59e0b;
-            text-align: center;
-            letter-spacing: 0.04em;
-            line-height: 1;
-            margin-bottom: 10px;
+        .widget-head:active { cursor: grabbing; }
+        .widget-head .spacer { flex: 1; }
+
+        .widget-head button {
+            width: 26px; height: 26px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #94a3b8;
         }
-        .wb-timer-controls { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
-        .wb-timer-btn {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #cbd5e1;
-            font-size: 11px;
+        .widget-head button:hover { background: #f1f5f9; color: #334155; }
+        .widget-head button.close:hover { background: #fee2e2; color: #ef4444; }
+        .widget-head button svg { width: 15px; height: 15px; }
+
+        .widget-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            overflow: auto;
+        }
+
+        .widget-resize {
+            position: absolute;
+            right: 0; bottom: 0;
+            width: 22px; height: 22px;
+            cursor: nwse-resize;
+            touch-action: none;
+        }
+        .widget-resize::after {
+            content: '';
+            position: absolute;
+            right: 6px; bottom: 6px;
+            width: 8px; height: 8px;
+            border-right: 2px solid #cbd5e1;
+            border-bottom: 2px solid #cbd5e1;
+            border-radius: 0 0 3px 0;
+        }
+
+        /* Big numeric readouts (clock, timer, stopwatch) scale with widget width */
+        .readout {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            font-variant-numeric: tabular-nums;
             font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .wb-timer-btn:hover { background: #334155; }
-        .wb-timer-btn.running {
-            background: #7f1d1d;
-            border-color: #991b1b;
-            color: #fca5a5;
-        }
-        .wb-duration-row {
+            color: #0f172a;
+            line-height: 1;
+            text-align: center;
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            font-size: var(--readout, 48px);
         }
-        .wb-duration-row label { font-size: 10px; color: #64748b; }
-        .wb-duration-input {
-            background: #0f172a;
-            border: 1px solid #1e293b;
-            color: #94a3b8;
-            font-size: 11px;
-            width: 48px;
-            padding: 2px 6px;
-            border-radius: 5px;
-            text-align: center;
-        }
-        .wb-duration-input:focus { outline: none; border-color: #4f46e5; color: #e2e8f0; }
 
-        /* Bell schedule widget */
-        #wb-schedule-widget { width: 270px; }
-        .wb-large-timer {
-            background: rgba(99,102,241,0.1);
-            border: 1px solid rgba(99,102,241,0.2);
+        .wbtn {
+            padding: 6px 12px;
             border-radius: 10px;
-            padding: 8px;
-            text-align: center;
-            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #334155;
+            transition: background .15s;
         }
-        .wb-large-timer-label { font-size: 9px; color: #818cf8; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-        .wb-large-timer-display { font-family: 'Courier New', monospace; font-size: 2rem; font-weight: 800; color: #34d399; letter-spacing: 0.04em; }
-        .wb-active-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 10px;
-            font-weight: 700;
-            color: #818cf8;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 6px;
-        }
-        .wb-active-name {
-            background: rgba(99,102,241,0.2);
-            color: #a5b4fc;
-            border-radius: 4px;
-            padding: 1px 6px;
-            font-size: 10px;
-        }
-        .wb-sched-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 4px;
-            border-bottom: 1px solid rgba(30,41,59,0.8);
-            font-size: 11px;
-            border-radius: 4px;
-            transition: background 0.15s;
-        }
-        .wb-sched-row.active-period {
-            background: rgba(99,102,241,0.12);
-            color: #a5b4fc;
-            font-weight: 700;
-        }
-        .wb-sched-row span:first-child { color: #94a3b8; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .wb-sched-row.active-period span:first-child { color: #a5b4fc; }
-        .wb-sched-row span:last-child { font-family: 'Courier New', monospace; font-size: 9px; color: #475569; }
-        .wb-sched-row.active-period span:last-child { color: #818cf8; }
+        .wbtn:hover { background: #e2e8f0; }
+        .wbtn.primary { background: #2563eb; color: white; }
+        .wbtn.primary:hover { background: #1d4ed8; }
+        .wbtn.danger { background: #fee2e2; color: #b91c1c; }
+        .wbtn.small { padding: 4px 8px; font-size: 12px; }
 
-        /* Widget toggle buttons in toolbar */
-        .wb-widget-toggle.active-widget {
-            background-color: #4f46e5 !important;
-            color: white !important;
+        .widget textarea, .widget input[type="text"], .widget input[type="number"] {
+            font: inherit;
+            color: #0f172a;
+            background: transparent;
+            outline: none;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        /* Widget rail */
+        #widget-rail {
+            position: fixed;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        #widget-rail button {
+            position: relative;
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: #475569;
+            transition: all .15s;
+        }
+        #widget-rail button:hover { background: #eff6ff; color: #2563eb; }
+        #widget-rail button svg { width: 20px; height: 20px; }
+        #widget-rail button::after {
+            content: attr(data-label);
+            position: absolute;
+            left: 48px;
+            background: #0f172a;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .12s;
+        }
+        #widget-rail button:hover::after { opacity: 1; }
+        #widget-rail .rail-sep { height: 1px; background: #e2e8f0; margin: 4px 6px; }
+
+        /* Traffic light */
+        .tl-lamp {
+            border-radius: 9999px;
+            aspect-ratio: 1;
+            width: 100%;
+            max-width: 90px;
+            margin: 0 auto;
+            opacity: .18;
+            cursor: pointer;
+            transition: opacity .2s, box-shadow .2s;
+        }
+        .tl-lamp.on { opacity: 1; box-shadow: 0 0 24px currentColor; }
+
+        /* Dice */
+        .die {
+            width: 64px; height: 64px;
+            background: white;
+            border: 2px solid #0f172a;
+            border-radius: 12px;
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            padding: 8px;
+            gap: 2px;
+        }
+        .die span { border-radius: 50%; background: #0f172a; visibility: hidden; }
+        .die span.on { visibility: visible; }
+        .die.rolling { animation: shake .4s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-14deg) translateY(-4px); }
+            75% { transform: rotate(14deg) translateY(-4px); }
+        }
+
+        /* Noise meter */
+        .noise-bar { height: 100%; width: 100%; transition: transform .08s linear; transform-origin: bottom; }
+
+        /* Work symbols */
+        .sym-btn {
+            border-radius: 12px;
+            padding: 8px 4px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 600; color: #64748b;
+        }
+        .sym-btn.on { background: #dbeafe; color: #1d4ed8; }
+        .sym-btn svg { width: 22px; height: 22px; }
+
+        /* Cat */
+        @keyframes cat-tail { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
+        @keyframes cat-legs { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+        @keyframes cat-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        .cat-tail { transform-origin: 28px 40px; animation: cat-tail .8s ease-in-out infinite; }
+        .cat-leg { transform-origin: 50% 0; animation: cat-legs .35s ease-in-out infinite; }
+        .cat-leg:nth-of-type(2n) { animation-delay: .17s; }
+        .cat-sleep .cat-tail, .cat-sleep .cat-leg { animation: none; }
+        .cat-sleep svg { animation: cat-breathe 2.4s ease-in-out infinite; }
+
+        #fireworks-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 40; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .die.rolling, .cat-tail, .cat-leg, .cat-sleep svg { animation: none; }
         }
     </style>
 </head>
@@ -298,15 +380,6 @@
         </div>
         <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
 
-        <!-- Widget Toggles -->
-        <button id="btn-toggle-timer"
-            class="wb-widget-toggle p-2 rounded-lg hover:bg-amber-50 text-amber-500 transition-all duration-200"
-            title="Toggle Timer"><i data-lucide="timer" class="w-5 h-5"></i></button>
-        <button id="btn-toggle-schedule"
-            class="wb-widget-toggle p-2 rounded-lg hover:bg-indigo-50 text-indigo-500 transition-all duration-200"
-            title="Toggle Bell Schedule"><i data-lucide="bell" class="w-5 h-5"></i></button>
-        <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
-
         <!-- Undo -->
         <button id="btn-undo"
             class="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all duration-200"
@@ -334,60 +407,41 @@
                 data-lucide="minus" class="w-5 h-5"></i></button>
     </div>
 
-    <!-- Timer Widget -->
-    <div id="wb-timer-widget" class="wb-widget hidden" style="top: 80px; right: 20px;">
-        <div class="wb-widget-handle" id="wb-timer-handle">
-            <span class="wb-widget-title">⏱ Timer</span>
-            <button class="wb-widget-close" id="wb-timer-close"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-        </div>
-        <div class="wb-widget-body">
-            <div id="wb-timer-display">05:00</div>
-            <div class="wb-timer-controls">
-                <button class="wb-timer-btn" id="wb-timer-toggle">Start</button>
-                <button class="wb-timer-btn" id="wb-timer-reset">Reset</button>
-            </div>
-            <div class="wb-duration-row">
-                <label for="wb-timer-mins">Set:</label>
-                <input type="number" id="wb-timer-mins" class="wb-duration-input" value="5" min="0" max="99">
-                <label>min</label>
-                <input type="number" id="wb-timer-secs" class="wb-duration-input" value="0" min="0" max="59">
-                <label>sec</label>
-                <button class="wb-timer-btn" id="wb-timer-set" style="padding: 2px 8px; font-size:10px;">Set</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Bell Schedule Widget -->
-    <div id="wb-schedule-widget" class="wb-widget hidden" style="top: 80px; left: 20px;">
-        <div class="wb-widget-handle" id="wb-schedule-handle">
-            <span class="wb-widget-title">🔔 Bell Schedule</span>
-            <button class="wb-widget-close" id="wb-schedule-close"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-        </div>
-        <div class="wb-widget-body">
-            <div class="wb-large-timer">
-                <div class="wb-large-timer-label">Time Remaining</div>
-                <div class="wb-large-timer-display" id="wb-sched-large-timer">--:--</div>
-            </div>
-            <div class="wb-active-bar">
-                <span>Active</span>
-                <span class="wb-active-name" id="wb-sched-current">--</span>
-            </div>
-            <div id="wb-sched-list"></div>
-        </div>
+    <canvas id="fireworks-canvas"></canvas>
+
+    <!-- Widget layer (floating tools sit above the canvas, screen-fixed like Classroomscreen) -->
+    <div id="widget-layer"></div>
+
+    <!-- Widget rail -->
+    <div id="widget-rail">
+        <button data-widget="clock" data-label="Clock"><i data-lucide="clock"></i></button>
+        <button data-widget="timer" data-label="Timer"><i data-lucide="timer"></i></button>
+        <button data-widget="stopwatch" data-label="Stopwatch"><i data-lucide="watch"></i></button>
+        <button data-widget="schedule" data-label="Period timer / bell schedule"><i data-lucide="bell"></i></button>
+        <button data-widget="calendar" data-label="Calendar"><i data-lucide="calendar"></i></button>
+        <div class="rail-sep"></div>
+        <button data-widget="text" data-label="Text box"><i data-lucide="type"></i></button>
+        <button data-widget="names" data-label="Random name"><i data-lucide="shuffle"></i></button>
+        <button data-widget="dice" data-label="Dice"><i data-lucide="dices"></i></button>
+        <div class="rail-sep"></div>
+        <button data-widget="traffic" data-label="Traffic light"><i data-lucide="traffic-cone"></i></button>
+        <button data-widget="symbols" data-label="Work symbols"><i data-lucide="users"></i></button>
+        <button data-widget="noise" data-label="Noise meter"><i data-lucide="volume-2"></i></button>
+        <button data-widget="qr" data-label="QR code"><i data-lucide="qr-code"></i></button>
+        <button data-widget="cat" data-label="Wandering cat"><i data-lucide="cat"></i></button>
+        <div class="rail-sep"></div>
+        <button id="btn-widgets-clear" data-label="Close all widgets"><i data-lucide="x-circle"></i></button>
     </div>
 
     <script type="module">
-        // ==================== MAIN APPLICATION CODE ====================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         lucide.createIcons();
 
-        // ==================== APPLICATION STATE ====================
-        // Stores tool settings, zoom level, strokes, and interaction state.
         // ─── STATE ────────────────────────────────────────────────────────────────────
-        // Current selected tool and drawing settings
         const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true };
         const view = { x: 0, y: 0, zoom: 1 };
 
@@ -416,10 +470,6 @@
         // Stroke-erase hit-test state
         let erasedThisGesture = new Set(); // ids erased so we don't double-erase
 
-        // ==================== CANVAS SETUP ====================
-        // Two canvases are used:
-        // 1. mainCanvas = permanent drawings
-        // 2. overlayCanvas = temporary previews while drawing
         // ─── CANVAS SETUP ─────────────────────────────────────────────────────────────
         const container = document.getElementById('canvas-container');
         const mainCanvas = document.getElementById('mainCanvas');
@@ -436,8 +486,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // ==================== FIREBASE ====================
-        // Handles authentication and real-time syncing.
         // ─── FIREBASE ─────────────────────────────────────────────────────────────────
         let firebaseConfig;
         if (typeof __firebase_config !== 'undefined') {
@@ -501,8 +549,6 @@
             }
         });
 
-        // ==================== DRAWING HELPERS ====================
-        // Reusable drawing functions for lines and shapes.
         // ─── DRAWING HELPERS ──────────────────────────────────────────────────────────
         function simplifyPoints(points, tol = 1.5) {
             if (points.length <= 2) return points;
@@ -572,8 +618,6 @@
             else if (stroke.type === 'circle' && stroke.points.length > 1) drawCircle(ctx, stroke.points[0], stroke.points[1], stroke.color, stroke.thickness);
         }
 
-        // ==================== RENDERING SYSTEM ====================
-        // Uses an offscreen canvas for performance.
         // ─── OFFSCREEN / MAIN RENDER ──────────────────────────────────────────────────
         // We render all committed strokes to an offscreen canvas.
         // The main canvas composites offscreen.
@@ -616,8 +660,6 @@
         }
         requestAnimationFrame(renderLoop);
 
-        // ==================== USER INPUT ====================
-        // Handles mouse, touch, stylus, and gestures.
         // ─── INPUT ────────────────────────────────────────────────────────────────────
         function getCanvasPoint(clientX, clientY) {
             const rect = overlayCanvas.getBoundingClientRect();
@@ -997,7 +1039,7 @@
         let spacePressed = false, previousTool = ui.tool;
         window.addEventListener('keydown', e => {
             if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); return; }
-            if (e.code === 'Space' && !spacePressed && document.activeElement.tagName !== 'INPUT') {
+            if (e.code === 'Space' && !spacePressed && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
                 spacePressed = true; previousTool = ui.tool; switchTool('pan');
             }
         });
@@ -1006,182 +1048,688 @@
         });
 
         updateUI(); updateZoomUI();
+    </script>
 
-        // ─── BELL SCHEDULE DATA ───────────────────────────────────────────────────────
-        const bellSchedule = [
-            { name: "Homeroom",           start: "07:35", end: "07:58", label: "7:35 - 7:58"   },
-            { name: "1st Period",         start: "08:01", end: "08:47", label: "8:01 - 8:47"   },
-            { name: "2nd Period",         start: "08:50", end: "09:36", label: "8:50 - 9:36"   },
-            { name: "3rd Period",         start: "09:39", end: "10:25", label: "9:39 - 10:25"  },
-            { name: "4th Period",         start: "10:28", end: "11:14", label: "10:28 - 11:14" },
-            { name: "5th (7th Lunch)",    start: "11:17", end: "12:03", label: "11:17 - 12:03" },
-            { name: "6th (8th Lunch)",    start: "12:06", end: "12:52", label: "12:06 - 12:52" },
-            { name: "7th Period",         start: "12:55", end: "13:41", label: "12:55 - 1:41"  },
-            { name: "8th Period",         start: "13:44", end: "14:30", label: "1:44 - 2:30"   },
-        ];
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        //  WIDGETS — Classroomscreen-style floating tools that sit over the board.
+        //  Widgets are screen-fixed (they don't pan/zoom with the canvas) and are
+        //  saved to localStorage so they come back on reload. They're local to
+        //  this device; strokes are still synced through Firebase.
+        // ═══════════════════════════════════════════════════════════════════════
+        (() => {
+            const layer = document.getElementById('widget-layer');
+            const STORAGE_KEY = 'whiteboard.widgets.v1';
+            const widgets = new Map();          // id -> { el, type, state, cleanup }
+            let zTop = 100;
+            let saveTimer = null;
 
-        // ─── AUDIO ────────────────────────────────────────────────────────────────────
-        function playBell() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const [o1, o2, gain] = [ctx.createOscillator(), ctx.createOscillator(), ctx.createGain()];
-                o1.type = 'sine';     o1.frequency.value = 880;
-                o2.type = 'triangle'; o2.frequency.value = 440;
-                gain.gain.setValueAtTime(0.4, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
-                [o1, o2].forEach(o => { o.connect(gain); o.start(); o.stop(ctx.currentTime + 1.2); });
-                gain.connect(ctx.destination);
-            } catch(e) {}
-        }
+            const save = () => {
+                clearTimeout(saveTimer);
+                saveTimer = setTimeout(() => {
+                    const out = [];
+                    for (const [id, w] of widgets) {
+                        const r = w.el;
+                        out.push({ id, type: w.type, x: r.offsetLeft, y: r.offsetTop, w: r.offsetWidth, h: r.offsetHeight, state: w.state });
+                    }
+                    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(out)); } catch (e) { }
+                }, 150);
+            };
 
-        // ─── DRAGGABLE HELPER ─────────────────────────────────────────────────────────
-        function makeDraggable(el, handle) {
-            let ox = 0, oy = 0;
-            handle.addEventListener('mousedown', e => {
-                if (e.target.closest('button,input')) return;
-                e.preventDefault();
-                ox = e.clientX - el.offsetLeft;
-                oy = e.clientY - el.offsetTop;
-                const move = mv => {
-                    el.style.left = `${mv.clientX - ox}px`;
-                    el.style.top  = `${mv.clientY - oy}px`;
-                    el.style.right = 'auto';
-                };
-                const up = () => {
-                    document.removeEventListener('mousemove', move);
-                    document.removeEventListener('mouseup', up);
-                };
-                document.addEventListener('mousemove', move);
-                document.addEventListener('mouseup', up);
-            });
-        }
+            const icon = name => { const i = document.createElement('i'); i.setAttribute('data-lucide', name); return i; };
+            const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+            const pad = n => String(n).padStart(2, '0');
+            const fmtTime = ms => {
+                const t = Math.max(0, Math.round(ms / 1000));
+                const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+                return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+            };
+            // Fit readout font to widget width
+            const fitReadout = (widget, chars) => {
+                const w = widget.offsetWidth - 40;
+                widget.style.setProperty('--readout', `${Math.max(24, Math.min(160, w / (chars * 0.62)))}px`);
+            };
 
-        // ─── TIMER WIDGET ─────────────────────────────────────────────────────────────
-        {
-            const timerWidget  = document.getElementById('wb-timer-widget');
-            const timerDisplay = document.getElementById('wb-timer-display');
-            const toggleBtn    = document.getElementById('wb-timer-toggle');
-            const resetBtn     = document.getElementById('wb-timer-reset');
-            const setBtn       = document.getElementById('wb-timer-set');
-            const minsInput    = document.getElementById('wb-timer-mins');
-            const secsInput    = document.getElementById('wb-timer-secs');
-
-            let tInterval = null;
-            let tDuration = 300; // seconds
-
-            const fmt = () => `${String(Math.floor(tDuration / 60)).padStart(2,'0')}:${String(tDuration % 60).padStart(2,'0')}`;
-
-            function setRunning(running) {
-                if (running) {
-                    toggleBtn.textContent = 'Pause';
-                    toggleBtn.classList.add('running');
-                } else {
-                    toggleBtn.textContent = 'Start';
-                    toggleBtn.classList.remove('running');
-                }
+            // Alarm sound without any assets — a few short beeps
+            let audioCtx = null;
+            function beep(times = 3) {
+                try {
+                    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                    for (let i = 0; i < times; i++) {
+                        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                        o.type = 'sine'; o.frequency.value = 880;
+                        g.gain.value = 0.0001;
+                        o.connect(g); g.connect(audioCtx.destination);
+                        const t = audioCtx.currentTime + i * 0.35;
+                        g.gain.setValueAtTime(0.0001, t);
+                        g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+                        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+                        o.start(t); o.stop(t + 0.3);
+                    }
+                } catch (e) { }
             }
 
-            toggleBtn.onclick = () => {
-                if (tInterval) {
-                    clearInterval(tInterval); tInterval = null;
-                    setRunning(false);
-                } else {
-                    setRunning(true);
-                    tInterval = setInterval(() => {
-                        if (tDuration > 0) { tDuration--; timerDisplay.textContent = fmt(); }
-                        else {
-                            clearInterval(tInterval); tInterval = null;
-                            setRunning(false);
-                            playBell();
+            // School-bell chime (from the classroom file)
+            function bell() {
+                try {
+                    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const o1 = audioCtx.createOscillator(), o2 = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+                    o1.type = 'sine'; o1.frequency.value = 880; o2.type = 'triangle'; o2.frequency.value = 440;
+                    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.01, t + 1.2);
+                    [o1, o2].forEach(o => { o.connect(g); o.start(t); o.stop(t + 1.2); });
+                    g.connect(audioCtx.destination);
+                } catch (e) { }
+            }
+
+            // Fireworks overlay — fired when a timer finishes
+            const fw = document.getElementById('fireworks-canvas'), fwCtx = fw.getContext('2d');
+            let particles = [];
+            const sizeFw = () => { fw.width = innerWidth; fw.height = innerHeight; };
+            addEventListener('resize', sizeFw); sizeFw();
+            function fireworks() {
+                const palette = ['#ff0055', '#00ffcc', '#ffcc00', '#ff00ff', '#00ff00', '#2288ff'];
+                for (let b = 0; b < 5; b++) setTimeout(() => {
+                    const tx = fw.width * (0.2 + Math.random() * 0.6), ty = fw.height * (0.15 + Math.random() * 0.4), c = palette[b % palette.length];
+                    for (let p = 0; p < 60; p++) {
+                        const a = Math.random() * Math.PI * 2, sp = Math.random() * 6 + 2;
+                        particles.push({ x: tx, y: ty, c, r: Math.random() * 2.5 + 1, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, al: 1, d: Math.random() * 0.015 + 0.015 });
+                    }
+                    bell();
+                }, b * 220);
+                if (!fwRunning) { fwRunning = true; requestAnimationFrame(fwLoop); }
+            }
+            let fwRunning = false;
+            function fwLoop() {
+                fwCtx.clearRect(0, 0, fw.width, fw.height);
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.vx *= 0.98; p.vy = p.vy * 0.98 + 0.06; p.x += p.vx; p.y += p.vy; p.al -= p.d;
+                    if (p.al <= 0) { particles.splice(i, 1); continue; }
+                    fwCtx.globalAlpha = p.al; fwCtx.fillStyle = p.c; fwCtx.beginPath(); fwCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2); fwCtx.fill();
+                }
+                fwCtx.globalAlpha = 1;
+                if (particles.length) requestAnimationFrame(fwLoop); else fwRunning = false;
+            }
+
+            // ─── Widget definitions ──────────────────────────────────────────
+            // Each returns { title, icon, w, h, mount(body, state, ctx) -> cleanup? }
+            const DEFS = {
+                clock: {
+                    title: 'Clock', icon: 'clock', w: 300, h: 170,
+                    mount(body, state, ctx) {
+                        state.h24 = state.h24 ?? false;
+                        const read = el('div', 'readout');
+                        const date = el('div', 'text-center text-sm text-gray-500 font-medium');
+                        const tog = el('button', 'wbtn small self-center mt-2');
+                        body.append(read, date, tog);
+                        const tick = () => {
+                            const d = new Date();
+                            let h = d.getHours(), suffix = '';
+                            if (!state.h24) { suffix = h >= 12 ? ' PM' : ' AM'; h = h % 12 || 12; }
+                            read.textContent = `${state.h24 ? pad(h) : h}:${pad(d.getMinutes())}${suffix}`;
+                            date.textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+                            tog.textContent = state.h24 ? '24h' : '12h';
+                            fitReadout(ctx.widget, state.h24 ? 5 : 8);
+                        };
+                        tog.onclick = () => { state.h24 = !state.h24; tick(); save(); };
+                        tick();
+                        const id = setInterval(tick, 1000);
+                        ctx.onResize(tick);
+                        return () => clearInterval(id);
+                    }
+                },
+
+                timer: {
+                    title: 'Timer', icon: 'timer', w: 320, h: 230,
+                    mount(body, state, ctx) {
+                        state.total = state.total ?? 5 * 60 * 1000;   // ms configured
+                        state.remaining = state.remaining ?? state.total;
+                        state.running = false; state.endAt = null;
+                        let fired = false;
+
+                        const read = el('div', 'readout');
+                        const bar = el('div', 'h-1.5 rounded-full bg-gray-100 overflow-hidden my-2');
+                        const fill = el('div', 'h-full bg-blue-600 rounded-full'); bar.append(fill);
+                        const presets = el('div', 'flex flex-wrap gap-1 justify-center');
+                        [1, 2, 5, 10, 15, 30].forEach(m => {
+                            const b = el('button', 'wbtn small', `${m}m`);
+                            b.onclick = () => { stop(); state.total = state.remaining = m * 60000; render(); save(); };
+                            presets.append(b);
+                        });
+                        const custom = el('input', 'wbtn small w-14 text-center');
+                        custom.type = 'number'; custom.min = 1; custom.placeholder = 'min';
+                        custom.onchange = () => { const m = parseFloat(custom.value); if (m > 0) { stop(); state.total = state.remaining = m * 60000; render(); save(); } custom.value = ''; };
+                        presets.append(custom);
+                        const row = el('div', 'flex gap-2 justify-center mt-2');
+                        const start = el('button', 'wbtn primary', 'Start');
+                        const reset = el('button', 'wbtn', 'Reset');
+                        row.append(start, reset);
+                        body.append(read, bar, presets, row);
+
+                        const render = () => {
+                            read.textContent = fmtTime(state.remaining);
+                            read.style.color = state.remaining <= 0 ? '#dc2626' : (state.remaining <= 10000 && state.running ? '#ea580c' : '');
+                            fill.style.width = `${Math.max(0, state.remaining / state.total) * 100}%`;
+                            start.textContent = state.running ? 'Pause' : 'Start';
+                            fitReadout(ctx.widget, read.textContent.length);
+                        };
+                        const stop = () => { state.running = false; state.endAt = null; };
+                        const tick = () => {
+                            if (!state.running) return;
+                            state.remaining = state.endAt - Date.now();
+                            if (state.remaining <= 0) {
+                                state.remaining = 0; stop();
+                                if (!fired) { fired = true; fireworks(); ctx.widget.animate([{ background: '#fecaca' }, { background: '' }], { duration: 1200, iterations: 3 }); }
+                            }
+                            render();
+                        };
+                        start.onclick = () => {
+                            if (state.running) { stop(); }
+                            else {
+                                if (state.remaining <= 0) state.remaining = state.total;
+                                fired = false; state.running = true; state.endAt = Date.now() + state.remaining;
+                                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                            }
+                            render(); save();
+                        };
+                        reset.onclick = () => { stop(); state.remaining = state.total; fired = false; render(); save(); };
+                        render();
+                        const id = setInterval(tick, 200);
+                        ctx.onResize(render);
+                        return () => clearInterval(id);
+                    }
+                },
+
+                stopwatch: {
+                    title: 'Stopwatch', icon: 'watch', w: 300, h: 190,
+                    mount(body, state, ctx) {
+                        state.elapsed = state.elapsed ?? 0; let running = false, startAt = 0;
+                        const read = el('div', 'readout');
+                        const row = el('div', 'flex gap-2 justify-center mt-2');
+                        const start = el('button', 'wbtn primary', 'Start');
+                        const reset = el('button', 'wbtn', 'Reset');
+                        row.append(start, reset); body.append(read, row);
+                        const now = () => running ? state.elapsed + (Date.now() - startAt) : state.elapsed;
+                        const render = () => {
+                            const ms = now();
+                            read.textContent = `${fmtTime(ms)}.${pad(Math.floor((ms % 1000) / 10))}`;
+                            start.textContent = running ? 'Pause' : 'Start';
+                            fitReadout(ctx.widget, read.textContent.length);
+                        };
+                        start.onclick = () => {
+                            if (running) { state.elapsed = now(); running = false; save(); }
+                            else { startAt = Date.now(); running = true; }
+                            render();
+                        };
+                        reset.onclick = () => { running = false; state.elapsed = 0; render(); save(); };
+                        render();
+                        const id = setInterval(() => { if (running) render(); }, 50);
+                        ctx.onResize(render);
+                        return () => clearInterval(id);
+                    }
+                },
+
+                calendar: {
+                    title: 'Calendar', icon: 'calendar', w: 300, h: 300,
+                    mount(body, state, ctx) {
+                        const today = new Date();
+                        let y = today.getFullYear(), m = today.getMonth();
+                        const head = el('div', 'flex items-center justify-between mb-2');
+                        const prev = el('button', 'wbtn small', '‹'), next = el('button', 'wbtn small', '›');
+                        const label = el('div', 'font-bold text-gray-800');
+                        head.append(prev, label, next);
+                        const grid = el('div', 'grid grid-cols-7 gap-1 text-center text-sm flex-1');
+                        body.append(head, grid);
+                        const render = () => {
+                            label.textContent = new Date(y, m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+                            grid.innerHTML = '';
+                            ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => grid.append(el('div', 'text-xs font-bold text-gray-400', d)));
+                            const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+                            for (let i = 0; i < first; i++) grid.append(el('div'));
+                            for (let d = 1; d <= days; d++) {
+                                const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
+                                grid.append(el('div', 'rounded-lg py-1 flex items-center justify-center ' + (isToday ? 'bg-blue-600 text-white font-bold' : 'text-gray-700'), d));
+                            }
+                        };
+                        prev.onclick = () => { m--; if (m < 0) { m = 11; y--; } render(); };
+                        next.onclick = () => { m++; if (m > 11) { m = 0; y++; } render(); };
+                        render();
+                    }
+                },
+
+                text: {
+                    title: 'Text', icon: 'type', w: 340, h: 220,
+                    mount(body, state, ctx) {
+                        state.text = state.text ?? ''; state.size = state.size ?? 22;
+                        const ta = el('textarea', 'flex-1 w-full resize-none leading-snug');
+                        ta.placeholder = 'Type here…'; ta.value = state.text;
+                        ta.style.fontSize = state.size + 'px';
+                        const bar = el('div', 'flex gap-1 justify-end mt-2');
+                        const minus = el('button', 'wbtn small', 'A−'), plus = el('button', 'wbtn small', 'A+');
+                        minus.onclick = () => { state.size = Math.max(12, state.size - 2); ta.style.fontSize = state.size + 'px'; save(); };
+                        plus.onclick = () => { state.size = Math.min(96, state.size + 2); ta.style.fontSize = state.size + 'px'; save(); };
+                        bar.append(minus, plus); body.append(ta, bar);
+                        ta.oninput = () => { state.text = ta.value; save(); };
+                        // Stop board shortcuts (space → pan) while typing
+                        ta.addEventListener('keydown', e => e.stopPropagation());
+                        ta.addEventListener('keyup', e => e.stopPropagation());
+                        setTimeout(() => ta.focus(), 0);
+                    }
+                },
+
+                names: {
+                    title: 'Random name', icon: 'shuffle', w: 320, h: 300,
+                    mount(body, state, ctx) {
+                        state.names = state.names ?? ''; state.noRepeat = state.noRepeat ?? true;
+                        let used = new Set();
+                        const result = el('div', 'readout');
+                        result.style.fontFamily = 'inherit';
+                        result.textContent = '?';
+                        const ta = el('textarea', 'w-full text-sm border border-gray-200 rounded-lg p-2 resize-none');
+                        ta.rows = 4; ta.placeholder = 'One name per line'; ta.value = state.names;
+                        ta.oninput = () => { state.names = ta.value; used.clear(); save(); };
+                        ta.addEventListener('keydown', e => e.stopPropagation());
+                        ta.addEventListener('keyup', e => e.stopPropagation());
+                        const row = el('div', 'flex items-center gap-2 mt-2');
+                        const pick = el('button', 'wbtn primary flex-1', 'Pick a name');
+                        const rep = el('label', 'flex items-center gap-1 text-xs text-gray-500');
+                        const cb = el('input'); cb.type = 'checkbox'; cb.checked = state.noRepeat;
+                        cb.onchange = () => { state.noRepeat = cb.checked; used.clear(); save(); };
+                        rep.append(cb, 'No repeats');
+                        const editBtn = el('button', 'wbtn small', 'Edit');
+                        row.append(pick, editBtn);
+                        body.append(result, row, rep, ta);
+                        ta.style.display = state.names ? 'none' : '';
+                        editBtn.onclick = () => { ta.style.display = ta.style.display === 'none' ? '' : 'none'; if (ta.style.display !== 'none') ta.focus(); };
+                        pick.onclick = () => {
+                            const all = state.names.split('\n').map(s => s.trim()).filter(Boolean);
+                            if (!all.length) { ta.style.display = ''; ta.focus(); return; }
+                            let pool = state.noRepeat ? all.filter(n => !used.has(n)) : all;
+                            if (!pool.length) { used.clear(); pool = all; }
+                            // quick shuffle animation, then land
+                            let n = 0; pick.disabled = true;
+                            const spin = setInterval(() => {
+                                result.textContent = all[Math.floor(Math.random() * all.length)];
+                                if (++n > 12) {
+                                    clearInterval(spin);
+                                    const chosen = pool[Math.floor(Math.random() * pool.length)];
+                                    used.add(chosen); result.textContent = chosen; pick.disabled = false;
+                                    fit();
+                                }
+                            }, 60);
+                        };
+                        const fit = () => fitReadout(ctx.widget, Math.max(4, result.textContent.length));
+                        fit(); ctx.onResize(fit);
+                    }
+                },
+
+                dice: {
+                    title: 'Dice', icon: 'dices', w: 260, h: 200,
+                    mount(body, state, ctx) {
+                        state.count = state.count ?? 1; state.values = state.values ?? [1];
+                        const area = el('div', 'flex-1 flex items-center justify-center gap-3 flex-wrap');
+                        const total = el('div', 'text-center text-sm text-gray-500 font-semibold');
+                        const row = el('div', 'flex gap-2 justify-center mt-2 items-center');
+                        const roll = el('button', 'wbtn primary', 'Roll');
+                        const cnt = el('select', 'wbtn small');
+                        [1, 2, 3].forEach(n => { const o = el('option', '', `${n} ${n > 1 ? 'dice' : 'die'}`); o.value = n; cnt.append(o); });
+                        cnt.value = state.count;
+                        row.append(roll, cnt); body.append(area, total, row);
+                        const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+                        const render = () => {
+                            area.innerHTML = '';
+                            state.values.forEach(v => {
+                                const d = el('div', 'die');
+                                for (let i = 0; i < 9; i++) { const s = el('span'); if (PIPS[v].includes(i)) s.classList.add('on'); d.append(s); }
+                                area.append(d);
+                            });
+                            total.textContent = state.values.length > 1 ? `Total: ${state.values.reduce((a, b) => a + b, 0)}` : '';
+                        };
+                        roll.onclick = () => {
+                            state.values = Array.from({ length: state.count }, () => 1 + Math.floor(Math.random() * 6));
+                            render(); area.querySelectorAll('.die').forEach(d => d.classList.add('rolling')); save();
+                        };
+                        cnt.onchange = () => { state.count = +cnt.value; state.values = Array.from({ length: state.count }, () => 1 + Math.floor(Math.random() * 6)); render(); save(); };
+                        render();
+                    }
+                },
+
+                traffic: {
+                    title: 'Traffic light', icon: 'traffic-cone', w: 160, h: 320,
+                    mount(body, state, ctx) {
+                        state.on = state.on ?? 'green';
+                        const box = el('div', 'flex-1 flex flex-col justify-around gap-2 rounded-2xl bg-slate-800 p-3');
+                        const lamps = { red: '#ef4444', yellow: '#facc15', green: '#22c55e' };
+                        for (const [k, c] of Object.entries(lamps)) {
+                            const l = el('div', 'tl-lamp'); l.style.background = c; l.style.color = c; l.dataset.k = k;
+                            l.onclick = () => { state.on = state.on === k ? null : k; render(); save(); };
+                            box.append(l);
                         }
-                    }, 1000);
+                        body.append(box);
+                        const render = () => box.querySelectorAll('.tl-lamp').forEach(l => l.classList.toggle('on', l.dataset.k === state.on));
+                        render();
+                    }
+                },
+
+                symbols: {
+                    title: 'Work symbols', icon: 'users', w: 300, h: 150,
+                    mount(body, state, ctx) {
+                        state.mode = state.mode ?? 'silence';
+                        const SYMS = [['silence', 'mic-off', 'Silence'], ['whisper', 'ear', 'Whisper'], ['partner', 'user-round', 'Partner'], ['group', 'users', 'Group work'], ['ask', 'hand', 'Ask']];
+                        const grid = el('div', 'grid grid-cols-5 gap-1 flex-1 items-center');
+                        SYMS.forEach(([k, ic, lb]) => {
+                            const b = el('button', 'sym-btn'); b.dataset.k = k; b.append(icon(ic), el('span', '', lb));
+                            b.onclick = () => { state.mode = k; render(); save(); };
+                            grid.append(b);
+                        });
+                        body.append(grid);
+                        const render = () => grid.querySelectorAll('.sym-btn').forEach(b => b.classList.toggle('on', b.dataset.k === state.mode));
+                        render();
+                    }
+                },
+
+                schedule: {
+                    title: 'Period timer', icon: 'bell', w: 320, h: 440,
+                    mount(body, state, ctx) {
+                        // Default schedule taken from the classroom file; editable and saved per device
+                        state.periods = state.periods ?? [
+                            ['Homeroom', '07:35', '07:58'], ['1st Period', '08:01', '08:47'], ['2nd Period', '08:50', '09:36'],
+                            ['3rd Period', '09:39', '10:25'], ['4th Period', '10:28', '11:14'], ['5th (7th Lunch)', '11:17', '12:03'],
+                            ['6th (8th Lunch)', '12:06', '12:52'], ['7th Period', '12:55', '13:41'], ['8th Period', '13:44', '14:30']];
+                        state.ring = state.ring ?? true;
+
+                        const big = el('div', 'rounded-xl bg-blue-50 border border-blue-100 text-center py-2 mb-2');
+                        const bigLabel = el('div', 'text-[10px] font-bold uppercase tracking-widest text-blue-500', 'Time remaining');
+                        const bigRead = el('div', 'readout', '--:--'); bigRead.style.flex = '0'; bigRead.style.padding = '4px 0';
+                        const bigName = el('div', 'text-sm font-semibold text-gray-700');
+                        big.append(bigLabel, bigRead, bigName);
+                        const list = el('div', 'flex-1 overflow-auto text-xs divide-y divide-gray-100');
+                        const editor = el('textarea', 'hidden flex-1 w-full text-xs font-mono border border-gray-200 rounded-lg p-2 resize-none');
+                        editor.placeholder = 'Name | start | end  (24h, one per line)\n1st Period | 08:01 | 08:47';
+                        editor.addEventListener('keydown', e => e.stopPropagation()); editor.addEventListener('keyup', e => e.stopPropagation());
+                        const bar = el('div', 'flex items-center gap-2 mt-2');
+                        const editBtn = el('button', 'wbtn small', 'Edit schedule');
+                        const ringLbl = el('label', 'flex items-center gap-1 text-xs text-gray-500 ml-auto');
+                        const ringCb = el('input'); ringCb.type = 'checkbox'; ringCb.checked = state.ring;
+                        ringCb.onchange = () => { state.ring = ringCb.checked; save(); };
+                        ringLbl.append(ringCb, 'Ring bell');
+                        bar.append(editBtn, ringLbl);
+                        body.append(big, list, editor, bar);
+
+                        const toSecs = t => { const [h, m] = t.split(':').map(Number); return h * 3600 + m * 60; };
+                        const fmt12 = t => { const [h, m] = t.split(':').map(Number); return `${h % 12 || 12}:${pad(m)}`; };
+                        const buildList = () => {
+                            list.innerHTML = '';
+                            state.periods.forEach(([name, s, e], i) => {
+                                const row = el('div', 'flex justify-between items-center py-1 px-1 rounded');
+                                row.dataset.i = i;
+                                row.append(el('span', 'font-medium text-gray-700 truncate', name), el('span', 'font-mono text-gray-400', `${fmt12(s)} – ${fmt12(e)}`));
+                                list.append(row);
+                            });
+                        };
+                        let lastActive = null, ready = false;
+                        const tick = () => {
+                            const d = new Date(), secs = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+                            let active = -1, end = null, nextStart = null;
+                            state.periods.forEach(([name, s, e], i) => {
+                                const ss = toSecs(s), es = toSecs(e);
+                                if (secs >= ss && secs < es) { active = i; end = es; }
+                                if (ss > secs && (nextStart === null || ss < nextStart)) nextStart = ss;
+                            });
+                            list.querySelectorAll('[data-i]').forEach(r => {
+                                const on = +r.dataset.i === active;
+                                r.className = 'flex justify-between items-center py-1 px-1 rounded ' + (on ? 'bg-blue-100 text-blue-700 font-bold' : '');
+                                if (on) r.firstChild.classList.replace('text-gray-700', 'text-blue-700');
+                            });
+                            if (active >= 0) {
+                                const diff = end - secs;
+                                bigRead.textContent = `${Math.floor(diff / 60)}:${pad(diff % 60)}`;
+                                bigRead.style.color = diff <= 60 ? '#dc2626' : '';
+                                bigName.textContent = state.periods[active][0];
+                                bigLabel.textContent = 'Time remaining';
+                            } else if (nextStart !== null) {
+                                const diff = nextStart - secs;
+                                bigRead.textContent = `${Math.floor(diff / 60)}:${pad(diff % 60)}`; bigRead.style.color = '#64748b';
+                                bigName.textContent = 'Passing period'; bigLabel.textContent = 'Next period in';
+                            } else {
+                                bigRead.textContent = '--:--'; bigRead.style.color = '#64748b';
+                                bigName.textContent = 'No more periods today'; bigLabel.textContent = 'Schedule';
+                            }
+                            // Bell when the active period changes (after first tick so a reload doesn't ring)
+                            if (ready && state.ring && active !== lastActive && lastActive !== null) bell();
+                            lastActive = active; ready = true;
+                            fitReadout(ctx.widget, 7);
+                        };
+                        editBtn.onclick = () => {
+                            const editing = editor.classList.toggle('hidden');
+                            list.classList.toggle('hidden', !editing);
+                            if (!editing) {
+                                editor.value = state.periods.map(p => p.join(' | ')).join('\n'); editor.focus(); editBtn.textContent = 'Save schedule';
+                            } else {
+                                const rows = editor.value.split('\n').map(l => l.split('|').map(s => s.trim())).filter(r => r.length === 3 && /^\d{1,2}:\d{2}$/.test(r[1]) && /^\d{1,2}:\d{2}$/.test(r[2]));
+                                if (rows.length) state.periods = rows;
+                                editBtn.textContent = 'Edit schedule'; buildList(); tick(); save();
+                            }
+                        };
+                        buildList(); tick();
+                        const id = setInterval(tick, 1000);
+                        ctx.onResize(tick);
+                        return () => clearInterval(id);
+                    }
+                },
+
+                qr: {
+                    title: 'QR code', icon: 'qr-code', w: 240, h: 300,
+                    mount(body, state, ctx) {
+                        state.text = state.text ?? location.href;
+                        const box = el('div', 'flex-1 flex items-center justify-center min-h-0');
+                        const holder = el('div', 'bg-white p-2 rounded-lg');
+                        box.append(holder);
+                        const input = el('input', 'w-full text-xs font-mono border border-gray-200 rounded-lg px-2 py-1 mt-2');
+                        input.type = 'text'; input.value = state.text; input.placeholder = 'Link or text';
+                        input.addEventListener('keydown', e => e.stopPropagation()); input.addEventListener('keyup', e => e.stopPropagation());
+                        body.append(box, input);
+                        let qr = null;
+                        const render = () => {
+                            const size = Math.max(80, Math.min(ctx.widget.offsetWidth, ctx.widget.offsetHeight - 110) - 50);
+                            holder.innerHTML = '';
+                            if (!window.QRCode) { holder.textContent = 'QR library failed to load'; return; }
+                            qr = new QRCode(holder, { text: state.text || ' ', width: size, height: size, colorDark: '#0f172a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                        };
+                        input.oninput = () => { state.text = input.value; render(); save(); };
+                        render(); ctx.onResize(render);
+                    }
+                },
+
+                cat: {
+                    title: 'Wandering cat', icon: 'cat', w: 300, h: 220,
+                    mount(body, state, ctx) {
+                        const yard = el('div', 'flex-1 relative overflow-hidden rounded-xl bg-slate-100 border border-slate-200 min-h-[90px]');
+                        const cat = el('div', 'absolute w-16 h-16 transition-transform duration-100 ease-linear');
+                        cat.innerHTML = `<svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500 fill-current">
+                            <path d="M22,50 Q10,40 16,25 Q22,10 32,20 Q26,30 28,40" class="cat-tail"/>
+                            <ellipse cx="50" cy="58" rx="22" ry="16"/><circle cx="72" cy="45" r="14"/>
+                            <polygon points="63,35 66,18 72,32"/><polygon points="76,32 82,18 85,35"/>
+                            <rect x="34" y="66" width="7" height="14" rx="3" class="cat-leg"/><rect x="44" y="68" width="7" height="14" rx="3" class="cat-leg"/>
+                            <rect x="54" y="68" width="7" height="14" rx="3" class="cat-leg"/><rect x="63" y="66" width="7" height="14" rx="3" class="cat-leg"/>
+                            <circle cx="77" cy="42" r="2" fill="#fff"/><circle cx="68" cy="42" r="2" fill="#fff"/></svg>`;
+                        yard.append(cat);
+                        const row = el('div', 'flex gap-2 justify-center mt-2');
+                        const stateBtn = el('button', 'wbtn small', 'Walk'), meow = el('button', 'wbtn small primary', 'Meow');
+                        row.append(stateBtn, meow); body.append(yard, row);
+                        let x = 10, y = 20, vx = 1.2, vy = 0.3, mode = 'walk', raf;
+                        const modes = ['walk', 'run', 'sleep'];
+                        stateBtn.onclick = () => { mode = modes[(modes.indexOf(mode) + 1) % 3]; stateBtn.textContent = mode[0].toUpperCase() + mode.slice(1); cat.classList.toggle('cat-sleep', mode === 'sleep'); };
+                        meow.onclick = () => {
+                            try {
+                                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                                if (audioCtx.state === 'suspended') audioCtx.resume();
+                                const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+                                o.type = 'triangle';
+                                o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(580, t + 0.15); o.frequency.exponentialRampToValueAtTime(420, t + 0.45);
+                                g.gain.setValueAtTime(0.01, t); g.gain.linearRampToValueAtTime(0.25, t + 0.08); g.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                                o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + 0.55);
+                            } catch (e) { }
+                            meow.textContent = 'Meow! 🐱'; setTimeout(() => meow.textContent = 'Meow', 800);
+                        };
+                        const step = () => {
+                            if (mode !== 'sleep') {
+                                const sp = mode === 'run' ? 2.6 : 1;
+                                x += vx * sp; y += vy * sp;
+                                const mw = yard.clientWidth - 64, mh = yard.clientHeight - 64;
+                                if (x <= 0 || x >= mw) { vx = -vx; x = Math.max(0, Math.min(mw, x)); }
+                                if (y <= 0 || y >= mh) { vy = -vy; y = Math.max(0, Math.min(mh, y)); }
+                                if (Math.random() < 0.01) vy = (Math.random() - 0.5) * 0.8;
+                                cat.style.transform = `translate(${x}px, ${y}px) scaleX(${vx < 0 ? -1 : 1})`;
+                            }
+                            raf = requestAnimationFrame(step);
+                        };
+                        step();
+                        return () => cancelAnimationFrame(raf);
+                    }
+                },
+
+                noise: {
+                    title: 'Noise meter', icon: 'volume-2', w: 220, h: 280,
+                    mount(body, state, ctx) {
+                        state.threshold = state.threshold ?? 60;
+                        const meter = el('div', 'flex-1 rounded-xl bg-gray-100 overflow-hidden relative');
+                        const bar = el('div', 'noise-bar');
+                        bar.style.background = 'linear-gradient(to top, #22c55e, #facc15 60%, #ef4444)';
+                        bar.style.transform = 'scaleY(0)';
+                        const line = el('div', 'absolute left-0 right-0 border-t-2 border-dashed border-red-500');
+                        meter.append(bar, line);
+                        const label = el('div', 'text-center text-xs text-gray-500 mt-2', 'Tap Start to use the microphone');
+                        const row = el('div', 'flex items-center gap-2 mt-2');
+                        const start = el('button', 'wbtn primary flex-1', 'Start');
+                        const thr = el('input'); thr.type = 'range'; thr.min = 10; thr.max = 100; thr.value = state.threshold; thr.className = 'w-20 accent-red-500';
+                        row.append(start, thr); body.append(meter, label, row);
+                        const placeLine = () => { line.style.top = `${100 - state.threshold}%`; };
+                        thr.oninput = () => { state.threshold = +thr.value; placeLine(); save(); };
+                        placeLine();
+                        let stream = null, actx = null, raf = null, over = 0;
+                        const stop = () => {
+                            if (raf) cancelAnimationFrame(raf); raf = null;
+                            if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
+                            if (actx) actx.close(); actx = null;
+                            bar.style.transform = 'scaleY(0)'; start.textContent = 'Start'; label.textContent = 'Microphone off';
+                        };
+                        start.onclick = async () => {
+                            if (stream) return stop();
+                            try {
+                                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                actx = new (window.AudioContext || window.webkitAudioContext)();
+                                const src = actx.createMediaStreamSource(stream), an = actx.createAnalyser();
+                                an.fftSize = 512; src.connect(an);
+                                const data = new Uint8Array(an.frequencyBinCount);
+                                start.textContent = 'Stop';
+                                const loop = () => {
+                                    an.getByteTimeDomainData(data);
+                                    let sum = 0; for (const v of data) { const d = (v - 128) / 128; sum += d * d; }
+                                    const rms = Math.sqrt(sum / data.length);
+                                    const level = Math.min(100, rms * 400);        // rough 0–100 scale
+                                    bar.style.transform = `scaleY(${level / 100})`;
+                                    if (level > state.threshold) { over++; if (over > 20) { label.textContent = 'Too loud!'; label.style.color = '#dc2626'; } }
+                                    else { over = 0; label.textContent = 'Listening…'; label.style.color = ''; }
+                                    raf = requestAnimationFrame(loop);
+                                };
+                                loop();
+                            } catch (e) { label.textContent = 'Microphone access was blocked'; }
+                        };
+                        return stop;
+                    }
                 }
             };
 
-            resetBtn.onclick = () => {
-                clearInterval(tInterval); tInterval = null;
-                setRunning(false);
-                timerDisplay.textContent = fmt();
-            };
+            // ─── Widget frame: drag, resize, focus, close ────────────────────
+            function addWidget(type, opts = {}) {
+                const def = DEFS[type]; if (!def) return;
+                const id = opts.id || crypto.randomUUID();
+                const state = opts.state || {};
+                const w = el('div', 'widget');
+                const width = opts.w || def.w, height = opts.h || def.h;
+                // Cascade new widgets so they don't stack exactly on top of each other
+                const n = widgets.size;
+                const x = opts.x ?? Math.min(window.innerWidth - width - 20, 90 + (n % 6) * 30);
+                const y = opts.y ?? Math.min(window.innerHeight - height - 100, 80 + (n % 6) * 30);
+                Object.assign(w.style, { left: x + 'px', top: y + 'px', width: width + 'px', height: height + 'px', zIndex: ++zTop });
 
-            setBtn.onclick = () => {
-                clearInterval(tInterval); tInterval = null;
-                setRunning(false);
-                const m = Math.max(0, parseInt(minsInput.value) || 0);
-                const s = Math.max(0, Math.min(59, parseInt(secsInput.value) || 0));
-                tDuration = m * 60 + s;
-                timerDisplay.textContent = fmt();
-            };
+                const head = el('div', 'widget-head');
+                head.append(icon(def.icon), el('span', '', def.title), el('span', 'spacer'));
+                const closeBtn = el('button', 'close'); closeBtn.title = 'Close'; closeBtn.append(icon('x'));
+                head.append(closeBtn);
+                const body = el('div', 'widget-body');
+                const grip = el('div', 'widget-resize');
+                w.append(head, body, grip);
+                layer.append(w);
 
-            makeDraggable(timerWidget, document.getElementById('wb-timer-handle'));
-            document.getElementById('wb-timer-close').onclick = () => {
-                timerWidget.classList.add('hidden');
-                document.getElementById('btn-toggle-timer').classList.remove('active-widget');
-            };
-        }
+                const resizeCbs = [];
+                const ctx = { widget: w, onResize: cb => resizeCbs.push(cb) };
+                const cleanup = def.mount(body, state, ctx);
+                lucide.createIcons({ nodes: w.querySelectorAll('[data-lucide]') });   // resolves the <i data-lucide> tags we just added
 
-        // ─── BELL SCHEDULE WIDGET ─────────────────────────────────────────────────────
-        {
-            const schedWidget  = document.getElementById('wb-schedule-widget');
-            const largeTimer   = document.getElementById('wb-sched-large-timer');
-            const activeName   = document.getElementById('wb-sched-current');
-            const listEl       = document.getElementById('wb-sched-list');
+                const focus = () => { document.querySelectorAll('.widget.focused').forEach(x => x.classList.remove('focused')); w.classList.add('focused'); w.style.zIndex = ++zTop; };
+                w.addEventListener('pointerdown', focus);
 
-            // Build rows
-            bellSchedule.forEach((s, i) => {
-                const row = document.createElement('div');
-                row.className = 'wb-sched-row';
-                row.id = `wb-sched-row-${i}`;
-                row.innerHTML = `<span>${s.name}</span><span>${s.label}</span>`;
-                listEl.appendChild(row);
-            });
-
-            function schedTick() {
-                const now  = new Date();
-                const secs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-                let currentName = 'Passing Period', activeEnd = null;
-
-                bellSchedule.forEach((s, i) => {
-                    const [sh, sm] = s.start.split(':').map(Number);
-                    const [eh, em] = s.end.split(':').map(Number);
-                    const sSecs = sh * 3600 + sm * 60;
-                    const eSecs = eh * 3600 + em * 60;
-                    const row = document.getElementById(`wb-sched-row-${i}`);
-                    if (row) row.classList.toggle('active-period', secs >= sSecs && secs < eSecs);
-                    if (secs >= sSecs && secs < eSecs) { currentName = s.name; activeEnd = eSecs; }
+                // Drag by the header
+                head.addEventListener('pointerdown', e => {
+                    if (e.target.closest('button')) return;
+                    e.preventDefault(); head.setPointerCapture(e.pointerId);
+                    const sx = e.clientX - w.offsetLeft, sy = e.clientY - w.offsetTop;
+                    const move = ev => {
+                        const nx = Math.max(-width + 60, Math.min(window.innerWidth - 60, ev.clientX - sx));
+                        const ny = Math.max(0, Math.min(window.innerHeight - 40, ev.clientY - sy));
+                        w.style.left = nx + 'px'; w.style.top = ny + 'px';
+                    };
+                    const up = () => { head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); head.removeEventListener('pointercancel', up); save(); };
+                    head.addEventListener('pointermove', move); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
                 });
 
-                activeName.textContent = currentName;
-                if (activeEnd !== null && activeEnd > secs) {
-                    const diff = activeEnd - secs;
-                    largeTimer.textContent = `${Math.floor(diff / 60)}:${String(diff % 60).padStart(2,'0')}`;
-                } else {
-                    largeTimer.textContent = '--:--';
-                }
-                setTimeout(schedTick, 1000);
+                // Resize by the corner
+                grip.addEventListener('pointerdown', e => {
+                    e.preventDefault(); e.stopPropagation(); grip.setPointerCapture(e.pointerId); focus();
+                    const sw = w.offsetWidth, sh = w.offsetHeight, sx = e.clientX, sy = e.clientY;
+                    const move = ev => {
+                        w.style.width = Math.max(180, sw + ev.clientX - sx) + 'px';
+                        w.style.height = Math.max(120, sh + ev.clientY - sy) + 'px';
+                        resizeCbs.forEach(cb => cb());
+                    };
+                    const up = () => { grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up); save(); };
+                    grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
+                });
+
+                closeBtn.onclick = () => removeWidget(id);
+                widgets.set(id, { el: w, type, state, cleanup });
+                focus(); save();
+                return w;
             }
-            schedTick();
 
-            makeDraggable(schedWidget, document.getElementById('wb-schedule-handle'));
-            document.getElementById('wb-schedule-close').onclick = () => {
-                schedWidget.classList.add('hidden');
-                document.getElementById('btn-toggle-schedule').classList.remove('active-widget');
+            function removeWidget(id) {
+                const w = widgets.get(id); if (!w) return;
+                if (typeof w.cleanup === 'function') w.cleanup();
+                w.el.remove(); widgets.delete(id); save();
+            }
+
+            // Click on empty board → unfocus widgets
+            document.getElementById('overlayCanvas').addEventListener('pointerdown', () => {
+                document.querySelectorAll('.widget.focused').forEach(x => x.classList.remove('focused'));
+            });
+
+            // Rail buttons
+            document.querySelectorAll('#widget-rail button[data-widget]').forEach(b => b.onclick = () => addWidget(b.dataset.widget));
+            document.getElementById('btn-widgets-clear').onclick = () => {
+                if (!widgets.size) return;
+                if (confirm('Close all widgets?')) [...widgets.keys()].forEach(removeWidget);
             };
-        }
 
-        // ─── TOOLBAR TOGGLE BUTTONS ───────────────────────────────────────────────────
-        document.getElementById('btn-toggle-timer').onclick = () => {
-            const w = document.getElementById('wb-timer-widget');
-            const btn = document.getElementById('btn-toggle-timer');
-            w.classList.toggle('hidden');
-            btn.classList.toggle('active-widget', !w.classList.contains('hidden'));
-        };
-        document.getElementById('btn-toggle-schedule').onclick = () => {
-            const w = document.getElementById('wb-schedule-widget');
-            const btn = document.getElementById('btn-toggle-schedule');
-            w.classList.toggle('hidden');
-            btn.classList.toggle('active-widget', !w.classList.contains('hidden'));
-        };
+            // Restore from last session
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                saved.forEach(s => addWidget(s.type, s));
+                document.querySelectorAll('.widget.focused').forEach(x => x.classList.remove('focused'));
+            } catch (e) { }
+        })();
     </script>
 </body>
 
