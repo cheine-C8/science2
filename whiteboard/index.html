@@ -1184,10 +1184,6 @@
         document.getElementById('btn-eink').onclick = () => {
             ui.eink = !ui.eink; localStorage.setItem('whiteboard.eink', ui.eink ? '1' : '0'); applyEink();
         };
-        // Boox browsers identify themselves in the user agent; default to e-ink mode there the first time
-        if (localStorage.getItem('whiteboard.eink') === null && /boox|onyx|eink|remarkable/i.test(navigator.userAgent)) {
-            ui.eink = true; localStorage.setItem('whiteboard.eink', '1');
-        }
         applyEink();
         // Hide the touch toggle on devices with no touch input at all
         if (!('ontouchstart' in window) && !navigator.maxTouchPoints) document.getElementById('btn-touch').style.display = 'none';
