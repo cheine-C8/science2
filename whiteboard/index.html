@@ -64,80 +64,6 @@
             box-shadow: 0 0 0 2px white, 0 0 0 4px #3b82f6;
         }
 
-        /* ─── MOBILE / TABLET ───────────────────────────────────────────── */
-        body { touch-action: none; }
-        html { height: 100dvh; }
-        button { -webkit-tap-highlight-color: transparent; }
-
-        #toolbar {
-            max-width: calc(100vw - 16px);
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
-            bottom: calc(1.5rem + env(safe-area-inset-bottom));
-        }
-        #toolbar::-webkit-scrollbar { display: none; }
-        #toolbar > * { flex-shrink: 0; }
-
-        #rail-toggle { display: none; }
-
-        /* Touch devices: bigger targets, no hover tooltips */
-        @media (pointer: coarse) {
-            #toolbar button, #zoom-controls button { padding: 12px; }
-            .color-btn { width: 26px; height: 26px; padding: 0; }
-            #thickness-slider { height: 6px; }
-            #widget-rail button::after { display: none; }
-            .widget-head button { width: 34px; height: 34px; }
-            .widget-resize { width: 34px; height: 34px; }
-            .wbtn { padding: 9px 14px; }
-        }
-
-        /* Phones and small tablets: collapse the widget rail behind a button, move zoom to the top */
-        @media (max-width: 820px) {
-            #status-pill { top: calc(0.5rem + env(safe-area-inset-top)); right: 0.5rem; padding: 6px 10px; }
-            #status-text { font-size: 12px; }
-            #zoom-controls {
-                top: calc(3.5rem + env(safe-area-inset-top)); right: 0.5rem; bottom: auto;
-                flex-direction: row; padding: 4px;
-            }
-            #zoom-controls > div { width: 1px; height: 24px; margin: 0 2px; }
-            #zoom-controls button { padding: 8px; }
-            #btn-zoom-reset { width: 40px; height: 36px; }
-            #rail-toggle {
-                display: flex; position: fixed; z-index: 51;
-                top: calc(0.5rem + env(safe-area-inset-top)); left: calc(0.5rem + env(safe-area-inset-left));
-                align-items: center; gap: 6px; padding: 8px 12px;
-                background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
-                border: 1px solid rgba(0,0,0,.06); border-radius: 12px;
-                box-shadow: 0 8px 30px rgba(0,0,0,.12);
-                font-size: 13px; font-weight: 600; color: #475569;
-            }
-            #rail-toggle svg { width: 18px; height: 18px; }
-            #widget-rail {
-                display: none; top: calc(3.5rem + env(safe-area-inset-top)); left: calc(0.5rem + env(safe-area-inset-left));
-                right: 0.5rem; transform: none; flex-direction: row; flex-wrap: nowrap;
-                max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: hidden;
-                scrollbar-width: none; -webkit-overflow-scrolling: touch;
-            }
-            #widget-rail::-webkit-scrollbar { display: none; }
-            #widget-rail > * { flex-shrink: 0; }
-            #widget-rail.open { display: flex; }
-            #widget-rail .rail-sep { width: 1px; height: 28px; margin: 6px 2px; }
-            /* Landscape phones: everything stays inside its own row, nothing stacks into the toolbar */
-            @media (max-height: 500px) {
-                #toolbar { bottom: calc(0.5rem + env(safe-area-inset-bottom)); padding: 4px; }
-                #toolbar button { padding: 8px; }
-                #eraser-options { bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
-                #zoom-controls { top: calc(0.5rem + env(safe-area-inset-top)); right: 7rem; }
-                #status-pill { display: none; }
-                #widget-rail { top: calc(3.25rem + env(safe-area-inset-top)); }
-                .widget { max-height: calc(100dvh - 90px); }
-            }
-            .widget { max-width: calc(100vw - 16px); max-height: calc(100dvh - 110px); }
-            #eraser-options { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
-        }
-
         /* ─── E-INK MODE (Boox etc.): no blur, shadows, transitions or grid → fewer repaints ── */
         body.eink #canvas-container { background-image: none !important; background-color: #fff; }
         body.eink #toolbar, body.eink #zoom-controls, body.eink #status-pill, body.eink #eraser-options,
@@ -385,6 +311,81 @@
         @media (prefers-reduced-motion: reduce) {
             .die.rolling, .cat-tail, .cat-leg, .cat-sleep svg { animation: none; }
         }
+        /* ─── MOBILE / TABLET ───────────────────────────────────────────── */
+        body { touch-action: none; }
+        html { height: 100dvh; }
+        button { -webkit-tap-highlight-color: transparent; }
+
+        #toolbar {
+            max-width: calc(100vw - 16px);
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        }
+        #toolbar::-webkit-scrollbar { display: none; }
+        #toolbar > * { flex-shrink: 0; }
+
+        #rail-toggle { display: none; }
+
+        /* Touch devices: bigger targets, no hover tooltips */
+        @media (pointer: coarse) {
+            #toolbar button, #zoom-controls button { padding: 12px; }
+            .color-btn { width: 26px; height: 26px; padding: 0; }
+            #thickness-slider { height: 6px; }
+            #widget-rail button::after { display: none; }
+            .widget-head button { width: 34px; height: 34px; }
+            .widget-resize { width: 34px; height: 34px; }
+            .wbtn { padding: 9px 14px; }
+        }
+
+        /* Phones and small tablets: collapse the widget rail behind a button, move zoom to the top */
+        @media (max-width: 820px) {
+            #status-pill { top: calc(0.5rem + env(safe-area-inset-top)); right: 0.5rem; padding: 6px 10px; }
+            #status-text { font-size: 12px; }
+            #zoom-controls {
+                top: calc(3.5rem + env(safe-area-inset-top)); right: 0.5rem; bottom: auto;
+                flex-direction: row; padding: 4px;
+            }
+            #zoom-controls > div { width: 1px; height: 24px; margin: 0 2px; }
+            #zoom-controls button { padding: 8px; }
+            #btn-zoom-reset { width: 40px; height: 36px; }
+            #rail-toggle {
+                display: flex; position: fixed; z-index: 51;
+                top: calc(0.5rem + env(safe-area-inset-top)); left: calc(0.5rem + env(safe-area-inset-left));
+                align-items: center; gap: 6px; padding: 8px 12px;
+                background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+                border: 1px solid rgba(0,0,0,.06); border-radius: 12px;
+                box-shadow: 0 8px 30px rgba(0,0,0,.12);
+                font-size: 13px; font-weight: 600; color: #475569;
+            }
+            #rail-toggle svg { width: 18px; height: 18px; }
+            #widget-rail {
+                display: none; top: calc(3.5rem + env(safe-area-inset-top)); left: calc(0.5rem + env(safe-area-inset-left));
+                right: 0.5rem; transform: none; flex-direction: row; flex-wrap: nowrap;
+                max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: hidden;
+                scrollbar-width: none; -webkit-overflow-scrolling: touch;
+            }
+            #widget-rail::-webkit-scrollbar { display: none; }
+            #widget-rail > * { flex-shrink: 0; }
+            #widget-rail.open { display: flex; }
+            #widget-rail:not(.open) { display: none; }
+            #widget-rail .rail-sep { width: 1px; height: 28px; margin: 6px 2px; }
+            /* Landscape phones: everything stays inside its own row, nothing stacks into the toolbar */
+            @media (max-height: 500px) {
+                #toolbar { bottom: calc(0.5rem + env(safe-area-inset-bottom)); padding: 4px; }
+                #toolbar button { padding: 8px; }
+                #eraser-options { bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+                #zoom-controls { top: calc(0.5rem + env(safe-area-inset-top)); right: 7rem; }
+                #status-pill { display: none; }
+                #widget-rail { top: calc(3.25rem + env(safe-area-inset-top)); }
+                .widget { max-height: calc(100dvh - 90px); }
+            }
+            .widget { max-width: calc(100vw - 16px); max-height: calc(100dvh - 110px); }
+            #eraser-options { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+        }
+
     </style>
 </head>
 
