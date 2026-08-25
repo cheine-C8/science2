@@ -1,4 +1,92 @@
-<!-- updated 2026-08-25 — added Classroomscreen-style widgets -->
+<!-- updated 2026-08-25 — added Classroomscreen-style widgets, mobile/e-ink modes -->
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  INFINITE WHITEBOARD + CLASSROOM WIDGETS  —  single-file web app
+═══════════════════════════════════════════════════════════════════════════════
+
+  WHAT THIS IS
+  A shared, infinite, zoomable whiteboard (strokes synced live through Firebase
+  Firestore) with a set of Classroomscreen-style floating widgets layered on top
+  (clock, timer, period/bell-schedule countdown, name picker, dice, traffic light,
+  noise meter, QR code, etc). Widgets are local to the device (localStorage), NOT
+  synced. Strokes ARE synced to everyone viewing the same Firebase project.
+
+  HOW TO RUN
+  It is one HTML file. Open it in a browser, or host it anywhere static
+  (GitHub Pages, Netlify, a school server). No build step. Dependencies load from
+  CDNs: Tailwind (utility CSS), Lucide (icons), qrcode.js (QR widget), Firebase.
+  The Firebase config below is a public web config — that is normal for Firebase;
+  access is controlled by Firestore rules in the Firebase console, not by hiding
+  the key.
+
+  FILE LAYOUT (top → bottom)
+    1. <style>                  Board styles, widget styles, e-ink mode, then the
+                                MOBILE block last so it wins the CSS cascade.
+    2. <body> markup            Two stacked <canvas> elements, status pill,
+                                eraser options, bottom toolbar, zoom controls,
+                                fireworks canvas, widget layer, widget rail.
+    3. <script type="module">   THE BOARD: state, canvas setup, Firebase sync,
+                                drawing helpers, render loop, pointer input
+                                (pen/touch/mouse/pinch), undo, toolbar wiring,
+                                touch & e-ink modes, keyboard shortcuts.
+    4. <script> (plain IIFE)    THE WIDGETS: sounds/fireworks helpers, a DEFS
+                                table with one entry per widget type, the generic
+                                widget frame (drag/resize/close/persist), rail
+                                buttons, mobile rail toggle, restore on load.
+
+  KEY CONCEPTS
+  • World vs screen coordinates. Strokes are stored in "world" units. The view
+    object {x, y, zoom} maps world → screen:  screen = world * zoom + view.
+    getCanvasPoint() does the inverse. Pan changes view.x/y; zoom changes
+    view.zoom around the cursor/pinch point.
+  • Three canvases. `offscreen` holds every committed stroke rendered for the
+    current view (rebuilt only when strokes or the view change). `mainCanvas`
+    just blits offscreen each frame. `overlayCanvas` (top, receives all pointer
+    events) shows the stroke currently being drawn and eraser cursors. This keeps
+    drawing responsive: an in-progress stroke never triggers a full re-render.
+  • A stroke object: { id, type: 'pen'|'eraser'|'arrow'|'rect'|'circle',
+    color, thickness, points: [{x,y}, ...], timestamp }. Pen/eraser have many
+    points; shapes have exactly two (start, end). 'eraser' type is a *partial*
+    eraser stroke rendered with destination-out compositing; *stroke* erase
+    deletes whole stroke documents instead.
+  • Firestore path: artifacts/{appId}/public/data/strokes/{strokeId}.
+    Every stroke is one document. onSnapshot keeps the local `strokes` array
+    equal to the collection; local edits are optimistic (applied immediately,
+    then written). Long pen strokes are chunked every 150 points so they start
+    syncing before the user lifts the pen.
+  • Undo is a local stack of {type:'add'|'delete', strokes:[...]}; undoing
+    an add deletes those docs, undoing a delete re-writes them.
+  • Widgets are DOM elements, absolutely positioned inside #widget-layer with
+    pointer-events re-enabled per widget. They don't know about the canvas.
+    Each widget type in DEFS has mount(body, state, ctx): build the UI into
+    `body`, keep persistent data on `state` (auto-saved), and optionally return
+    a cleanup function (clear intervals, stop mic, etc).
+
+  INPUT MODEL (pointer events)
+  • Mouse left = current tool. Mouse right (held) = temporary stroke eraser.
+  • Wheel = zoom at cursor. Space (held) = temporary pan. Ctrl/Cmd+Z = undo.
+  • Touch: one finger = current tool OR pan (see ui.touchMode toggle);
+    two fingers = pinch zoom + pan. Stylus always draws; while a stylus is
+    down, finger touches are ignored (palm rejection).
+
+  DEVICE MODES
+  • ui.touchMode ('draw'|'pan'): what a single finger does. Saved in localStorage.
+  • ui.eink (bool): removes blur/shadows/animations/grid, and nudges a style
+    each redraw so e-ink panels (Boox) flush the canvas. Manual toggle only
+    (no auto-detect). Saved in localStorage.
+
+  ADDING A WIDGET (for future edits)
+    1. Add a button in #widget-rail:  <button data-widget="foo" data-label="Foo">
+    2. Add DEFS.foo = { title, icon (lucide name), w, h, mount(body, state, ctx) }
+    That's it — drag, resize, close, focus, persistence and mobile clamping are
+    handled by addWidget().
+
+  ADDING A DRAWING TOOL
+    Add a button with id="btn-<tool>", handle it in pointerdown/pointermove,
+    add a draw<Tool>() and a branch in drawEntity(), and (for stroke erase)
+    a branch in strokeHitTest().
+═══════════════════════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -13,6 +101,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        /* ─── BASE PAGE ─── full-screen, no scrolling, no text selection (it's a drawing surface) ─── */
         body,
         html {
             margin: 0;
@@ -26,6 +115,7 @@
             -webkit-user-select: none;
         }
 
+        /* The board. The dot grid is a CSS background on this container; JS moves/scales it with the view. */
         #canvas-container {
             position: absolute;
             inset: 0;
@@ -43,6 +133,8 @@
             -webkit-touch-callout: none;
         }
 
+        /* z-order: mainCanvas (committed strokes) < overlayCanvas (live stroke, gets pointer events)
+           < widget-layer (30) < fireworks (40) < toolbars (50) */
         #mainCanvas {
             z-index: 10;
         }
@@ -64,6 +156,7 @@
             box-shadow: 0 0 0 2px white, 0 0 0 4px #3b82f6;
         }
 
+        /* body.eink is toggled by the book button in the toolbar (manual toggle only). */
         /* ─── E-INK MODE (Boox etc.): no blur, shadows, transitions or grid → fewer repaints ── */
         body.eink #canvas-container { background-image: none !important; background-color: #fff; }
         body.eink #toolbar, body.eink #zoom-controls, body.eink #status-pill, body.eink #eraser-options,
@@ -312,6 +405,11 @@
             .die.rolling, .cat-tail, .cat-leg, .cat-sleep svg { animation: none; }
         }
         /* ─── MOBILE / TABLET ───────────────────────────────────────────── */
+        /* IMPORTANT: this block must stay LAST in the stylesheet — it overrides the desktop rules above
+           for the same ids, and CSS uses source order to break ties. Three layers:
+             (pointer: coarse)    any touch device → bigger tap targets, no hover tooltips
+             (max-width: 820px)   phones/small tablets → collapsible widget row, zoom moves to the top
+             (max-height: 500px)  landscape phones → everything compacted so panels can't overlap */
         body { touch-action: none; }
         html { height: 100dvh; }
         button { -webkit-tap-highlight-color: transparent; }
@@ -395,14 +493,15 @@
         <canvas id="overlayCanvas"></canvas>
     </div>
 
-    <!-- Status -->
+    <!-- Status: Firebase connection indicator (green pulse = live, red = offline). -->
     <div id="status-pill"
         class="fixed top-4 right-4 bg-white/90 backdrop-blur-md rounded-xl shadow border border-gray-200 px-4 py-2 flex items-center gap-2 z-50">
         <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-400"></div>
         <span id="status-text" class="text-sm font-medium text-gray-700">Connecting...</span>
     </div>
 
-    <!-- Eraser Options -->
+    <!-- Eraser Options: shown only while the eraser tool is active.
+         Stroke erase = delete whole strokes you touch. Partial erase = paint transparency over them. -->
     <div id="eraser-options"
         class="hidden fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/50 p-1.5 flex gap-1 z-50">
         <button id="btn-erase-stroke"
@@ -412,7 +511,8 @@
             Erase</button>
     </div>
 
-    <!-- Toolbar -->
+    <!-- Toolbar: tools (id="btn-<tool>" is matched by updateUI()), colors (data-color), thickness, undo, clear.
+         On small screens this scrolls horizontally (see MOBILE CSS). -->
     <div id="toolbar"
         class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex items-center gap-1 z-50">
         <button id="btn-pen" class="tool-btn active text-gray-600 p-2 rounded-lg transition-all duration-200"
@@ -492,7 +592,7 @@
         </button>
     </div>
 
-    <!-- Zoom Controls -->
+    <!-- Zoom Controls: +/- zoom around screen center; the % button resets to 100% at origin. -->
     <div id="zoom-controls"
         class="fixed bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex flex-col items-center gap-1 z-50">
         <button id="btn-zoom-in" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"><i
@@ -506,12 +606,14 @@
     </div>
 
 
+    <!-- Fireworks overlay: transparent full-screen canvas used only when a countdown timer finishes. -->
     <canvas id="fireworks-canvas"></canvas>
 
     <!-- Widget layer (floating tools sit above the canvas, screen-fixed like Classroomscreen) -->
     <div id="widget-layer"></div>
 
-    <!-- Widget rail -->
+    <!-- Widget rail: one button per widget type. data-widget must match a key in DEFS (widget script).
+         On desktop it's a vertical bar on the left; on small screens it's hidden behind #rail-toggle. -->
     <button id="rail-toggle"><i data-lucide="layout-grid"></i>Widgets</button>
     <div id="widget-rail">
         <button data-widget="clock" data-label="Clock"><i data-lucide="clock"></i></button>
@@ -533,7 +635,9 @@
         <button id="btn-widgets-clear" data-label="Close all widgets"><i data-lucide="x-circle"></i></button>
     </div>
 
+    <!-- ════════════════════════════ BOARD SCRIPT (ES module) ════════════════════════════ -->
     <script type="module">
+        // Firebase is loaded as ES modules straight from Google's CDN. Version pinned to 11.6.1.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -541,7 +645,10 @@
         lucide.createIcons();
 
         // ─── STATE ────────────────────────────────────────────────────────────────────
+        // ui: what the toolbar currently says. tool ∈ pen|eraser|arrow|rect|circle|pan.
+        // touchMode/eink are persisted in localStorage so they survive reloads.
         const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true, touchMode: localStorage.getItem('whiteboard.touchMode') || 'draw', eink: localStorage.getItem('whiteboard.eink') === '1' };
+        // view: the camera. screen = world * zoom + (x, y). Not persisted — every reload starts at 100%/origin.
         const view = { x: 0, y: 0, zoom: 1 };
 
         let strokes = [];          // ground truth from Firestore
@@ -554,6 +661,7 @@
         let offscreenDirty = true; // needs full redraw
         let offscreenView = { x: null, y: null, zoom: null }; // last view used to render offscreen
 
+        // Multi-touch bookkeeping. activePointers maps pointerId → last PointerEvent (needed for pinch).
         const activePointers = new Map();
         let isDrawing = false;
         let isPanning = false;
@@ -570,12 +678,16 @@
         let erasedThisGesture = new Set(); // ids erased so we don't double-erase
 
         // ─── CANVAS SETUP ─────────────────────────────────────────────────────────────
+        // mainCtx: displays committed strokes. overlayCtx: live stroke + eraser cursor; `desynchronized`
+        // asks the browser to bypass its compositor queue for lower pen latency.
         const container = document.getElementById('canvas-container');
         const mainCanvas = document.getElementById('mainCanvas');
         const mainCtx = mainCanvas.getContext('2d', { alpha: true });
         const overlayCanvas = document.getElementById('overlayCanvas');
         const overlayCtx = overlayCanvas.getContext('2d', { alpha: true, desynchronized: true });
 
+        // Size all three canvases to the window at device pixel ratio so lines are crisp on Retina/HiDPI.
+        // All drawing code works in CSS pixels; the base transform (setTransform) handles the scaling.
         let dpr = 1;
         function resize() {
             dpr = Math.min(window.devicePixelRatio || 1, ui.eink ? 2 : 3);
@@ -595,6 +707,8 @@
         resize();
 
         // ─── FIREBASE ─────────────────────────────────────────────────────────────────
+        // __firebase_config / __app_id / __initial_auth_token are optional globals a hosting
+        // environment may inject. When absent, the inline config + anonymous sign-in are used.
         let firebaseConfig;
         if (typeof __firebase_config !== 'undefined') {
             firebaseConfig = JSON.parse(__firebase_config);
@@ -633,6 +747,9 @@
             } catch (e) { updateStatus('offline', 'Offline (Auth Failed)'); }
         })();
 
+        // Once signed in, subscribe to the strokes collection. Every snapshot replaces the local
+        // `strokes` array wholesale (points are stored as a JSON string of [x,y] pairs to keep
+        // documents small; they're expanded back to {x,y} objects here).
         onAuthStateChanged(auth, u => {
             user = u;
             if (u) {
@@ -658,6 +775,9 @@
         });
 
         // ─── DRAWING HELPERS ──────────────────────────────────────────────────────────
+        // All of these draw in WORLD coordinates; callers set up translate/scale on the ctx first.
+
+        // Drop points closer than `tol` to the previous kept point — smaller documents, same look.
         function simplifyPoints(points, tol = 1.5) {
             if (points.length <= 2) return points;
             const out = [points[0]];
@@ -670,6 +790,8 @@
             return out;
         }
 
+        // Pen strokes: quadratic curves through midpoints give a smooth line from raw pointer samples.
+        // isEraser switches to destination-out so the stroke punches transparency instead of painting.
         function drawSmoothPath(ctx, points, color, thickness, isEraser) {
             if (!points || points.length === 0) return;
             ctx.beginPath();
@@ -717,6 +839,7 @@
             ctx.beginPath(); ctx.ellipse((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.abs(p2.x - p1.x) / 2, Math.abs(p2.y - p1.y) / 2, 0, 0, 2 * Math.PI); ctx.stroke();
         }
 
+        // Dispatch by stroke.type. Add a branch here when adding a new tool.
         function drawEntity(ctx, stroke) {
             if (!stroke.points || stroke.points.length === 0) return;
             if (stroke.type === 'pen' || stroke.type === 'eraser')
@@ -727,8 +850,9 @@
         }
 
         // ─── OFFSCREEN / MAIN RENDER ──────────────────────────────────────────────────
-        // We render all committed strokes to an offscreen canvas.
-        // The main canvas composites offscreen.
+        // Rendering is lazy: renderLoop runs every animation frame but only repaints when
+        // isDirty is set. offscreen is only rebuilt when offscreenDirty is set or the view moved.
+        // Anything that changes strokes or the view must set isDirty (and usually offscreenDirty).
 
         function rebuildOffscreen() {
             offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
@@ -741,6 +865,7 @@
             offscreenView = { x: view.x, y: view.y, zoom: view.zoom };
         }
 
+        // Blit offscreen → main, then update the CSS dot grid to follow the view.
         function redrawMain() {
             if (offscreenDirty) rebuildOffscreen();
 
@@ -780,6 +905,10 @@
         requestAnimationFrame(renderLoop);
 
         // ─── INPUT ────────────────────────────────────────────────────────────────────
+        // All pointer handling is on overlayCanvas (the top canvas). Pointer Events unify
+        // mouse, touch and stylus; e.pointerType tells them apart.
+
+        // Screen (client) pixels → world coordinates.
         function getCanvasPoint(clientX, clientY) {
             const rect = overlayCanvas.getBoundingClientRect();
             return { x: ((clientX - rect.left) - view.x) / view.zoom, y: ((clientY - rect.top) - view.y) / view.zoom };
@@ -791,6 +920,9 @@
         }
 
         // Stroke-erase hit test: returns true if point (cx, cy) in WORLD COORDS is within `radius` of any point in `stroke`
+        // Used by stroke-erase: is world point (cx,cy) within `radius` of this stroke?
+        // Pen strokes test every point AND every segment (so sparse straight lines still hit);
+        // shapes use a padded bounding box, which is good enough for a fat eraser.
         function strokeHitTest(stroke, cx, cy, radius) {
             if (!stroke.points || stroke.points.length === 0) return false;
             const r2 = radius * radius;
@@ -830,6 +962,11 @@
         let rightErase = null; // { tool, eraseMode } saved while right-button erasing
         overlayCanvas.addEventListener('contextmenu', e => e.preventDefault());
 
+        // POINTER DOWN — decides what this gesture is:
+        //   right mouse → temporary stroke eraser
+        //   second finger → start pinch (abort any stroke)
+        //   single finger in 'pan' touch mode → pan
+        //   otherwise → start a stroke/shape/eraser/pan according to ui.tool
         overlayCanvas.addEventListener('pointerdown', e => {
             if (e.pointerType === 'mouse' && e.button === 2 && activePointers.size === 0) {
                 abortCurrentStroke();
@@ -892,6 +1029,8 @@
             }
         });
 
+        // Stroke-erase hit: remove every stroke under the eraser (optimistic local delete + Firestore
+        // delete + undo entry). erasedThisGesture stops re-deleting during one drag.
         function eraseStrokesAtPoint(wx, wy) {
             const radius = (ui.thickness * 8) / view.zoom; // eraser radius in world space
             const toErase = strokes.filter(s => !erasedThisGesture.has(s.id) && strokeHitTest(s, wx, wy, radius));
@@ -914,6 +1053,15 @@
             }
         }
 
+        // POINTER MOVE — hot path, keep it cheap.
+        //   pinch → recompute view.zoom/x/y from the two fingers, full re-render
+        //   stroke-erase → hit-test each coalesced point, draw a cursor circle on the overlay
+        //   shape tools → update the 2nd point and redraw only the shape on the overlay
+        //   partial eraser → paint destination-out directly on mainCanvas (offscreen catches up on commit)
+        //   pen → append points and draw only the NEW segments onto the overlay (no re-render)
+        //   pan → shift view by the mouse delta
+        // getCoalescedEvents() returns all the high-frequency samples since the last event
+        // (stylus can report 240Hz), so curves don't look chunky at 60fps.
         overlayCanvas.addEventListener('pointermove', e => {
             if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, e);
 
@@ -1011,6 +1159,10 @@
             }
         });
 
+        // COMMIT — the in-progress stroke becomes real: simplified, pushed to `strokes`, pushed
+        // to the undo stack, written to Firestore (deferred with setTimeout so the write never
+        // blocks the pointer thread). keepDrawing=true is the mid-stroke chunking case: the
+        // current chunk is committed and a new one continues from its last point.
         async function commitStroke(keepDrawing = false) {
             if (isDrawing && currentStroke && currentStroke.points.length > 0) {
                 if (['arrow', 'rect', 'circle'].includes(currentStroke.type) && currentStroke.points.length < 2) {
@@ -1067,6 +1219,7 @@
             if (activePointers.size === 0) { abortCurrentStroke(); isPanning = false; endRightErase(); updateCursor(); }
         });
 
+        // Wheel zoom around the cursor: keep the world point under the mouse fixed while scaling.
         overlayCanvas.addEventListener('wheel', e => {
             e.preventDefault();
             const newZoom = Math.min(Math.max(0.1, view.zoom * (1 + (-e.deltaY * 0.001))), 10);
@@ -1078,6 +1231,8 @@
         }, { passive: false });
 
         // ─── UNDO ─────────────────────────────────────────────────────────────────────
+        // Single-level history stack (no redo). Undo of an 'add' deletes docs; undo of a
+        // 'delete' (erase or Clear) re-creates them with their original ids and timestamps.
         async function undo() {
             if (undoStack.length === 0) return;
             const action = undoStack.pop();
@@ -1105,6 +1260,8 @@
         }
 
         // ─── UI / TOOLBAR ─────────────────────────────────────────────────────────────
+        // updateUI() is the single place that syncs the DOM to `ui`: active tool button, grid
+        // button, eraser sub-options, active color swatch, cursor. Call it after changing ui.*.
         function updateZoomUI() {
             document.getElementById('btn-zoom-reset').innerText = `${Math.round(view.zoom * 100)}%`;
         }
@@ -1162,6 +1319,7 @@
         document.getElementById('btn-circle').onclick = () => switchTool('circle');
         document.getElementById('btn-pan').onclick = () => switchTool('pan');
         document.getElementById('btn-grid').onclick = () => { ui.showGrid = !ui.showGrid; isDirty = true; updateUI(); };
+        // Touch mode toggle (only visible on touch devices): finger draws vs finger pans.
         function updateTouchBtn() {
             const b = document.getElementById('btn-touch');
             const pan = ui.touchMode === 'pan';
@@ -1175,6 +1333,7 @@
             localStorage.setItem('whiteboard.touchMode', ui.touchMode); updateTouchBtn();
         };
         updateTouchBtn();
+        // E-ink mode: adds body.eink (see CSS) and re-runs resize() for the pixel-ratio change.
         function applyEink() {
             document.body.classList.toggle('eink', ui.eink);
             const b = document.getElementById('btn-eink');
@@ -1207,6 +1366,7 @@
             strokes = []; offscreenDirty = true; isDirty = true;
         };
 
+        // Keyboard: Ctrl/Cmd+Z undo; hold Space to pan temporarily (ignored while typing in a widget).
         let spacePressed = false, previousTool = ui.tool;
         window.addEventListener('keydown', e => {
             if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); return; }
@@ -1218,6 +1378,7 @@
             if (e.code === 'Space') { spacePressed = false; switchTool(previousTool); }
         });
 
+        // Mobile Safari/Chrome: stop the *page* from zooming so pinch/double-tap only affect the board.
         // iOS Safari: block pinch-zoom of the page itself and double-tap zoom on toolbars
         ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
         let lastTouchEnd = 0;
@@ -1230,6 +1391,7 @@
         updateUI(); updateZoomUI();
     </script>
 
+    <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) ════════════════════════════ -->
     <script>
         // ═══════════════════════════════════════════════════════════════════════
         //  WIDGETS — Classroomscreen-style floating tools that sit over the board.
@@ -1240,7 +1402,9 @@
         (() => {
             const layer = document.getElementById('widget-layer');
             const STORAGE_KEY = 'whiteboard.widgets.v1';
-            const widgets = new Map();          // id -> { el, type, state, cleanup }
+            const widgets = new Map();          // id -> { el, type, state, cleanup }  (every open widget)
+            // Persistence: on any change, `save()` debounces a write of [{id,type,x,y,w,h,state}] to localStorage.
+            // On load, the same list is replayed through addWidget().
             let zTop = 100;
             let saveTimer = null;
 
@@ -1256,6 +1420,8 @@
                 }, 150);
             };
 
+            // Small DOM helpers used by every widget: icon(lucideName), el(tag, className, text), pad(2 digits),
+            // fmtTime(ms → m:ss or h:mm:ss), fitReadout(scale a big number to the widget width).
             const icon = name => { const i = document.createElement('i'); i.setAttribute('data-lucide', name); return i; };
             const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
             const pad = n => String(n).padStart(2, '0');
@@ -1270,6 +1436,8 @@
                 widget.style.setProperty('--readout', `${Math.max(24, Math.min(160, w / (chars * 0.62)))}px`);
             };
 
+            // ─── Sounds & effects ─── all synthesized with WebAudio, no audio files needed.
+            // Browsers require a user gesture before audio plays; the first click on Start/Roll/Meow unlocks it.
             // Alarm sound without any assets — a few short beeps
             let audioCtx = null;
             function beep(times = 3) {
@@ -1333,8 +1501,17 @@
             }
 
             // ─── Widget definitions ──────────────────────────────────────────
-            // Each returns { title, icon, w, h, mount(body, state, ctx) -> cleanup? }
+            // DEFS[type] = { title, icon, w, h, mount(body, state, ctx) → cleanup? }
+            //   body   – the widget's content <div>; append your UI here
+            //   state  – plain object that is persisted automatically; put anything the widget
+            //            should remember on it (timer length, names list, chosen lamp...). Call
+            //            save() after changing it.
+            //   ctx    – { widget: the outer element, onResize(cb): run cb when the user resizes }
+            //   return – optional function run when the widget is closed (stop timers, mic, rAF)
+            // Widgets must stopPropagation() on keydown/keyup inside text inputs so the board's
+            // Space-to-pan and Ctrl+Z shortcuts don't fire while typing.
             const DEFS = {
+                // Clock: live time + date, 12/24h toggle.
                 clock: {
                     title: 'Clock', icon: 'clock', w: 300, h: 170,
                     mount(body, state, ctx) {
@@ -1360,6 +1537,8 @@
                     }
                 },
 
+                // Timer: countdown with presets + custom minutes. Uses an absolute endAt timestamp so it
+                // stays accurate even if the tab is throttled. Fireworks + bell when it reaches zero.
                 timer: {
                     title: 'Timer', icon: 'timer', w: 320, h: 230,
                     mount(body, state, ctx) {
@@ -1421,6 +1600,7 @@
                     }
                 },
 
+                // Stopwatch: elapsed is stored when paused; while running it's elapsed + (now − startAt).
                 stopwatch: {
                     title: 'Stopwatch', icon: 'watch', w: 300, h: 190,
                     mount(body, state, ctx) {
@@ -1450,6 +1630,7 @@
                     }
                 },
 
+                // Calendar: simple month grid, today highlighted, ‹ › to browse months (not persisted).
                 calendar: {
                     title: 'Calendar', icon: 'calendar', w: 300, h: 300,
                     mount(body, state, ctx) {
@@ -1478,6 +1659,7 @@
                     }
                 },
 
+                // Text: a big editable textarea with A+/A− size buttons. Text and size persist.
                 text: {
                     title: 'Text', icon: 'type', w: 340, h: 220,
                     mount(body, state, ctx) {
@@ -1498,6 +1680,8 @@
                     }
                 },
 
+                // Random name picker: names live in a textarea (one per line). 'No repeats' remembers who
+                // has been picked this session; the pool refills when everyone has had a turn.
                 names: {
                     title: 'Random name', icon: 'shuffle', w: 320, h: 300,
                     mount(body, state, ctx) {
@@ -1544,6 +1728,7 @@
                     }
                 },
 
+                // Dice: 1–3 dice drawn as a 3×3 pip grid; PIPS maps a face value to which cells are on.
                 dice: {
                     title: 'Dice', icon: 'dices', w: 260, h: 200,
                     mount(body, state, ctx) {
@@ -1575,6 +1760,7 @@
                     }
                 },
 
+                // Traffic light: tap a lamp to light it (tap again to turn all off). Persists which is on.
                 traffic: {
                     title: 'Traffic light', icon: 'traffic-cone', w: 160, h: 320,
                     mount(body, state, ctx) {
@@ -1592,6 +1778,7 @@
                     }
                 },
 
+                // Work symbols: Silence / Whisper / Partner / Group / Ask — one active at a time.
                 symbols: {
                     title: 'Work symbols', icon: 'users', w: 300, h: 150,
                     mount(body, state, ctx) {
@@ -1609,6 +1796,9 @@
                     }
                 },
 
+                // Period timer / bell schedule: counts down the current period from the device clock.
+                // state.periods = [[name, 'HH:MM', 'HH:MM'], ...] (24h). Editable in-widget; rings a
+                // bell when the active period changes. Also counts down passing periods to the next start.
                 schedule: {
                     title: 'Period timer', icon: 'bell', w: 320, h: 440,
                     mount(body, state, ctx) {
@@ -1699,6 +1889,8 @@
                     }
                 },
 
+                // QR code: renders whatever is in the input (defaults to this page's URL) via qrcode.js,
+                // sized to fit the widget.
                 qr: {
                     title: 'QR code', icon: 'qr-code', w: 240, h: 300,
                     mount(body, state, ctx) {
@@ -1722,6 +1914,8 @@
                     }
                 },
 
+                // Wandering cat: purely decorative. rAF loop moves an inline SVG around its box and
+                // flips it to face its direction. Walk / Run / Sleep states, synthesized meow.
                 cat: {
                     title: 'Wandering cat', icon: 'cat', w: 300, h: 220,
                     mount(body, state, ctx) {
@@ -1770,6 +1964,8 @@
                     }
                 },
 
+                // Noise meter: microphone RMS level (0–100 rough scale) drawn as a bar; a dashed line marks
+                // the adjustable 'too loud' threshold. Mic is released when stopped or the widget closes.
                 noise: {
                     title: 'Noise meter', icon: 'volume-2', w: 220, h: 280,
                     mount(body, state, ctx) {
@@ -1823,6 +2019,9 @@
             };
 
             // ─── Widget frame: drag, resize, focus, close ────────────────────
+            // Builds the chrome around any DEFS entry: header (drag handle + close), body, resize grip.
+            // opts may carry {id, x, y, w, h, state} when restoring from localStorage.
+            // New widgets cascade diagonally so several opened in a row don't stack exactly on top.
             function addWidget(type, opts = {}) {
                 const def = DEFS[type]; if (!def) return;
                 const id = opts.id || crypto.randomUUID();
@@ -1902,6 +2101,7 @@
             const isSmall = () => window.matchMedia('(max-width: 820px)').matches;
 
             // Keep widgets on screen when the viewport changes (rotation, keyboard, window resize)
+            // Pull every widget back inside the viewport (rotation, keyboard, window resize, tiny screens).
             function clampAll() {
                 for (const w of widgets.values()) {
                     const r = w.el;
@@ -1922,7 +2122,7 @@
                 if (confirm('Close all widgets?')) [...widgets.keys()].forEach(removeWidget);
             };
 
-            // Restore from last session
+            // Restore from last session (same shape as what save() writes)
             try {
                 const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                 saved.forEach(s => addWidget(s.type, s));
