@@ -707,8 +707,16 @@
             return false;
         }
 
+        // Right mouse button = temporary stroke eraser (restored on release)
+        let rightErase = null; // { tool, eraseMode } saved while right-button erasing
+        overlayCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
         overlayCanvas.addEventListener('pointerdown', e => {
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (e.pointerType === 'mouse' && e.button === 2 && activePointers.size === 0) {
+                abortCurrentStroke();
+                rightErase = { tool: ui.tool, eraseMode: ui.eraseMode };
+                ui.tool = 'eraser'; ui.eraseMode = 'stroke';
+            } else if (e.pointerType === 'mouse' && e.button !== 0) return;
             overlayCanvas.setPointerCapture(e.pointerId);
             activePointers.set(e.pointerId, e);
 
@@ -911,14 +919,20 @@
                 } else {
                     commitStroke();
                 }
-                isPanning = false; updateCursor();
+                isPanning = false; endRightErase(); updateCursor();
             }
         });
+
+        function endRightErase() {
+            if (!rightErase) return;
+            ui.tool = rightErase.tool; ui.eraseMode = rightErase.eraseMode; rightErase = null;
+            updateUI();
+        }
 
         overlayCanvas.addEventListener('pointercancel', e => {
             activePointers.delete(e.pointerId);
             overlayCanvas.releasePointerCapture(e.pointerId);
-            if (activePointers.size === 0) { abortCurrentStroke(); isPanning = false; updateCursor(); }
+            if (activePointers.size === 0) { abortCurrentStroke(); isPanning = false; endRightErase(); updateCursor(); }
         });
 
         overlayCanvas.addEventListener('wheel', e => {
