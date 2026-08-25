@@ -116,10 +116,24 @@
             #rail-toggle svg { width: 18px; height: 18px; }
             #widget-rail {
                 display: none; top: calc(3.5rem + env(safe-area-inset-top)); left: calc(0.5rem + env(safe-area-inset-left));
-                transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
+                right: 0.5rem; transform: none; flex-direction: row; flex-wrap: nowrap;
+                max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: hidden;
+                scrollbar-width: none; -webkit-overflow-scrolling: touch;
             }
+            #widget-rail::-webkit-scrollbar { display: none; }
+            #widget-rail > * { flex-shrink: 0; }
             #widget-rail.open { display: flex; }
             #widget-rail .rail-sep { width: 1px; height: 28px; margin: 6px 2px; }
+            /* Landscape phones: everything stays inside its own row, nothing stacks into the toolbar */
+            @media (max-height: 500px) {
+                #toolbar { bottom: calc(0.5rem + env(safe-area-inset-bottom)); padding: 4px; }
+                #toolbar button { padding: 8px; }
+                #eraser-options { bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+                #zoom-controls { top: calc(0.5rem + env(safe-area-inset-top)); right: 7rem; }
+                #status-pill { display: none; }
+                #widget-rail { top: calc(3.25rem + env(safe-area-inset-top)); }
+                .widget { max-height: calc(100dvh - 90px); }
+            }
             .widget { max-width: calc(100vw - 16px); max-height: calc(100dvh - 110px); }
             #eraser-options { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
         }
@@ -563,7 +577,7 @@
 
         let dpr = 1;
         function resize() {
-            dpr = ui.eink ? 1 : Math.min(window.devicePixelRatio || 1, 3);
+            dpr = Math.min(window.devicePixelRatio || 1, ui.eink ? 2 : 3);
             const w = window.innerWidth, h = window.innerHeight;
             for (const c of [mainCanvas, overlayCanvas, offscreen]) {
                 c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
@@ -745,7 +759,18 @@
             } else {
                 container.style.backgroundImage = 'none';
             }
+
+            // E-ink browsers (Boox) only refresh the panel when the page's layers change.
+            // With the grid off nothing outside the canvas changes, so the committed stroke on
+            // mainCanvas never got flushed while the overlay clear did — the line looked deleted.
+            // Nudging a style on the container every redraw forces a composite.
+            if (ui.eink) {
+                einkFlip = !einkFlip;
+                container.style.backgroundColor = einkFlip ? '#ffffff' : '#fefefe';
+                mainCanvas.style.transform = einkFlip ? 'translateZ(0)' : 'none';
+            }
         }
+        let einkFlip = false;
 
         function renderLoop() {
             if (isDirty) { redrawMain(); isDirty = false; }
