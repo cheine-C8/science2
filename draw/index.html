@@ -1,21 +1,115 @@
 <!DOCTYPE html>
+<!--
+  ============================================================================
+  SKETCHPAD — a single-file drawing tool for students
+  ============================================================================
+
+  VERSION: 1.4.0        (also set in the APP_VERSION constant in the script
+                         below — bump BOTH places when you change the file)
+
+  What it is
+  ----------
+  A self-contained HTML page (no libraries, no internet needed) where students
+  draw diagrams and export them as PNG images to paste into a formative,
+  lab report, Google Doc, etc.
+
+  How the file is organized
+  -------------------------
+    1. <style>   — all CSS (toolbar, canvas frame, status bar)
+    2. <body>    — the toolbar buttons, the canvas, the status bar
+    3. <script>  — all behavior, in sections:
+         a. constants & app state
+         b. undo/redo history
+         c. drawing (rendering the shape list onto the canvas)
+         d. tool / color / option controls
+         e. mouse & touch input (pointer events)
+         f. text editing (a floating contenteditable box)
+         g. keyboard shortcuts
+         h. export (copy to clipboard, download PNG)
+         i. startup
+
+  Core idea
+  ---------
+  The drawing is NOT stored as pixels. It's a list of shape objects
+  (`shapes` array). Every time anything changes we clear the canvas and
+  redraw every shape from that list (`draw()`). That's what makes undo,
+  move, select, and editing text possible.
+
+  Shape object formats
+  --------------------
+    pen     { id, type:'pen',     color, width, points:[{x,y},...] }
+    line    { id, type:'line',    color, width, x1,y1,x2,y2 }
+    arrow   { id, type:'arrow',   color, width, x1,y1,x2,y2 }   (head at x2,y2)
+    rect    { id, type:'rect',    color, width, fill, x1,y1,x2,y2 }
+    ellipse { id, type:'ellipse', color, width, fill, x1,y1,x2,y2 }
+    text    { id, type:'text',    color, size,  x,y, text }
+
+  All coordinates are in "canvas units" (0..960 wide, 0..600 tall), no matter
+  how big or small the canvas is displayed on screen. `pos()` converts mouse
+  positions to these units.
+
+  ============================================================================
+  NOTES FOR OTHER LLMs / FUTURE EDITORS
+  ============================================================================
+  - Keep this a single file with zero dependencies. Students open it directly
+    from a file, a shared drive, or an LMS link; there may be no internet.
+  - Bump APP_VERSION (script) and the VERSION line in this header on every
+    change. Use semver-ish: bug fix -> x.x.+1, new feature -> x.+1.0.
+    Add a line to the CHANGELOG below.
+  - Do not use localStorage/sessionStorage; nothing persists by design.
+  - To add a new shape type: (1) add a tool button in the toolbar with
+    data-tool="name", (2) add a case in drawShape(), (3) make sure bounds()
+    returns its bounding box (used for select/move), (4) add a hint in HINTS,
+    (5) optionally add a shortcut in the keyboard `map`.
+  - Export renders the shape list to an offscreen canvas at 2x (renderExport),
+    so the exported PNG is always 1920x1200 with a white background,
+    regardless of the on-screen display size.
+  - Clipboard copy requires a secure context (https or file://) and a
+    browser that supports ClipboardItem. Firefox often refuses image writes;
+    the code catches that and points the student to Download instead.
+  - Fill is solid, in the shape's own color (a teacher request — don't make
+    it translucent again).
+  - The Clear button intentionally has NO confirm dialog (teacher request);
+    undo restores a cleared drawing.
+  - The canvas frame is sized with CSS (aspect-ratio + min()) so it never
+    overflows the viewport; don't reintroduce scrolling.
+  - The eraser removes WHOLE shapes (it's an object eraser, not a pixel
+    eraser) because the drawing is a shape list, not a bitmap. It uses
+    hitTest(), which measures distance to the actual stroke/outline.
+  - Tested with Playwright/Chromium: download and clipboard both verified.
+
+  CHANGELOG
+  ---------
+  1.4.0  Eraser tool (X): click or drag over a shape to remove it. Hit
+         testing now checks distance to the actual stroke, not just the
+         bounding box.
+  1.3.0  Added comments, LLM notes, version number shown bottom-right.
+  1.2.0  Canvas frame scales to fit the window (no scrolling); Clear no
+         longer asks for confirmation.
+  1.1.0  Fill shapes is now solid, same color as the outline.
+  1.0.0  First version: pen, line, arrow, rect, ellipse, text, colors,
+         width, undo/redo, select/move, copy image, download PNG.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sketchpad</title>
 <style>
+  /* ---- Design tokens: change colors here, they're reused everywhere ---- */
   :root {
-    --paper: #ffffff;
-    --desk: #e9ecef;
-    --ink: #1f2933;
-    --chrome: #f7f8fa;
-    --line: #cfd4da;
-    --accent: #2457c5;
-    --accent-soft: #dce6fb;
+    --paper: #ffffff;        /* canvas background */
+    --desk: #e9ecef;         /* page background around the canvas */
+    --ink: #1f2933;          /* default text/ui color */
+    --chrome: #f7f8fa;       /* toolbar + status bar background */
+    --line: #cfd4da;         /* borders */
+    --accent: #2457c5;       /* selected tool, primary button, selection box */
+    --accent-soft: #dce6fb;  /* selected tool background */
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
+
+  /* Page is a vertical flex column: toolbar / stage (grows) / status bar */
   body {
     font-family: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
     font-size: 14px;
@@ -29,18 +123,20 @@
     outline: 2px solid var(--accent); outline-offset: 2px;
   }
 
-  /* ---- toolbar ---- */
+  /* ---- Toolbar ---- */
   .bar {
     background: var(--chrome);
     border-bottom: 1px solid var(--line);
     padding: 8px 12px;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap;            /* wraps to a second row on narrow screens */
     gap: 6px 18px;
     align-items: center;
   }
   .group { display: flex; align-items: center; gap: 4px; }
   .group-label { color: #6b7280; margin-right: 4px; }
+
+  /* Tool buttons (pen, arrow, etc). aria-pressed="true" = active tool */
   .tool {
     width: 36px; height: 36px;
     border: 1px solid transparent;
@@ -53,6 +149,7 @@
   .tool[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
   .tool svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
+  /* Color swatches (generated by JS from the PALETTE array) */
   .swatch {
     width: 22px; height: 22px; border-radius: 50%;
     border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line);
@@ -69,6 +166,7 @@
   }
   label.check { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 
+  /* Text buttons (Undo, Clear, Download...) */
   .btn {
     padding: 6px 12px; border-radius: 6px;
     border: 1px solid var(--line); background: #fff;
@@ -77,18 +175,22 @@
   .btn:disabled { opacity: .45; cursor: default; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn.primary:hover { background: #1d4aa8; }
-  .spacer { flex: 1; }
+  .spacer { flex: 1; }   /* pushes the export buttons to the right */
 
-  /* ---- canvas ---- */
+  /* ---- Stage: the gray area holding the canvas ---- */
   .stage {
     flex: 1;
-    min-height: 0;
+    min-height: 0;              /* lets the flex child shrink below content size */
     display: grid; place-items: center;
     padding: 12px;
-    overflow: hidden;
+    overflow: hidden;           /* never scroll; the frame is sized to fit instead */
   }
+
+  /* The white "paper". Sized so it always fits both the width and height of
+     the window while keeping the 960x600 (16:10) aspect ratio.
+     150px ≈ toolbar + status bar + padding. */
   .frame {
-    position: relative;
+    position: relative;         /* the floating text editor is positioned inside it */
     background: var(--paper);
     border: 1px solid var(--line);
     box-shadow: 0 1px 3px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.08);
@@ -96,12 +198,15 @@
     max-width: 960px;
     aspect-ratio: 960 / 600;
   }
+  /* The canvas element fills the frame; its internal size stays 960x600 */
   canvas { display: block; touch-action: none; width: 100%; height: 100%; }
   canvas.cursor-cross { cursor: crosshair; }
   canvas.cursor-text { cursor: text; }
   canvas.cursor-move { cursor: move; }
   canvas.cursor-default { cursor: default; }
+  canvas.cursor-eraser { cursor: cell; }
 
+  /* Floating box used while typing/editing text (see openTextEditor) */
   .text-editor {
     position: absolute;
     border: 1px dashed var(--accent);
@@ -114,27 +219,27 @@
     line-height: 1.2;
   }
 
-  /* ---- status ---- */
+  /* ---- Status bar: hint on the left, message + version on the right ---- */
   .status {
     background: var(--chrome);
     border-top: 1px solid var(--line);
     padding: 6px 12px;
     color: #4b5563;
-    display: flex; gap: 16px; flex-wrap: wrap;
+    display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
     min-height: 30px;
   }
   .status .msg { color: var(--accent); }
   .status .msg.err { color: #b42318; }
+  .status .version { color: #9aa3ad; font-size: 12px; }
   kbd { font-family: inherit; border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; background: #fff; }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .status .msg { transition: opacity .2s; }
-  }
 </style>
 </head>
 <body>
 
+<!-- ======================= TOOLBAR ======================= -->
 <div class="bar" role="toolbar" aria-label="Drawing tools">
+
+  <!-- Drawing tools. data-tool must match a case in drawShape() / HINTS -->
   <div class="group" id="tools">
     <button class="tool" data-tool="select" title="Select / move (V)" aria-pressed="false">
       <svg viewBox="0 0 24 24"><path d="M5 3l14 9-6 1-3 6z"/></svg></button>
@@ -150,8 +255,11 @@
       <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6.5"/></svg></button>
     <button class="tool" data-tool="text" title="Text (T)" aria-pressed="false">
       <svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M9 19h6"/></svg></button>
+    <button class="tool" data-tool="eraser" title="Eraser (X)" aria-pressed="false">
+      <svg viewBox="0 0 24 24"><path d="M4 16l9-9 6 6-5 5H8z"/><path d="M11 20h9"/></svg></button>
   </div>
 
+  <!-- Color: swatches are inserted here by JS, before the custom picker -->
   <div class="group" id="colors">
     <span class="group-label">Color</span>
     <input type="color" id="colorPicker" value="#1f2933" title="Custom color">
@@ -185,65 +293,89 @@
 
   <span class="spacer"></span>
 
+  <!-- Export -->
   <div class="group">
     <button class="btn" id="copy" title="Copy image to clipboard">Copy image</button>
     <button class="btn primary" id="download" title="Download as PNG">Download PNG</button>
   </div>
 </div>
 
+<!-- ======================= CANVAS ======================= -->
 <div class="stage">
   <div class="frame" id="frame">
+    <!-- width/height here are the INTERNAL drawing resolution, not display size -->
     <canvas id="c" width="960" height="600" aria-label="Drawing canvas"></canvas>
   </div>
 </div>
 
+<!-- ======================= STATUS BAR ======================= -->
 <div class="status">
-  <span id="hint">Pen: drag to draw. Hold <kbd>Shift</kbd> for straight lines and perfect squares/circles.</span>
+  <span id="hint"></span>
   <span class="spacer"></span>
   <span class="msg" id="msg"></span>
+  <span class="version" id="version"></span>
 </div>
 
 <script>
 (() => {
-  const W = 960, H = 600;
+  // =========================================================================
+  // a. CONSTANTS & STATE
+  // =========================================================================
+
+  // Bump this on every change (and the VERSION line in the header comment).
+  const APP_VERSION = '1.4.0';
+  document.getElementById('version').textContent = 'v' + APP_VERSION;
+
+  const W = 960, H = 600;                        // internal canvas size (units)
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
   const frame = document.getElementById('frame');
   const msgEl = document.getElementById('msg');
   const hintEl = document.getElementById('hint');
+  const FONT = '"Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif';
 
+  // Quick-pick swatches shown in the toolbar (any hex color works)
   const PALETTE = ['#1f2933', '#d0342c', '#e8871e', '#e5b800', '#2e9e4f', '#2457c5', '#7b3fbf', '#9aa3ad', '#ffffff'];
+
+  // Hint text shown in the status bar for each tool
   const HINTS = {
     select: 'Select: click a shape to select it, drag to move. Double-click text to edit.',
-    pen: 'Pen: drag to draw freehand.',
+    pen: 'Pen: drag to draw freehand. Hold Shift for a straight line.',
     line: 'Line: drag from start to end. Hold Shift to snap to 45°.',
     arrow: 'Arrow: drag from the tail to the head. Hold Shift to snap to 45°.',
     rect: 'Rectangle: drag a corner. Hold Shift for a square.',
     ellipse: 'Ellipse: drag a corner. Hold Shift for a circle.',
-    text: 'Text: click where the text should go, type, then press Enter.'
+    text: 'Text: click where the text should go, type, then press Enter.',
+    eraser: 'Eraser: click or drag over a shape to remove it. Undo brings it back.'
   };
 
-  // ---------- state ----------
+  // Current tool settings (what the NEXT shape will use)
   let tool = 'pen';
   let color = '#1f2933';
   let lineWidth = 3;
   let fontSize = 20;
   let fill = false;
 
-  let shapes = [];          // committed drawing
-  let history = [];         // undo stack (JSON snapshots)
+  // The drawing itself + editing state
+  let shapes = [];          // committed shapes, drawn in array order (last = on top)
+  let history = [];         // undo stack: JSON snapshots of `shapes`
   let future = [];          // redo stack
-  let draft = null;         // shape being drawn
-  let selectedId = null;
-  let drag = null;          // {startX, startY, origShape}
-  let nextId = 1;
+  let draft = null;         // the shape currently being dragged out (not yet in `shapes`)
+  let selectedId = null;    // id of the selected shape (select tool), or null
+  let drag = null;          // while moving a selected shape: {x, y, orig, moved}
+  let erasing = false;      // eraser button held down; true once something was committed
+  let nextId = 1;           // id counter for new shapes
 
-  // ---------- helpers ----------
+  // =========================================================================
+  // b. UNDO / REDO
+  //    Call commit() BEFORE changing `shapes`; it saves the current state.
+  // =========================================================================
   const snapshot = () => JSON.stringify(shapes);
+
   function commit() {
     history.push(snapshot());
-    if (history.length > 200) history.shift();
-    future = [];
+    if (history.length > 200) history.shift();   // cap memory use
+    future = [];                                 // a new action clears redo
     updateButtons();
   }
   function undo() {
@@ -263,6 +395,8 @@
     document.getElementById('redo').disabled = !future.length;
     document.getElementById('delete').disabled = selectedId == null;
   }
+
+  // Short message in the status bar that disappears after 3 seconds
   function say(text, isErr) {
     msgEl.textContent = text;
     msgEl.className = 'msg' + (isErr ? ' err' : '');
@@ -270,6 +404,8 @@
     say.t = setTimeout(() => (msgEl.textContent = ''), 3000);
   }
 
+  // Convert a mouse/touch event position into canvas units (0..W, 0..H).
+  // Needed because the canvas is displayed scaled to fit the window.
   function pos(e) {
     const r = canvas.getBoundingClientRect();
     return {
@@ -278,10 +414,14 @@
     };
   }
 
-  // ---------- rendering ----------
+  // =========================================================================
+  // c. DRAWING
+  //    drawShape() draws one shape onto any 2D context (screen or export).
+  //    draw() clears the screen canvas and redraws everything.
+  // =========================================================================
   function drawArrowHead(c, x1, y1, x2, y2, w) {
-    const ang = Math.atan2(y2 - y1, x2 - x1);
-    const len = Math.max(10, w * 4);
+    const ang = Math.atan2(y2 - y1, x2 - x1);   // direction of the arrow
+    const len = Math.max(10, w * 4);            // head size scales with line width
     c.beginPath();
     c.moveTo(x2, y2);
     c.lineTo(x2 - len * Math.cos(ang - Math.PI / 6), y2 - len * Math.sin(ang - Math.PI / 6));
@@ -291,7 +431,7 @@
   }
 
   function drawShape(c, s) {
-    if (s.hidden) return;
+    if (s.hidden) return;                 // text being edited is hidden on canvas
     c.strokeStyle = s.color;
     c.fillStyle = s.color;
     c.lineWidth = s.width;
@@ -299,7 +439,7 @@
     c.lineJoin = 'round';
     switch (s.type) {
       case 'pen':
-        if (s.points.length < 2) {
+        if (s.points.length < 2) {        // a single click = a dot
           c.beginPath(); c.arc(s.points[0].x, s.points[0].y, s.width / 2, 0, Math.PI * 2); c.fill();
           break;
         }
@@ -308,18 +448,22 @@
         for (let i = 1; i < s.points.length; i++) c.lineTo(s.points[i].x, s.points[i].y);
         c.stroke();
         break;
+
       case 'line':
       case 'arrow':
         c.beginPath(); c.moveTo(s.x1, s.y1); c.lineTo(s.x2, s.y2); c.stroke();
         if (s.type === 'arrow') drawArrowHead(c, s.x1, s.y1, s.x2, s.y2, s.width);
         break;
+
       case 'rect': {
+        // normalize so dragging in any direction works
         const x = Math.min(s.x1, s.x2), y = Math.min(s.y1, s.y2);
         const w = Math.abs(s.x2 - s.x1), h = Math.abs(s.y2 - s.y1);
-        if (s.fill) c.fillRect(x, y, w, h);
+        if (s.fill) c.fillRect(x, y, w, h);      // solid fill, same color
         c.strokeRect(x, y, w, h);
         break;
       }
+
       case 'ellipse': {
         const cx = (s.x1 + s.x2) / 2, cy = (s.y1 + s.y2) / 2;
         const rx = Math.abs(s.x2 - s.x1) / 2, ry = Math.abs(s.y2 - s.y1) / 2;
@@ -328,9 +472,10 @@
         c.stroke();
         break;
       }
+
       case 'text': {
-        c.font = `${s.size}px "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif`;
-        c.textBaseline = 'top';
+        c.font = `${s.size}px ${FONT}`;
+        c.textBaseline = 'top';           // (x,y) is the top-left of the text
         const lines = s.text.split('\n');
         lines.forEach((ln, i) => c.fillText(ln, s.x, s.y + i * s.size * 1.2));
         break;
@@ -338,13 +483,14 @@
     }
   }
 
+  // Bounding box {x,y,w,h} of a shape — used for hit testing and the selection outline
   function bounds(s) {
     if (s.type === 'pen') {
       const xs = s.points.map(p => p.x), ys = s.points.map(p => p.y);
       return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
     }
     if (s.type === 'text') {
-      ctx.font = `${s.size}px "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif`;
+      ctx.font = `${s.size}px ${FONT}`;
       const lines = s.text.split('\n');
       const w = Math.max(...lines.map(l => ctx.measureText(l).width));
       return { x: s.x, y: s.y, w, h: lines.length * s.size * 1.2 };
@@ -352,23 +498,81 @@
     return { x: Math.min(s.x1, s.x2), y: Math.min(s.y1, s.y2), w: Math.abs(s.x2 - s.x1), h: Math.abs(s.y2 - s.y1) };
   }
 
-  function hitTest(x, y) {
-    const pad = 6;
+  // Distance from point (px,py) to the line segment (x1,y1)-(x2,y2)
+  function segDist(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 ? Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2)) : 0;
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
+
+  // Is (x,y) within `pad` of this shape's actual stroke (or inside its fill)?
+  function shapeHit(s, x, y, pad) {
+    const tol = pad + s.width / 2;
+    switch (s.type) {
+      case 'pen':
+        if (s.points.length < 2) return Math.hypot(x - s.points[0].x, y - s.points[0].y) <= tol;
+        for (let i = 1; i < s.points.length; i++) {
+          if (segDist(x, y, s.points[i - 1].x, s.points[i - 1].y, s.points[i].x, s.points[i].y) <= tol) return true;
+        }
+        return false;
+      case 'line':
+      case 'arrow':
+        return segDist(x, y, s.x1, s.y1, s.x2, s.y2) <= tol;
+      case 'rect': {
+        const b = bounds(s);
+        const inside = x >= b.x - tol && x <= b.x + b.w + tol && y >= b.y - tol && y <= b.y + b.h + tol;
+        if (!inside) return false;
+        if (s.fill) return true;
+        // near any of the four edges?
+        const nearX = Math.abs(x - b.x) <= tol || Math.abs(x - (b.x + b.w)) <= tol;
+        const nearY = Math.abs(y - b.y) <= tol || Math.abs(y - (b.y + b.h)) <= tol;
+        return nearX || nearY;
+      }
+      case 'ellipse': {
+        const b = bounds(s);
+        const cx = b.x + b.w / 2, cy = b.y + b.h / 2, rx = b.w / 2, ry = b.h / 2;
+        if (rx < 1 || ry < 1) return false;
+        // normalized radius: 1 = on the outline
+        const r = Math.hypot((x - cx) / rx, (y - cy) / ry);
+        const band = tol / Math.min(rx, ry);
+        return s.fill ? r <= 1 + band : Math.abs(r - 1) <= band;
+      }
+      case 'text': {
+        const b = bounds(s);
+        return x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad;
+      }
+    }
+    return false;
+  }
+
+  // Which shape is under (x,y)? Checks topmost first.
+  function hitTest(x, y, pad = 6) {
     for (let i = shapes.length - 1; i >= 0; i--) {
-      const b = bounds(shapes[i]);
-      if (x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad) return shapes[i];
+      if (shapeHit(shapes[i], x, y, pad)) return shapes[i];
     }
     return null;
   }
 
+  // Eraser: remove whatever is under the pointer (whole shape). Called on
+  // pointerdown and every pointermove while erasing. Commits once per stroke.
+  function eraseAt(x, y) {
+    const hit = hitTest(x, y, 8);
+    if (!hit) return;
+    if (!erasing) { commit(); erasing = true; }
+    shapes = shapes.filter(s => s !== hit);
+    draw();
+  }
+
+  // Full redraw of the on-screen canvas
   function draw() {
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
     shapes.forEach(s => drawShape(ctx, s));
-    if (draft) drawShape(ctx, draft);
+    if (draft) drawShape(ctx, draft);            // shape in progress, on top
     const sel = shapes.find(s => s.id === selectedId);
-    if (sel) {
+    if (sel) {                                   // dashed selection box
       const b = bounds(sel);
       ctx.save();
       ctx.strokeStyle = '#2457c5';
@@ -379,17 +583,20 @@
     }
   }
 
-  // ---------- tools ----------
+  // =========================================================================
+  // d. TOOL / COLOR / OPTION CONTROLS
+  //    If a shape is selected, changing a setting also applies it to that shape.
+  // =========================================================================
   function setTool(t) {
     tool = t;
     document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
     hintEl.textContent = HINTS[t];
-    canvas.className = t === 'select' ? 'cursor-default' : t === 'text' ? 'cursor-text' : 'cursor-cross';
+    canvas.className = t === 'select' ? 'cursor-default' : t === 'text' ? 'cursor-text' : t === 'eraser' ? 'cursor-eraser' : 'cursor-cross';
     if (t !== 'select') { selectedId = null; draw(); updateButtons(); }
   }
   document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
-  // colors
+  // Build the swatch buttons from PALETTE
   const colorsGroup = document.getElementById('colors');
   const picker = document.getElementById('colorPicker');
   PALETTE.forEach(hex => {
@@ -400,6 +607,7 @@
     colorsGroup.insertBefore(b, picker);
   });
   picker.addEventListener('input', () => setColor(picker.value));
+
   function setColor(hex) {
     color = hex; picker.value = hex;
     document.querySelectorAll('.swatch').forEach(s => s.setAttribute('aria-pressed', String(s.title === hex)));
@@ -428,8 +636,10 @@
   document.getElementById('delete').addEventListener('click', deleteSelected);
   document.getElementById('clear').addEventListener('click', () => {
     if (!shapes.length) return;
-    commit(); shapes = []; selectedId = null; draw(); updateButtons();
+    commit();                       // no confirm dialog on purpose; undo restores it
+    shapes = []; selectedId = null; draw(); updateButtons();
   });
+
   function deleteSelected() {
     if (selectedId == null) return;
     commit();
@@ -437,7 +647,14 @@
     selectedId = null; draw(); updateButtons();
   }
 
-  // ---------- pointer handling ----------
+  // =========================================================================
+  // e. POINTER INPUT (mouse, touch, stylus all come through pointer events)
+  //    down  -> start a draft shape (or select/start dragging)
+  //    move  -> update the draft's end point (or move the selection)
+  //    up    -> commit the draft into `shapes`
+  // =========================================================================
+
+  // Shift helpers: snap a line to 45° increments / force a square
   function snap(x1, y1, x2, y2) {
     const dx = x2 - x1, dy = y2 - y1;
     const ang = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
@@ -450,15 +667,16 @@
   }
 
   canvas.addEventListener('pointerdown', e => {
-    if (e.button !== 0) return;
-    if (editor) finishText();
+    if (e.button !== 0) return;             // left button / primary touch only
+    if (editor) finishText();               // clicking away commits open text
     const p = pos(e);
-    canvas.setPointerCapture(e.pointerId);
+    canvas.setPointerCapture(e.pointerId);  // keep receiving moves even off-canvas
 
     if (tool === 'select') {
       const hit = hitTest(p.x, p.y);
       selectedId = hit ? hit.id : null;
       if (hit) {
+        // remember where the drag started and a copy of the original shape
         drag = { x: p.x, y: p.y, orig: JSON.parse(JSON.stringify(hit)), moved: false };
         canvas.className = 'cursor-move';
       }
@@ -467,6 +685,12 @@
     }
     if (tool === 'text') {
       openTextEditor(p.x, p.y, null);
+      return;
+    }
+    if (tool === 'eraser') {
+      erasing = false;              // fresh stroke; first hit will commit()
+      eraseAt(p.x, p.y);
+      drag = { eraser: true };      // reuse drag flag so pointermove routes here
       return;
     }
     if (tool === 'pen') {
@@ -479,6 +703,11 @@
 
   canvas.addEventListener('pointermove', e => {
     const p = pos(e);
+
+    // Eraser drag: keep removing anything the pointer passes over
+    if (drag && drag.eraser) { eraseAt(p.x, p.y); return; }
+
+    // Moving a selected shape: offset every coordinate from the saved original
     if (drag) {
       const sel = shapes.find(s => s.id === selectedId);
       if (!sel) return;
@@ -491,9 +720,12 @@
       draw();
       return;
     }
+
+    // Extending the shape being drawn
     if (!draft) return;
     if (draft.type === 'pen') {
       let q = p;
+      // Shift + pen = straight line from the first point
       if (e.shiftKey) q = snap(draft.points[0].x, draft.points[0].y, p.x, p.y), draft.points.length = 1;
       draft.points.push(q);
     } else {
@@ -509,8 +741,10 @@
   });
 
   function endStroke() {
+    if (drag && drag.eraser) { drag = null; erasing = false; updateButtons(); return; }
     if (drag) { drag = null; canvas.className = 'cursor-default'; return; }
     if (!draft) return;
+    // ignore accidental tiny shapes (a click with no drag)
     const tooSmall = draft.type !== 'pen' && Math.hypot(draft.x2 - draft.x1, draft.y2 - draft.y1) < 3;
     if (!tooSmall) {
       commit();
@@ -523,6 +757,7 @@
   canvas.addEventListener('pointerup', endStroke);
   canvas.addEventListener('pointercancel', endStroke);
 
+  // Double-click a text shape with the select tool to edit it
   canvas.addEventListener('dblclick', e => {
     if (tool !== 'select') return;
     const p = pos(e);
@@ -530,12 +765,20 @@
     if (hit && hit.type === 'text') openTextEditor(hit.x, hit.y, hit);
   });
 
-  // ---------- text editing ----------
-  let editor = null, editingShape = null;
+  // =========================================================================
+  // f. TEXT EDITING
+  //    Canvas can't take typed input, so we float a contenteditable <div>
+  //    over the canvas at the click position, then turn its contents into a
+  //    text shape when the student presses Enter or clicks away.
+  //    Enter = finish, Shift+Enter = new line, Esc = cancel.
+  // =========================================================================
+  let editor = null;          // the floating <div>, or null
+  let editingShape = null;    // existing text shape being edited, or null for new
+
   function openTextEditor(x, y, existing) {
     finishText();
     const r = canvas.getBoundingClientRect();
-    const scale = r.width / W;
+    const scale = r.width / W;                  // canvas units -> screen pixels
     const size = existing ? existing.size : fontSize;
     editor = document.createElement('div');
     editor.className = 'text-editor';
@@ -546,17 +789,19 @@
     editor.style.color = existing ? existing.color : color;
     editor.textContent = existing ? existing.text : '';
     editingShape = existing;
-    if (existing) { existing.hidden = true; draw(); }
+    if (existing) { existing.hidden = true; draw(); }  // hide the canvas copy while editing
     frame.appendChild(editor);
     editor.focus();
     editor.addEventListener('keydown', ev => {
       if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); finishText(); }
       if (ev.key === 'Escape') { ev.preventDefault(); cancelText(); }
-      ev.stopPropagation();
+      ev.stopPropagation();   // don't trigger the global tool shortcuts while typing
     });
     editor.addEventListener('blur', () => setTimeout(finishText, 0));
+    // stash the canvas-unit position on the element for finishText()
     editor.dataset.x = x; editor.dataset.y = y; editor.dataset.size = size;
   }
+
   function finishText() {
     if (!editor) return;
     const el = editor; editor = null;
@@ -567,13 +812,14 @@
       const s = editingShape; editingShape = null;
       delete s.hidden;
       if (text.trim() && text !== s.text) { commit(); s.text = text; }
-      else if (!text.trim()) { commit(); shapes = shapes.filter(q => q !== s); selectedId = null; }
+      else if (!text.trim()) { commit(); shapes = shapes.filter(q => q !== s); selectedId = null; }  // emptied = delete
     } else if (text.trim()) {
       commit();
       shapes.push({ id: nextId++, type: 'text', text, x, y, size, color });
     }
     draw(); updateButtons();
   }
+
   function cancelText() {
     if (!editor) return;
     const el = editor; editor = null;
@@ -581,22 +827,29 @@
     if (editingShape) { delete editingShape.hidden; editingShape = null; }
     draw();
   }
-  // ---------- keyboard ----------
+
+  // =========================================================================
+  // g. KEYBOARD SHORTCUTS
+  // =========================================================================
   window.addEventListener('keydown', e => {
-    if (editor) return;
+    if (editor) return;                                     // typing text
     const tag = document.activeElement && document.activeElement.tagName;
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;  // focus in a control
     const k = e.key.toLowerCase();
     if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (k === 'delete' || k === 'backspace') { deleteSelected(); return; }
     if (k === 'escape') { selectedId = null; draw(); updateButtons(); return; }
-    const map = { v: 'select', p: 'pen', l: 'line', a: 'arrow', r: 'rect', e: 'ellipse', t: 'text' };
+    const map = { v: 'select', p: 'pen', l: 'line', a: 'arrow', r: 'rect', e: 'ellipse', t: 'text', x: 'eraser' };
     if (map[k]) setTool(map[k]);
   });
 
-  // ---------- export ----------
+  // =========================================================================
+  // h. EXPORT
+  //    Renders the shapes onto a hidden canvas at 2x resolution (1920x1200)
+  //    with a white background, then either downloads it or copies it.
+  // =========================================================================
   function renderExport() {
     const scale = 2;
     const off = document.createElement('canvas');
@@ -607,6 +860,7 @@
     shapes.forEach(s => drawShape(c, s));
     return off;
   }
+
   document.getElementById('download').addEventListener('click', () => {
     const a = document.createElement('a');
     a.download = 'drawing-' + new Date().toISOString().slice(0, 10) + '.png';
@@ -614,6 +868,7 @@
     a.click();
     say('Downloaded');
   });
+
   document.getElementById('copy').addEventListener('click', async () => {
     try {
       if (!navigator.clipboard || !window.ClipboardItem) throw new Error('unsupported');
@@ -621,14 +876,18 @@
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       say('Copied — paste it into your document');
     } catch (err) {
+      // Firefox (and some locked-down browsers) block image clipboard writes
       say('Copy isn\'t supported in this browser. Use Download PNG instead.', true);
     }
   });
 
-  // ---------- init ----------
+  // =========================================================================
+  // i. STARTUP
+  // =========================================================================
   setTool('pen');
   draw();
   updateButtons();
+  // Warn before closing the tab if there's unsaved work (nothing is saved otherwise)
   window.addEventListener('beforeunload', e => { if (shapes.length) { e.preventDefault(); e.returnValue = ''; } });
 })();
 </script>
