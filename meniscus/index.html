@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading a Meniscus Interactive</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: row;
+            gap: 40px;
+            max-width: 800px;
+        }
+        .canvas-container {
+            background-color: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 300px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        p {
+            line-height: 1.5;
+        }
+        .instruction {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 20px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.95rem;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        input[type="number"] {
+            width: 100px;
+            padding: 10px;
+            font-size: 1.1rem;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="number"]:focus {
+            border-color: #3498db;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: bold;
+        }
+        .btn-check {
+            background-color: #2ecc71;
+            color: white;
+            margin-left: 10px;
+        }
+        .btn-check:hover {
+            background-color: #27ae60;
+        }
+        .btn-new {
+            background-color: #3498db;
+            color: white;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .btn-new:hover {
+            background-color: #2980b9;
+        }
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .correct {
+            background-color: #d5f5e3;
+            color: #27ae60;
+        }
+        .incorrect {
+            background-color: #fadbd8;
+            color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="canvas-container">
+        <!-- Canvas for drawing the cylinder -->
+        <canvas id="cylinderCanvas" width="250" height="600"></canvas>
+    </div>
+    
+    <div class="controls">
+        <h1>Read the Meniscus</h1>
+        <div class="instruction">
+            <strong>Instructions:</strong> Read the volume of the liquid in the 100 mL graduated cylinder. 
+            Remember to read from the <em>bottom</em> of the curved meniscus at eye level. 
+            Estimate to one decimal place (e.g., 45.5).
+        </div>
+        
+        <div class="input-group">
+            <label for="studentAnswer" style="display:block; margin-bottom: 5px; font-weight: bold;">Volume (mL):</label>
+            <input type="number" id="studentAnswer" step="0.1" placeholder="0.0">
+            <button class="btn-check" onclick="checkAnswer()">Check</button>
+        </div>
+        
+        <div id="feedback"></div>
+        
+        <button class="btn-new" onclick="generateProblem()">New Problem</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('cylinderCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let currentVolume = 0;
+    
+    // Cylinder layout settings
+    const bottomY = 550; // Pixel coordinate for 0 mL
+    const topY = 50;     // Pixel coordinate for 100 mL
+    const pixelsPerML = (bottomY - topY) / 100; // 5 pixels per mL
+    const cylinderLeft = 80;
+    const cylinderRight = 180;
+    const cylinderWidth = cylinderRight - cylinderLeft;
+
+    function init() {
+        generateProblem();
+    }
+
+    function generateProblem() {
+        // Clear previous input and feedback
+        document.getElementById('studentAnswer').value = '';
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'none';
+        feedback.className = '';
+        
+        // Generate a random volume between 15.0 and 95.0 mL
+        // We round it to the nearest 0.5 mL to be fair for visual reading, 
+        // but you can change the multiplier to generate to 0.1 mL if desired.
+        let randomVal = (Math.random() * 80) + 15;
+        currentVolume = Math.round(randomVal * 2) / 2; // Rounds to nearest 0.5
+        
+        drawScene();
+    }
+
+    function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawLiquid(currentVolume);
+        drawCylinder();
+    }
+
+    function drawCylinder() {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#555';
+        ctx.fillStyle = '#333';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+
+        // Draw left and right walls of the cylinder
+        ctx.beginPath();
+        ctx.moveTo(cylinderLeft, topY - 20);
+        ctx.lineTo(cylinderLeft, bottomY);
+        ctx.lineTo(cylinderRight, bottomY);
+        ctx.lineTo(cylinderRight, topY - 20);
+        ctx.stroke();
+
+        // Draw rim
+        ctx.beginPath();
+        ctx.ellipse(cylinderLeft + cylinderWidth/2, topY - 20, cylinderWidth/2, 5, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw tick marks
+        for (let i = 0; i <= 100; i++) {
+            let y = bottomY - (i * pixelsPerML);
+            
+            ctx.beginPath();
+            ctx.moveTo(cylinderLeft, y);
+            
+            if (i % 10 === 0) {
+                // Major tick mark (every 10 mL)
+                ctx.lineTo(cylinderLeft + 20, y);
+                if (i > 0) {
+                    ctx.fillText(i, cylinderLeft - 10, y);
+                }
+            } else if (i % 5 === 0) {
+                // Medium tick mark (every 5 mL)
+                ctx.lineTo(cylinderLeft + 12, y);
+            } else {
+                // Minor tick mark (every 1 mL)
+                ctx.lineTo(cylinderLeft + 6, y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    function drawLiquid(volume) {
+        let meniscusBottomY = bottomY - (volume * pixelsPerML);
+        let meniscusTopY = meniscusBottomY - 15; // The liquid creeps up the sides by 15 pixels
+
+        // Draw main body of liquid
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.5)'; // Transparent blue
+        ctx.beginPath();
+        ctx.moveTo(cylinderLeft, bottomY);
+        ctx.lineTo(cylinderRight, bottomY);
+        ctx.lineTo(cylinderRight, meniscusTopY);
+
+        // Draw the meniscus curve
+        // Quadratic curve from right edge to left edge, dipping down to meniscusBottomY in the center
+        ctx.quadraticCurveTo(cylinderLeft + cylinderWidth / 2, meniscusBottomY + 15, cylinderLeft, meniscusTopY);
+        
+        ctx.closePath();
+        ctx.fill();
+
+        // Add a darker line to represent the bottom of the meniscus for better visibility
+        ctx.beginPath();
+        ctx.moveTo(cylinderLeft, meniscusTopY);
+        ctx.quadraticCurveTo(cylinderLeft + cylinderWidth / 2, meniscusBottomY + 15, cylinderRight, meniscusTopY);
+        ctx.strokeStyle = 'rgba(41, 128, 185, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function checkAnswer() {
+        const studentInput = parseFloat(document.getElementById('studentAnswer').value);
+        const feedback = document.getElementById('feedback');
+        
+        if (isNaN(studentInput)) {
+            feedback.innerHTML = "Please enter a number.";
+            feedback.className = "incorrect";
+            feedback.style.display = "block";
+            return;
+        }
+
+        // Allow a small tolerance of +/- 0.5 mL for reading
+        const tolerance = 0.5;
+        const difference = Math.abs(studentInput - currentVolume);
+
+        if (difference <= tolerance) {
+            feedback.innerHTML = `Correct! The exact volume is ${currentVolume.toFixed(1)} mL.`;
+            feedback.className = "correct";
+        } else {
+            feedback.innerHTML = `Incorrect. Look closely at the bottom of the curve. <br><br>The correct answer was ${currentVolume.toFixed(1)} mL.`;
+            feedback.className = "incorrect";
+        }
+        
+        feedback.style.display = "block";
+    }
+
+    // Initialize the first problem on load
+    window.onload = init;
+</script>
+
+</body>
+</html>
