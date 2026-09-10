@@ -4,153 +4,1256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chemistry Interactives</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <title>Science2 – Interactive Science Explorations</title>
+    <meta name="description" content="A collection of interactive science simulations, physics labs, chemistry tools, and educational classroom utilities.">
+    <link rel="icon" type="image/png" href="./favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --p: #2563eb;
-            --t: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-gradient: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+            --accent: #06b6d4;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-sub: #475569;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+            --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+            --shadow-hover: 0 16px 32px -6px rgba(37, 99, 235, 0.15), 0 6px 12px -2px rgba(15, 23, 42, 0.08);
+            --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0b0f19;
+                --card-bg: #141b2d;
+                --border: #222f46;
+                --border-hover: #334466;
+                --text-main: #f1f5f9;
+                --text-muted: #94a3b8;
+                --text-sub: #cbd5e1;
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+                --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+                --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6);
+                --shadow-hover: 0 16px 32px -4px rgba(59, 130, 246, 0.3), 0 6px 14px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            color: var(--t);
-            background: #f8fafc;
+            font-family: var(--font-main);
+            background-color: var(--bg);
+            color: var(--text-main);
             line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
         }
 
+        /* Top Hero Header */
         header {
-            background: linear-gradient(135deg, var(--p), #4f46e5);
-            color: #fff;
-            padding: 2rem;
+            background: var(--primary-gradient);
+            color: #ffffff;
+            padding: 3rem 1.5rem 3.5rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -20%;
+            width: 140%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.18) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.25) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .header-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
             text-align: center;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0.85rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .header-badge .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #34d399;
+            box-shadow: 0 0 8px #34d399;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.15); }
+        }
+
+        header h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin-bottom: 0.75rem;
         }
 
         header h1 a {
-            font-size: 2rem;
-            /* Matches the h1 size */
-            background: none !important;
-            border: none !important;
-            padding: 0 !important;
-            display: inline-block;
-        }
-
-
-        h1 {
-            margin: 0;
-            font-size: 2rem;
-        }
-
-        p {
-            margin: 0.5rem 0 0;
-            opacity: 0.8;
-            font-size: 0.9rem;
-        }
-
-        main {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-
-        h2 {
-            font-size: 1.1rem;
-            border-left: 4px solid #06b6d4;
-            padding-left: 0.7rem;
-            margin: 2rem 0 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        a {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            padding: 0.6rem 1rem;
-            border-radius: 8px;
+            color: inherit;
             text-decoration: none;
-            color: var(--t);
+            transition: opacity 0.2s;
+        }
+
+        header h1 a:hover {
+            opacity: 0.92;
+        }
+
+        header p {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            opacity: 0.9;
+            max-width: 680px;
+            margin: 0 auto 1.75rem;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* Quick Header Action Links */
+        .quick-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 1.15rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            font-size: 0.85rem;
             font-weight: 600;
-            font-size: 0.9rem;
-            transition: 0.2s;
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
         }
 
-        a:hover {
-            border-color: var(--p);
-            color: var(--p);
+        .quick-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.5);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
         }
 
-        header a {
+        /* Main Container */
+        main {
+            max-width: 1200px;
+            width: 100%;
+            margin: -1.75rem auto 3rem;
+            padding: 0 1.25rem;
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Controls Section (Search & Filter Pills) */
+        .controls-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(16px);
+        }
+
+        .search-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 4.4rem 0.75rem 2.75rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            background: var(--card-bg);
+        }
+
+        .search-shortcut {
+            position: absolute;
+            right: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 2.7rem;
+            top: 50%;
+            transform: translateY(-50%);
             background: none;
             border: none;
-            padding: 0;
-            display: inline;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            display: none;
+            border-radius: 50%;
         }
 
+        .clear-btn:hover {
+            color: var(--text-main);
+        }
+
+        .tool-count-badge {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+            scrollbar-width: thin;
+        }
+
+        .pill-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 0.45rem 0.9rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .pill-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-main);
+            background: var(--border);
+        }
+
+        .pill-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Sections and Card Grid */
+        .category-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.15rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .category-badge-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .category-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-main);
+        }
+
+        .category-header .section-count {
+            margin-left: auto;
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 0.15rem 0.55rem;
+            border-radius: 9999px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Tool Card */
+        .tool-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.15rem;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .tool-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text-main);
+            transition: color 0.15s ease;
+        }
+
+        .tool-card:hover h3 {
+            color: var(--primary);
+        }
+
+        .badge-new {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .arrow-icon {
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+            transition: transform 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .tool-card:hover .arrow-icon {
+            transform: translateX(3px);
+            color: var(--primary);
+        }
+
+        .tool-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin-bottom: 0.9rem;
+            flex: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px dashed var(--border);
+            padding-top: 0.65rem;
+            font-size: 0.75rem;
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--bg);
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            font-family: var(--font-mono);
+        }
+
+        /* Specific Category Accent Colors */
+        .theme-measurement .category-badge-icon { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+        .theme-atoms .category-badge-icon { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .theme-electrons .category-badge-icon { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .theme-molecules .category-badge-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .theme-compounds .category-badge-icon { background: linear-gradient(135deg, #10b981, #059669); }
+        .theme-physics .category-badge-icon { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .theme-earth .category-badge-icon { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+        .theme-utilities .category-badge-icon { background: linear-gradient(135deg, #64748b, #334155); }
+
+        /* Empty Search State */
+        .empty-state {
+            display: none;
+            text-align: center;
+            padding: 4rem 1.5rem;
+            background: var(--card-bg);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius-lg);
+            margin: 2rem 0;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.15rem;
+            color: var(--text-main);
+            margin-bottom: 0.35rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
         footer {
             text-align: center;
-            padding: 2rem;
-            font-size: 0.8rem;
-            color: #64748b;
+            padding: 2.5rem 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            background: var(--card-bg);
+            margin-top: auto;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                padding: 2.25rem 1rem 2.75rem;
+            }
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+            .search-shortcut {
+                display: none;
+            }
         }
     </style>
 </head>
 
 <body>
     <header>
-        <h1><a href="./whiteboard/" style="color:inherit;text-decoration:none">Science</a></h1>
-        <p>Interactive Chemistry Explorations</p>
+        <div class="header-content">
+            <div class="header-badge">
+                <span class="pulse-dot"></span>
+                <span>Interactive Science Hub &bull; 31 Tools</span>
+            </div>
+            <h1><a href="./whiteboard/" title="Open Classroom Whiteboard">Science2</a></h1>
+            <p>Interactive simulations, laboratory practices, and physics & chemistry explorations for students and educators.</p>
+            <div class="quick-actions">
+                <a href="./whiteboard/" class="quick-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20v14H2z"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+                    Infinite Whiteboard
+                </a>
+                <a href="./draw/" class="quick-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
+                    Sketchpad
+                </a>
+                <a href="./meniscus/" class="quick-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20h12V2"/><path d="M6 14c2-1.5 4-1.5 6 0s4 1.5 6 0"/></svg>
+                    Meniscus Lab
+                </a>
+                <a href="./speed.graph/" class="quick-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-6 6"/></svg>
+                    Speed Grapher
+                </a>
+            </div>
+        </div>
     </header>
+
     <main>
-        <h2>Atoms & Elements</h2>
-        <nav>
-            <a href="./bohr.model/">Bohr Model</a><a href="./atomic.size/">Atomic Size</a>
-            <a href="./element.tile/">Element Tile</a><a href="./periodic.quest/">Periodic Quest</a>
-            <a href="./radiation/">Radiation</a>
-        </nav>
-        <h2>Electrons</h2>
-        <nav>
-            <a href="./electron.config/">Electron Config</a><a href="./electron.dot/">Electron Dot</a>
-            <a href="./valence/">Valence</a><a href="./valence.table/">Valence Table</a>
-        </nav>
-        <h2>Molecules</h2>
-        <nav>
-            <a href="./hydrogenbonding/">Hydrogen Bonding</a><a href="./meltingpoint/">Melting Point</a>
-            <a href="./molar.mass/">Molar Mass</a>
-        </nav>
-        <h2>Compounds</h2>
-        <nav>
-            <a href="lewis.structure/">Lewis Structure</a><a href="ion.builder/">Ion Builder</a>
-        </nav>
-        <h2>Color</h2>
-        <nav>
-            <a href="./spectrometer/">Spectrometer</a><a href="lego.light.lab/">Lego Light Lab</a>
-        </nav>
-        <h2>Global Warming</h2>
-        <nav>
-            <a href="./greenhouse/">Greenhouse Effect</a>
-        </nav>
-        <h2>Physics</h2>
-        <nav>
-            <a href="./free.body.diagram/">Free Body Diagrams</a><a href="./paper.airplane/">Paper Airplane Forces</a><a
-                href="joke/">Jokes</a><a href="./air.resistance/">Gravity &amp; Air Resistance</a><a
-                href="./airplane.forces/">Aerodynamics Simulator</a><a href="./sector67/">Sector 67</a>
-        </nav>
-        <h2>Utilities</h2>
-        <nav>
-            <a href="./seats/">Seats</a><a href="./climate.change.rubric/">Climate Change Rubric</a><a
-                href="joke/">Jokes</a><a href="./canvas/">Canvas</a>
-        </nav>
+        <!-- Search and Filter Controls -->
+        <section class="controls-card" aria-label="Search and Filter Controls">
+            <div class="search-row">
+                <div class="search-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="search" id="search-input" class="search-input" placeholder="Search interactives (e.g., meniscus, speed, lewis, bohr)..." autocomplete="off" aria-label="Search interactives">
+                    <button type="button" id="clear-search" class="clear-btn" aria-label="Clear search">&times;</button>
+                    <span class="search-shortcut" title="Press / to search">/</span>
+                </div>
+                <div class="tool-count-badge" id="tool-count">Showing 31 tools</div>
+            </div>
+
+            <div class="filter-pills" id="filter-pills" role="toolbar" aria-label="Category filters">
+                <button class="pill-btn active" data-filter="all">All (31)</button>
+                <button class="pill-btn" data-filter="lab">Lab &amp; Measurement</button>
+                <button class="pill-btn" data-filter="atoms">Atoms &amp; Elements</button>
+                <button class="pill-btn" data-filter="electrons">Electrons</button>
+                <button class="pill-btn" data-filter="molecules">Molecules &amp; Compounds</button>
+                <button class="pill-btn" data-filter="physics">Physics &amp; Motion</button>
+                <button class="pill-btn" data-filter="earth">Environment</button>
+                <button class="pill-btn" data-filter="utilities">Utilities</button>
+            </div>
+        </section>
+
+        <!-- Category: Lab & Measurement -->
+        <section class="category-section theme-measurement" data-category="lab">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
+                </div>
+                <h2>Lab &amp; Measurement</h2>
+                <span class="section-count">3 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./meniscus/" class="tool-card" data-title="Reading a Meniscus" data-keywords="graduated cylinder volume measurement liquid reading meniscus lab chemistry water level">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-title-group">
+                                <h3>Reading a Meniscus</h3>
+                                <span class="badge-new">New</span>
+                            </div>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Interactive graduated cylinder volume reading practice with randomized liquid levels and instant feedback.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./meniscus/</span>
+                        <span class="tag">Volume</span>
+                    </div>
+                </a>
+
+                <a href="./spectrometer/" class="tool-card" data-title="Spectrometer" data-keywords="virtual spectrometer lab light emission spectra wavelength color prisms optics">
+                    <div>
+                        <div class="card-top">
+                            <h3>Virtual Spectrometer</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Simulate elemental light emission lines and explore optical wavelengths across the visible spectrum.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./spectrometer/</span>
+                        <span class="tag">Optics</span>
+                    </div>
+                </a>
+
+                <a href="./lego.light.lab/" class="tool-card" data-title="Lego Light Lab" data-keywords="lego light lab color filter interactive setup light absorption transmission optics">
+                    <div>
+                        <div class="card-top">
+                            <h3>LEGO Light Lab</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Explore color filters, light absorption, and beam transmission using an interactive LEGO lab setup.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./lego.light.lab/</span>
+                        <span class="tag">Color</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Category: Atoms & Elements -->
+        <section class="category-section theme-atoms" data-category="atoms">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M10.4 10.4 6.4 6.4M17.6 17.6l-4-4"/></svg>
+                </div>
+                <h2>Atoms &amp; Elements</h2>
+                <span class="section-count">5 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./bohr.model/" class="tool-card" data-title="Bohr Model" data-keywords="bohr model electron configuration shells orbitals energy levels atomic structure nucleus">
+                    <div>
+                        <div class="card-top">
+                            <h3>Bohr Model</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Construct atomic energy levels and visualize planetary electron orbit shells for periodic elements.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./bohr.model/</span>
+                        <span class="tag">Atomic</span>
+                    </div>
+                </a>
+
+                <a href="./atomic.size/" class="tool-card" data-title="Atomic Size" data-keywords="atomic size radius trends explorer periodic table periodicity ionic radius">
+                    <div>
+                        <div class="card-top">
+                            <h3>Atomic Size</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Analyze periodic trends in atomic and ionic radii across groups and periods with comparative visuals.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./atomic.size/</span>
+                        <span class="tag">Trends</span>
+                    </div>
+                </a>
+
+                <a href="./element.tile/" class="tool-card" data-title="Element Tile" data-keywords="element tile generator practice periodic symbol atomic number mass protons neutrons electrons">
+                    <div>
+                        <div class="card-top">
+                            <h3>Element Tile</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Interactive element tile generator to practice atomic numbers, symbols, mass numbers, and subatomic counts.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./element.tile/</span>
+                        <span class="tag">Periodic</span>
+                    </div>
+                </a>
+
+                <a href="./periodic.quest/" class="tool-card" data-title="Periodic Quest" data-keywords="periodic quest student edition game challenge puzzle table groups periods metals nonmetals">
+                    <div>
+                        <div class="card-top">
+                            <h3>Periodic Quest</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>A gamified periodic table exploration game where students solve clues about elements and chemical families.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./periodic.quest/</span>
+                        <span class="tag">Gamified</span>
+                    </div>
+                </a>
+
+                <a href="./radiation/" class="tool-card" data-title="Radiation" data-keywords="radiation penetration lab alpha beta gamma nuclear decay shielding lead paper aluminum">
+                    <div>
+                        <div class="card-top">
+                            <h3>Radiation Penetration Lab</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Test penetration depth and shielding materials (paper, aluminum, lead) against alpha, beta, and gamma rays.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./radiation/</span>
+                        <span class="tag">Nuclear</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Category: Electrons & Bonding -->
+        <section class="category-section theme-electrons" data-category="electrons">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 1 0 7 7"/></svg>
+                </div>
+                <h2>Electrons &amp; Valence</h2>
+                <span class="section-count">4 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./electron.config/" class="tool-card" data-title="Electron Config" data-keywords="electron configuration worksheet aufbau principle hunds rule pauli exclusion spdf orbitals">
+                    <div>
+                        <div class="card-top">
+                            <h3>Electron Config</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Interactive electron configuration worksheet following the Aufbau principle, Hund's rule, and orbital filling.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./electron.config/</span>
+                        <span class="tag">Orbitals</span>
+                    </div>
+                </a>
+
+                <a href="./electron.dot/" class="tool-card" data-title="Electron Dot" data-keywords="electron dot lewis diagrams valence electrons pairing symbols">
+                    <div>
+                        <div class="card-top">
+                            <h3>Electron Dot</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Practice placing valence electrons into standard Lewis dot structures around elemental symbols.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./electron.dot/</span>
+                        <span class="tag">Lewis Dot</span>
+                    </div>
+                </a>
+
+                <a href="./valence/" class="tool-card" data-title="Valence" data-keywords="valence electron octet investigator outer shell chemical bonding reactivity">
+                    <div>
+                        <div class="card-top">
+                            <h3>Valence Investigator</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Investigate valence electron numbers, octet rule stability, and reactivity across different element families.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./valence/</span>
+                        <span class="tag">Octet</span>
+                    </div>
+                </a>
+
+                <a href="./valence.table/" class="tool-card" data-title="Valence Table" data-keywords="valence table explorer interactive periodic table groups valence count">
+                    <div>
+                        <div class="card-top">
+                            <h3>Valence Table</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>A color-coded periodic table interactive highlighting valence electron counts and family trends.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./valence.table/</span>
+                        <span class="tag">Periodic</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Category: Molecules & Compounds -->
+        <section class="category-section theme-molecules" data-category="molecules">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/><circle cx="12" cy="9" r="3"/><circle cx="6" cy="15" r="3"/><circle cx="18" cy="15" r="3"/></svg>
+                </div>
+                <h2>Molecules &amp; Compounds</h2>
+                <span class="section-count">5 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./lewis.structure/" class="tool-card" data-title="Lewis Structure" data-keywords="lewis structure builder covalent bonding single double triple bonds lone pairs molecules">
+                    <div>
+                        <div class="card-top">
+                            <h3>Lewis Structure Builder</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Build covalent molecular structures with single, double, and triple bonds, and calculate formal charges.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./lewis.structure/</span>
+                        <span class="tag">Bonding</span>
+                    </div>
+                </a>
+
+                <a href="./ion.builder/" class="tool-card" data-title="Ion Builder" data-keywords="ion builder chemistry tool cations anions polyatomic ionic compounds charge balance">
+                    <div>
+                        <div class="card-top">
+                            <h3>Ion Builder</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Combine cations and anions to create neutral ionic compounds and learn proper chemical formula naming.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./ion.builder/</span>
+                        <span class="tag">Ionic</span>
+                    </div>
+                </a>
+
+                <a href="./hydrogenbonding/" class="tool-card" data-title="Hydrogen Bonding" data-keywords="hydrogen bonding intermolecular forces water polarity dipole attractions chemistry">
+                    <div>
+                        <div class="card-top">
+                            <h3>Hydrogen Bonding</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Explore intermolecular forces and dipole-dipole attractions in water molecules and biological structures.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./hydrogenbonding/</span>
+                        <span class="tag">IMF</span>
+                    </div>
+                </a>
+
+                <a href="./meltingpoint/" class="tool-card" data-title="Melting Point" data-keywords="melting point simulator phase change intermolecular forces temperature solid liquid gas">
+                    <div>
+                        <div class="card-top">
+                            <h3>Melting Point Simulator</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Simulate phase changes and observe how molecular lattice forces dictate melting and boiling temperatures.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./meltingpoint/</span>
+                        <span class="tag">Thermodynamics</span>
+                    </div>
+                </a>
+
+                <a href="./molar.mass/" class="tool-card" data-title="Molar Mass" data-keywords="molar mass calculator stoichiometry grams moles element percentage molecular weight">
+                    <div>
+                        <div class="card-top">
+                            <h3>Molar Mass Calculator</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Calculate molecular weight, molar mass, and element mass percentage composition for any chemical formula.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./molar.mass/</span>
+                        <span class="tag">Stoichiometry</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Category: Physics & Motion -->
+        <section class="category-section theme-physics" data-category="physics">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <h2>Physics &amp; Motion</h2>
+                <span class="section-count">7 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./speed.graph/" class="tool-card" data-title="The Moving Man Speed Graph" data-keywords="speed graph interactive physics lab the moving man position velocity acceleration kinematics graphing motion">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-title-group">
+                                <h3>Speed &amp; Motion Grapher</h3>
+                                <span class="badge-new">New</span>
+                            </div>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Interactive kinematics simulation grapher: drag the moving man and visualize real-time position, velocity, and acceleration charts.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./speed.graph/</span>
+                        <span class="tag">Kinematics</span>
+                    </div>
+                </a>
+
+                <a href="./free.body.diagram/" class="tool-card" data-title="Free Body Diagrams" data-keywords="free body diagrams interactive vector forces motion simulator newton friction gravity normal applied">
+                    <div>
+                        <div class="card-top">
+                            <h3>Free Body Diagrams</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Interactive force vector simulator demonstrating Newton's laws, friction, net force, and resulting acceleration.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./free.body.diagram/</span>
+                        <span class="tag">Forces</span>
+                    </div>
+                </a>
+
+                <a href="./velocity/sandbox/" class="tool-card" data-title="CamSpeed Velocity Tracker" data-keywords="camspeed velocity tracker webcam speed tracker chronometer computer vision optical tracking">
+                    <div>
+                        <div class="card-top">
+                            <h3>CamSpeed Velocity Tracker</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Webcam-powered optical photogate and motion tracker to measure velocity and acceleration of moving objects in real time.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./velocity/sandbox/</span>
+                        <span class="tag">Webcam</span>
+                    </div>
+                </a>
+
+                <a href="./paper.airplane/" class="tool-card" data-title="Paper Airplane Forces" data-keywords="paper airplane forces flight lab aerodynamics lift drag thrust gravity gliders">
+                    <div>
+                        <div class="card-top">
+                            <h3>Paper Airplane Forces</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Analyze the 4 forces of flight (lift, drag, thrust, and gravity) acting on paper airplanes in wind tunnels.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./paper.airplane/</span>
+                        <span class="tag">Flight</span>
+                    </div>
+                </a>
+
+                <a href="./airplane.forces/" class="tool-card" data-title="Aerodynamics Simulator" data-keywords="aerodynamics simulator paper airplane wing angle of attack stall glide ratio">
+                    <div>
+                        <div class="card-top">
+                            <h3>Aerodynamics Simulator</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Model wing design, angle of attack, glide ratio, and aerodynamic efficiency in virtual flight testing.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./airplane.forces/</span>
+                        <span class="tag">Aerodynamics</span>
+                    </div>
+                </a>
+
+                <a href="./air.resistance/" class="tool-card" data-title="Gravity & Air Resistance" data-keywords="gravity air resistance galileo drop terminal velocity vacuum free fall mass shape">
+                    <div>
+                        <div class="card-top">
+                            <h3>Gravity &amp; Air Resistance</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Compare Galileo's drop in a vacuum vs air drag, investigate terminal velocity, and compare falling objects.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./air.resistance/</span>
+                        <span class="tag">Gravity</span>
+                    </div>
+                </a>
+
+                <a href="./sector67/" class="tool-card" data-title="Sector 67" data-keywords="sector 67 physics scavenger hunt clues mystery lab escape room problem solving">
+                    <div>
+                        <div class="card-top">
+                            <h3>Sector 67</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>A physics-themed scavenger hunt challenge requiring students to apply physical principles to unlock clues.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./sector67/</span>
+                        <span class="tag">Scavenger Hunt</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Category: Earth & Environment -->
+        <section class="category-section theme-earth" data-category="earth">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                </div>
+                <h2>Earth &amp; Environment</h2>
+                <span class="section-count">2 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./greenhouse/" class="tool-card" data-title="Greenhouse Effect" data-keywords="greenhouse effect bottle protocol global warming co2 atmosphere radiation heat thermal">
+                    <div>
+                        <div class="card-top">
+                            <h3>Greenhouse Effect Lab</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Virtual bottle protocol simulation modeling infrared heat trapping by atmospheric carbon dioxide and greenhouse gases.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./greenhouse/</span>
+                        <span class="tag">Climate</span>
+                    </div>
+                </a>
+
+                <a href="./climate.change.rubric/" class="tool-card" data-title="Climate Change Rubric" data-keywords="climate change rubric evaluation scoring criteria presentation project earth science">
+                    <div>
+                        <div class="card-top">
+                            <h3>Climate Change Rubric</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Evaluation criteria and interactive assessment rubric for student research projects on global climate change.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./climate.change.rubric/</span>
+                        <span class="tag">Rubric</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Category: Classroom & Utilities -->
+        <section class="category-section theme-utilities" data-category="utilities">
+            <div class="category-header">
+                <div class="category-badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                </div>
+                <h2>Classroom &amp; Utilities</h2>
+                <span class="section-count">5 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="./whiteboard/" class="tool-card" data-title="Infinite Whiteboard" data-keywords="infinite whiteboard canvas classroom timers bell schedules widgets notes drawing e-ink teacher">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-title-group">
+                                <h3>Infinite Whiteboard</h3>
+                                <span class="badge-new">Updated</span>
+                            </div>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Expansive classroom whiteboard featuring integrated timers, bell schedules, note stickies, and mobile/e-ink support.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./whiteboard/</span>
+                        <span class="tag">Whiteboard</span>
+                    </div>
+                </a>
+
+                <a href="./draw/" class="tool-card" data-title="Sketchpad" data-keywords="sketchpad drawing tool canvas diagram export png student formative lab report">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-title-group">
+                                <h3>Sketchpad</h3>
+                                <span class="badge-new">New</span>
+                            </div>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Lightweight single-file student drawing tool to sketch scientific diagrams and export clean PNGs for lab reports.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./draw/</span>
+                        <span class="tag">Diagrams</span>
+                    </div>
+                </a>
+
+                <a href="./canvas/" class="tool-card" data-title="Canvas Workspace" data-keywords="canvas interactive workspace widgets tools utilities classroom screen">
+                    <div>
+                        <div class="card-top">
+                            <h3>Canvas Workspace</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Multi-widget classroom workspace with custom timers, widgets, QR codes, and productivity utilities.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./canvas/</span>
+                        <span class="tag">Workspace</span>
+                    </div>
+                </a>
+
+                <a href="./seats/" class="tool-card" data-title="Table Builder Seats" data-keywords="seats table builder pro seating chart classroom arrangement organization teacher desks">
+                    <div>
+                        <div class="card-top">
+                            <h3>Table Builder Pro</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Interactive classroom seating chart builder to customize table arrangements, group desks, and student placements.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./seats/</span>
+                        <span class="tag">Seating</span>
+                    </div>
+                </a>
+
+                <a href="./joke/" class="tool-card" data-title="Joke of the Day" data-keywords="joke of the day science humor control panel daily jokes fun warm-up starter">
+                    <div>
+                        <div class="card-top">
+                            <h3>Joke of the Day</h3>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Daily science joke control panel and presentation view for engaging classroom starters and bell ringers.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./joke/</span>
+                        <span class="tag">Humor</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Empty State for Search -->
+        <div class="empty-state" id="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            <h3>No interactive tools found</h3>
+            <p>Try searching for different keywords like "meniscus", "speed", "lewis", "bohr", or "forces".</p>
+        </div>
     </main>
-    <footer>&copy; 2026 Science2 Project</footer>
+
+    <footer>
+        <p>&copy; 2026 Science2 Project &bull; Interactive Science Explorations</p>
+    </footer>
+
+    <script>
+        (function () {
+            const searchInput = document.getElementById('search-input');
+            const clearBtn = document.getElementById('clear-search');
+            const toolCount = document.getElementById('tool-count');
+            const filterPills = document.getElementById('filter-pills');
+            const cards = Array.from(document.querySelectorAll('.tool-card'));
+            const sections = Array.from(document.querySelectorAll('.category-section'));
+            const emptyState = document.getElementById('empty-state');
+            const totalCount = cards.length;
+
+            let activeCategory = 'all';
+
+            function updateFilter() {
+                const query = searchInput.value.trim().toLowerCase();
+                clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+
+                let visibleCount = 0;
+
+                sections.forEach(section => {
+                    const sectionCategory = section.getAttribute('data-category');
+                    const categoryMatches = (activeCategory === 'all' || activeCategory === sectionCategory);
+
+                    let sectionVisibleCount = 0;
+                    const sectionCards = section.querySelectorAll('.tool-card');
+
+                    sectionCards.forEach(card => {
+                        const title = (card.getAttribute('data-title') || '').toLowerCase();
+                        const keywords = (card.getAttribute('data-keywords') || '').toLowerCase();
+                        const desc = card.querySelector('p') ? card.querySelector('p').textContent.toLowerCase() : '';
+                        
+                        const textMatches = !query || 
+                            title.includes(query) || 
+                            keywords.includes(query) || 
+                            desc.includes(query);
+
+                        if (categoryMatches && textMatches) {
+                            card.style.display = 'flex';
+                            sectionVisibleCount++;
+                            visibleCount++;
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    // Update section count badge dynamically
+                    const sectionCountEl = section.querySelector('.section-count');
+                    if (sectionCountEl) {
+                        if (query) {
+                            sectionCountEl.textContent = `${sectionVisibleCount} ${sectionVisibleCount === 1 ? 'tool' : 'tools'}`;
+                        } else {
+                            sectionCountEl.textContent = `${sectionCards.length} tools`;
+                        }
+                    }
+
+                    // Hide section headers if no cards visible in that section
+                    section.style.display = sectionVisibleCount > 0 ? 'block' : 'none';
+                });
+
+                toolCount.textContent = `Showing ${visibleCount} of ${totalCount} tools`;
+                emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+
+            // Keyboard shortcut '/' to focus search
+            window.addEventListener('keydown', (e) => {
+                if (e.key === '/' && document.activeElement !== searchInput) {
+                    e.preventDefault();
+                    searchInput.focus();
+                    searchInput.select();
+                } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+                    searchInput.value = '';
+                    updateFilter();
+                    searchInput.blur();
+                }
+            });
+
+            searchInput.addEventListener('input', updateFilter);
+
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                updateFilter();
+                searchInput.focus();
+            });
+
+            filterPills.addEventListener('click', (e) => {
+                const button = e.target.closest('.pill-btn');
+                if (!button) return;
+
+                filterPills.querySelectorAll('.pill-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                activeCategory = button.getAttribute('data-filter');
+                updateFilter();
+            });
+
+            // Initial setup check
+            updateFilter();
+        })();
+    </script>
 </body>
 
 </html>
