@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inquiry Cube</title>
+<style>
+  :root{
+    --paper:#fff; --ink:#111; --board:#e9edf2; --line:#c9d0da;
+    --hint:#f2b705; --ok:#1b7f4a; --bad:#c0392b; --muted:#5b6470; --face:150px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--board);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:30px 30px}
+  header{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;padding:22px 28px 6px}
+  header h1{margin:0;font-size:22px;font-weight:600}
+  header p{margin:0;color:var(--muted);font-size:14px}
+  nav{display:flex;gap:6px;padding:8px 28px;flex-wrap:wrap}
+  nav button{font:inherit;font-size:15px;font-weight:600;padding:8px 16px;border:2px solid var(--ink);
+    background:var(--paper);cursor:pointer;border-radius:4px}
+  nav button[aria-selected=true]{background:var(--ink);color:#fff}
+  nav button.solved::after{content:" ✓";color:var(--ok)}
+  nav button[aria-selected=true].solved::after{color:#8fe3b3}
+  main{display:grid;grid-template-columns:auto minmax(300px,380px);gap:32px;padding:16px 28px 40px;align-items:start}
+  @media (max-width:980px){main{grid-template-columns:1fr}}
+
+  /* cube net */
+  .net{display:grid;grid-template-columns:repeat(4,var(--face));grid-template-rows:repeat(3,var(--face));width:calc(4*var(--face))}
+  .face{position:relative;background:var(--paper);border:2px solid var(--ink);margin:-1px;font-size:26px;font-weight:700}
+  .face .tl,.face .tr,.face .bl,.face .br{position:absolute;line-height:1;padding:2px 4px;border-radius:3px}
+  .face .tl{top:8px;left:8px}.face .tr{top:8px;right:8px}
+  .face .bl{bottom:8px;left:8px;font-family:Georgia,"Times New Roman",serif}
+  .face .br{bottom:8px;right:8px}
+  .face .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;overflow-wrap:anywhere}
+  .face svg{display:block}
+  .face.blank{border:3px dashed var(--hint);background:#fffdf3;margin:-2px}
+  .face.blank .empty{color:#c9c2a3;font-weight:400}
+  .face .mid.empty{font-size:16px}
+  .face .ok{box-shadow:inset 0 0 0 2px var(--ok);background:#e6f6ec}
+  .face .bad{box-shadow:inset 0 0 0 2px var(--bad);background:#fdecea}
+  .face .mid.ok,.face .mid.bad{box-shadow:none;background:transparent}
+  .face .mid.ok>*{outline:2px solid var(--ok);outline-offset:4px;border-radius:4px}
+  .face .mid.bad>*{outline:2px solid var(--bad);outline-offset:4px;border-radius:4px}
+  /* 3D view */
+  .stage{display:flex;flex-direction:column;gap:12px;width:calc(4*var(--face))}
+  .viewbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .viewbar button{font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border:2px solid var(--ink);background:var(--paper);border-radius:4px;cursor:pointer}
+  .viewbar button[aria-pressed=true]{background:var(--ink);color:#fff}
+  .viewbar .snap{margin-left:auto;display:none;gap:6px;flex-wrap:wrap}
+  .viewbar .snap button{font-weight:500;padding:5px 10px;border-width:1.5px}
+  .stage.is3d .snap{display:flex}
+  .stage.is3d .net{display:none}
+  #scene{display:none;width:calc(4*var(--face));height:calc(3*var(--face));perspective:1100px;cursor:grab;touch-action:none;user-select:none;position:relative}
+  .stage.is3d #scene{display:block}
+  #scene:active{cursor:grabbing}
+  #cube{position:absolute;left:50%;top:50%;width:var(--face);height:var(--face);margin:calc(var(--face)/-2) 0 0 calc(var(--face)/-2);transform-style:preserve-3d}
+  #cube .face{position:absolute;inset:0;margin:0;backface-visibility:hidden}
+  #cube .face.blank{margin:0}
+  #scene .hint3d{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--muted);pointer-events:none}
+  #scene .level-tag{position:absolute;right:6px;bottom:0;font-size:44px}
+  .level-tag{grid-column:3/5;grid-row:3;align-self:end;justify-self:end;font-size:58px;font-weight:800;line-height:1;padding:0 6px 6px 0}
+
+  /* side panel */
+  aside{background:var(--paper);border:2px solid var(--ink);border-radius:6px;padding:18px 20px}
+  aside h2{margin:0 0 4px;font-size:18px}
+  aside h2 span{display:inline-block;width:14px;height:14px;border:2px dashed var(--hint);background:#fffdf3;vertical-align:-1px;margin-right:6px}
+  aside p{margin:0 0 14px;font-size:14px;color:var(--muted);line-height:1.45}
+  .form{display:grid;grid-template-columns:110px 1fr;gap:10px 12px;align-items:center;margin-bottom:14px}
+  .form label{font-size:14px;font-weight:600}
+  .form .ctl{display:flex;gap:8px;flex-wrap:wrap}
+  .form input,.form select{font:inherit;font-size:16px;padding:7px 10px;border:2px solid #b8bec8;border-radius:4px;background:#fff;min-width:0}
+  .form input{width:110px}
+  .form select{flex:1;min-width:120px}
+  .form .ok{border-color:var(--ok);background:#e6f6ec}
+  .form .bad{border-color:var(--bad);background:#fdecea}
+  .form input:focus,.form select:focus{outline:3px solid #7fb0ff;outline-offset:1px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+  .actions button{font:inherit;font-size:15px;font-weight:600;padding:9px 16px;border-radius:4px;cursor:pointer;border:2px solid var(--ink);background:var(--paper)}
+  .actions button.primary{background:var(--hint);border-color:var(--hint)}
+  .actions button:disabled{opacity:.45;cursor:default}
+  #result{font-size:15px;line-height:1.45;min-height:22px;margin-bottom:8px}
+  #result.good{color:var(--ok);font-weight:600}
+  #result ul{margin:6px 0 0;padding-left:18px}
+  #patterns{display:none;border-top:1px solid var(--line);padding-top:12px;font-size:14px;line-height:1.5}
+  #patterns.show{display:block}
+  #patterns dt{font-weight:700;margin-top:6px}
+  #patterns dd{margin:0}
+  .legend{font-size:12px;color:var(--muted);margin-top:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Inquiry Cube</h1>
+  <p>Five faces are shown. Figure out the patterns, fill in the sixth face, then check your work.</p>
+</header>
+<nav id="tabs" role="tablist"></nav>
+<main>
+  <section class="stage" id="stage">
+    <div class="viewbar">
+      <button id="viewNet" aria-pressed="true">Flat net</button>
+      <button id="view3d" aria-pressed="false">3D cube</button>
+      <div class="snap">
+        <button data-view="front">Front</button><button data-view="back">Missing face</button>
+        <button data-view="top">Top</button><button data-view="corner">Corner</button>
+      </div>
+    </div>
+    <div class="net" id="net"></div>
+    <div id="scene"><div id="cube"></div><div class="hint3d">Drag to spin</div><div class="level-tag" id="tag3d"></div></div>
+  </section>
+  <aside>
+    <h2><span></span>Fill in the missing face</h2>
+    <p id="side-help"></p>
+    <div class="form" id="form"></div>
+    <div class="actions">
+      <button class="primary" id="check">Check my face</button>
+      <button id="clear">Clear</button>
+      <button id="reveal" disabled>Show the patterns</button>
+    </div>
+    <div id="result"></div>
+    <div id="patterns"></div>
+    <p class="legend">Faces across from each other on the cube: top↔bottom, left↔right, center↔the dashed face. Your entries appear on the cube as you type.</p>
+  </aside>
+</main>
+
+<script>
+/* ---------- drawing helpers ---------- */
+const C={red:"#c00000",blue:"#4472c4",green:"#00a000",orange:"#ff7f00",purple:"#7030a0",pink:"#ff33cc",black:"#111",yellow:"#ffc000",navy:"#1f3864",gold:"#e0a800",leaf:"#3a7d1e"};
+function pips(n){
+  const P={1:[[50,50]],2:[[28,28],[72,72]],3:[[28,28],[50,50],[72,72]],4:[[28,28],[72,28],[28,72],[72,72]],
+    5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,25],[72,25],[28,50],[72,50],[28,75],[72,75]]};
+  return `<svg viewBox="0 0 100 100" width="120" height="120">${(P[n]||[]).map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9"/>`).join("")}</svg>`;
+}
+function shape(kind,color){
+  const a=`fill="none" stroke="${C[color]||"#111"}" stroke-width="3.5"`;
+  const d={triangle:`<polygon points="30,8 55,52 5,52" ${a}/>`,square:`<rect x="8" y="8" width="44" height="44" ${a}/>`,
+    circle:`<circle cx="30" cy="30" r="22" ${a}/>`,diamond:`<polygon points="30,4 56,30 30,56 4,30" ${a}/>`,
+    pentagon:`<polygon points="30,6 54,24 45,52 15,52 6,24" ${a}/>`,hexagon:`<polygon points="17,7 43,7 56,30 43,53 17,53 4,30" ${a}/>`,
+    star:`<polygon points="30,4 37,22 56,23 41,35 46,54 30,43 14,54 19,35 4,23 23,22" ${a}/>`,octagon:`<polygon points="19,5 41,5 55,19 55,41 41,55 19,55 5,41 5,19" ${a}/>`};
+  return d[kind]?`<svg viewBox="0 0 60 60" width="64" height="64">${d[kind]}</svg>`:"";
+}
+const col=(v,c)=>`<span style="color:${C[c]||c}">${v}</span>`;
+const eo=(n,odd="blue")=>n%2===0?"red":odd;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- level data ----------
+   faces in order: top, left, center, right, bottom. The blank face is far right (opposite center).
+   fields: what the student fills in. slot: which corner it lands on.
+   preview(v): how the student's values are drawn on the cube. */
+const LEVELS=[
+ { name:"Level 0", help:"This is a regular die. What number goes on the blank face?",
+   faces:[{mid:pips(2)},{mid:pips(6)},{mid:pips(3)},{mid:pips(1)},{mid:pips(5)}],
+   fields:[{key:"mid",slot:"mid",label:"Middle",kind:"select",options:["1","2","3","4","5","6"]}],
+   preview:v=>({mid:v.mid?pips(v.mid):""}),
+   answer:{mid:"4"},
+   patterns:[["Middle","Numbers 1 through 6, the sides of a die."],["The rule","Opposite sides of a die always add up to 7."]] },
+
+ { name:"Level 1", help:"Each face has a top left, top right, middle, bottom left and bottom right. Fill in all five.",
+   faces:[{tl:"4",tr:col("E","orange"),mid:col("2",eo(2)),bl:"II",br:col("2","green")},
+          {tl:"8",tr:col("D","orange"),mid:col("3",eo(3)),bl:"III",br:col("5","green")},
+          {tl:"2",tr:col("F","orange"),mid:col("1",eo(1)),bl:"I",br:col("1","green")},
+          {tl:"16",tr:col("C","orange"),mid:col("4",eo(4)),bl:"IV",br:col("12","green")},
+          {tl:"32",tr:col("B","orange"),mid:col("5",eo(5)),bl:"V",br:col("27","green")}],
+   fields:[{key:"tl",slot:"tl",label:"Top left"},{key:"tr",slot:"tr",label:"Top right"},{key:"mid",slot:"mid",label:"Middle"},
+           {key:"bl",slot:"bl",label:"Bottom left"},{key:"br",slot:"br",label:"Bottom right"}],
+   preview:v=>({tl:esc(v.tl),tr:col(esc(v.tr),"orange"),mid:/^\d+$/.test(v.mid)?col(v.mid,eo(+v.mid)):esc(v.mid),bl:esc(v.bl),br:col(esc(v.br),"green")}),
+   answer:{tl:"64",tr:"A",mid:"6",bl:"VI",br:"58"},
+   patterns:[["Top left","Powers of 2 (2¹ → 2⁶)."],["Top right","Letters A → F, counting backwards."],["Bottom left","Roman numerals I → VI."],
+             ["Bottom right","Top left minus middle."],["Middle","Numbers 1–6. Evens are red, odds are blue."]] },
+
+ { name:"Level 2", help:"Look at the letters, the numbers, and the colors — including the color each word is written in.",
+   faces:[{tl:col("Z","green"),tr:"6",mid:col("Orange","black"),bl:col("8","purple"),br:col("A","blue")},
+          {tl:col("L","green"),tr:"10",mid:col("Blue","pink"),bl:col("64","purple"),br:col("A","red")},
+          {tl:col("P","green"),tr:"2",mid:col("Green","red"),bl:col("2","purple"),br:col("B","blue")},
+          {tl:col("U","green"),tr:"4",mid:col("Pink","blue"),bl:col("4","purple"),br:col("B","red")},
+          {tl:col("Z","green"),tr:"8",mid:col("Black","orange"),bl:col("16","purple"),br:col("B","blue")}],
+   fields:[{key:"tl",slot:"tl",label:"Top left"},{key:"tr",slot:"tr",label:"Top right"},
+           {key:"midWord",slot:"mid",label:"Middle word",kind:"select",options:["Red","Orange","Yellow","Green","Blue","Pink","Purple","Black"]},
+           {key:"midInk",slot:"mid",label:"Written in",kind:"select",options:["red","orange","yellow","green","blue","pink","purple","black"]},
+           {key:"bl",slot:"bl",label:"Bottom left"},{key:"br",slot:"br",label:"Bottom right"}],
+   preview:v=>({tl:col(esc(v.tl),"green"),tr:esc(v.tr),mid:v.midWord?col(v.midWord,v.midInk||"#bbb"):"",bl:col(esc(v.bl),"purple"),br:col(esc(v.br),/^a$/i.test(v.br)?"blue":/^b$/i.test(v.br)?"red":"black")}),
+   answer:{tl:"E",tr:"12",midWord:"Red",midInk:"green",bl:"32",br:"A"},
+   patterns:[["Top left","The letters spell P-U-Z-Z-L-E."],["Top right","Counting by 2 (2 → 12)."],["Bottom left","Powers of 2 (2¹ → 2⁶)."],
+             ["Bottom right","A and B pair up on opposite sides."],["Middle","The name of a color, written in the color that is spelled out on the opposite face."]] },
+
+ { name:"Level 3", help:"Numbers, a shape, a letter. Count corners and think about colors.",
+   faces:[{tl:col("3","green"),tr:"6",mid:shape("triangle","orange"),bl:"B",br:col("18","blue")},
+          {tl:col("6","red"),tr:"0",mid:shape("diamond","purple"),bl:"R",br:col("0","blue")},
+          {tl:col("2","red"),tr:"5",mid:shape("square","green"),bl:"Y",br:col("10","blue")},
+          {tl:col("1","green"),tr:"4",mid:shape("circle","red"),bl:"P",br:col("4","blue")},
+          {tl:col("4","red"),tr:"3",mid:shape("hexagon","blue"),bl:"O",br:col("12","blue")}],
+   fields:[{key:"tl",slot:"tl",label:"Top left"},{key:"tr",slot:"tr",label:"Top right"},
+           {key:"midShape",slot:"mid",label:"Shape",kind:"select",options:["circle","triangle","square","diamond","pentagon","hexagon","octagon","star"]},
+           {key:"midColor",slot:"mid",label:"Shape color",kind:"select",options:["red","orange","yellow","green","blue","purple","pink","black"]},
+           {key:"bl",slot:"bl",label:"Bottom left"},{key:"br",slot:"br",label:"Bottom right"}],
+   preview:v=>({tl:/^\d+$/.test(v.tl)?col(v.tl,eo(+v.tl,"green")):esc(v.tl),tr:esc(v.tr),mid:shape(v.midShape,v.midColor||"#bbb"),bl:esc(v.bl),br:col(esc(v.br),"blue")}),
+   answer:{tl:"5",tr:"4",midShape:"pentagon",midColor:"yellow",bl:"G",br:"20"},
+   patterns:[["Top left","Numbers 1–6. Evens are red, odds are green."],["Top right","Number of corners on the shape on the opposite face."],
+             ["Bottom left","First letter of the shape's color on the opposite face."],["Bottom right","Top left × top right."],["Middle","Shapes with 0 to 6 corners."]] },
+
+ { name:"Level ??", help:"This one has more than one correct answer. Any face that fits the patterns counts.",
+   faces:[{tl:col("+","green"),tr:col("4","navy"),mid:col("Lamb","navy"),bl:col("13","gold"),br:col("17","leaf")},
+          {tl:col("×","green"),tr:col("5","navy"),mid:col("Horse","navy"),bl:col("11","gold"),br:col("55","leaf")},
+          {tl:col("−","green"),tr:col("7","navy"),mid:col("Chicken","navy"),bl:col("7","gold"),br:col("0","leaf")},
+          {tl:col("×","green"),tr:col("6","navy"),mid:col("Donkey","navy"),bl:col("3","gold"),br:col("18","leaf")},
+          {tl:col("+","green"),tr:col("8","navy"),mid:col("Duckling","navy"),bl:col("5","gold"),br:col("13","leaf")}],
+   fields:[{key:"tl",slot:"tl",label:"Top left",kind:"select",options:["+","−","×","÷"]},{key:"tr",slot:"tr",label:"Top right"},
+           {key:"mid",slot:"mid",label:"Middle",placeholder:"animal"},{key:"bl",slot:"bl",label:"Bottom left"},{key:"br",slot:"br",label:"Bottom right"}],
+   preview:v=>({tl:col(v.tl,"green"),tr:col(esc(v.tr),"navy"),mid:col(esc(v.mid),"navy"),bl:col(esc(v.bl),"gold"),br:col(esc(v.br),"leaf")}),
+   check:checkOpen,
+   patterns:[["Top left","A math operation that matches the opposite face."],["Top right","A consecutive sequence: 3,4,5,6,7,8 or 4,5,6,7,8,9."],
+             ["Bottom left","Odd numbers, prime numbers, or 8 more/less than the opposite face — several patterns fit."],
+             ["Bottom right","The result of combining bottom left, top left and top right. Order isn't fixed, so a subtraction can come out negative."],
+             ["Middle","An animal whose name has the same number of letters as the top right number."],
+             ["Examples","− 3 Dog 15 12  ·  − 9 Crocodile 2 7  ·  − 3 Cow 9 −6"]] }
+];
+
+/* open-ended checker for Level ?? — returns null for a good field, a hint string for a bad one */
+function checkOpen(v){
+  const r={}, tr=+v.tr, bl=+v.bl, br=+v.br;
+  r.tl = v.tl==="−" ? null : "should match the operation on the opposite (center) face.";
+  r.tr = (tr===3||tr===9) ? null : "the top-right numbers form a sequence — which number is missing?";
+  const isPrime=n=>n>1&&[...Array(Math.floor(Math.sqrt(n))+1).keys()].slice(2).every(d=>n%d);
+  r.bl = (Number.isInteger(bl)&&(bl%2!==0||isPrime(bl))) ? null : "look at the bottom-left numbers on the other faces — what do they share?";
+  const word=(v.mid||"").replace(/[^a-z]/gi,"");
+  r.mid = (word.length>0&&word.length===tr) ? null : "the animal's name should have as many letters as the top-right number.";
+  const ops={"+":(a,b)=>a+b,"−":(a,b)=>a-b,"×":(a,b)=>a*b,"÷":(a,b)=>a/b}, f=ops[v.tl];
+  r.br = (Number.isFinite(br)&&f&&(f(bl,tr)===br||f(tr,bl)===br)) ? null : "should come from bottom left, the operation, and top right.";
+  return r;
+}
+
+/* ---------- rendering ---------- */
+const net=document.getElementById("net"), tabs=document.getElementById("tabs"), form=document.getElementById("form"),
+      result=document.getElementById("result"), patterns=document.getElementById("patterns"), reveal=document.getElementById("reveal");
+const SLOTS=["tl","tr","mid","bl","br"], EMPTY={tl:"?",tr:"?",mid:"middle",bl:"?",br:"?"};
+const colPos=["2/3","1/2","2/3","3/4","2/3"], rowPos=["1/2","2/3","2/3","2/3","3/4"];
+let cur=0, attempts=0, blanks=[];
+const cube=document.getElementById("cube"), scene=document.getElementById("scene"), stage=document.getElementById("stage");
+const FACE3D=["top","left","front","right","bottom"];   // net order → cube position; the missing face is the back
+const TF={front:"translateZ(75px)",back:"rotateY(180deg) translateZ(75px)",right:"rotateY(90deg) translateZ(75px)",
+          left:"rotateY(-90deg) translateZ(75px)",top:"rotateX(90deg) translateZ(75px)",bottom:"rotateX(-90deg) translateZ(75px)"};
+
+const faceHTML=f=>SLOTS.map(k=>f[k]?`<div class="${k}">${f[k]}</div>`:"").join("");
+function control(fd){
+  const id=`f-${fd.key}`;
+  if(fd.kind==="select") return `<select id="${id}" data-key="${fd.key}"><option value="">choose…</option>${fd.options.map(o=>`<option>${o}</option>`).join("")}</select>`;
+  return `<input id="${id}" data-key="${fd.key}" placeholder="${fd.placeholder||""}" autocomplete="off">`;
+}
+function render(i){
+  cur=i; attempts=0; const L=LEVELS[i];
+  [...tabs.children].forEach((b,j)=>b.setAttribute("aria-selected",j===i));
+  net.innerHTML = L.faces.map((f,j)=>`<div class="face" style="grid-column:${colPos[j]};grid-row:${rowPos[j]}">${faceHTML(f)}</div>`).join("")
+    + `<div class="face blank" style="grid-column:4/5;grid-row:2/3"></div><div class="level-tag">${L.name}</div>`;
+  cube.innerHTML = L.faces.map((f,j)=>`<div class="face" style="transform:${TF[FACE3D[j]]}">${faceHTML(f)}</div>`).join("")
+    + `<div class="face blank" style="transform:${TF.back}"></div>`;
+  document.getElementById("tag3d").textContent=L.name;
+  blanks=[...document.querySelectorAll(".face.blank")];
+  // group fields that share a slot (e.g. word + ink color) onto one row
+  const rows=[]; L.fields.forEach(fd=>{const r=rows.find(x=>x.slot===fd.slot); r?r.fields.push(fd):rows.push({slot:fd.slot,label:fd.label,fields:[fd]});});
+  form.innerHTML = rows.map(r=>`<label for="f-${r.fields[0].key}">${r.label}</label><div class="ctl">${r.fields.map(control).join("")}</div>`).join("");
+  document.getElementById("side-help").textContent=L.help;
+  result.textContent=""; result.className=""; patterns.className=""; reveal.disabled=true;
+  patterns.innerHTML=`<dl>${L.patterns.map(([t,d])=>`<dt>${t}</dt><dd>${d}</dd>`).join("")}</dl>`;
+  paint(); form.querySelector("input,select")?.focus();
+}
+function values(){const v={}; form.querySelectorAll("[data-key]").forEach(el=>v[el.dataset.key]=el.value.trim()); return v;}
+function paint(marks={}){
+  const L=LEVELS[cur], p=L.preview(values()), used=new Set(L.fields.map(f=>f.slot));
+  const html = SLOTS.filter(k=>used.has(k)).map(k=>{
+    const h=p[k]||"", filled=/<svg/.test(h)||/\S/.test(h.replace(/<[^>]*>/g,""));
+    const cls=[k, filled?"":"empty", marks[k]||""].join(" ").trim();
+    return `<div class="${cls}">${filled?p[k]:EMPTY[k]}</div>`;
+  }).join("");
+  blanks.forEach(b=>b.innerHTML=html);
+}
+const norm=s=>String(s).toLowerCase().replace(/\s+/g,"");
+function check(){
+  const L=LEVELS[cur], v=values(), slotOf=Object.fromEntries(L.fields.map(f=>[f.key,f.slot])), labelOf=Object.fromEntries(L.fields.map(f=>[f.key,f.label]));
+  let wrong=[], empty=0, marks={};
+  const res = L.check ? L.check(v) : Object.fromEntries(Object.keys(L.answer).map(k=>[k, norm(v[k])===norm(L.answer[k])?null:""]));
+  form.querySelectorAll("[data-key]").forEach(el=>{
+    const k=el.dataset.key, s=slotOf[k]; el.classList.remove("ok","bad");
+    if(!el.value.trim()){empty++;return;}
+    if(res[k]===null){el.classList.add("ok"); if(marks[s]!=="bad") marks[s]="ok";}
+    else{el.classList.add("bad"); marks[s]="bad"; wrong.push(res[k]?`${labelOf[k]} ${res[k]}`:labelOf[k]);}
+  });
+  if(empty){result.className=""; result.textContent=`Fill in every box first — ${empty} still empty.`; paint(); return;}
+  attempts++; paint(marks);
+  if(!wrong.length){result.className="good"; result.textContent="Every corner fits. Cube complete!"; tabs.children[cur].classList.add("solved");}
+  else{result.className=""; result.innerHTML=`Not yet — check these:<ul>${wrong.map(w=>`<li>${w}</li>`).join("")}</ul>`;}
+  reveal.disabled = !(attempts>=2 || !wrong.length);
+}
+form.addEventListener("input",()=>{form.querySelectorAll(".ok,.bad").forEach(el=>el.classList.remove("ok","bad")); paint();});
+form.addEventListener("keydown",e=>{if(e.key==="Enter")check();});
+document.getElementById("check").onclick=check;
+document.getElementById("clear").onclick=()=>{form.querySelectorAll("[data-key]").forEach(el=>{el.value="";el.classList.remove("ok","bad");}); result.textContent=""; result.className=""; patterns.className=""; paint();};
+reveal.onclick=()=>patterns.classList.toggle("show");
+/* ---------- 3D view ---------- */
+let rx=-22, ry=32, drag=null;
+const VIEWS={front:[-22,32],back:[-22,212],top:[-70,32],corner:[-30,-45]};
+const setRot=()=>cube.style.transform=`scale(1.55) rotateX(${rx}deg) rotateY(${ry}deg)`;
+function setView(is3d){stage.classList.toggle("is3d",is3d);
+  document.getElementById("viewNet").setAttribute("aria-pressed",!is3d); document.getElementById("view3d").setAttribute("aria-pressed",is3d);
+  if(is3d){cube.style.transition="none"; setRot();}}
+document.getElementById("viewNet").onclick=()=>setView(false);
+document.getElementById("view3d").onclick=()=>setView(true);
+document.querySelectorAll(".snap button").forEach(b=>b.onclick=()=>{[rx,ry]=VIEWS[b.dataset.view];
+  cube.style.transition=matchMedia("(prefers-reduced-motion: reduce)").matches?"none":"transform .5s"; setRot();});
+scene.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,rx,ry}; cube.style.transition="none"; scene.setPointerCapture(e.pointerId);});
+scene.addEventListener("pointermove",e=>{if(!drag)return; ry=drag.ry+(e.clientX-drag.x)*.5; rx=drag.rx-(e.clientY-drag.y)*.5; setRot();});
+scene.addEventListener("pointerup",()=>drag=null); scene.addEventListener("pointercancel",()=>drag=null);
+scene.addEventListener("keydown",e=>{const k={ArrowLeft:[0,-15],ArrowRight:[0,15],ArrowUp:[-15,0],ArrowDown:[15,0]}[e.key]; if(!k)return; e.preventDefault(); rx+=k[0]; ry+=k[1]; setRot();});
+scene.tabIndex=0; setRot();
+
+LEVELS.forEach((L,i)=>{const b=document.createElement("button"); b.textContent=L.name; b.setAttribute("role","tab"); b.onclick=()=>render(i); tabs.appendChild(b);});
+render(0);
+</script>
+</body>
+</html>

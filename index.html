@@ -564,7 +564,7 @@
         <div class="header-content">
             <div class="header-badge">
                 <span class="pulse-dot"></span>
-                <span>Interactive Science Hub &bull; 31 Tools</span>
+                <span>Interactive Science Hub &bull; 32 Tools</span>
             </div>
             <h1><a href="./whiteboard/" title="Open Classroom Whiteboard">Science2</a></h1>
             <p>Interactive simulations, laboratory practices, and physics & chemistry explorations for students and educators.</p>
@@ -576,6 +576,10 @@
                 <a href="./draw/" class="quick-btn">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
                     Sketchpad
+                </a>
+                <a href="./inquiry.cube/" class="quick-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    Inquiry Cube
                 </a>
                 <a href="./meniscus/" class="quick-btn">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20h12V2"/><path d="M6 14c2-1.5 4-1.5 6 0s4 1.5 6 0"/></svg>
@@ -595,15 +599,15 @@
             <div class="search-row">
                 <div class="search-wrapper">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="search" id="search-input" class="search-input" placeholder="Search interactives (e.g., meniscus, speed, lewis, bohr)..." autocomplete="off" aria-label="Search interactives">
+                    <input type="search" id="search-input" class="search-input" placeholder="Search interactives (e.g., inquiry, meniscus, speed, lewis)..." autocomplete="off" aria-label="Search interactives">
                     <button type="button" id="clear-search" class="clear-btn" aria-label="Clear search">&times;</button>
                     <span class="search-shortcut" title="Press / to search">/</span>
                 </div>
-                <div class="tool-count-badge" id="tool-count">Showing 31 tools</div>
+                <div class="tool-count-badge" id="tool-count">Showing 32 tools</div>
             </div>
 
             <div class="filter-pills" id="filter-pills" role="toolbar" aria-label="Category filters">
-                <button class="pill-btn active" data-filter="all">All (31)</button>
+                <button class="pill-btn active" data-filter="all">All (32)</button>
                 <button class="pill-btn" data-filter="lab">Lab &amp; Measurement</button>
                 <button class="pill-btn" data-filter="atoms">Atoms &amp; Elements</button>
                 <button class="pill-btn" data-filter="electrons">Electrons</button>
@@ -621,9 +625,25 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
                 </div>
                 <h2>Lab &amp; Measurement</h2>
-                <span class="section-count">3 tools</span>
+                <span class="section-count">4 tools</span>
             </div>
             <div class="tools-grid">
+                <a href="./inquiry.cube/" class="tool-card" data-title="Inquiry Cube" data-keywords="inquiry cube scientific inquiry nature of science scientific method patterns deduction reasoning 3d cube net observation hypothesis">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-title-group">
+                                <h3>Inquiry Cube</h3>
+                                <span class="badge-new">New</span>
+                            </div>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                        <p>Analyze patterns across visible cube faces in interactive 3D and flat net views to deduce the missing sixth face and practice scientific inquiry.</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="tag">./inquiry.cube/</span>
+                        <span class="tag">Inquiry</span>
+                    </div>
+                </a>
                 <a href="./meniscus/" class="tool-card" data-title="Reading a Meniscus" data-keywords="graduated cylinder volume measurement liquid reading meniscus lab chemistry water level">
                     <div>
                         <div class="card-top">
@@ -1148,7 +1168,7 @@
         <div class="empty-state" id="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
             <h3>No interactive tools found</h3>
-            <p>Try searching for different keywords like "meniscus", "speed", "lewis", "bohr", or "forces".</p>
+            <p>Try searching for different keywords like "inquiry", "meniscus", "speed", "lewis", "bohr", or "forces".</p>
         </div>
     </main>
 
