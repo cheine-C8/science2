@@ -22,9 +22,10 @@
   FILE LAYOUT (top → bottom)
     1. <style>                  Board styles, widget styles, e-ink mode, then the
                                 MOBILE block last so it wins the CSS cascade.
-    2. <body> markup            Two stacked <canvas> elements, status pill,
-                                eraser options, bottom toolbar, zoom controls,
-                                fireworks canvas, widget layer, widget rail.
+    2. <body> markup            Two stacked <canvas> elements + text editor,
+                                minimap, status pill, eraser options, bottom
+                                toolbar, zoom controls, fireworks canvas,
+                                widget layer, widget rail.
     3. <script type="module">   THE BOARD: state, canvas setup, Firebase sync,
                                 drawing helpers, render loop, pointer input
                                 (pen/touch/mouse/pinch), undo, toolbar wiring,
@@ -61,7 +62,19 @@
     stroke; drawEntity()'s 'image' branch just blits whatever's cached.
     A dedicated "select" tool (ui.tool === 'select') is how images get moved,
     resized (bottom-right handle) and deleted (Delete/Backspace) — see
-    `imageDrag` / `selectedImageId` / `drawSelectionBox()` in the INPUT section.
+    `objectDrag` / `selectedObjectId` / `drawSelectionBox()` in the INPUT section.
+  • Text is the second "object" type: type:'text' with text, color, size (font
+    px in world units), and w/h measured by measureText(). Typing happens in a
+    single reused <textarea id="text-editor"> positioned over the world point
+    (openTextEditor / commitTextEdit); while it's open the canvas skips drawing
+    that stroke. Click away or Ctrl+Enter commits, Escape cancels. The select
+    tool moves text, its handle scales the font size, and double-click re-opens
+    the editor. Undo 'update' actions carry text/size as well as geometry.
+  • Minimap (#minimap, bottom-left): drawMinimap() runs from redrawMain(),
+    throttled, showing content bounds ∪ viewport with pen strokes sampled to
+    ~40 points. Click/drag jumps the view; double-click = fitToContent().
+    Toggle (map button in zoom controls) persists in localStorage. Hidden on
+    screens ≤820px wide.
     Everything else (pen/eraser/shapes/pan/widgets) is untouched by this.
   • Firestore path: artifacts/{appId}/public/data/strokes/{strokeId}.
     Every stroke is one document. onSnapshot keeps the local `strokes` array
@@ -187,7 +200,7 @@
             box-shadow: none !important; background: #fff !important; border: 2px solid #000 !important;
         }
         body.eink * { transition: none !important; animation-duration: 0s !important; }
-        body.eink .tool-btn.active, body.eink #btn-grid.text-blue-600, body.eink #btn-touch.text-blue-600, body.eink #btn-eink {
+        body.eink .tool-btn.active, body.eink #btn-grid.text-blue-600, body.eink #btn-touch.text-blue-600, body.eink #btn-minimap.text-blue-600, body.eink #btn-eink {
             background: #000 !important; color: #fff !important;
         }
         body.eink .color-btn.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000; }
@@ -197,6 +210,49 @@
         .cursor-eraser {
             cursor: cell;
         }
+
+        /* ─── TEXT TOOL editor ─── sits above the overlay canvas (20) and below widgets (30) ─── */
+        #text-editor {
+            position: absolute;
+            display: none;
+            z-index: 25;
+            margin: 0;
+            padding: 2px 4px;
+            border: 2px dashed #2563eb;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.6);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.25;
+            resize: none;
+            overflow: hidden;
+            outline: none;
+            white-space: pre;
+            min-width: 40px;
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: auto;
+        }
+        #text-editor.open { display: block; }
+
+        /* ─── MINIMAP ─── */
+        #minimap {
+            position: fixed;
+            left: 16px;
+            bottom: calc(1.5rem + env(safe-area-inset-bottom));
+            width: 200px;
+            height: 130px;
+            z-index: 50;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            touch-action: none;
+        }
+        body.minimap-off #minimap { display: none; }
+        body.eink #minimap { backdrop-filter: none; box-shadow: none; background: #fff; border: 2px solid #000; }
+        body.eink #text-editor { background: #fff; border-color: #000; }
 
         /* ─── WIDGETS ─────────────────────────────────────────────────────────── */
         #widget-layer {
@@ -462,6 +518,7 @@
 
         /* Phones and small tablets: collapse the widget rail behind a button, move zoom to the top */
         @media (max-width: 820px) {
+            #minimap { display: none; }
             #status-pill { top: calc(0.5rem + env(safe-area-inset-top)); right: 0.5rem; padding: 6px 10px; }
             #status-text { font-size: 12px; }
             #zoom-controls {
@@ -513,7 +570,14 @@
     <div id="canvas-container">
         <canvas id="mainCanvas"></canvas>
         <canvas id="overlayCanvas"></canvas>
+        <!-- In-place editor for the text tool. Positioned in screen px over the world point being
+             edited, font-size scaled by view.zoom. Hidden unless a text is being typed/edited. -->
+        <textarea id="text-editor" spellcheck="false" rows="1"></textarea>
     </div>
+
+    <!-- Minimap: bird's-eye view of everything on the board + the current viewport (blue box).
+         Click/drag to move the view; double-click to zoom-to-fit all content. Hidden on small screens. -->
+    <canvas id="minimap" width="200" height="130" title="Minimap — click to jump, double-click to fit all"></canvas>
 
     <!-- Status: Firebase connection indicator (green pulse = live, red = offline). -->
     <div id="status-pill"
@@ -552,6 +616,9 @@
         <button id="btn-circle"
             class="tool-btn text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
             title="Circle"><i data-lucide="circle" class="w-5 h-5"></i></button>
+        <button id="btn-text"
+            class="tool-btn text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+            title="Text (click to type; Ctrl+Enter or click away to finish)"><i data-lucide="type" class="w-5 h-5"></i></button>
         <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
         <button id="btn-select" class="tool-btn text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
             title="Select (move/resize/delete pasted images)"><i data-lucide="mouse-pointer-2" class="w-5 h-5"></i></button>
@@ -622,6 +689,8 @@
         class="fixed bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex flex-col items-center gap-1 z-50">
         <button id="btn-blank" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
             title="Jump to blank space (next empty screen to the right, top row)"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
+        <button id="btn-minimap" class="text-blue-600 bg-blue-50 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
+            title="Toggle minimap"><i data-lucide="map" class="w-5 h-5"></i></button>
         <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
         <button id="btn-zoom-in" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"><i
                 data-lucide="plus" class="w-5 h-5"></i></button>
@@ -673,7 +742,7 @@
         lucide.createIcons();
 
         // ─── STATE ────────────────────────────────────────────────────────────────────
-        // ui: what the toolbar currently says. tool ∈ pen|eraser|arrow|rect|circle|pan.
+        // ui: what the toolbar currently says. tool ∈ pen|eraser|arrow|rect|circle|text|select|pan.
         // touchMode/eink are persisted in localStorage so they survive reloads.
         const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true, touchMode: localStorage.getItem('whiteboard.touchMode') || 'draw', eink: localStorage.getItem('whiteboard.eink') === '1' };
         // view: the camera. screen = world * zoom + (x, y). Not persisted — every reload starts at 100%/origin.
@@ -707,10 +776,14 @@
 
         // ─── IMAGE PASTE state ───────────────────────────────────────────────────────
         // imageCache: id → decoded HTMLImageElement (canvas needs a bitmap, not the src string).
-        // selectedImageId / imageDrag: bookkeeping for the "select" tool (move/resize/delete).
+        // selectedObjectId / objectDrag: bookkeeping for the "select" tool (move/resize/delete).
         const imageCache = new Map();
-        let selectedImageId = null;
-        let imageDrag = null; // { id, mode: 'move'|'resize', orig:{x,y,w,h}, startWx, startWy }
+        let selectedObjectId = null;
+        let objectDrag = null; // { id, mode: 'move'|'resize', orig:{x,y,w,h}, startWx, startWy }
+        // Text tool: `editing` is non-null while the #text-editor textarea is open.
+        // { id, x, y, size, color, isNew, before } — `before` is the original stroke when editing an existing one.
+        let editing = null;
+        const textEditor = document.getElementById('text-editor');
 
         // ─── CANVAS SETUP ─────────────────────────────────────────────────────────────
         // mainCtx: displays committed strokes. overlayCtx: live stroke + eraser cursor; `desynchronized`
@@ -904,6 +977,28 @@
                     ctx.drawImage(img, stroke.points[0].x, stroke.points[0].y, stroke.w, stroke.h);
                 }
             }
+            else if (stroke.type === 'text') {
+                if (editing && editing.id === stroke.id) return; // the live editor is showing it instead
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.font = textFont(stroke.size);
+                ctx.fillStyle = stroke.color || '#000';
+                ctx.textBaseline = 'top';
+                const lh = stroke.size * TEXT_LINE_HEIGHT;
+                (stroke.text || '').split('\n').forEach((line, i) => ctx.fillText(line, stroke.points[0].x, stroke.points[0].y + i * lh));
+            }
+        }
+
+        // ─── TEXT helpers ─────────────────────────────────────────────────────────────
+        const TEXT_LINE_HEIGHT = 1.25;
+        const textFont = size => `${size}px 'Segoe UI', system-ui, sans-serif`;
+        // Measure a text stroke's world-space box and store it on the stroke (w/h are also
+        // written to Firestore so other clients can hit-test without re-measuring).
+        function measureText(s) {
+            offCtx.save(); offCtx.font = textFont(s.size);
+            const lines = (s.text || '').split('\n');
+            s.w = Math.max(20, ...lines.map(l => offCtx.measureText(l).width));
+            s.h = Math.max(1, lines.length) * s.size * TEXT_LINE_HEIGHT;
+            offCtx.restore();
         }
 
         // ─── OFFSCREEN / MAIN RENDER ──────────────────────────────────────────────────
@@ -954,6 +1049,8 @@
             }
 
             if (ui.tool === 'select') drawSelectionBox();
+            if (editing) positionTextEditor();
+            drawMinimap();
         }
         let einkFlip = false;
 
@@ -1013,7 +1110,7 @@
                 const minX = Math.min(p1.x, p2.x) - radius, maxX = Math.max(p1.x, p2.x) + radius;
                 const minY = Math.min(p1.y, p2.y) - radius, maxY = Math.max(p1.y, p2.y) + radius;
                 return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
-            } else if (stroke.type === 'image') {
+            } else if (stroke.type === 'image' || stroke.type === 'text') {
                 const p = stroke.points[0];
                 const minX = p.x - radius, maxX = p.x + (stroke.w || 0) + radius;
                 const minY = p.y - radius, maxY = p.y + (stroke.h || 0) + radius;
@@ -1022,11 +1119,11 @@
             return false;
         }
 
-        // Topmost image stroke whose bounding box contains world point (wx, wy). Used by the select tool.
-        function getImageAt(wx, wy) {
+        // Topmost image/text stroke whose bounding box contains world point (wx, wy). Used by the select tool.
+        function getObjectAt(wx, wy) {
             for (let i = strokes.length - 1; i >= 0; i--) {
                 const s = strokes[i];
-                if (s.type !== 'image') continue;
+                if (s.type !== 'image' && s.type !== 'text') continue;
                 const p = s.points[0];
                 if (wx >= p.x && wx <= p.x + s.w && wy >= p.y && wy <= p.y + s.h) return s;
             }
@@ -1037,9 +1134,9 @@
         // in SCREEN space (same convention as the live pen stroke drawn during a gesture).
         function drawSelectionBox() {
             overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            if (!selectedImageId) return;
-            const s = strokes.find(x => x.id === selectedImageId && x.type === 'image');
-            if (!s) { selectedImageId = null; return; }
+            if (!selectedObjectId) return;
+            const s = strokes.find(x => x.id === selectedObjectId && (x.type === 'image' || x.type === 'text'));
+            if (!s) { selectedObjectId = null; return; }
             const x0 = s.points[0].x * view.zoom + view.x, y0 = s.points[0].y * view.zoom + view.y;
             const w0 = s.w * view.zoom, h0 = s.h * view.zoom;
             overlayCtx.save();
@@ -1132,28 +1229,36 @@
                     isPanning = true;
                     lastPt = { x: e.clientX, y: e.clientY };
                     overlayCanvas.style.cursor = 'grabbing';
-                } else if (ui.tool === 'select') {
+                } else if (ui.tool === 'text') {
+                    // Click on empty space → new text; click on existing text → edit it.
+                    if (editing) { commitTextEdit(); return; }
                     const wp = getCanvasPoint(e.clientX, e.clientY);
-                    imageDrag = null;
+                    const hit = getObjectAt(wp.x, wp.y);
+                    if (hit && hit.type === 'text') openTextEditor(hit);
+                    else openTextEditor(null, wp);
+                } else if (ui.tool === 'select') {
+                    if (editing) commitTextEdit();
+                    const wp = getCanvasPoint(e.clientX, e.clientY);
+                    objectDrag = null;
                     // Resize handle takes priority when an image is already selected
-                    if (selectedImageId) {
-                        const sel = strokes.find(s => s.id === selectedImageId && s.type === 'image');
+                    if (selectedObjectId) {
+                        const sel = strokes.find(s => s.id === selectedObjectId && (s.type === 'image' || s.type === 'text'));
                         if (sel) {
                             const hx = sel.points[0].x * view.zoom + view.x + sel.w * view.zoom;
                             const hy = sel.points[0].y * view.zoom + view.y + sel.h * view.zoom;
                             const dx = e.clientX - hx, dy = e.clientY - hy;
                             if (dx * dx + dy * dy <= 22 * 22) {
-                                imageDrag = { id: sel.id, mode: 'resize', orig: { x: sel.points[0].x, y: sel.points[0].y, w: sel.w, h: sel.h }, startWx: wp.x, startWy: wp.y };
+                                objectDrag = { id: sel.id, mode: 'resize', orig: { x: sel.points[0].x, y: sel.points[0].y, w: sel.w, h: sel.h, size: sel.size }, startWx: wp.x, startWy: wp.y };
                             }
                         }
                     }
-                    if (!imageDrag) {
-                        const hit = getImageAt(wp.x, wp.y);
+                    if (!objectDrag) {
+                        const hit = getObjectAt(wp.x, wp.y);
                         if (hit) {
-                            selectedImageId = hit.id;
-                            imageDrag = { id: hit.id, mode: 'move', orig: { x: hit.points[0].x, y: hit.points[0].y, w: hit.w, h: hit.h }, startWx: wp.x, startWy: wp.y };
+                            selectedObjectId = hit.id;
+                            objectDrag = { id: hit.id, mode: 'move', orig: { x: hit.points[0].x, y: hit.points[0].y, w: hit.w, h: hit.h, size: hit.size }, startWx: wp.x, startWy: wp.y };
                         } else {
-                            selectedImageId = null;
+                            selectedObjectId = null;
                         }
                     }
                     drawSelectionBox();
@@ -1198,16 +1303,21 @@
             if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, e);
 
             // Select tool: dragging an image (move or resize)
-            if (imageDrag) {
+            if (objectDrag) {
                 const wp = getCanvasPoint(e.clientX, e.clientY);
-                const s = strokes.find(x => x.id === imageDrag.id);
+                const s = strokes.find(x => x.id === objectDrag.id);
                 if (s) {
-                    if (imageDrag.mode === 'move') {
-                        s.points[0] = { x: imageDrag.orig.x + (wp.x - imageDrag.startWx), y: imageDrag.orig.y + (wp.y - imageDrag.startWy) };
+                    if (objectDrag.mode === 'move') {
+                        s.points[0] = { x: objectDrag.orig.x + (wp.x - objectDrag.startWx), y: objectDrag.orig.y + (wp.y - objectDrag.startWy) };
+                    } else if (s.type === 'text') {
+                        // Text resizes by font size: the handle's vertical drag sets the scale, width follows the text.
+                        const scale = Math.max(0.2, (objectDrag.orig.h + (wp.y - objectDrag.startWy)) / objectDrag.orig.h);
+                        s.size = Math.max(6, Math.round(objectDrag.orig.size * scale * 10) / 10);
+                        measureText(s);
                     } else {
                         const minSize = 20 / view.zoom;
-                        s.w = Math.max(minSize, imageDrag.orig.w + (wp.x - imageDrag.startWx));
-                        s.h = Math.max(minSize, imageDrag.orig.h + (wp.y - imageDrag.startWy));
+                        s.w = Math.max(minSize, objectDrag.orig.w + (wp.x - objectDrag.startWx));
+                        s.h = Math.max(minSize, objectDrag.orig.h + (wp.y - objectDrag.startWy));
                     }
                     offscreenDirty = true; isDirty = true;
                     drawSelectionBox();
@@ -1346,25 +1456,106 @@
         // Images reuse the strokes collection (type:'image') so sync/undo/erase/clear are free.
         // Firestore caps a document around 1MB; compressImageToDataURL() downscales/re-encodes
         // until the base64 payload fits a safe budget, trying progressively smaller settings.
-        function writeImageDoc(s) {
+        function writeObjectDoc(s) {
             if (!user) return;
-            const payload = {
-                type: 'image', src: s.src,
+            const base = {
+                type: s.type,
                 points: JSON.stringify([[+s.points[0].x.toFixed(1), +s.points[0].y.toFixed(1)]]),
                 w: s.w, h: s.h, timestamp: s.timestamp || Date.now()
             };
+            const payload = s.type === 'text'
+                ? { ...base, text: s.text, color: s.color, size: s.size }
+                : { ...base, src: s.src };
             setTimeout(() => {
                 setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id), payload)
                     .catch(e => console.error('Firebase write error:', e));
             }, 0);
         }
 
+        // ─── TEXT TOOL editor ─────────────────────────────────────────────────────────
+        // A single <textarea> is reused. openTextEditor(existing) edits a stroke in place (the
+        // canvas stops drawing that stroke while the editor covers it); openTextEditor(null, wp)
+        // starts a new one at world point wp. Commit on click-away / Ctrl+Enter, cancel on Escape.
+        function openTextEditor(existing, wp) {
+            if (editing) commitTextEdit();
+            const size = existing ? existing.size : Math.max(14, 16 + ui.thickness * 2);
+            editing = existing
+                ? { id: existing.id, x: existing.points[0].x, y: existing.points[0].y, size, color: existing.color, isNew: false, before: { text: existing.text, size: existing.size, w: existing.w, h: existing.h, points: [{ ...existing.points[0] }] } }
+                : { id: crypto.randomUUID(), x: wp.x, y: wp.y, size, color: ui.color, isNew: true };
+            textEditor.value = existing ? existing.text : '';
+            textEditor.classList.add('open');
+            positionTextEditor();
+            offscreenDirty = true; isDirty = true; // hide the canvas copy of the text being edited
+            selectedObjectId = null; drawSelectionBox();
+            setTimeout(() => { textEditor.focus(); if (existing) textEditor.select(); }, 0);
+        }
+        function positionTextEditor() {
+            if (!editing) return;
+            const px = editing.size * view.zoom;
+            textEditor.style.left = (editing.x * view.zoom + view.x - 6) + 'px';
+            textEditor.style.top = (editing.y * view.zoom + view.y - 4) + 'px';
+            textEditor.style.fontSize = px + 'px';
+            textEditor.style.color = editing.color;
+            autosizeTextEditor();
+        }
+        function autosizeTextEditor() {
+            const lines = textEditor.value.split('\n');
+            textEditor.rows = Math.max(1, lines.length);
+            offCtx.save(); offCtx.font = textFont(editing.size * view.zoom);
+            const w = Math.max(...lines.map(l => offCtx.measureText(l).width), 40);
+            offCtx.restore();
+            textEditor.style.width = (w + 16) + 'px';
+        }
+        function commitTextEdit() {
+            if (!editing) return;
+            const ed = editing; editing = null;
+            textEditor.classList.remove('open');
+            const text = textEditor.value.replace(/\s+$/, '');
+            if (ed.isNew) {
+                if (text.trim()) {
+                    const s = { id: ed.id, type: 'text', text, color: ed.color, size: ed.size, points: [{ x: ed.x, y: ed.y }], timestamp: Date.now() };
+                    measureText(s);
+                    strokes.push(s);
+                    undoStack.push({ type: 'add', strokes: [s] });
+                    writeObjectDoc(s);
+                }
+            } else {
+                const s = strokes.find(x => x.id === ed.id);
+                if (s) {
+                    if (!text.trim()) {
+                        strokes = strokes.filter(x => x.id !== s.id);
+                        undoStack.push({ type: 'delete', strokes: [s] });
+                        if (user) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { });
+                    } else if (text !== s.text) {
+                        s.text = text; measureText(s);
+                        undoStack.push({ type: 'update', id: s.id, before: ed.before, after: { text: s.text, size: s.size, w: s.w, h: s.h, points: [{ ...s.points[0] }] } });
+                        writeObjectDoc(s);
+                    }
+                }
+            }
+            offscreenDirty = true; isDirty = true;
+        }
+        function cancelTextEdit() {
+            if (!editing) return;
+            editing = null; textEditor.classList.remove('open');
+            offscreenDirty = true; isDirty = true;
+        }
+        textEditor.addEventListener('input', autosizeTextEditor);
+        textEditor.addEventListener('keydown', e => {
+            e.stopPropagation(); // keep Space/Delete/Ctrl+Z from reaching the board shortcuts
+            if (e.key === 'Escape') { e.preventDefault(); cancelTextEdit(); }
+            else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commitTextEdit(); }
+        });
+        textEditor.addEventListener('blur', () => { if (editing) commitTextEdit(); });
+        // Stop pointer events inside the editor from starting a stroke on the canvas beneath
+        ['pointerdown', 'pointermove', 'pointerup', 'wheel'].forEach(ev => textEditor.addEventListener(ev, e => e.stopPropagation()));
+
         function commitImageStroke(s, oversized) {
             strokes.push(s);
             undoStack.push({ type: 'add', strokes: [s] });
             offscreenDirty = true; isDirty = true;
             if (oversized) showToast('That image is very large — it\'s on your board, but it won\'t sync to other devices.');
-            else writeImageDoc(s);
+            else writeObjectDoc(s);
         }
 
         function loadImageBlob(blob) {
@@ -1420,7 +1611,7 @@
             };
             imageCache.set(id, img); // keep the full-quality decoded bitmap for OUR local rendering
             commitImageStroke(stroke, oversized);
-            switchTool('select'); selectedImageId = id; drawSelectionBox();
+            switchTool('select'); selectedObjectId = id; drawSelectionBox();
         }
 
         // Ctrl/Cmd+V — only intercepted when the clipboard actually holds image data, so pasting
@@ -1448,18 +1639,18 @@
             activePointers.delete(e.pointerId);
             overlayCanvas.releasePointerCapture(e.pointerId);
 
-            if (imageDrag) {
-                const s = strokes.find(x => x.id === imageDrag.id);
+            if (objectDrag) {
+                const s = strokes.find(x => x.id === objectDrag.id);
                 if (s) {
-                    const before = { points: [{ x: imageDrag.orig.x, y: imageDrag.orig.y }], w: imageDrag.orig.w, h: imageDrag.orig.h };
-                    const after = { points: [{ x: s.points[0].x, y: s.points[0].y }], w: s.w, h: s.h };
-                    const changed = before.points[0].x !== after.points[0].x || before.points[0].y !== after.points[0].y || before.w !== after.w || before.h !== after.h;
+                    const before = { points: [{ x: objectDrag.orig.x, y: objectDrag.orig.y }], w: objectDrag.orig.w, h: objectDrag.orig.h, size: objectDrag.orig.size };
+                    const after = { points: [{ x: s.points[0].x, y: s.points[0].y }], w: s.w, h: s.h, size: s.size };
+                    const changed = before.points[0].x !== after.points[0].x || before.points[0].y !== after.points[0].y || before.w !== after.w || before.h !== after.h || before.size !== after.size;
                     if (changed) {
                         undoStack.push({ type: 'update', id: s.id, before, after });
-                        writeImageDoc(s);
+                        writeObjectDoc(s);
                     }
                 }
-                imageDrag = null;
+                objectDrag = null;
                 return;
             }
 
@@ -1514,12 +1705,12 @@
                 // Re-add the deleted strokes
                 for (const s of action.strokes) {
                     strokes.push(s);
-                    if (s.type === 'image') {
-                        if (!imageCache.has(s.id) && s.src) {
+                    if (s.type === 'image' || s.type === 'text') {
+                        if (s.type === 'image' && !imageCache.has(s.id) && s.src) {
                             const im = new Image(); im.onload = () => { offscreenDirty = true; isDirty = true; }; im.src = s.src;
                             imageCache.set(s.id, im);
                         }
-                        writeImageDoc(s);
+                        writeObjectDoc(s);
                     } else if (user) {
                         const payload = {
                             type: s.type, color: s.color, thickness: s.thickness,
@@ -1530,9 +1721,15 @@
                 }
                 strokes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
             } else if (action.type === 'update') {
-                // Image move/resize: restore the "before" geometry
+                // Image/text move, resize or text edit: restore the "before" state
                 const s = strokes.find(x => x.id === action.id);
-                if (s) { s.points = [{ ...action.before.points[0] }]; s.w = action.before.w; s.h = action.before.h; writeImageDoc(s); }
+                if (s) {
+                    const b = action.before;
+                    s.points = [{ ...b.points[0] }]; s.w = b.w; s.h = b.h;
+                    if (b.size !== undefined) s.size = b.size;
+                    if (b.text !== undefined) s.text = b.text;
+                    writeObjectDoc(s);
+                }
             }
             offscreenDirty = true; isDirty = true;
             if (ui.tool === 'select') drawSelectionBox();
@@ -1565,7 +1762,7 @@
             const pageW = window.innerWidth / view.zoom; // one screen width, in world units at current zoom
             let maxX = -Infinity;
             for (const s of strokes) {
-                if (s.type === 'image') maxX = Math.max(maxX, s.points[0].x + (s.w || 0));
+                if (s.type === 'image' || s.type === 'text') maxX = Math.max(maxX, s.points[0].x + (s.w || 0));
                 else for (const p of s.points) maxX = Math.max(maxX, p.x + (s.thickness || 0));
             }
             const page = maxX === -Infinity ? 0 : Math.floor((maxX + 20) / pageW) + 1;
@@ -1575,10 +1772,133 @@
         }
         document.getElementById('btn-blank').onclick = jumpToBlankSpace;
 
+        // ─── MINIMAP ──────────────────────────────────────────────────────────────────
+        // A 200×130 canvas showing the union of all content + the current viewport, redrawn from
+        // redrawMain() (throttled — it's a full pass over `strokes`, so pen strokes are sampled
+        // down to ~40 points each). mmMap is the world→minimap transform of the last draw, used
+        // to turn clicks back into world coordinates. Toggle persisted in localStorage.
+        const minimap = document.getElementById('minimap');
+        const mmCtx = minimap.getContext('2d');
+        const MM_W = 200, MM_H = 130;
+        let mmMap = null, mmLast = 0, mmTimer = null;
+        ui.minimap = localStorage.getItem('whiteboard.minimap') !== '0';
+
+        function resizeMinimap() {
+            const d = Math.min(window.devicePixelRatio || 1, 2);
+            minimap.width = MM_W * d; minimap.height = MM_H * d;
+            mmCtx.setTransform(d, 0, 0, d, 0, 0);
+        }
+        resizeMinimap();
+        window.addEventListener('resize', resizeMinimap);
+
+        // World-space bounding box of everything drawn, or null for an empty board.
+        function contentBounds() {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const s of strokes) {
+                if (s.type === 'eraser') continue;
+                if (s.type === 'image' || s.type === 'text') {
+                    const p = s.points[0];
+                    minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+                    maxX = Math.max(maxX, p.x + (s.w || 0)); maxY = Math.max(maxY, p.y + (s.h || 0));
+                } else {
+                    for (const p of s.points) {
+                        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+                        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+                    }
+                }
+            }
+            return minX === Infinity ? null : { minX, minY, maxX, maxY };
+        }
+
+        function drawMinimap() {
+            if (!ui.minimap) return;
+            const now = performance.now();
+            if (now - mmLast < 80) { clearTimeout(mmTimer); mmTimer = setTimeout(drawMinimap, 90); return; }
+            mmLast = now;
+
+            // Region to show = content ∪ viewport, padded 8%
+            const vp = { minX: -view.x / view.zoom, minY: -view.y / view.zoom };
+            vp.maxX = vp.minX + window.innerWidth / view.zoom; vp.maxY = vp.minY + window.innerHeight / view.zoom;
+            const cb = contentBounds() || vp;
+            let minX = Math.min(cb.minX, vp.minX), minY = Math.min(cb.minY, vp.minY);
+            let maxX = Math.max(cb.maxX, vp.maxX), maxY = Math.max(cb.maxY, vp.maxY);
+            const padX = (maxX - minX) * 0.08 || 50, padY = (maxY - minY) * 0.08 || 50;
+            minX -= padX; maxX += padX; minY -= padY; maxY += padY;
+            const scale = Math.min(MM_W / (maxX - minX), MM_H / (maxY - minY));
+            const ox = (MM_W - (maxX - minX) * scale) / 2 - minX * scale;
+            const oy = (MM_H - (maxY - minY) * scale) / 2 - minY * scale;
+            mmMap = { scale, ox, oy };
+            const X = x => x * scale + ox, Y = y => y * scale + oy;
+
+            mmCtx.clearRect(0, 0, MM_W, MM_H);
+            mmCtx.lineCap = mmCtx.lineJoin = 'round';
+            for (const s of strokes) {
+                if (s.type === 'eraser' || !s.points.length) continue;
+                const p0 = s.points[0];
+                if (s.type === 'image') { mmCtx.fillStyle = ui.eink ? '#888' : '#cbd5e1'; mmCtx.fillRect(X(p0.x), Y(p0.y), Math.max(1, s.w * scale), Math.max(1, s.h * scale)); }
+                else if (s.type === 'text') { mmCtx.fillStyle = s.color || '#000'; mmCtx.globalAlpha = .45; mmCtx.fillRect(X(p0.x), Y(p0.y), Math.max(1, s.w * scale), Math.max(1, s.h * scale)); mmCtx.globalAlpha = 1; }
+                else if (s.type === 'rect' && s.points[1]) { mmCtx.strokeStyle = s.color; mmCtx.lineWidth = 1; const p1 = s.points[1]; mmCtx.strokeRect(X(Math.min(p0.x, p1.x)), Y(Math.min(p0.y, p1.y)), Math.abs(p1.x - p0.x) * scale, Math.abs(p1.y - p0.y) * scale); }
+                else if ((s.type === 'arrow' || s.type === 'circle') && s.points[1]) { mmCtx.strokeStyle = s.color; mmCtx.lineWidth = 1; mmCtx.beginPath(); mmCtx.moveTo(X(p0.x), Y(p0.y)); mmCtx.lineTo(X(s.points[1].x), Y(s.points[1].y)); mmCtx.stroke(); }
+                else {
+                    mmCtx.strokeStyle = s.color; mmCtx.lineWidth = Math.max(1, Math.min(3, s.thickness * scale));
+                    const step = Math.max(1, Math.floor(s.points.length / 40));
+                    mmCtx.beginPath(); mmCtx.moveTo(X(p0.x), Y(p0.y));
+                    for (let i = step; i < s.points.length; i += step) mmCtx.lineTo(X(s.points[i].x), Y(s.points[i].y));
+                    const last = s.points[s.points.length - 1]; mmCtx.lineTo(X(last.x), Y(last.y));
+                    mmCtx.stroke();
+                }
+            }
+            // Viewport
+            mmCtx.fillStyle = ui.eink ? 'rgba(0,0,0,0.08)' : 'rgba(37,99,235,0.10)';
+            mmCtx.strokeStyle = ui.eink ? '#000' : '#2563eb'; mmCtx.lineWidth = 1.5;
+            const vx = X(vp.minX), vy = Y(vp.minY), vw = (vp.maxX - vp.minX) * scale, vh = (vp.maxY - vp.minY) * scale;
+            mmCtx.fillRect(vx, vy, vw, vh); mmCtx.strokeRect(vx, vy, vw, vh);
+        }
+
+        // Click / drag on the minimap → center the view on that world point
+        function minimapJump(e) {
+            if (!mmMap) return;
+            const r = minimap.getBoundingClientRect();
+            const wx = (e.clientX - r.left - mmMap.ox) / mmMap.scale, wy = (e.clientY - r.top - mmMap.oy) / mmMap.scale;
+            view.x = window.innerWidth / 2 - wx * view.zoom; view.y = window.innerHeight / 2 - wy * view.zoom;
+            offscreenDirty = true; isDirty = true; updateZoomUI();
+        }
+        minimap.addEventListener('pointerdown', e => {
+            e.preventDefault(); minimap.setPointerCapture(e.pointerId); minimapJump(e);
+            const move = ev => minimapJump(ev);
+            const up = () => { minimap.removeEventListener('pointermove', move); minimap.removeEventListener('pointerup', up); minimap.removeEventListener('pointercancel', up); };
+            minimap.addEventListener('pointermove', move); minimap.addEventListener('pointerup', up); minimap.addEventListener('pointercancel', up);
+        });
+        // Double-click → zoom to fit all content
+        function fitToContent() {
+            const b = contentBounds(); if (!b) { view.zoom = 1; view.x = 0; view.y = 0; }
+            else {
+                const bw = Math.max(1, b.maxX - b.minX), bh = Math.max(1, b.maxY - b.minY);
+                view.zoom = Math.min(Math.max(0.1, Math.min((window.innerWidth - 120) / bw, (window.innerHeight - 200) / bh)), 10);
+                view.x = window.innerWidth / 2 - (b.minX + bw / 2) * view.zoom;
+                view.y = window.innerHeight / 2 - (b.minY + bh / 2) * view.zoom;
+            }
+            offscreenDirty = true; isDirty = true; updateZoomUI();
+        }
+        minimap.addEventListener('dblclick', fitToContent);
+
+        function applyMinimap() {
+            document.body.classList.toggle('minimap-off', !ui.minimap);
+            const b = document.getElementById('btn-minimap');
+            b.classList.toggle('text-blue-600', ui.minimap); b.classList.toggle('bg-blue-50', ui.minimap);
+            b.classList.toggle('text-gray-600', !ui.minimap);
+            if (ui.minimap) { mmLast = 0; drawMinimap(); }
+        }
+        document.getElementById('btn-minimap').onclick = () => {
+            ui.minimap = !ui.minimap; localStorage.setItem('whiteboard.minimap', ui.minimap ? '1' : '0'); applyMinimap();
+        };
+        applyMinimap();
+
         function updateCursor() {
             if (ui.tool === 'pan') overlayCanvas.style.cursor = isPanning ? 'grabbing' : 'grab';
             else if (ui.tool === 'eraser') overlayCanvas.style.cursor = 'cell';
             else if (ui.tool === 'select') overlayCanvas.style.cursor = 'default';
+            else if (ui.tool === 'text') overlayCanvas.style.cursor = 'text';
             else overlayCanvas.style.cursor = 'crosshair';
         }
 
@@ -1612,7 +1932,8 @@
 
         function switchTool(t) {
             abortCurrentStroke();
-            if (ui.tool === 'select' && t !== 'select') { selectedImageId = null; imageDrag = null; }
+            if (editing && t !== 'text') commitTextEdit();
+            if (ui.tool === 'select' && t !== 'select') { selectedObjectId = null; objectDrag = null; }
             ui.tool = t; updateUI();
         }
 
@@ -1621,7 +1942,15 @@
         document.getElementById('btn-arrow').onclick = () => switchTool('arrow');
         document.getElementById('btn-rect').onclick = () => switchTool('rect');
         document.getElementById('btn-circle').onclick = () => switchTool('circle');
+        document.getElementById('btn-text').onclick = () => switchTool('text');
         document.getElementById('btn-select').onclick = () => switchTool('select');
+        // Select tool: double-click a text object to edit it in place
+        overlayCanvas.addEventListener('dblclick', e => {
+            if (ui.tool !== 'select') return;
+            const wp = getCanvasPoint(e.clientX, e.clientY);
+            const hit = getObjectAt(wp.x, wp.y);
+            if (hit && hit.type === 'text') { e.preventDefault(); openTextEditor(hit); }
+        });
         document.getElementById('btn-pan').onclick = () => switchTool('pan');
         document.getElementById('btn-grid').onclick = () => { ui.showGrid = !ui.showGrid; isDirty = true; updateUI(); };
         // Touch mode toggle (only visible on touch devices): finger draws vs finger pans.
@@ -1657,7 +1986,12 @@
         document.querySelectorAll('.color-btn').forEach(btn => {
             btn.onclick = e => {
                 ui.color = e.target.dataset.color;
-                if (!['pen', 'arrow', 'rect', 'circle'].includes(ui.tool)) switchTool('pen');
+                if (editing) { editing.color = ui.color; textEditor.style.color = ui.color; if (!editing.isNew) { const s = strokes.find(x => x.id === editing.id); if (s) { s.color = ui.color; writeObjectDoc(s); } } }
+                else if (ui.tool === 'select' && selectedObjectId) {
+                    const s = strokes.find(x => x.id === selectedObjectId);
+                    if (s && s.type === 'text') { s.color = ui.color; writeObjectDoc(s); offscreenDirty = true; isDirty = true; }
+                }
+                if (!['pen', 'arrow', 'rect', 'circle', 'text', 'select'].includes(ui.tool)) switchTool('pen');
                 updateUI();
             };
         });
@@ -1675,17 +2009,17 @@
         let spacePressed = false, previousTool = ui.tool;
         window.addEventListener('keydown', e => {
             if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); return; }
-            if ((e.key === 'Delete' || e.key === 'Backspace') && ui.tool === 'select' && selectedImageId
+            if ((e.key === 'Delete' || e.key === 'Backspace') && ui.tool === 'select' && selectedObjectId
                 && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
                 e.preventDefault();
-                const s = strokes.find(x => x.id === selectedImageId);
+                const s = strokes.find(x => x.id === selectedObjectId);
                 if (s) {
                     strokes = strokes.filter(x => x.id !== s.id);
                     undoStack.push({ type: 'delete', strokes: [s] });
                     if (user) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { });
                     offscreenDirty = true; isDirty = true;
                 }
-                selectedImageId = null; drawSelectionBox();
+                selectedObjectId = null; drawSelectionBox();
                 return;
             }
             if (e.code === 'Space' && !spacePressed && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
