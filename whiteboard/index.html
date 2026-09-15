@@ -87,6 +87,9 @@
     so it can be repositioned immediately. Pasting into a widget's own text
     field is untouched — the paste handler only intercepts when the clipboard
     actually contains image data.
+  • The ">>" button in the zoom controls jumps to blank space: the next empty
+    screen-width "page" to the right of everything drawn, on the top row
+    (world y = 0). See jumpToBlankSpace().
 
   DEVICE MODES
   • ui.touchMode ('draw'|'pan'): what a single finger does. Saved in localStorage.
@@ -613,9 +616,13 @@
         </button>
     </div>
 
-    <!-- Zoom Controls: +/- zoom around screen center; the % button resets to 100% at origin. -->
+    <!-- Zoom Controls: +/- zoom around screen center; the % button resets to 100% at origin.
+         The top button jumps to the next empty "page" to the right of everything drawn, on the top row (y=0). -->
     <div id="zoom-controls"
         class="fixed bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex flex-col items-center gap-1 z-50">
+        <button id="btn-blank" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
+            title="Jump to blank space (next empty screen to the right, top row)"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
+        <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
         <button id="btn-zoom-in" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"><i
                 data-lucide="plus" class="w-5 h-5"></i></button>
         <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
@@ -1547,6 +1554,26 @@
         document.getElementById('btn-zoom-in').onclick = () => applyZoomDelta(1.25);
         document.getElementById('btn-zoom-out').onclick = () => applyZoomDelta(0.8);
         document.getElementById('btn-zoom-reset').onclick = () => { view.zoom = 1; view.x = 0; view.y = 0; offscreenDirty = true; isDirty = true; updateZoomUI(); };
+
+        // Jump to blank space: the board is treated as a row of screen-sized "pages" starting at
+        // world (0,0) and extending to the right. Find the right-most edge of anything drawn
+        // (strokes, shapes, images), and move the view to the first page fully past it, on the
+        // top row (view.y = 0). Repeated clicks are idempotent until something new is drawn —
+        // draw on the new page and the next click moves one page further right. Empty board → origin.
+        function jumpToBlankSpace() {
+            abortCurrentStroke();
+            const pageW = window.innerWidth / view.zoom; // one screen width, in world units at current zoom
+            let maxX = -Infinity;
+            for (const s of strokes) {
+                if (s.type === 'image') maxX = Math.max(maxX, s.points[0].x + (s.w || 0));
+                else for (const p of s.points) maxX = Math.max(maxX, p.x + (s.thickness || 0));
+            }
+            const page = maxX === -Infinity ? 0 : Math.floor((maxX + 20) / pageW) + 1;
+            view.x = -page * pageW * view.zoom;
+            view.y = 0;
+            offscreenDirty = true; isDirty = true; updateZoomUI();
+        }
+        document.getElementById('btn-blank').onclick = jumpToBlankSpace;
 
         function updateCursor() {
             if (ui.tool === 'pan') overlayCanvas.style.cursor = isPanning ? 'grabbing' : 'grab';
