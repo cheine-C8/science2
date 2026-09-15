@@ -154,7 +154,7 @@
         // Timer: countdown with presets + custom minutes. Uses an absolute endAt timestamp so it
         // stays accurate even if the tab is throttled. Fireworks + bell when it reaches zero.
         timer: {
-            title: 'Timer', icon: 'timer', w: 320, h: 230,
+            title: 'Timer', icon: 'timer', w: 320, h: 260,
             mount(body, state, ctx) {
                 state.total = state.total ?? 5 * 60 * 1000;   // ms configured
                 state.remaining = state.remaining ?? state.total;
@@ -164,21 +164,39 @@
                 const read = el('div', 'readout');
                 const bar = el('div', 'h-1.5 rounded-full bg-gray-100 overflow-hidden my-2');
                 const fill = el('div', 'h-full bg-blue-600 rounded-full'); bar.append(fill);
+                // Presets SET the timer (stop + replace). Values are in seconds so 30s fits alongside minutes.
                 const presets = el('div', 'flex flex-wrap gap-1 justify-center');
-                [1, 2, 5, 10, 15, 30].forEach(m => {
-                    const b = el('button', 'wbtn small', `${m}m`);
-                    b.onclick = () => { stop(); state.total = state.remaining = m * 60000; render(); save(); };
+                const setTo = ms => { stop(); fired = false; state.total = state.remaining = ms; render(); save(); };
+                [30, 60, 120, 300, 600, 900].forEach(s => {
+                    const b = el('button', 'wbtn small', s < 60 ? `${s}s` : `${s / 60}m`);
+                    b.onclick = () => setTo(s * 1000);
                     presets.append(b);
                 });
                 const custom = el('input', 'wbtn small w-14 text-center');
-                custom.type = 'number'; custom.min = 1; custom.placeholder = 'min';
-                custom.onchange = () => { const m = parseFloat(custom.value); if (m > 0) { stop(); state.total = state.remaining = m * 60000; render(); save(); } custom.value = ''; };
+                custom.type = 'number'; custom.min = 0.5; custom.step = 0.5; custom.placeholder = 'min';
+                custom.onchange = () => { const m = parseFloat(custom.value); if (m > 0) setTo(m * 60000); custom.value = ''; };
                 presets.append(custom);
+                // ±30s ADJUST the timer in place — works while it's running (shifts endAt) or paused,
+                // so "give them another 30 seconds" is one tap without restarting.
+                const adjRow = el('div', 'flex gap-1 justify-center mt-1');
+                const adjust = delta => {
+                    const before = state.remaining;
+                    state.remaining = Math.max(0, state.remaining + delta);
+                    state.total = Math.max(30000, state.total + (state.remaining - before));
+                    if (state.running) state.endAt = Date.now() + state.remaining;
+                    if (state.remaining > 0) fired = false;
+                    render(); save();
+                };
+                [[-30000, '−30s'], [30000, '+30s']].forEach(([d, label]) => {
+                    const b = el('button', 'wbtn small', label);
+                    b.onclick = () => adjust(d);
+                    adjRow.append(b);
+                });
                 const row = el('div', 'flex gap-2 justify-center mt-2');
                 const start = el('button', 'wbtn primary', 'Start');
                 const reset = el('button', 'wbtn', 'Reset');
                 row.append(start, reset);
-                body.append(read, bar, presets, row);
+                body.append(read, bar, presets, adjRow, row);
 
                 const render = () => {
                     read.textContent = fmtTime(state.remaining);
