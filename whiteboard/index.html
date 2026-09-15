@@ -100,9 +100,10 @@
     so it can be repositioned immediately. Pasting into a widget's own text
     field is untouched — the paste handler only intercepts when the clipboard
     actually contains image data.
-  • The ">>" button in the zoom controls jumps to blank space: the next empty
-    screen-width "page" to the right of everything drawn, on the top row
-    (world y = 0). See jumpToBlankSpace().
+  • The ">>" button in the zoom controls jumps to blank space: one screen-width
+    "page" to the right of the CURRENT view, on the top row (world y = 0),
+    skipping ahead only if that page's top-row area is already occupied.
+    See jumpToBlankSpace().
 
   DEVICE MODES
   • ui.touchMode ('draw'|'pan'): what a single finger does. Saved in localStorage.
@@ -1752,20 +1753,33 @@
         document.getElementById('btn-zoom-out').onclick = () => applyZoomDelta(0.8);
         document.getElementById('btn-zoom-reset').onclick = () => { view.zoom = 1; view.x = 0; view.y = 0; offscreenDirty = true; isDirty = true; updateZoomUI(); };
 
-        // Jump to blank space: the board is treated as a row of screen-sized "pages" starting at
-        // world (0,0) and extending to the right. Find the right-most edge of anything drawn
-        // (strokes, shapes, images), and move the view to the first page fully past it, on the
-        // top row (view.y = 0). Repeated clicks are idempotent until something new is drawn —
-        // draw on the new page and the next click moves one page further right. Empty board → origin.
+        // Jump to blank space: the board is treated as a row of screen-sized "pages" along the
+        // top row (world y = 0). Each click goes ONE page to the right of where you currently
+        // are — not past everything on the board — and only skips further if that page already
+        // has something in its top-row area. So it always moves a predictable single screen,
+        // and stray content far off to the right no longer flings the view out there.
+        function strokeBounds(s) {
+            const p0 = s.points[0];
+            if (s.type === 'image' || s.type === 'text') return { minX: p0.x, minY: p0.y, maxX: p0.x + (s.w || 0), maxY: p0.y + (s.h || 0) };
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const p of s.points) { if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
+            const t = s.thickness || 0;
+            return { minX: minX - t, minY: minY - t, maxX: maxX + t, maxY: maxY + t };
+        }
         function jumpToBlankSpace() {
             abortCurrentStroke();
-            const pageW = window.innerWidth / view.zoom; // one screen width, in world units at current zoom
-            let maxX = -Infinity;
-            for (const s of strokes) {
-                if (s.type === 'image' || s.type === 'text') maxX = Math.max(maxX, s.points[0].x + (s.w || 0));
-                else for (const p of s.points) maxX = Math.max(maxX, p.x + (s.thickness || 0));
-            }
-            const page = maxX === -Infinity ? 0 : Math.floor((maxX + 20) / pageW) + 1;
+            const pageW = window.innerWidth / view.zoom, pageH = window.innerHeight / view.zoom;
+            const curPage = Math.round(-view.x / view.zoom / pageW);
+            const occupied = pg => {
+                const x0 = pg * pageW, x1 = x0 + pageW;
+                return strokes.some(s => {
+                    if (s.type === 'eraser' || !s.points.length) return false;
+                    const b = strokeBounds(s);
+                    return b.maxX > x0 && b.minX < x1 && b.maxY > 0 && b.minY < pageH;
+                });
+            };
+            let page = curPage + 1;
+            while (occupied(page) && page < curPage + 100) page++;
             view.x = -page * pageW * view.zoom;
             view.y = 0;
             offscreenDirty = true; isDirty = true; updateZoomUI();
