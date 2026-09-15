@@ -100,10 +100,10 @@
     so it can be repositioned immediately. Pasting into a widget's own text
     field is untouched — the paste handler only intercepts when the clipboard
     actually contains image data.
-  • The ">>" button in the zoom controls jumps to blank space: one screen-width
-    "page" to the right of the CURRENT view, on the top row (world y = 0),
-    skipping ahead only if that page's top-row area is already occupied.
-    See jumpToBlankSpace().
+  • The ">>" button in the zoom controls jumps to blank space: slides right
+    along the top row (world y = 0) so the screen's left edge sits JUMP_GAP px
+    past the right-most thing visible, nudging further until the view is
+    clear. Nothing in view → step one full screen. See jumpToBlankSpace().
 
   DEVICE MODES
   • ui.touchMode ('draw'|'pan'): what a single finger does. Saved in localStorage.
@@ -1753,11 +1753,12 @@
         document.getElementById('btn-zoom-out').onclick = () => applyZoomDelta(0.8);
         document.getElementById('btn-zoom-reset').onclick = () => { view.zoom = 1; view.x = 0; view.y = 0; offscreenDirty = true; isDirty = true; updateZoomUI(); };
 
-        // Jump to blank space: the board is treated as a row of screen-sized "pages" along the
-        // top row (world y = 0). Each click goes ONE page to the right of where you currently
-        // are — not past everything on the board — and only skips further if that page already
-        // has something in its top-row area. So it always moves a predictable single screen,
-        // and stray content far off to the right no longer flings the view out there.
+        // Jump to blank space: move right along the top row (world y = 0) so the left edge of the
+        // screen sits just past the right-most thing currently drawn in the top row of what you
+        // can see (JUMP_GAP world px after it). If the new view still contains something, keep
+        // nudging right until it's clear. If nothing is in view, step one full screen. This keeps
+        // pages tight — no wasted half-screens between them.
+        const JUMP_GAP = 40;
         function strokeBounds(s) {
             const p0 = s.points[0];
             if (s.type === 'image' || s.type === 'text') return { minX: p0.x, minY: p0.y, maxX: p0.x + (s.w || 0), maxY: p0.y + (s.h || 0) };
@@ -1769,18 +1770,26 @@
         function jumpToBlankSpace() {
             abortCurrentStroke();
             const pageW = window.innerWidth / view.zoom, pageH = window.innerHeight / view.zoom;
-            const curPage = Math.round(-view.x / view.zoom / pageW);
-            const occupied = pg => {
-                const x0 = pg * pageW, x1 = x0 + pageW;
-                return strokes.some(s => {
-                    if (s.type === 'eraser' || !s.points.length) return false;
+            // Right-most content edge inside the top-row band [x0, x0+pageW), or null if empty
+            const rightmostIn = x0 => {
+                let mx = null;
+                for (const s of strokes) {
+                    if (s.type === 'eraser' || !s.points.length) continue;
                     const b = strokeBounds(s);
-                    return b.maxX > x0 && b.minX < x1 && b.maxY > 0 && b.minY < pageH;
-                });
+                    if (b.maxX > x0 && b.minX < x0 + pageW && b.maxY > 0 && b.minY < pageH) mx = Math.max(mx ?? -Infinity, b.maxX);
+                }
+                return mx;
             };
-            let page = curPage + 1;
-            while (occupied(page) && page < curPage + 100) page++;
-            view.x = -page * pageW * view.zoom;
+            let left = -view.x / view.zoom;
+            let mx = rightmostIn(left);
+            if (mx === null) left += pageW;                 // nothing in view: step a full screen
+            else left = mx + JUMP_GAP;                      // otherwise land just past the last thing
+            for (let i = 0; i < 50; i++) {                  // and keep nudging until the new view is clear
+                const m2 = rightmostIn(left);
+                if (m2 === null) break;
+                left = m2 + JUMP_GAP;
+            }
+            view.x = -left * view.zoom;
             view.y = 0;
             offscreenDirty = true; isDirty = true; updateZoomUI();
         }
