@@ -141,18 +141,20 @@ document.getElementById('btn-signin').onclick = async () => {
     catch (e) { console.error('Sign-in failed:', e); showToast('Sign-in failed — see console.'); }
 };
 document.getElementById('btn-signout').onclick = async () => {
-    try { await signOut(auth); await signInAnonymously(auth); }
+    // No signInAnonymously() here — the onAuthStateChanged handler below falls back to an
+    // anonymous session on its own once it sees the sign-out (u === null).
+    try { await signOut(auth); }
     catch (e) { console.error('Sign-out failed:', e); }
 };
 
-(async () => {
-    try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token)
-            await signInWithCustomToken(auth, __initial_auth_token);
-        else
-            await signInAnonymously(auth);
-    } catch (e) { updateStatus('offline', 'Offline (Auth Failed)'); }
-})();
+// A hosting environment that injects a custom token gets signed in with that identity.
+// Otherwise we let Firebase restore whatever session (Google or none) is already persisted —
+// see the onAuthStateChanged handler below, which only falls back to signInAnonymously()
+// when it sees no user at all. Calling signInAnonymously() unconditionally here would sign
+// out of a persisted Google session every time the page reloads.
+if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+    signInWithCustomToken(auth, __initial_auth_token).catch(() => updateStatus('offline', 'Offline (Auth Failed)'));
+}
 
 // Once signed in, subscribe to the strokes collection. Every snapshot replaces the local
 // `strokes` array wholesale (points are stored as a JSON string of [x,y] pairs to keep
@@ -196,6 +198,9 @@ onAuthStateChanged(auth, u => {
     } else {
         if (unsubStrokes) unsubStrokes();
         updateStatus('offline', 'Offline');
+        // No signed-in user at all (fresh visitor with nothing persisted, or just signed out)
+        // — fall back to an anonymous session so the board is still viewable.
+        signInAnonymously(auth).catch(() => updateStatus('offline', 'Offline (Auth Failed)'));
     }
 });
 
