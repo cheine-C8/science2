@@ -7,7 +7,7 @@
 
 // Firebase is loaded as ES modules straight from Google's CDN. Version pinned to 11.6.1.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 lucide.createIcons();
@@ -98,7 +98,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : window.WHITEBOARD_CONFIG.appId;
+
+// Only these Google accounts may edit the board. Everyone else (including anonymous
+// visitors) gets a read-only view — enforced here for UX, and by Firestore rules for real.
+const ALLOWED_EDITORS = ['christian.heine@gmail.com', 'cheine@mtps.us'];
+const googleProvider = new GoogleAuthProvider();
+
 let user = null;
+let isEditor = false;
 let unsubStrokes = null;
 
 function updateStatus(state, msg) {
@@ -109,6 +116,34 @@ function updateStatus(state, msg) {
             state === 'offline' ? 'bg-red-500' : 'bg-yellow-500'
     );
 }
+
+// Toggles the sign-in/sign-out button and grays out every edit control (via body.view-only,
+// see style.css) whenever the signed-in account isn't one of ALLOWED_EDITORS.
+function updateAuthUI() {
+    document.body.classList.toggle('view-only', !isEditor);
+    const signinBtn = document.getElementById('btn-signin');
+    const signoutBtn = document.getElementById('btn-signout');
+    const label = document.getElementById('auth-label');
+    if (user && !user.isAnonymous) {
+        signinBtn.classList.add('hidden');
+        signoutBtn.classList.remove('hidden');
+        label.textContent = isEditor ? `Editing as ${user.email}` : `${user.email} (not authorized)`;
+    } else {
+        signinBtn.classList.remove('hidden');
+        signoutBtn.classList.add('hidden');
+        label.textContent = '';
+    }
+    if (ui.tool !== 'pan') switchTool(ui.tool); // re-run the isEditor gate on whatever tool is active
+}
+
+document.getElementById('btn-signin').onclick = async () => {
+    try { await signInWithPopup(auth, googleProvider); }
+    catch (e) { console.error('Sign-in failed:', e); showToast('Sign-in failed — see console.'); }
+};
+document.getElementById('btn-signout').onclick = async () => {
+    try { await signOut(auth); await signInAnonymously(auth); }
+    catch (e) { console.error('Sign-out failed:', e); }
+};
 
 (async () => {
     try {
@@ -124,8 +159,10 @@ function updateStatus(state, msg) {
 // documents small; they're expanded back to {x,y} objects here).
 onAuthStateChanged(auth, u => {
     user = u;
+    isEditor = !!(u && !u.isAnonymous && u.email && u.emailVerified && ALLOWED_EDITORS.includes(u.email.toLowerCase()));
+    updateAuthUI();
     if (u) {
-        updateStatus('online', `Live (${u.uid.substring(0, 5)}...)`);
+        updateStatus('online', isEditor ? `Editing as ${u.email}` : (u.isAnonymous ? 'Live (view only)' : `${u.email} (view only)`));
         if (unsubStrokes) unsubStrokes();
         const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
         unsubStrokes = onSnapshot(q, snap => {
@@ -436,7 +473,7 @@ overlayCanvas.addEventListener('contextmenu', e => e.preventDefault());
 //   single finger in 'pan' touch mode → pan
 //   otherwise → start a stroke/shape/eraser/pan according to ui.tool
 overlayCanvas.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' && e.button === 2 && activePointers.size === 0) {
+    if (isEditor && e.pointerType === 'mouse' && e.button === 2 && activePointers.size === 0) {
         abortCurrentStroke();
         rightErase = { tool: ui.tool, eraseMode: ui.eraseMode };
         ui.tool = 'eraser'; ui.eraseMode = 'stroke';
@@ -549,7 +586,7 @@ function eraseStrokesAtPoint(wx, wy) {
     undoStack.push({ type: 'delete', strokes: erasedStrokes });
 
     // Firestore delete
-    if (user) {
+    if (isEditor) {
         ids.forEach(id => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', id)).catch(() => { }));
     }
 }
@@ -699,7 +736,7 @@ async function commitStroke(keepDrawing = false) {
         undoStack.push({ type: 'add', strokes: [s] }); // track for undo
         offscreenDirty = true; isDirty = true;
 
-        if (user) {
+        if (isEditor) {
             const payload = {
                 type: s.type, color: s.color, thickness: s.thickness,
                 points: JSON.stringify(s.points.map(p => [+p.x.toFixed(1), +p.y.toFixed(1)])),
@@ -721,7 +758,7 @@ async function commitStroke(keepDrawing = false) {
 // Firestore caps a document around 1MB; compressImageToDataURL() downscales/re-encodes
 // until the base64 payload fits a safe budget, trying progressively smaller settings.
 function writeObjectDoc(s) {
-    if (!user) return;
+    if (!isEditor) return;
     const base = {
         type: s.type,
         points: JSON.stringify([[+s.points[0].x.toFixed(1), +s.points[0].y.toFixed(1)]]),
@@ -789,7 +826,7 @@ function commitTextEdit() {
             if (!text.trim()) {
                 strokes = strokes.filter(x => x.id !== s.id);
                 undoStack.push({ type: 'delete', strokes: [s] });
-                if (user) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { });
+                if (isEditor) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { });
             } else if (text !== s.text) {
                 s.text = text; measureText(s);
                 undoStack.push({ type: 'update', id: s.id, before: ed.before, after: { text: s.text, size: s.size, w: s.w, h: s.h, points: [{ ...s.points[0] }] } });
@@ -856,6 +893,7 @@ function compressImageToDataURL(img, budget = 700000) {
 // Shared by paste and drag-and-drop: place `blob` centered on (screenX, screenY),
 // sized to a comfortable on-screen footprint while preserving aspect ratio.
 async function insertImageBlob(blob, screenX, screenY) {
+    if (!isEditor) return;
     let img;
     try { img = await loadImageBlob(blob); } catch (e) { console.error('Image paste failed:', e); return; }
 
@@ -964,7 +1002,7 @@ async function undo() {
         // Remove the added strokes
         const ids = action.strokes.map(s => s.id);
         strokes = strokes.filter(s => !ids.includes(s.id));
-        if (user) ids.forEach(id => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', id)).catch(() => { }));
+        if (isEditor) ids.forEach(id => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', id)).catch(() => { }));
     } else if (action.type === 'delete') {
         // Re-add the deleted strokes
         for (const s of action.strokes) {
@@ -975,7 +1013,7 @@ async function undo() {
                     imageCache.set(s.id, im);
                 }
                 writeObjectDoc(s);
-            } else if (user) {
+            } else if (isEditor) {
                 const payload = {
                     type: s.type, color: s.color, thickness: s.thickness,
                     points: JSON.stringify(s.points.map(p => [+p.x.toFixed(1), +p.y.toFixed(1)])), timestamp: s.timestamp || Date.now()
@@ -1217,6 +1255,7 @@ function updateUI() {
 }
 
 function switchTool(t) {
+    if (!isEditor && t !== 'pan') t = 'pan'; // view-only accounts can pan/zoom but never pick an edit tool
     abortCurrentStroke();
     if (editing && t !== 'text') commitTextEdit();
     if (ui.tool === 'select' && t !== 'select') { selectedObjectId = null; objectDrag = null; }
@@ -1284,10 +1323,11 @@ document.querySelectorAll('.color-btn').forEach(btn => {
 document.getElementById('thickness-slider').oninput = e => { ui.thickness = parseInt(e.target.value); };
 document.getElementById('btn-undo').onclick = undo;
 document.getElementById('btn-clear').onclick = async () => {
+    if (!isEditor) return;
     abortCurrentStroke();
     const all = [...strokes];
     undoStack.push({ type: 'delete', strokes: all });
-    if (user) all.forEach(s => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { }));
+    all.forEach(s => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { }));
     strokes = []; offscreenDirty = true; isDirty = true;
 };
 
