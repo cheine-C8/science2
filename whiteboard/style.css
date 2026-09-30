@@ -12,6 +12,24 @@ html {
     -webkit-user-select: none;
 }
 
+/* View-only mode (board.js toggles this on <body> for anyone who isn't a signed-in
+   allowed editor): gray out and disable every edit control, leaving pan/zoom/grid/e-ink/
+   touch-mode alone since those just move around the view. */
+body.view-only #toolbar #btn-pen,
+body.view-only #toolbar #btn-eraser,
+body.view-only #toolbar #btn-arrow,
+body.view-only #toolbar #btn-rect,
+body.view-only #toolbar #btn-circle,
+body.view-only #toolbar #btn-text,
+body.view-only #toolbar #btn-select,
+body.view-only #toolbar #btn-undo,
+body.view-only #toolbar #btn-clear,
+body.view-only #toolbar .color-btn,
+body.view-only #toolbar #thickness-slider {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
 /* The board. The dot grid is a CSS background on this container; JS moves/scales it with the view. */
 #canvas-container {
     position: absolute;
