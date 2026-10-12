@@ -16,8 +16,13 @@ lucide.createIcons();
 // ui: what the toolbar currently says. tool ∈ pen|eraser|arrow|rect|circle|text|select|pan.
 // touchMode/eink are persisted in localStorage so they survive reloads.
 const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true, touchMode: localStorage.getItem('whiteboard.touchMode') || 'draw', eink: localStorage.getItem('whiteboard.eink') === '1' };
-// view: the camera. screen = world * zoom + (x, y). Not persisted — every reload starts at 100%/origin.
+// view: the camera. screen = world * zoom + (x, y). Persisted in localStorage (see saveView)
+// so a reload returns to where you left off instead of 100%/origin.
 const view = { x: 0, y: 0, zoom: 1 };
+try {
+    const v = JSON.parse(localStorage.getItem('whiteboard.view'));
+    if (v && [v.x, v.y, v.zoom].every(Number.isFinite) && v.zoom >= 0.1 && v.zoom <= 10) Object.assign(view, v);
+} catch { }
 
 let strokes = [];          // ground truth from Firestore
 let undoStack = [];        // array of {type:'add'|'delete', strokes:[...]} for undo
@@ -1045,9 +1050,17 @@ async function undo() {
 // ─── UI / TOOLBAR ─────────────────────────────────────────────────────────────
 // updateUI() is the single place that syncs the DOM to `ui`: active tool button, grid
 // button, eraser sub-options, active color swatch, cursor. Call it after changing ui.*.
+// Every camera change ends here, so it doubles as the hook for persisting the view (debounced).
+let saveViewTimer = null;
+function saveView() {
+    clearTimeout(saveViewTimer); saveViewTimer = null;
+    try { localStorage.setItem('whiteboard.view', JSON.stringify(view)); } catch { }
+}
 function updateZoomUI() {
     document.getElementById('btn-zoom-reset').innerText = `${Math.round(view.zoom * 100)}%`;
+    clearTimeout(saveViewTimer); saveViewTimer = setTimeout(saveView, 300);
 }
+window.addEventListener('pagehide', () => { if (saveViewTimer) saveView(); });
 function applyZoomDelta(delta) {
     const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
     const wx = (cx - view.x) / view.zoom, wy = (cy - view.y) / view.zoom;
