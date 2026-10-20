@@ -156,8 +156,8 @@
           <div class="flex items-center gap-2">
             <!-- Force Submerge Floating Button -->
             <button id="btnSubmergeToggle" disabled class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-not-allowed">
-              <i class="fa-solid fa-arrow-down-to-line"></i>
-              <span id="submergeBtnText">Submerge Floating</span>
+              <i class="fa-solid fa-hand-back-fist text-amber-400"></i>
+              <span id="submergeBtnText">Hold Underwater ⬇️</span>
             </button>
 
             <!-- Clear Scale -->
@@ -171,17 +171,23 @@
               <i class="fa-solid fa-glass-water text-sky-400"></i>
               <span class="hidden sm:inline">Clear Beaker</span>
             </button>
+
+            <!-- Reset All to Shelf -->
+            <button id="btnResetAll" title="Return all blocks to shelf" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-indigo-900/50 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition border border-indigo-500/30">
+              <i class="fa-solid fa-boxes-packing text-indigo-400"></i>
+              <span class="hidden sm:inline">Reset All to Shelf</span>
+            </button>
           </div>
         </div>
 
         <!-- HTML5 Canvas Container -->
-        <div id="canvasParent" class="relative flex-1 min-h-0 w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
-          <canvas id="simCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+        <div id="canvasParent" class="relative flex-1 min-h-0 w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner touch-none">
+          <canvas id="simCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing touch-none select-none"></canvas>
 
           <!-- Canvas Live Banner Overlay -->
           <div id="simInfoOverlay" class="absolute top-2.5 left-2.5 bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300 pointer-events-none flex items-center gap-2 shadow-lg">
             <i class="fa-solid fa-circle-info text-indigo-400"></i>
-            <span id="infoOverlayText">Drag any block to begin measuring.</span>
+            <span id="infoOverlayText">Drag any block onto scale or beaker to begin measuring.</span>
           </div>
         </div>
       </div>
@@ -431,47 +437,32 @@
 
     // State
     let state = {
-      mode: 'challenge', // 'challenge' (densities hidden) or 'sandbox' (densities revealed)
+      mode: 'challenge', // 'challenge' or 'sandbox'
       soundEnabled: true,
       selectedFluidKey: 'water',
-      selectedActiveKey: 'aluminum', // Active focus block
+      selectedActiveKey: 'aluminum',
       blockOnScale: null,
       blockInBeaker: null,
       isSubmergedForced: false,
       displayScaleMass: 0.0,
-      displayWaterVol: 200.0, // Base liquid level = 200 mL
+      displayWaterVol: 200.0,
       waveTime: 0,
       solvedMap: {
-        wood: false,
-        aluminum: false,
-        iron: false,
-        ice: false,
-        gold: false,
-        mysteryA: false,
-        mysteryB: false,
-        mysteryC: false,
-        custom: false
+        wood: false, aluminum: false, iron: false, ice: false,
+        gold: false, mysteryA: false, mysteryB: false, mysteryC: false, custom: false
       },
       recordedLog: [],
       customBlock: {
-        id: 'custom',
-        name: 'Custom Block',
-        mass: 50.0,
-        volume: 50.0,
-        density: 1.00,
-        color: '#818CF8',
-        pattern: 'smooth',
-        labelColor: '#1E1B4B'
+        id: 'custom', name: 'Custom Block', mass: 50.0, volume: 50.0, density: 1.00,
+        color: '#818CF8', pattern: 'smooth', labelColor: '#1E1B4B'
       }
     };
 
     /* ====================================================================
-       2. AUDIO SYNTHESIZER (Web Audio API)
+       2. AUDIO SYNTHESIZER
        ==================================================================== */
     class WebAudioSynth {
-      constructor() {
-        this.ctx = null;
-      }
+      constructor() { this.ctx = null; }
       init() {
         if (!this.ctx) {
           this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -503,16 +494,13 @@
         }
         const noise = this.ctx.createBufferSource();
         noise.buffer = buffer;
-
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
         filter.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.22);
-
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.22);
-
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(this.ctx.destination);
@@ -554,9 +542,6 @@
     }
     const audio = new WebAudioSynth();
 
-    /* ====================================================================
-       3. HELPER UTILITIES
-       ==================================================================== */
     function getSampleObject(key) {
       if (!key) return null;
       if (key === 'custom') return state.customBlock;
@@ -578,13 +563,12 @@
     }
 
     /* ====================================================================
-       4. CANVAS SIMULATION & RESPONSIVE RENDERER
+       3. CANVAS RENDERER & LOGICAL POSITIONS
        ==================================================================== */
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
     const canvasParent = document.getElementById('canvasParent');
 
-    // Logical dimensions
     const LOGICAL_W = 800;
     const LOGICAL_H = 460;
 
@@ -592,7 +576,9 @@
     const BEAKER_POS = { x: 580, y: 130, width: 180, height: 260, baseWaterY: 330, topY: 130 };
 
     let activeDragKey = null;
-    let dragPos = { x: 0, y: 0 };
+    let isDragging = false;
+    let activePointerId = null;
+    let dragPos = { x: 400, y: 230 };
 
     function resizeCanvas() {
       const rect = canvasParent.getBoundingClientRect();
@@ -603,16 +589,38 @@
     const resizeObserver = new ResizeObserver(() => resizeCanvas());
     resizeObserver.observe(canvasParent);
 
+    // Strictly clamped coordinate helper preventing NaNs or off-screen coordinates
     function getLogicalCoords(e) {
       const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const scaleX = LOGICAL_W / rect.width;
-      const scaleY = LOGICAL_H / rect.height;
-      return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
-      };
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+
+      if (clientX === undefined && e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+
+      let x = ((clientX - rect.left) / rect.width) * LOGICAL_W;
+      let y = ((clientY - rect.top) / rect.height) * LOGICAL_H;
+
+      if (isNaN(x)) x = LOGICAL_W / 2;
+      if (isNaN(y)) y = LOGICAL_H / 2;
+
+      // Clamp coordinates safely within logical canvas bounds
+      x = Math.max(30, Math.min(LOGICAL_W - 30, x));
+      y = Math.max(30, Math.min(LOGICAL_H - 30, y));
+
+      return { x, y };
+    }
+
+    // Drop Zone Collision Checks
+    function isInScaleZone(pos) {
+      return (pos.x >= 90 && pos.x <= 310 && pos.y >= 150 && pos.y <= 380);
+    }
+
+    function isInBeakerZone(pos) {
+      // Expanded generous hit target area for Beaker
+      return (pos.x >= 450 && pos.x <= 750 && pos.y >= 70 && pos.y <= 390);
     }
 
     function renderSimulation() {
@@ -632,19 +640,18 @@
         if (isSinking || state.isSubmergedForced) {
           targetFluidVol = 200.0 + beakerObj.volume;
         } else {
-          // Floating displaced volume = mass / fluid density
           const displacedVol = beakerObj.mass / fluid.density;
           targetFluidVol = 200.0 + displacedVol;
         }
       }
 
-      state.displayWaterVol += (targetFluidVol - state.displayWaterVol) * 0.1;
+      state.displayWaterVol += (targetFluidVol - state.displayWaterVol) * 0.12;
       state.waveTime += 0.05;
 
       ctx.save();
       ctx.scale(canvas.width / LOGICAL_W, canvas.height / LOGICAL_H);
 
-      // Lab Background
+      // Background
       ctx.fillStyle = '#090d16';
       ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
@@ -654,11 +661,36 @@
       ctx.fillStyle = '#334155';
       ctx.fillRect(0, 375, LOGICAL_W, 4);
 
+      // Highlight Drop Targets when dragging
+      if (activeDragKey) {
+        if (isInScaleZone(dragPos)) {
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.18)';
+          ctx.strokeStyle = 'rgba(129, 140, 248, 0.7)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.roundRect(SCALE_POS.x - 100, SCALE_POS.y - 110, 200, 180, 16);
+          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (isInBeakerZone(dragPos)) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.roundRect(BEAKER_POS.x - BEAKER_POS.width / 2 - 20, BEAKER_POS.topY - 20, BEAKER_POS.width + 40, BEAKER_POS.height + 35, 18);
+          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+
       // Draw Equipment
       drawScale(SCALE_POS, state.displayScaleMass);
       drawBeaker(BEAKER_POS, state.displayWaterVol, fluid);
 
-      // Draw Blocks
+      // Draw Objects on Equipment
       if (state.blockOnScale && activeDragKey !== state.blockOnScale) {
         drawBlockOnScale(SCALE_POS, getSampleObject(state.blockOnScale));
       }
@@ -666,10 +698,10 @@
         drawBlockInBeaker(BEAKER_POS, getSampleObject(state.blockInBeaker), fluid);
       }
 
-      // Dragged Block
+      // Draw Currently Dragged Object
       if (activeDragKey) {
         const obj = getSampleObject(activeDragKey);
-        drawBlockAt(dragPos.x, dragPos.y, obj, 1.1, true);
+        drawBlockAt(dragPos.x, dragPos.y, obj, 1.15, true);
       }
 
       ctx.restore();
@@ -678,7 +710,6 @@
       requestAnimationFrame(renderSimulation);
     }
 
-    // Scale Drawing
     function drawScale(pos, currentMass) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
       ctx.beginPath();
@@ -693,7 +724,7 @@
       ctx.fill();
       ctx.stroke();
 
-      // Digital LCD Screen
+      // LCD Screen
       ctx.fillStyle = '#020617';
       ctx.beginPath();
       ctx.roundRect(pos.x - 70, pos.y + 16, 140, 40, 8);
@@ -723,7 +754,6 @@
       ctx.stroke();
     }
 
-    // Beaker Drawing
     function drawBeaker(pos, fluidVol, fluid) {
       const maxVol = 350;
       const minVol = 150;
@@ -736,7 +766,7 @@
       ctx.ellipse(pos.x, pos.baseWaterY + 38, pos.width / 2 + 10, 12, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Fluid Fill
+      // Fluid Clip
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(pos.x - pos.width / 2 + 4, pos.topY + 10, pos.width - 8, pos.height - 15, [0, 0, 12, 12]);
@@ -761,7 +791,7 @@
       ctx.fill();
       ctx.restore();
 
-      // Glass Beaker
+      // Beaker Glass Body
       ctx.strokeStyle = 'rgba(203, 213, 225, 0.65)';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -796,7 +826,7 @@
         }
       }
 
-      // Pointer
+      // Pointer Readout Indicator
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
       ctx.moveTo(pos.x + pos.width / 2 + 4, liquidTopY);
@@ -837,7 +867,7 @@
       ctx.roundRect(-w / 2, -h / 2, w, h, 8);
       ctx.fill();
 
-      // Texture
+      // Material Patterns
       if (obj.pattern === 'wood') {
         ctx.strokeStyle = 'rgba(74, 42, 12, 0.35)';
         ctx.lineWidth = 2;
@@ -898,7 +928,6 @@
 
       const dim = getBlockDimensions(obj.volume);
       let targetY = 0;
-
       const isSinking = obj.density >= fluid.density;
 
       if (isSinking) {
@@ -915,15 +944,16 @@
 
       drawBlockAt(beakerPos.x, targetY, obj);
 
+      // Render Hold Underwater Push Rod if submerged forced
       if (!isSinking && state.isSubmergedForced) {
-        ctx.strokeStyle = '#ef4444';
+        ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(beakerPos.x, liquidTopY - 20);
         ctx.lineTo(beakerPos.x, targetY - dim.height / 2);
         ctx.stroke();
 
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.arc(beakerPos.x, liquidTopY - 22, 6, 0, Math.PI * 2);
         ctx.fill();
@@ -931,91 +961,96 @@
     }
 
     /* ====================================================================
-       5. DRAG & DROP INTERACTION
+       4. UNIFIED POINTER DRAG & DROP MECHANICS
        ==================================================================== */
     function checkHitBlock(pos) {
       if (state.blockOnScale) {
         const panY = SCALE_POS.panY + Math.min(6, (getSampleObject(state.blockOnScale).mass / 300) * 6);
-        if (Math.hypot(pos.x - SCALE_POS.x, pos.y - panY) < 45) return state.blockOnScale;
+        if (Math.hypot(pos.x - SCALE_POS.x, pos.y - panY) < 55) return state.blockOnScale;
       }
       if (state.blockInBeaker) {
-        if (Math.hypot(pos.x - BEAKER_POS.x, pos.y - 270) < 55) return state.blockInBeaker;
+        if (Math.hypot(pos.x - BEAKER_POS.x, pos.y - 260) < 65) return state.blockInBeaker;
       }
       return null;
     }
 
-    canvas.addEventListener('mousedown', (e) => {
+    // Canvas Pointer Down
+    canvas.addEventListener('pointerdown', (e) => {
       const pos = getLogicalCoords(e);
       const hitKey = checkHitBlock(pos);
+
       if (hitKey) {
+        isDragging = true;
+        activePointerId = e.pointerId;
+        try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
+
         activeDragKey = hitKey;
         state.selectedActiveKey = hitKey;
         dragPos = pos;
+
         if (state.blockOnScale === hitKey) state.blockOnScale = null;
-        if (state.blockInBeaker === hitKey) state.blockInBeaker = null;
+        if (state.blockInBeaker === hitKey) {
+          state.blockInBeaker = null;
+          state.isSubmergedForced = false;
+        }
+
+        updateSubmergeButtonState();
         updateSolvePanelUI();
       }
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-      if (activeDragKey) dragPos = getLogicalCoords(e);
+    // Window Pointer Move
+    window.addEventListener('pointermove', (e) => {
+      if (isDragging && activeDragKey) {
+        dragPos = getLogicalCoords(e);
+
+        // Smooth interactive submersion trigger when dragging near/inside water
+        if (isInBeakerZone(dragPos)) {
+          const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
+          const obj = getSampleObject(activeDragKey);
+          if (obj && obj.density < fluid.density && dragPos.y > 230) {
+            state.isSubmergedForced = true;
+          }
+        }
+      }
     });
 
-    window.addEventListener('mouseup', () => {
-      if (!activeDragKey) return;
-      const distScale = Math.hypot(dragPos.x - SCALE_POS.x, dragPos.y - SCALE_POS.y);
-      const distBeaker = Math.hypot(dragPos.x - BEAKER_POS.x, dragPos.y - (BEAKER_POS.topY + 100));
+    // Unified Pointer Up & Cancel
+    function endPointerDrag(e) {
+      if (!isDragging || !activeDragKey) return;
 
-      if (distScale < 95) {
+      if (activePointerId !== null) {
+        try { canvas.releasePointerCapture(activePointerId); } catch(err) {}
+      }
+
+      isDragging = false;
+      activePointerId = null;
+
+      const finalPos = dragPos;
+
+      if (isInScaleZone(finalPos)) {
         state.blockOnScale = activeDragKey;
         audio.playScaleBeep();
-      } else if (distBeaker < 105) {
+      } else if (isInBeakerZone(finalPos)) {
         state.blockInBeaker = activeDragKey;
         audio.playSplash();
+      } else {
+        // Dropped outside equipment -> returns safely to shelf!
+        if (state.blockOnScale === activeDragKey) state.blockOnScale = null;
+        if (state.blockInBeaker === activeDragKey) state.blockInBeaker = null;
       }
 
       activeDragKey = null;
       updateSubmergeButtonState();
       updateSolvePanelUI();
-    });
+      renderShelf();
+    }
 
-    canvas.addEventListener('touchstart', (e) => {
-      const pos = getLogicalCoords(e);
-      const hitKey = checkHitBlock(pos);
-      if (hitKey) {
-        activeDragKey = hitKey;
-        state.selectedActiveKey = hitKey;
-        dragPos = pos;
-        if (state.blockOnScale === hitKey) state.blockOnScale = null;
-        if (state.blockInBeaker === hitKey) state.blockInBeaker = null;
-        updateSolvePanelUI();
-      }
-    });
-
-    canvas.addEventListener('touchmove', (e) => {
-      if (activeDragKey) dragPos = getLogicalCoords(e);
-    });
-
-    canvas.addEventListener('touchend', () => {
-      if (!activeDragKey) return;
-      const distScale = Math.hypot(dragPos.x - SCALE_POS.x, dragPos.y - SCALE_POS.y);
-      const distBeaker = Math.hypot(dragPos.x - BEAKER_POS.x, dragPos.y - (BEAKER_POS.topY + 100));
-
-      if (distScale < 95) {
-        state.blockOnScale = activeDragKey;
-        audio.playScaleBeep();
-      } else if (distBeaker < 105) {
-        state.blockInBeaker = activeDragKey;
-        audio.playSplash();
-      }
-
-      activeDragKey = null;
-      updateSubmergeButtonState();
-      updateSolvePanelUI();
-    });
+    window.addEventListener('pointerup', endPointerDrag);
+    window.addEventListener('pointercancel', endPointerDrag);
 
     /* ====================================================================
-       6. UI BINDINGS & SOLVE LOGIC
+       5. SHELF & UI CONTROLS
        ==================================================================== */
     const shelfGrid = document.getElementById('shelfGrid');
 
@@ -1079,6 +1114,7 @@
     }
 
     window.placeOnScale = function(key) {
+      if (state.blockInBeaker === key) state.blockInBeaker = null;
       state.blockOnScale = key;
       state.selectedActiveKey = key;
       audio.playScaleBeep();
@@ -1087,6 +1123,7 @@
     };
 
     window.placeInBeaker = function(key) {
+      if (state.blockOnScale === key) state.blockOnScale = null;
       state.blockInBeaker = key;
       state.selectedActiveKey = key;
       audio.playSplash();
@@ -1105,19 +1142,18 @@
         btn.disabled = false;
         btn.className = `px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
           state.isSubmergedForced 
-            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20' 
+            ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/20 ring-2 ring-amber-400' 
             : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
         }`;
-        txt.textContent = state.isSubmergedForced ? 'Release Floating' : 'Submerge Floating';
+        txt.textContent = state.isSubmergedForced ? 'Submerged (Release)' : 'Hold Underwater ⬇️';
       } else {
         btn.disabled = true;
         state.isSubmergedForced = false;
         btn.className = 'px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-not-allowed';
-        txt.textContent = 'Submerge Floating';
+        txt.textContent = 'Hold Underwater ⬇️';
       }
     }
 
-    // Solve Panel Display Updating
     function updateSolvePanelUI() {
       const activeObj = getSampleObject(state.selectedActiveKey);
       const badge = document.getElementById('activeBlockBadge');
@@ -1125,7 +1161,6 @@
       const readoutMass = document.getElementById('readoutMass');
       const readoutVol = document.getElementById('readoutVol');
       const readoutDensity = document.getElementById('readoutDensity');
-      const feedback = document.getElementById('solveFeedback');
 
       if (!activeObj) return;
 
@@ -1143,7 +1178,6 @@
         pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
       }
 
-      // Check if block is currently on equipment
       const isOnScale = state.blockOnScale === state.selectedActiveKey;
       const isInBeaker = state.blockInBeaker === state.selectedActiveKey;
       const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
@@ -1161,7 +1195,7 @@
       readoutDensity.textContent = formatDensity(state.selectedActiveKey);
     }
 
-    // Check Density Answer Solver
+    // Verify Answer Handler
     document.getElementById('btnCheckSolve').addEventListener('click', () => {
       const inputVal = parseFloat(document.getElementById('inputDensityVal').value);
       const activeObj = getSampleObject(state.selectedActiveKey);
@@ -1177,7 +1211,6 @@
       const trueDensity = activeObj.density;
       const diff = Math.abs(inputVal - trueDensity);
 
-      // Tolerance check (±0.05 g/mL)
       if (diff <= 0.05) {
         state.solvedMap[state.selectedActiveKey] = true;
         audio.playSuccess();
@@ -1191,7 +1224,7 @@
       } else {
         audio.playError();
         feedback.className = 'mt-2 p-2 rounded-xl text-xs font-medium bg-rose-500/10 border-rose-500/30 text-rose-300 block';
-        feedback.textContent = `Incorrect! You entered ${inputVal.toFixed(2)} g/mL. Re-verify Mass (${activeObj.mass.toFixed(1)} g) ÷ Displaced Volume (${activeObj.volume.toFixed(1)} mL).`;
+        feedback.textContent = `Incorrect! You entered ${inputVal.toFixed(2)} g/mL. Mass (${activeObj.mass.toFixed(1)} g) ÷ Displaced Vol (${activeObj.volume.toFixed(1)} mL).`;
       }
     });
 
@@ -1240,7 +1273,21 @@
       updateSolvePanelUI();
     });
 
-    // Header Controls Binds
+    // Reset All Blocks to Shelf Button Handler
+    function resetAllBlocks() {
+      state.blockOnScale = null;
+      state.blockInBeaker = null;
+      state.isSubmergedForced = false;
+      activeDragKey = null;
+      isDragging = false;
+      updateSubmergeButtonState();
+      updateSolvePanelUI();
+      renderShelf();
+    }
+
+    document.getElementById('btnResetAll').addEventListener('click', resetAllBlocks);
+
+    // Equipment Toolbar Actions
     document.getElementById('selectFluid').addEventListener('change', (e) => {
       state.selectedFluidKey = e.target.value;
       updateSubmergeButtonState();
@@ -1267,14 +1314,7 @@
       updateSolvePanelUI();
     });
 
-    document.getElementById('btnResetLab').addEventListener('click', () => {
-      state.blockOnScale = null;
-      state.blockInBeaker = null;
-      state.isSubmergedForced = false;
-      updateSubmergeButtonState();
-      renderShelf();
-      updateSolvePanelUI();
-    });
+    document.getElementById('btnResetLab').addEventListener('click', resetAllBlocks);
 
     document.getElementById('btnSoundToggle').addEventListener('click', () => {
       state.soundEnabled = !state.soundEnabled;
@@ -1282,7 +1322,7 @@
     });
 
     /* ====================================================================
-       7. UI STATUS READOUTS & DATA NOTEBOOK
+       6. UI READOUTS & LAB NOTEBOOK
        ==================================================================== */
     function updateUIReadouts() {
       const scaleObj = getSampleObject(state.blockOnScale);
@@ -1293,10 +1333,10 @@
       if (scaleObj && beakerObj) {
         infoText.textContent = `Scale: ${scaleObj.name} (${scaleObj.mass}g) | ${fluid.name}: ${beakerObj.name} (${state.displayWaterVol.toFixed(1)} mL)`;
       } else if (scaleObj) {
-        infoText.textContent = `Scale: ${scaleObj.name} (${scaleObj.mass}g). Measure volume in fluid beaker!`;
+        infoText.textContent = `Scale: ${scaleObj.name} (${scaleObj.mass}g). Drag to beaker to measure volume!`;
       } else if (beakerObj) {
         const displaced = (state.displayWaterVol - 200).toFixed(1);
-        infoText.textContent = `${fluid.name}: ${beakerObj.name} (Displaced: ${displaced} mL). Weigh on digital scale!`;
+        infoText.textContent = `${fluid.name}: ${beakerObj.name} (Displaced: ${displaced} mL). Weigh on scale!`;
       } else {
         infoText.textContent = 'Drag any block onto the Digital Scale or into the Fluid Beaker.';
       }
@@ -1308,7 +1348,6 @@
       const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
       const isSolved = state.solvedMap[state.selectedActiveKey];
 
-      const isOnScale = state.blockOnScale === state.selectedActiveKey;
       const isInBeaker = state.blockInBeaker === state.selectedActiveKey;
 
       const massVal = activeObj.mass;
@@ -1391,14 +1430,14 @@
       renderDataLogTable();
     });
 
-    // Guide Modal Controls
+    // Guide Modal
     const guideModal = document.getElementById('guideModal');
     document.getElementById('btnOpenGuide').addEventListener('click', () => guideModal.classList.remove('opacity-0', 'pointer-events-none'));
     document.getElementById('btnCloseGuide').addEventListener('click', () => guideModal.classList.add('opacity-0', 'pointer-events-none'));
     document.getElementById('btnGotGuide').addEventListener('click', () => guideModal.classList.add('opacity-0', 'pointer-events-none'));
 
     /* ====================================================================
-       8. INITIALIZATION
+       7. INITIALIZATION
        ==================================================================== */
     function init() {
       updateCustomProperties();
