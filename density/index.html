@@ -41,7 +41,7 @@
   </script>
 
   <style>
-    /* Custom Scrollbar */
+    /* Custom Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -57,16 +57,16 @@
       background: #334155;
     }
 
-    /* Pulse Glow Animations */
+    /* Glow & Animation Helpers */
     .solved-glow {
-      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.35);
     }
     .challenge-glow {
       animation: pulse-border 2.5s infinite alternate;
     }
     @keyframes pulse-border {
       0% { border-color: rgba(99, 102, 241, 0.4); }
-      100% { border-color: rgba(129, 140, 248, 0.8); }
+      100% { border-color: rgba(129, 140, 248, 0.85); }
     }
 
     canvas {
@@ -77,7 +77,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- Header Bar -->
+  <!-- Header Navigation & Action Bar -->
   <header class="bg-slate-900/95 border-b border-slate-800 shrink-0 h-14 px-3 sm:px-4 flex items-center justify-between z-30">
     <div class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 text-lg font-bold shadow-lg shadow-indigo-500/10">
@@ -91,7 +91,7 @@
       </div>
     </div>
 
-    <!-- Mode Selector & Header Actions -->
+    <!-- Mode Selector & Header Quick Tools -->
     <div class="flex items-center gap-2 sm:gap-3">
       
       <!-- Challenge vs Sandbox Mode Toggle -->
@@ -117,17 +117,17 @@
         </select>
       </div>
 
-      <!-- Sound Toggle -->
+      <!-- Sound Toggle Switch -->
       <button id="btnSoundToggle" title="Toggle Audio Effects" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700 text-xs flex items-center gap-1">
         <i class="fa-solid fa-volume-high text-indigo-400" id="soundIcon"></i>
       </button>
 
-      <!-- Guide Trigger -->
+      <!-- Lab Reference Formulas Guide -->
       <button id="btnOpenGuide" title="Lab Reference Formulas" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700 text-xs flex items-center gap-1">
         <i class="fa-solid fa-book-open text-sky-400"></i>
       </button>
 
-      <!-- Reset Equipment -->
+      <!-- Reset Simulation -->
       <button id="btnResetLab" title="Reset Simulation" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
         <i class="fa-solid fa-rotate-right"></i>
         <span class="hidden lg:inline">Reset</span>
@@ -135,16 +135,16 @@
     </div>
   </header>
 
-  <!-- Main Viewport Workspace -->
+  <!-- Main Interactive Workspace -->
   <main class="flex-1 min-h-0 p-2 sm:p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
 
-    <!-- Left Column: Simulation Canvas Workbench & Shelf (7 Cols) -->
+    <!-- Left Column: Simulation Canvas Workbench & Material Shelf (7 Cols) -->
     <section class="lg:col-span-7 flex flex-col gap-2 sm:gap-3 min-h-0 h-full">
 
-      <!-- Workbench Controls & Canvas Box -->
+      <!-- Canvas Container & Interactive Toolbar -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-2xl flex flex-col gap-2 flex-1 min-h-0 relative overflow-hidden">
         
-        <!-- Canvas Toolbar Controls -->
+        <!-- Canvas Control Toolbar -->
         <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/80 p-2 rounded-xl border border-slate-800/80 shrink-0">
           <div class="flex items-center gap-2 text-xs font-medium text-slate-300">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -154,13 +154,13 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- Force Submerge Floating Button -->
+            <!-- Force Submerge Floating Object Button -->
             <button id="btnSubmergeToggle" disabled class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-not-allowed">
               <i class="fa-solid fa-hand-back-fist text-amber-400"></i>
               <span id="submergeBtnText">Hold Underwater ⬇️</span>
             </button>
 
-            <!-- Clear Scale -->
+            <!-- Tare Scale -->
             <button id="btnClearScale" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700">
               <i class="fa-solid fa-scale-unbalanced text-amber-400"></i>
               <span class="hidden sm:inline">Tare Scale</span>
@@ -172,27 +172,27 @@
               <span class="hidden sm:inline">Clear Beaker</span>
             </button>
 
-            <!-- Reset All to Shelf -->
+            <!-- Return All to Shelf -->
             <button id="btnResetAll" title="Return all blocks to shelf" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-indigo-900/50 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition border border-indigo-500/30">
               <i class="fa-solid fa-boxes-packing text-indigo-400"></i>
-              <span class="hidden sm:inline">Reset All to Shelf</span>
+              <span class="hidden sm:inline">Reset All</span>
             </button>
           </div>
         </div>
 
-        <!-- HTML5 Canvas Container -->
+        <!-- Dynamic HTML5 Canvas -->
         <div id="canvasParent" class="relative flex-1 min-h-0 w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner touch-none">
           <canvas id="simCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing touch-none select-none"></canvas>
 
           <!-- Canvas Live Banner Overlay -->
           <div id="simInfoOverlay" class="absolute top-2.5 left-2.5 bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300 pointer-events-none flex items-center gap-2 shadow-lg">
             <i class="fa-solid fa-circle-info text-indigo-400"></i>
-            <span id="infoOverlayText">Drag any block onto scale or beaker to begin measuring.</span>
+            <span id="infoOverlayText">Drag any sample block onto scale or beaker to begin measuring.</span>
           </div>
         </div>
       </div>
 
-      <!-- Sample Storage Shelf -->
+      <!-- Material Sample Storage Shelf -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-xl shrink-0">
         <div class="flex items-center justify-between mb-2">
           <h2 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -202,18 +202,18 @@
           <span class="text-[11px] text-slate-400" id="shelfModeNotice">Challenge Mode: Solve densities to reveal!</span>
         </div>
 
-        <!-- Rack Grid -->
+        <!-- Shelf Block Rack Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 max-h-36 overflow-y-auto pr-1" id="shelfGrid">
-          <!-- Dynamically generated shelf cards -->
+          <!-- Dynamically populated sample cards -->
         </div>
       </div>
 
     </section>
 
-    <!-- Right Column: Interactive Density Solve Panel, Custom Block, Notebook (5 Cols) -->
+    <!-- Right Column: Interactive Solve Panel, Custom Block & Notebook (5 Cols) -->
     <section class="lg:col-span-5 flex flex-col gap-2 sm:gap-3 min-h-0 h-full overflow-y-auto pr-0.5">
 
-      <!-- Density Solver Interactive Panel -->
+      <!-- Density Solver Verification Card -->
       <div id="solvePanelCard" class="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/40 rounded-2xl p-3 shadow-2xl relative overflow-hidden shrink-0 challenge-glow">
         
         <div class="flex items-center justify-between mb-2">
@@ -235,7 +235,7 @@
           </span>
         </div>
 
-        <!-- Live Measurement Readout Inputs for Solving -->
+        <!-- Live Measurement Readout Boxes -->
         <div class="grid grid-cols-3 gap-2 text-center mb-2.5">
           <div class="bg-slate-950/90 p-2 rounded-xl border border-slate-800">
             <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Scale Mass</span>
@@ -251,7 +251,7 @@
           </div>
         </div>
 
-        <!-- Solve Input & Submit Controls -->
+        <!-- Solve Input & Answer Verification Controls -->
         <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-2">
           <div class="flex items-center justify-between text-xs">
             <label for="inputDensityVal" class="text-slate-300 font-medium">Enter Calculated Density ($d = m / V$):</label>
@@ -260,17 +260,17 @@
 
           <div class="flex gap-2">
             <div class="relative flex-1">
-              <input type="number" step="0.01" id="inputDensityVal" placeholder="e.g. 2.70" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-indigo-300 focus:outline-none focus:border-indigo-500 transition">
+              <input type="number" step="0.01" id="inputDensityVal" placeholder="e.g. 11.34" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-indigo-300 focus:outline-none focus:border-indigo-500 transition">
               <span class="absolute right-3 top-1.5 text-xs text-slate-500">g/mL</span>
             </div>
             <button id="btnCheckSolve" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition flex items-center gap-1.5">
               <i class="fa-solid fa-circle-check text-xs"></i>
-              <span>Verify Answer</span>
+              <span>Verify</span>
             </button>
           </div>
         </div>
 
-        <!-- Feedback Alert Box -->
+        <!-- Verification Feedback Banner -->
         <div id="solveFeedback" class="hidden mt-2 p-2 rounded-xl text-xs font-medium border"></div>
       </div>
 
@@ -307,7 +307,7 @@
         </div>
       </div>
 
-      <!-- Interactive Data Notebook Table Card -->
+      <!-- Lab Notebook Table & Data Export Card -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col gap-2 flex-1 min-h-[190px]">
         <div class="flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2">
@@ -319,13 +319,17 @@
               <i class="fa-solid fa-plus text-[10px]"></i>
               <span>Log Entry</span>
             </button>
+            <button id="btnExportLog" title="Export CSV Data" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 transition border border-slate-700 text-xs flex items-center gap-1">
+              <i class="fa-solid fa-file-csv text-[11px]"></i>
+              <span class="hidden sm:inline">CSV</span>
+            </button>
             <button id="btnClearLog" title="Clear Notebook Log" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition border border-slate-700 text-xs">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
         </div>
 
-        <!-- Scrollable Table -->
+        <!-- Notebook Scrollable Table -->
         <div class="overflow-x-auto flex-1 rounded-xl border border-slate-800 bg-slate-950/80 min-h-0">
           <table class="w-full text-left border-collapse text-xs">
             <thead class="sticky top-0 bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 text-[10px]">
@@ -386,7 +390,7 @@
             <i class="fa-solid fa-water"></i> Fluid Displacement (Archimedes' Principle)
           </h4>
           <p>
-            When a solid object is submerged underwater, the volume of fluid displaced in milliliters (**mL**) equals the object's total volume ($V$).
+            When an object is fully submerged, the displaced fluid volume ($V$) equals the total volume of the solid object.
           </p>
           <div class="mt-2 bg-slate-900 p-2 rounded-lg text-slate-300 font-mono text-center text-[11px]">
             Displaced Volume (mL) = Final Level (mL) - Initial Level (200.0 mL)
@@ -395,37 +399,40 @@
 
         <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
           <h4 class="font-bold text-amber-400 mb-1 flex items-center gap-1.5">
-            <i class="fa-solid fa-ship"></i> Floating & Buoyancy
+            <i class="fa-solid fa-ship"></i> Floating & Buoyancy Mechanics
           </h4>
           <ul class="list-disc list-inside space-y-1 text-slate-300">
-            <li>An object floats if its density is **less** than the fluid density.</li>
-            <li>Use the <strong>"Submerge Floating"</strong> button to force floating objects completely underwater and measure their full displacement volume in mL!</li>
+            <li>An object floats if its density is <strong>less</strong> than the fluid's density ($\rho_{object} < \rho_{fluid}$).</li>
+            <li>Use the <strong>"Hold Underwater ⬇️"</strong> button to push buoyant objects completely underwater to measure their total volume!</li>
           </ul>
         </div>
       </div>
 
       <div class="mt-4 text-right">
         <button id="btnGotGuide" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-600/20">
-          Return to Experiment
+          Return to Lab
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Audio Synth & Simulation Logic Script -->
+  <!-- Main Application Logic & Simulation Engine Script -->
   <script>
     /* ====================================================================
-       1. DATA STRUCTURES & LAB STATE
+       1. DATA STRUCTURES & DEFINITIONS
        ==================================================================== */
+    // Material Samples Explicit Definitions
     const SAMPLE_DEFINITIONS = {
+      cork: { id: 'cork', name: 'Cork', mass: 12.0, volume: 50.0, density: 0.24, color: '#D4A373', pattern: 'porous', labelColor: '#3D2314' },
       wood: { id: 'wood', name: 'Wood Block', mass: 30.0, volume: 50.0, density: 0.60, color: '#C18C5D', pattern: 'wood', labelColor: '#4A2A0C' },
       aluminum: { id: 'aluminum', name: 'Aluminum', mass: 81.0, volume: 30.0, density: 2.70, color: '#9CA3AF', pattern: 'metallic', labelColor: '#1F2937' },
       iron: { id: 'iron', name: 'Iron Block', mass: 157.4, volume: 20.0, density: 7.87, color: '#4B5563', pattern: 'dark-metal', labelColor: '#111827' },
-      ice: { id: 'ice', name: 'Ice Cube', mass: 46.0, volume: 50.0, density: 0.92, color: '#93C5FD', pattern: 'ice', labelColor: '#1E3A8A' },
-      gold: { id: 'gold', name: 'Gold Bar', mass: 289.5, volume: 15.0, density: 19.30, color: '#F59E0B', pattern: 'gold', labelColor: '#78350F' },
-      mysteryA: { id: 'mysteryA', name: 'Mystery A', mass: 16.0, volume: 25.0, density: 0.64, color: '#A8A29E', pattern: 'porous', labelColor: '#1C1917', isMystery: true },
-      mysteryB: { id: 'mysteryB', name: 'Mystery B', mass: 44.0, volume: 40.0, density: 1.10, color: '#EF4444', pattern: 'smooth', labelColor: '#7F1D1D', isMystery: true },
-      mysteryC: { id: 'mysteryC', name: 'Mystery C', mass: 224.0, volume: 25.0, density: 8.96, color: '#D97706', pattern: 'copper', labelColor: '#451A03', isMystery: true }
+      copper: { id: 'copper', name: 'Copper Block', mass: 179.2, volume: 20.0, density: 8.96, color: '#B87333', pattern: 'copper', labelColor: '#3E1F00' },
+      lead: { id: 'lead', name: 'Lead Block', mass: 226.8, volume: 20.0, density: 11.34, color: '#334155', pattern: 'lead', labelColor: '#F8FAFC' },
+      gold: { id: 'gold', name: 'Gold Bar', mass: 289.8, volume: 15.0, density: 19.32, color: '#F59E0B', pattern: 'gold', labelColor: '#78350F' },
+      // Exactly 2 Mystery Blocks
+      mysteryA: { id: 'mysteryA', name: 'Mystery A', mass: 20.0, volume: 40.0, density: 0.50, color: '#8B5CF6', pattern: 'mystery', labelColor: '#FFFFFF', isMystery: true },
+      mysteryB: { id: 'mysteryB', name: 'Mystery B', mass: 226.8, volume: 20.0, density: 11.34, color: '#64748B', pattern: 'mystery', labelColor: '#0F172A', isMystery: true }
     };
 
     const FLUID_DEFINITIONS = {
@@ -435,12 +442,12 @@
       syrup: { id: 'syrup', name: 'Corn Syrup', density: 1.38, colorTop: 'rgba(217, 119, 6, 0.85)', colorBase: 'rgba(120, 53, 15, 0.95)', waveColor: 'rgba(253, 186, 116, 0.6)' }
     };
 
-    // State
+    // Global Lab State
     let state = {
       mode: 'challenge', // 'challenge' or 'sandbox'
       soundEnabled: true,
       selectedFluidKey: 'water',
-      selectedActiveKey: 'aluminum',
+      selectedActiveKey: 'lead',
       blockOnScale: null,
       blockInBeaker: null,
       isSubmergedForced: false,
@@ -448,8 +455,8 @@
       displayWaterVol: 200.0,
       waveTime: 0,
       solvedMap: {
-        wood: false, aluminum: false, iron: false, ice: false,
-        gold: false, mysteryA: false, mysteryB: false, mysteryC: false, custom: false
+        cork: false, wood: false, aluminum: false, iron: false, copper: false,
+        lead: false, gold: false, mysteryA: false, mysteryB: false, custom: false
       },
       recordedLog: [],
       customBlock: {
@@ -459,7 +466,7 @@
     };
 
     /* ====================================================================
-       2. AUDIO SYNTHESIZER
+       2. AUDIO SYNTHESIZER (WEB AUDIO API)
        ==================================================================== */
     class WebAudioSynth {
       constructor() { this.ctx = null; }
@@ -563,7 +570,7 @@
     }
 
     /* ====================================================================
-       3. CANVAS RENDERER & LOGICAL POSITIONS
+       3. CANVAS SIMULATION & PHYSICAL RENDERING
        ==================================================================== */
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
@@ -589,7 +596,7 @@
     const resizeObserver = new ResizeObserver(() => resizeCanvas());
     resizeObserver.observe(canvasParent);
 
-    // Strictly clamped coordinate helper preventing NaNs or off-screen coordinates
+    // Clamped logical coordinates to prevent NaN or out-of-bounds drawing
     function getLogicalCoords(e) {
       const rect = canvas.getBoundingClientRect();
       let clientX = e.clientX;
@@ -606,32 +613,29 @@
       if (isNaN(x)) x = LOGICAL_W / 2;
       if (isNaN(y)) y = LOGICAL_H / 2;
 
-      // Clamp coordinates safely within logical canvas bounds
       x = Math.max(30, Math.min(LOGICAL_W - 30, x));
       y = Math.max(30, Math.min(LOGICAL_H - 30, y));
 
       return { x, y };
     }
 
-    // Drop Zone Collision Checks
     function isInScaleZone(pos) {
       return (pos.x >= 90 && pos.x <= 310 && pos.y >= 150 && pos.y <= 380);
     }
 
     function isInBeakerZone(pos) {
-      // Expanded generous hit target area for Beaker
       return (pos.x >= 450 && pos.x <= 750 && pos.y >= 70 && pos.y <= 390);
     }
 
     function renderSimulation() {
       const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
 
-      // Smooth Scale Mass Lerp
+      // Smooth Lerp for Digital Scale Mass
       const scaleObj = getSampleObject(state.blockOnScale);
       const targetMass = scaleObj ? scaleObj.mass : 0.0;
       state.displayScaleMass += (targetMass - state.displayScaleMass) * 0.15;
 
-      // Displacement Physics
+      // Displacement & Buoyancy Physics Logic
       const beakerObj = getSampleObject(state.blockInBeaker);
       let targetFluidVol = 200.0;
 
@@ -655,13 +659,13 @@
       ctx.fillStyle = '#090d16';
       ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-      // Bench Top
+      // Bench Workbench Top
       ctx.fillStyle = '#1e293b';
       ctx.fillRect(0, 375, LOGICAL_W, 85);
       ctx.fillStyle = '#334155';
       ctx.fillRect(0, 375, LOGICAL_W, 4);
 
-      // Highlight Drop Targets when dragging
+      // Drop Zone Highlights
       if (activeDragKey) {
         if (isInScaleZone(dragPos)) {
           ctx.fillStyle = 'rgba(99, 102, 241, 0.18)';
@@ -686,11 +690,11 @@
         }
       }
 
-      // Draw Equipment
+      // Draw Laboratory Equipment
       drawScale(SCALE_POS, state.displayScaleMass);
       drawBeaker(BEAKER_POS, state.displayWaterVol, fluid);
 
-      // Draw Objects on Equipment
+      // Draw Stationary Objects on Equipment
       if (state.blockOnScale && activeDragKey !== state.blockOnScale) {
         drawBlockOnScale(SCALE_POS, getSampleObject(state.blockOnScale));
       }
@@ -698,7 +702,7 @@
         drawBlockInBeaker(BEAKER_POS, getSampleObject(state.blockInBeaker), fluid);
       }
 
-      // Draw Currently Dragged Object
+      // Draw Object Being Dragged
       if (activeDragKey) {
         const obj = getSampleObject(activeDragKey);
         drawBlockAt(dragPos.x, dragPos.y, obj, 1.15, true);
@@ -711,11 +715,13 @@
     }
 
     function drawScale(pos, currentMass) {
+      // Scale Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
       ctx.beginPath();
       ctx.ellipse(pos.x, pos.y + 70, 95, 15, 0, 0, Math.PI * 2);
       ctx.fill();
 
+      // Digital Scale Base
       ctx.fillStyle = '#1e293b';
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 3;
@@ -724,7 +730,7 @@
       ctx.fill();
       ctx.stroke();
 
-      // LCD Screen
+      // LCD Screen Display
       ctx.fillStyle = '#020617';
       ctx.beginPath();
       ctx.roundRect(pos.x - 70, pos.y + 16, 140, 40, 8);
@@ -739,6 +745,7 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(currentMass.toFixed(1) + ' g', pos.x + 55, pos.y + 36);
 
+      // Weighing Pan
       const panDepress = Math.min(6, (currentMass / 300) * 6);
       const panY = pos.panY + panDepress;
 
@@ -766,7 +773,7 @@
       ctx.ellipse(pos.x, pos.baseWaterY + 38, pos.width / 2 + 10, 12, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Fluid Clip
+      // Fluid Clipping Boundary
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(pos.x - pos.width / 2 + 4, pos.topY + 10, pos.width - 8, pos.height - 15, [0, 0, 12, 12]);
@@ -778,7 +785,7 @@
       ctx.fillStyle = grad;
       ctx.fillRect(pos.x - pos.width / 2, liquidTopY, pos.width, pos.baseWaterY - liquidTopY + 50);
 
-      // Waves
+      // Liquid Surface Waves
       ctx.fillStyle = fluid.waveColor;
       ctx.beginPath();
       ctx.moveTo(pos.x - pos.width / 2, liquidTopY);
@@ -791,7 +798,7 @@
       ctx.fill();
       ctx.restore();
 
-      // Beaker Glass Body
+      // Glass Beaker Outline
       ctx.strokeStyle = 'rgba(203, 213, 225, 0.65)';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -805,7 +812,7 @@
       ctx.lineTo(pos.x + pos.width / 2 + 8, pos.topY);
       ctx.stroke();
 
-      // Graduations
+      // Beaker Volumetric Graduations
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.font = '600 10px Inter, sans-serif';
       ctx.textAlign = 'left';
@@ -826,7 +833,7 @@
         }
       }
 
-      // Pointer Readout Indicator
+      // Pointer Readout Arrow
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
       ctx.moveTo(pos.x + pos.width / 2 + 4, liquidTopY);
@@ -867,7 +874,7 @@
       ctx.roundRect(-w / 2, -h / 2, w, h, 8);
       ctx.fill();
 
-      // Material Patterns
+      // Material Shading Patterns
       if (obj.pattern === 'wood') {
         ctx.strokeStyle = 'rgba(74, 42, 12, 0.35)';
         ctx.lineWidth = 2;
@@ -875,11 +882,34 @@
         ctx.moveTo(-w / 2 + 4, -h / 4); ctx.lineTo(w / 2 - 4, -h / 4);
         ctx.moveTo(-w / 2 + 4, h / 4); ctx.lineTo(w / 2 - 4, h / 4);
         ctx.stroke();
-      } else if (obj.pattern === 'ice') {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      } else if (obj.pattern === 'porous') { // Cork texture
+        ctx.fillStyle = 'rgba(61, 35, 20, 0.25)';
         ctx.beginPath();
-        ctx.moveTo(-w / 2 + 4, -h / 2 + 4); ctx.lineTo(0, -h / 2 + 4); ctx.lineTo(-w / 2 + 4, 0);
+        ctx.arc(-w / 4, -h / 4, 2, 0, Math.PI * 2);
+        ctx.arc(w / 4, -h / 6, 2.5, 0, Math.PI * 2);
+        ctx.arc(-w / 6, h / 4, 2, 0, Math.PI * 2);
+        ctx.arc(w / 5, h / 3, 3, 0, Math.PI * 2);
         ctx.fill();
+      } else if (obj.pattern === 'lead') { // Dark metallic slate texture
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 + 3, -h / 2 + 3);
+        ctx.lineTo(w / 2 - 3, -h / 2 + 3);
+        ctx.stroke();
+      } else if (obj.pattern === 'copper') { // Copper shine
+        const copperGrad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+        copperGrad.addColorStop(0, 'rgba(255, 200, 150, 0.4)');
+        copperGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+        copperGrad.addColorStop(1, 'rgba(62, 31, 0, 0.4)');
+        ctx.fillStyle = copperGrad;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h, 8);
+        ctx.fill();
+      } else if (obj.pattern === 'mystery') { // Mystery block pattern
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8);
       } else {
         const sheen = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
         sheen.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
@@ -936,6 +966,7 @@
         if (state.isSubmergedForced) {
           targetY = beakerPos.baseWaterY - dim.height / 2 - 12;
         } else {
+          // Buoyancy calculation for partial floating submergence
           const subFraction = Math.min(0.95, obj.density / fluid.density);
           targetY = liquidTopY + (dim.height * (subFraction - 0.5));
           targetY += Math.sin(state.waveTime * 2) * 1.5;
@@ -944,7 +975,7 @@
 
       drawBlockAt(beakerPos.x, targetY, obj);
 
-      // Render Hold Underwater Push Rod if submerged forced
+      // Force Submerge Push Rod Visual
       if (!isSinking && state.isSubmergedForced) {
         ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 3;
@@ -974,7 +1005,6 @@
       return null;
     }
 
-    // Canvas Pointer Down
     canvas.addEventListener('pointerdown', (e) => {
       const pos = getLogicalCoords(e);
       const hitKey = checkHitBlock(pos);
@@ -999,12 +1029,10 @@
       }
     });
 
-    // Window Pointer Move
     window.addEventListener('pointermove', (e) => {
       if (isDragging && activeDragKey) {
         dragPos = getLogicalCoords(e);
 
-        // Smooth interactive submersion trigger when dragging near/inside water
         if (isInBeakerZone(dragPos)) {
           const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
           const obj = getSampleObject(activeDragKey);
@@ -1015,7 +1043,6 @@
       }
     });
 
-    // Unified Pointer Up & Cancel
     function endPointerDrag(e) {
       if (!isDragging || !activeDragKey) return;
 
@@ -1035,7 +1062,6 @@
         state.blockInBeaker = activeDragKey;
         audio.playSplash();
       } else {
-        // Dropped outside equipment -> returns safely to shelf!
         if (state.blockOnScale === activeDragKey) state.blockOnScale = null;
         if (state.blockInBeaker === activeDragKey) state.blockInBeaker = null;
       }
@@ -1050,7 +1076,7 @@
     window.addEventListener('pointercancel', endPointerDrag);
 
     /* ====================================================================
-       5. SHELF & UI CONTROLS
+       5. SHELF RACK & SOLVER UI CONTROLS
        ==================================================================== */
     const shelfGrid = document.getElementById('shelfGrid');
 
@@ -1195,7 +1221,7 @@
       readoutDensity.textContent = formatDensity(state.selectedActiveKey);
     }
 
-    // Verify Answer Handler
+    // Density Answer Check Handler
     document.getElementById('btnCheckSolve').addEventListener('click', () => {
       const inputVal = parseFloat(document.getElementById('inputDensityVal').value);
       const activeObj = getSampleObject(state.selectedActiveKey);
@@ -1216,7 +1242,7 @@
         audio.playSuccess();
 
         feedback.className = 'mt-2 p-2 rounded-xl text-xs font-medium bg-emerald-500/10 border-emerald-500/30 text-emerald-300 block';
-        feedback.textContent = `Correct! ${activeObj.name} density is indeed ${trueDensity.toFixed(2)} g/mL. Block marked as SOLVED!`;
+        feedback.textContent = `Correct! ${activeObj.name} density is indeed ${trueDensity.toFixed(2)} g/mL. Sample marked as SOLVED!`;
 
         document.getElementById('inputDensityVal').value = '';
         renderShelf();
@@ -1224,11 +1250,11 @@
       } else {
         audio.playError();
         feedback.className = 'mt-2 p-2 rounded-xl text-xs font-medium bg-rose-500/10 border-rose-500/30 text-rose-300 block';
-        feedback.textContent = `Incorrect! You entered ${inputVal.toFixed(2)} g/mL. Mass (${activeObj.mass.toFixed(1)} g) ÷ Displaced Vol (${activeObj.volume.toFixed(1)} mL).`;
+        feedback.textContent = `Incorrect! You calculated ${inputVal.toFixed(2)} g/mL. Tip: Density = Mass (${activeObj.mass.toFixed(1)}g) ÷ Displaced Vol (${activeObj.volume.toFixed(1)}mL).`;
       }
     });
 
-    // Custom Sliders
+    // Custom Block Sliders
     const sliderMass = document.getElementById('sliderMass');
     const sliderVol = document.getElementById('sliderVol');
 
@@ -1250,7 +1276,7 @@
     sliderMass.addEventListener('input', updateCustomProperties);
     sliderVol.addEventListener('input', updateCustomProperties);
 
-    // Mode Toggle
+    // Mode Toggle Logic
     const btnModeChallenge = document.getElementById('btnModeChallenge');
     const btnModeSandbox = document.getElementById('btnModeSandbox');
     const shelfModeNotice = document.getElementById('shelfModeNotice');
@@ -1273,7 +1299,6 @@
       updateSolvePanelUI();
     });
 
-    // Reset All Blocks to Shelf Button Handler
     function resetAllBlocks() {
       state.blockOnScale = null;
       state.blockInBeaker = null;
@@ -1322,7 +1347,7 @@
     });
 
     /* ====================================================================
-       6. UI READOUTS & LAB NOTEBOOK
+       6. LAB NOTEBOOK & CSV DATA EXPORT
        ==================================================================== */
     function updateUIReadouts() {
       const scaleObj = getSampleObject(state.blockOnScale);
@@ -1338,11 +1363,10 @@
         const displaced = (state.displayWaterVol - 200).toFixed(1);
         infoText.textContent = `${fluid.name}: ${beakerObj.name} (Displaced: ${displaced} mL). Weigh on scale!`;
       } else {
-        infoText.textContent = 'Drag any block onto the Digital Scale or into the Fluid Beaker.';
+        infoText.textContent = 'Drag any sample block onto the Digital Scale or into the Fluid Beaker.';
       }
     }
 
-    // Data Notebook Logging
     document.getElementById('btnRecordLog').addEventListener('click', () => {
       const activeObj = getSampleObject(state.selectedActiveKey);
       const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
@@ -1430,14 +1454,33 @@
       renderDataLogTable();
     });
 
-    // Guide Modal
+    // CSV Lab Data Export
+    document.getElementById('btnExportLog').addEventListener('click', () => {
+      if (state.recordedLog.length === 0) return;
+
+      let csvContent = 'data:text/csv;charset=utf-8,Sample,Mass (g),Displaced Volume (mL),Density (g/mL),Status,Buoyancy\n';
+
+      state.recordedLog.forEach(row => {
+        csvContent += `"${row.name}",${row.mass},${row.vol},${row.density},"${row.isSolved ? 'SOLVED' : 'UNSOLVED'}","${row.buoyancy}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'Density_Lab_Notebook_Data.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // Guide Modal Controls
     const guideModal = document.getElementById('guideModal');
     document.getElementById('btnOpenGuide').addEventListener('click', () => guideModal.classList.remove('opacity-0', 'pointer-events-none'));
     document.getElementById('btnCloseGuide').addEventListener('click', () => guideModal.classList.add('opacity-0', 'pointer-events-none'));
     document.getElementById('btnGotGuide').addEventListener('click', () => guideModal.classList.add('opacity-0', 'pointer-events-none'));
 
     /* ====================================================================
-       7. INITIALIZATION
+       7. LAB INITIALIZATION
        ==================================================================== */
     function init() {
       updateCustomProperties();
