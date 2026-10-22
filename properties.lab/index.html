@@ -320,6 +320,12 @@
 
         /* ---------- Bench / instruments ---------- */
         .bench-svg { width: 100%; height: auto; display: block; background: var(--inset); border-radius: var(--radius-md); border: 1px solid var(--border); }
+        /* Only the sample block takes pointer input, so it can be grabbed even inside the cylinder */
+        .bench-svg.draggable > :not(.blk) { pointer-events: none; }
+        .bench-svg .blk { cursor: grab; touch-action: none; }
+        .bench-svg .blk.dragging { cursor: grabbing; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.35)); }
+        .bench-svg .zone { fill: var(--primary); opacity: 0; transition: opacity 0.15s; }
+        .bench-svg .zone.on { opacity: 0.12; }
         .readouts {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -634,8 +640,8 @@
                 <h3>Procedure</h3>
                 <ol class="procedure">
                     <li>Choose a metal. Start with the <b>whole bar</b>.</li>
-                    <li><b>Place it on the balance</b> to measure its mass.</li>
-                    <li><b>Lower it into the cylinder.</b> The water starts at 100.0 mL. The water rises by the sample's volume (1 mL = 1 cm³).</li>
+                    <li><b>Drag the block onto the balance</b> to measure its mass. You can also use the buttons.</li>
+                    <li><b>Drag it into the cylinder.</b> The water starts at 100.0 mL. The water rises by the sample's volume (1 mL = 1 cm³).</li>
                     <li>Click <b>Record trial</b>. In the data table, calculate <b>volume</b> = final − initial water level, then <b>density</b> = mass ÷ volume.</li>
                     <li><b>Cut the sample in half</b> and repeat. Record at least <b>3 different sizes</b> of one metal and at least <b>1 trial of the other metal</b>.</li>
                 </ol>
@@ -1065,8 +1071,15 @@ const CYL = { x: 495, w: 64, top: 40, bot: 256, cap: 250 };
 const yOfMl = ml => CYL.bot - ml * (CYL.bot - CYL.top) / CYL.cap;
 const INITIAL_WATER = 100.0;
 
-function buildBench(svg) {
+function buildBench(svg, onDrop) {
     svg.innerHTML = '';
+    svg.classList.add('draggable');
+    // drop-zone highlights shown while dragging
+    const zones = {
+        tray: el('rect', { x: 20, y: 150, width: 170, height: 108, rx: 10, class: 'zone' }, svg),
+        balance: el('rect', { x: 215, y: 110, width: 190, height: 148, rx: 10, class: 'zone' }, svg),
+        cylinder: el('rect', { x: CYL.x - 20, y: CYL.top - 20, width: CYL.w + 40, height: CYL.bot - CYL.top + 38, rx: 10, class: 'zone' }, svg),
+    };
     // bench surface
     el('rect', { x: 0, y: 258, width: 640, height: 32, class: 's-bench' }, svg);
     // tray
@@ -1098,13 +1111,54 @@ function buildBench(svg) {
     const cl = el('text', { x: CYL.x + CYL.w / 2, y: 280, 'text-anchor': 'middle', 'font-size': 12, class: 's-muted', 'font-weight': 600 }, svg);
     cl.textContent = 'Cylinder (mL)';
     const lvl = el('text', { x: CYL.x + CYL.w + 8, 'font-size': 12, class: 's-ink', 'font-weight': 700, 'font-family': 'JetBrains Mono, monospace' }, svg);
+    blockG.setAttribute('class', 'blk');
+    const hit = el('rect', { fill: 'transparent' }, blockG);   // bigger grab target for tiny pieces
     const front = el('rect', {}, blockG), top = el('polygon', {}, blockG), side = el('polygon', {}, blockG);
-    return { svg, lcd, water, wline, lvl, blockG, front, top, side, level: INITIAL_WATER };
+
+    // drag and drop: pick up the block and drop it on the tray, balance or cylinder
+    const toSvg = e => {
+        const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+        return pt.matrixTransform(svg.getScreenCTM().inverse());
+    };
+    const zoneAt = x => x < 200 ? 'tray' : x < 440 ? 'balance' : 'cylinder';
+    let drag = null;
+    blockG.addEventListener('pointerdown', e => {
+        const p = toSvg(e);
+        const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(blockG.style.transform) || [0, 0, 0];
+        drag = { dx: p.x - +m[1], dy: p.y - +m[2] };
+        blockG.style.transition = 'none';
+        blockG.classList.add('dragging');
+        svg.appendChild(blockG);   // lift above the glass while dragging
+        e.preventDefault();
+    });
+    // listen on window: re-parenting the block above drops pointer capture
+    window.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const p = toSvg(e);
+        blockG.style.transform = `translate(${p.x - drag.dx}px, ${p.y - drag.dy}px)`;
+        const z = zoneAt(p.x);
+        for (const k in zones) zones[k].classList.toggle('on', k === z);
+    });
+    const end = (e, cancelled) => {
+        if (!drag) return;
+        drag = null;
+        blockG.classList.remove('dragging');
+        for (const k in zones) zones[k].classList.remove('on');
+        svg.insertBefore(blockG, water);   // back behind the water
+        onDrop(cancelled ? null : zoneAt(toSvg(e).x));
+    };
+    window.addEventListener('pointerup', e => end(e, false));
+    window.addEventListener('pointercancel', e => end(e, true));
+
+    return { svg, lcd, water, wline, lvl, blockG, hit, front, top, side, level: INITIAL_WATER };
 }
 
 function drawBench(B, sample, loc, animate = true) {
     const s = 10 * Math.cbrt(sample.V), d = s * 0.25;
     const base = sample.color;
+    const pad = Math.max(0, (34 - s) / 2);
+    B.hit.setAttribute('x', -pad); B.hit.setAttribute('y', -s - d - pad);
+    B.hit.setAttribute('width', s + d + 2 * pad); B.hit.setAttribute('height', s + d + 2 * pad);
     B.front.setAttribute('x', 0); B.front.setAttribute('y', -s);
     B.front.setAttribute('width', s); B.front.setAttribute('height', s);
     B.front.setAttribute('fill', base); B.front.setAttribute('stroke', shade(base, -0.4)); B.front.setAttribute('stroke-width', 1);
@@ -1758,7 +1812,7 @@ function init() {
     renderPreds();
 
     // Part 1
-    B1 = buildBench($('#p1Svg'));
+    B1 = buildBench($('#p1Svg'), zone => p1Act(zone || 'redraw'));
     newP1Sample();
     p1Draw(false);
     $('#p1Metal').addEventListener('change', e => {
@@ -1798,7 +1852,7 @@ function init() {
         P3.key = b.dataset.k; P3.loc = 'tray'; P3.massRead = null; P3.levelRead = null; P3.temp = roomTemp();
         p3Draw(); p3Msg(`Sample ${P3.key} is on the tray.`);
     });
-    B3 = buildBench($('#p3Svg'));
+    B3 = buildBench($('#p3Svg'), zone => p3Act(zone || 'redraw'));
     p3Draw(false);
     $$('[data-step="3"] [data-act]').forEach(b => b.addEventListener('click', () => p3Act(b.dataset.act)));
     renderP3Table();
