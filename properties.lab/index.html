@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intensive vs. Extensive Lab</title>
+    <meta name="description" content="A 30-minute virtual lab where students cut, weigh, submerge, and heat samples to discover which properties of matter depend on the amount of matter.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-soft: #dbeafe;
+            --primary-gradient: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --inset: #f1f5f9;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --text-muted: #64748b;
+            --ok: #15803d;
+            --ok-soft: #dcfce7;
+            --bad: #b91c1c;
+            --bad-soft: #fee2e2;
+            --warn-soft: #fef3c7;
+            --warn: #92400e;
+            --intensive: #7c3aed;
+            --intensive-soft: #ede9fe;
+            --extensive: #ea580c;
+            --extensive-soft: #ffedd5;
+            --water: #7dd3fc;
+            --water-edge: #0284c7;
+            --glass: rgba(148, 163, 184, 0.18);
+            --glass-edge: #94a3b8;
+            --bench: #cbd5e1;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #60a5fa;
+                --primary-soft: #1e3a5f;
+                --bg: #0b0f19;
+                --card-bg: #141b2d;
+                --inset: #0f1626;
+                --border: #26334d;
+                --text-main: #f1f5f9;
+                --text-sub: #cbd5e1;
+                --text-muted: #94a3b8;
+                --ok: #4ade80;
+                --ok-soft: #12321f;
+                --bad: #f87171;
+                --bad-soft: #3b1414;
+                --warn-soft: #3a2a0a;
+                --warn: #fbbf24;
+                --intensive: #a78bfa;
+                --intensive-soft: #2a1f4a;
+                --extensive: #fb923c;
+                --extensive-soft: #3a210f;
+                --water: #0e7490;
+                --water-edge: #22d3ee;
+                --glass: rgba(148, 163, 184, 0.10);
+                --glass-edge: #64748b;
+                --bench: #334155;
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+                --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            color: var(--text-main);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---------- Header ---------- */
+        header {
+            background: var(--primary-gradient);
+            color: #fff;
+            padding: 1.25rem 1rem 1.5rem;
+        }
+        .hero {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .back {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .back:hover { color: #fff; }
+        header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.3rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-top: 0.35rem;
+        }
+        header p { opacity: 0.9; font-size: 0.98rem; }
+        .student {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .student label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            gap: 0.2rem;
+        }
+        .student input {
+            font: inherit;
+            font-size: 0.95rem;
+            text-transform: none;
+            letter-spacing: 0;
+            font-weight: 500;
+            padding: 0.45rem 0.7rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            width: 12rem;
+        }
+        .student input.short { width: 6rem; }
+        .student input::placeholder { color: rgba(255,255,255,0.65); }
+        .student input:focus { outline: 2px solid #fff; background: rgba(255,255,255,0.25); }
+
+        /* ---------- Stepper ---------- */
+        .stepper-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .stepper {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0.35rem;
+            padding: 0.6rem 1rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+        .stepper button {
+            flex: 1 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 0.35rem 0.8rem 0.35rem 0.4rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .stepper button:hover { background: var(--inset); }
+        .stepper button.active {
+            color: var(--primary);
+            background: var(--primary-soft);
+            border-color: var(--primary);
+        }
+        .stepper .num {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.75rem;
+            background: var(--inset);
+            border: 1px solid var(--border);
+        }
+        .stepper button.done .num {
+            background: var(--ok);
+            color: #fff;
+            border-color: var(--ok);
+        }
+        .stepper .mins { font-weight: 500; opacity: 0.75; font-size: 0.75rem; }
+
+        /* ---------- Layout ---------- */
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 3rem;
+        }
+        .step { display: none; }
+        .step.active { display: block; animation: fade 0.25s ease; }
+        @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+        .step-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .step-head h2 {
+            font-size: clamp(1.35rem, 3vw, 1.7rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .time-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            background: var(--warn-soft);
+            color: var(--warn);
+            white-space: nowrap;
+        }
+        .lead { color: var(--text-sub); font-size: 1.02rem; margin-bottom: 1.25rem; max-width: 70ch; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.25rem;
+        }
+        .card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card h3 .tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+            background: var(--primary-soft);
+            padding: 0.1rem 0.5rem;
+            border-radius: 999px;
+        }
+        .card p + p { margin-top: 0.5rem; }
+        .muted { color: var(--text-muted); font-size: 0.9rem; }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+            gap: 1.25rem;
+        }
+        @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+        ol.procedure { padding-left: 1.3rem; color: var(--text-sub); }
+        ol.procedure li { margin-bottom: 0.35rem; }
+        ol.procedure b { color: var(--text-main); }
+
+        /* ---------- Buttons ---------- */
+        .btn {
+            font: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 0.5rem 0.9rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.15s, border-color 0.15s, transform 0.05s;
+        }
+        .btn:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-soft); }
+        .btn:active:not(:disabled) { transform: translateY(1px); }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .btn.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--primary); }
+        .btn.sel { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+        .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+        .btn-row .spacer { flex: 1; }
+
+        select, input.num-in, textarea {
+            font: inherit;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.55rem;
+        }
+        select:focus, input.num-in:focus, textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+        input.num-in { width: 5.5rem; font-family: var(--font-mono); }
+        input.num-in.ok { border-color: var(--ok); background: var(--ok-soft); }
+        input.num-in.bad { border-color: var(--bad); background: var(--bad-soft); }
+        textarea { width: 100%; min-height: 7rem; resize: vertical; line-height: 1.5; }
+
+        /* ---------- Bench / instruments ---------- */
+        .bench-svg { width: 100%; height: auto; display: block; background: var(--inset); border-radius: var(--radius-md); border: 1px solid var(--border); }
+        .readouts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .readout {
+            background: var(--inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.45rem 0.65rem;
+        }
+        .readout .lbl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+        .readout .val { font-family: var(--font-mono); font-weight: 600; font-size: 1.02rem; }
+        .readout .val.pending { color: var(--text-muted); font-weight: 400; }
+
+        svg text { font-family: var(--font-main); }
+        .s-ink { fill: var(--text-main); }
+        .s-muted { fill: var(--text-muted); }
+        .s-line { stroke: var(--text-muted); }
+        .s-grid { stroke: var(--border); }
+        .s-bench { fill: var(--bench); }
+        .s-glass { fill: var(--glass); stroke: var(--glass-edge); }
+        .s-water { fill: var(--water); opacity: 0.8; }
+        .s-waterline { stroke: var(--water-edge); }
+        .s-device { fill: #334155; }
+        .s-screen { fill: #0f172a; }
+        .s-lcd { fill: #4ade80; font-family: var(--font-mono); }
+        .s-pan { fill: #94a3b8; }
+
+        /* ---------- Tables ---------- */
+        .table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.86rem;
+            min-width: 560px;
+        }
+        table.data th, table.data td {
+            border-bottom: 1px solid var(--border);
+            padding: 0.45rem 0.5rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+        table.data th {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            background: var(--inset);
+        }
+        table.data td.mono { font-family: var(--font-mono); }
+        table.data .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 3px; vertical-align: -1px; margin-right: 0.3rem; border: 1px solid rgba(0,0,0,0.2); }
+        .empty-row td { color: var(--text-muted); font-style: italic; text-align: center; }
+        .mark { font-weight: 800; margin-left: 0.25rem; }
+        .mark.ok { color: var(--ok); }
+        .mark.bad { color: var(--bad); }
+
+        /* ---------- Questions ---------- */
+        .q { padding: 0.8rem 0; border-top: 1px dashed var(--border); }
+        .q:first-child { border-top: 0; padding-top: 0.2rem; }
+        .q > p { font-weight: 600; margin-bottom: 0.45rem; }
+        .choices { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .choice {
+            font: inherit;
+            font-size: 0.86rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            cursor: pointer;
+        }
+        .choice:hover { border-color: var(--primary); }
+        .choice.picked.right { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 700; }
+        .choice.picked.wrong { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); font-weight: 700; }
+        .choice.picked.neutral { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 700; }
+        .fb { font-size: 0.86rem; margin-top: 0.4rem; min-height: 0; }
+        .fb.ok { color: var(--ok); }
+        .fb.bad { color: var(--bad); }
+
+        .keyidea {
+            border: 2px solid var(--primary);
+            background: var(--primary-soft);
+            border-radius: var(--radius-lg);
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .keyidea h3 { color: var(--primary); margin-bottom: 0.5rem; }
+        .defs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.5rem; }
+        @media (max-width: 640px) { .defs { grid-template-columns: 1fr; } }
+        .def { border-radius: var(--radius-md); padding: 0.8rem 1rem; background: var(--card-bg); }
+        .def.i { border-left: 5px solid var(--intensive); }
+        .def.e { border-left: 5px solid var(--extensive); }
+        .def b { display: block; font-size: 1rem; }
+        .def.i b { color: var(--intensive); }
+        .def.e b { color: var(--extensive); }
+        .locked { color: var(--text-muted); font-style: italic; }
+
+        .gate {
+            font-size: 0.86rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--radius-sm);
+            background: var(--warn-soft);
+            color: var(--warn);
+            margin-top: 0.75rem;
+        }
+        .gate.ok { background: var(--ok-soft); color: var(--ok); }
+
+        /* ---------- Predictions ---------- */
+        .pred-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.6rem; }
+        .pred { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.7rem 0.85rem; background: var(--inset); }
+        .pred .name { font-weight: 700; margin-bottom: 0.4rem; }
+
+        /* ---------- Heating ---------- */
+        .flame-on { animation: glow 1.2s ease-in-out infinite alternate; }
+        @keyframes glow { from { fill: #f97316; } to { fill: #ef4444; } }
+
+        .mix-stage { display: flex; align-items: flex-end; justify-content: center; gap: 1.5rem; padding: 1rem 0 0.5rem; min-height: 150px; }
+        .beaker-css {
+            position: relative;
+            width: 70px;
+            border: 3px solid var(--glass-edge);
+            border-top: 0;
+            border-radius: 0 0 10px 10px;
+            background: var(--glass);
+            overflow: hidden;
+            transition: all 0.8s ease;
+        }
+        .beaker-css .liq { position: absolute; left: 0; right: 0; bottom: 0; background: var(--water); transition: height 0.8s ease; }
+        .beaker-css .lab { position: absolute; left: 0; right: 0; top: 4px; text-align: center; font-size: 0.72rem; font-weight: 700; font-family: var(--font-mono); z-index: 1; }
+        .plus { font-size: 1.6rem; font-weight: 800; color: var(--text-muted); align-self: center; }
+
+        /* ---------- Sorting ---------- */
+        .pool, .bin-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            min-height: 3rem;
+            padding: 0.6rem;
+            border-radius: var(--radius-md);
+        }
+        .pool { background: var(--inset); border: 1px dashed var(--border); margin-bottom: 0.9rem; }
+        .bins { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+        @media (max-width: 640px) { .bins { grid-template-columns: 1fr; } }
+        .bin { border-radius: var(--radius-md); border: 2px solid; cursor: pointer; }
+        .bin.i { border-color: var(--intensive); background: var(--intensive-soft); }
+        .bin.e { border-color: var(--extensive); background: var(--extensive-soft); }
+        .bin.over { outline: 3px solid var(--primary); }
+        .bin-title { padding: 0.55rem 0.8rem 0; font-weight: 800; }
+        .bin.i .bin-title { color: var(--intensive); }
+        .bin.e .bin-title { color: var(--extensive); }
+        .bin-title small { display: block; font-weight: 500; color: var(--text-sub); font-size: 0.78rem; }
+        .chip {
+            font: inherit;
+            font-size: 0.86rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            cursor: grab;
+            user-select: none;
+        }
+        .chip.picked { outline: 3px solid var(--primary); outline-offset: 1px; }
+        .chip.right { border-color: var(--ok); color: var(--ok); }
+        .chip.wrong { border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
+
+        /* ---------- Bottom nav ---------- */
+        .step-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        details.teacher { margin-top: 0.5rem; }
+        details.teacher summary { cursor: pointer; font-weight: 700; color: var(--text-sub); }
+        details.teacher ul { padding-left: 1.2rem; margin-top: 0.5rem; color: var(--text-sub); font-size: 0.9rem; }
+        details.teacher li { margin-bottom: 0.3rem; }
+
+        /* ---------- Report ---------- */
+        .report h4 { margin: 1.1rem 0 0.35rem; font-size: 0.95rem; }
+        .report .score-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
+        .report .score {
+            background: var(--inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        .report .score b { font-family: var(--font-mono); font-size: 1.05rem; display: block; }
+        .report blockquote {
+            border-left: 4px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            color: var(--text-sub);
+            white-space: pre-wrap;
+            background: var(--inset);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        }
+
+        @media print {
+            header, .stepper-wrap, .step-nav, .no-print { display: none !important; }
+            .step { display: none !important; }
+            .step[data-step="5"] { display: block !important; }
+            body { background: #fff; color: #000; }
+            .card { box-shadow: none; border-color: #ccc; break-inside: avoid; }
+            main { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="hero">
+        <div>
+            <a class="back" href="../">← Science2</a>
+            <h1>Intensive vs. Extensive</h1>
+            <p>Does it matter how much stuff you have? Cut it, weigh it, sink it, and heat it to find out.</p>
+        </div>
+        <div class="student">
+            <label>Name <input id="stuName" placeholder="First & last name" autocomplete="off"></label>
+            <label>Period <input id="stuPeriod" class="short" placeholder="e.g. 3" autocomplete="off"></label>
+        </div>
+    </div>
+</header>
+
+<div class="stepper-wrap"><nav class="stepper" id="stepper" aria-label="Lab sections"></nav></div>
+
+<main>
+
+    <!-- ===================== STEP 0: PREDICT ===================== -->
+    <section class="step" data-step="0">
+        <div class="step-head">
+            <h2>Start here: Make predictions</h2>
+            <span class="time-badge">~3 min</span>
+        </div>
+        <p class="lead">
+            Imagine you split a sample of a substance into a smaller portion. You might saw a metal bar in half,
+            or pour half a cup of water into a second cup. Compare <b>one smaller portion</b> to the <b>original sample</b>.
+            For each property, predict whether it would <b>change</b> or <b>stay the same</b>.
+        </p>
+        <div class="card">
+            <h3>Your predictions <span class="tag">No wrong answers yet</span></h3>
+            <div class="pred-grid" id="predGrid"></div>
+            <div id="predGate" class="gate"></div>
+        </div>
+        <div class="card">
+            <h3>What you'll do</h3>
+            <ol class="procedure">
+                <li><b>Part 1, Cut It Down:</b> measure the mass, volume, and density of metal bars as you cut them smaller.</li>
+                <li><b>Part 2, Heat It Up:</b> boil different amounts of water and mix warm water together.</li>
+                <li><b>Part 3, Mystery Metals:</b> use what you learned to identify three unknown samples.</li>
+                <li><b>Part 4, Sort &amp; Conclude:</b> sort properties into two groups and explain your thinking.</li>
+                <li><b>Report:</b> print it or save it as a PDF to turn in.</li>
+            </ol>
+            <p class="muted" style="margin-top:0.6rem">Your work is saved in this browser as you go. Type your name at the top before you begin.</p>
+            <details class="teacher">
+                <summary>Teacher notes</summary>
+                <ul>
+                    <li><b>Timing:</b> about 30 minutes total. Predict 3, Part 1 10, Part 2 7, Part 3 5, Part 4 5. Students who finish early can redo Part 1 with the second metal or try more beaker sizes.</li>
+                    <li><b>Objective:</b> students use data to show that extensive properties (mass, volume, energy) change with the amount of matter, and intensive properties (density, temperature, boiling point, color) do not. Then they use intensive properties to identify substances.</li>
+                    <li><b>Standards:</b> MS-PS1-2 / HS-PS1-3 (properties of substances); science practices: analyzing and interpreting data, constructing explanations.</li>
+                    <li><b>Key misconception:</b> many students predict that cutting a bar in half halves its density, or that mixing two 60 °C cups gives 120 °C. Parts 1 and 2 test both ideas directly.</li>
+                    <li><b>Collecting work:</b> the Report tab prints a one-page summary. "Save as PDF" works for uploading to an LMS. Recorded masses include small random measurement error, so every student's numbers are a little different.</li>
+                    <li><b>Reset:</b> the "Start over" button at the bottom of the Report tab clears this browser's saved work, which is useful on shared computers.</li>
+                </ul>
+            </details>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 1: CUT IT DOWN ===================== -->
+    <section class="step" data-step="1">
+        <div class="step-head">
+            <h2>Part 1: Cut It Down</h2>
+            <span class="time-badge">~10 min</span>
+        </div>
+        <p class="lead">Measure a metal bar, cut it in half, and measure again. Does the material change when you have less of it?</p>
+
+        <div class="grid2">
+            <div class="card">
+                <h3>Lab bench</h3>
+                <div class="btn-row" style="margin-top:0;margin-bottom:0.75rem;align-items:center">
+                    <label for="p1Metal" class="muted" style="font-weight:600">Metal:</label>
+                    <select id="p1Metal">
+                        <option value="al">Aluminum</option>
+                        <option value="cu">Copper</option>
+                    </select>
+                    <span class="muted" id="p1Size"></span>
+                </div>
+                <svg id="p1Svg" class="bench-svg" viewBox="0 0 640 290" role="img" aria-label="Lab bench with sample tray, electronic balance, and graduated cylinder"></svg>
+                <div class="readouts" id="p1Readouts"></div>
+                <div class="btn-row">
+                    <button class="btn" data-act="balance">⚖️ Place on balance</button>
+                    <button class="btn" data-act="cylinder">💧 Lower into cylinder</button>
+                    <button class="btn" data-act="tray">↩ Back to tray</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" data-act="cut">✂️ Cut in half</button>
+                    <button class="btn" data-act="join">➕ Join an identical piece</button>
+                    <span class="spacer"></span>
+                    <button class="btn primary" data-act="record">📝 Record trial</button>
+                </div>
+                <p class="muted" id="p1Msg" style="margin-top:0.5rem;min-height:1.4em"></p>
+            </div>
+
+            <div class="card">
+                <h3>Procedure</h3>
+                <ol class="procedure">
+                    <li>Choose a metal. Start with the <b>whole bar</b>.</li>
+                    <li><b>Place it on the balance</b> to measure its mass.</li>
+                    <li><b>Lower it into the cylinder.</b> The water starts at 100.0 mL. The water rises by the sample's volume (1 mL = 1 cm³).</li>
+                    <li>Click <b>Record trial</b>. In the data table, calculate <b>volume</b> = final − initial water level, then <b>density</b> = mass ÷ volume.</li>
+                    <li><b>Cut the sample in half</b> and repeat. Record at least <b>3 different sizes</b> of one metal and at least <b>1 trial of the other metal</b>.</li>
+                </ol>
+                <div id="p1Gate" class="gate"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Data table</h3>
+            <p class="muted">Round density to 2 decimal places. A green box means your calculation checks out.</p>
+            <div class="table-wrap">
+                <table class="data" id="p1Table"></table>
+            </div>
+        </div>
+
+        <div class="grid2">
+            <div class="card">
+                <h3>Graph: mass vs. volume</h3>
+                <svg id="p1Graph" class="bench-svg" viewBox="0 0 480 300" role="img" aria-label="Scatter plot of mass versus volume"></svg>
+                <p class="muted" style="margin-top:0.5rem">Each dot is one trial. The dashed line passes through the origin with a slope equal to the metal's average density.</p>
+            </div>
+            <div class="card">
+                <h3>Analyze your data</h3>
+                <div id="p1Qs"></div>
+            </div>
+        </div>
+
+        <div class="keyidea" id="p1Key"></div>
+    </section>
+
+    <!-- ===================== STEP 2: HEAT IT UP ===================== -->
+    <section class="step" data-step="2">
+        <div class="step-head">
+            <h2>Part 2: Heat It Up</h2>
+            <span class="time-badge">~7 min</span>
+        </div>
+        <p class="lead">A hot plate adds energy at a steady <b>300 J every second</b> (300 watts). Heat different amounts of water and watch the thermometer.</p>
+
+        <div class="grid2">
+            <div class="card">
+                <h3>Hot plate</h3>
+                <div class="btn-row" style="margin-top:0;margin-bottom:0.75rem;align-items:center" id="p2Vols">
+                    <span class="muted" style="font-weight:600">Water:</span>
+                </div>
+                <svg id="p2Svg" class="bench-svg" viewBox="0 0 320 300" role="img" aria-label="Beaker of water on a hot plate with a thermometer"></svg>
+                <div class="readouts" id="p2Readouts"></div>
+                <div class="btn-row">
+                    <button class="btn primary" id="p2Start">🔥 Start heating</button>
+                    <button class="btn" id="p2Reset">↺ Fresh beaker</button>
+                    <span class="spacer"></span>
+                    <span class="muted" style="align-self:center">Time runs 50× faster than real life</span>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Heating curves</h3>
+                <svg id="p2Graph" class="bench-svg" viewBox="0 0 480 300" role="img" aria-label="Temperature versus time for each run"></svg>
+                <p class="muted" style="margin-top:0.5rem">Heat at least <b>3 different amounts</b> of water. Each run is saved automatically when the water has boiled for a while.</p>
+                <div id="p2Gate" class="gate"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Data table</h3>
+            <div class="table-wrap"><table class="data" id="p2Table"></table></div>
+        </div>
+
+        <div class="grid2">
+            <div class="card">
+                <h3>Analyze your data</h3>
+                <div id="p2Qs"></div>
+            </div>
+            <div class="card">
+                <h3>Mixing challenge</h3>
+                <p>Two beakers each hold <b>100 mL of water at 60 °C</b>. You pour them together into one big beaker.</p>
+                <div class="mix-stage" id="mixStage"></div>
+                <div id="mixQs"></div>
+                <div class="btn-row">
+                    <button class="btn primary" id="mixPour" disabled>🫗 Pour them together</button>
+                    <button class="btn" id="mixReset">↺ Reset</button>
+                </div>
+                <p class="fb" id="mixResult"></p>
+                <div id="mixAfterQs" style="margin-top:0.5rem"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 3: MYSTERY METALS ===================== -->
+    <section class="step" data-step="3">
+        <div class="step-head">
+            <h2>Part 3: Mystery Metals</h2>
+            <span class="time-badge">~5 min</span>
+        </div>
+        <p class="lead">A lab tech found three unlabeled gray metal samples of different sizes. Use the bench to figure out what each one is made of.</p>
+
+        <div class="grid2">
+            <div class="card">
+                <h3>Lab bench</h3>
+                <div class="btn-row" style="margin-top:0;margin-bottom:0.75rem;align-items:center" id="p3Picks">
+                    <span class="muted" style="font-weight:600">Sample:</span>
+                </div>
+                <svg id="p3Svg" class="bench-svg" viewBox="0 0 640 290" role="img" aria-label="Lab bench with unknown sample, balance and graduated cylinder"></svg>
+                <div class="readouts" id="p3Readouts"></div>
+                <div class="btn-row">
+                    <button class="btn" data-act="balance">⚖️ Place on balance</button>
+                    <button class="btn" data-act="cylinder">💧 Lower into cylinder</button>
+                    <button class="btn" data-act="tray">↩ Back to tray</button>
+                    <span class="spacer"></span>
+                    <button class="btn primary" data-act="record">📝 Record</button>
+                </div>
+                <p class="muted" id="p3Msg" style="margin-top:0.5rem;min-height:1.4em"></p>
+            </div>
+            <div class="card">
+                <h3>Reference: densities at 20 °C</h3>
+                <div class="table-wrap">
+                    <table class="data" style="min-width:0" id="refTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Data table</h3>
+            <p class="muted">Calculate each density. Then match it to the reference table to identify the metal.</p>
+            <div class="table-wrap"><table class="data" id="p3Table"></table></div>
+            <div id="p3Gate" class="gate"></div>
+        </div>
+
+        <div class="card">
+            <h3>Analyze your data</h3>
+            <div id="p3Qs"></div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 4: SORT & CONCLUDE ===================== -->
+    <section class="step" data-step="4">
+        <div class="step-head">
+            <h2>Part 4: Sort &amp; Conclude</h2>
+            <span class="time-badge">~5 min</span>
+        </div>
+
+        <div class="keyidea">
+            <h3>Two kinds of physical properties</h3>
+            <div class="defs">
+                <div class="def i"><b>Intensive property</b>Does <u>not</u> depend on the amount of matter. A drop of water and a swimming pool both boil at 100 °C.</div>
+                <div class="def e"><b>Extensive property</b><u>Does</u> depend on the amount of matter. Two bars have twice the mass of one bar.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Sort the properties</h3>
+            <p class="muted">Drag each card into a box. You can also tap a card and then tap a box.</p>
+            <div class="pool" id="sortPool"></div>
+            <div class="bins">
+                <div class="bin i" data-bin="I"><div class="bin-title">Intensive<small>same no matter how much</small></div><div class="bin-body"></div></div>
+                <div class="bin e" data-bin="E"><div class="bin-title">Extensive<small>depends on how much</small></div><div class="bin-body"></div></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn primary" id="sortCheck">Check my sort</button>
+                <span class="fb" id="sortFb" style="align-self:center;margin:0"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Look back at your predictions</h3>
+            <div class="table-wrap"><table class="data" id="predCompare" style="min-width:420px"></table></div>
+        </div>
+
+        <div class="card">
+            <h3>Exit ticket</h3>
+            <div id="p4Qs"></div>
+        </div>
+
+        <div class="card">
+            <h3>Claim, Evidence, Reasoning</h3>
+            <p><b>Question:</b> How can you tell whether two pieces of metal are the same substance, even if they are different sizes?</p>
+            <p class="muted">Make a <b>claim</b>. Support it with <b>evidence</b>: specific numbers from Part 1 or Part 3. Then explain your <b>reasoning</b> using the words <i>intensive</i> and <i>extensive</i>.</p>
+            <textarea id="cer" placeholder="Claim: …&#10;Evidence: …&#10;Reasoning: …" style="margin-top:0.6rem"></textarea>
+            <p class="muted" id="cerCount"></p>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 5: REPORT ===================== -->
+    <section class="step" data-step="5">
+        <div class="step-head">
+            <h2>Lab Report</h2>
+            <div class="btn-row no-print" style="margin:0">
+                <button class="btn primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+            </div>
+        </div>
+        <div class="card report" id="report"></div>
+        <div class="no-print" style="text-align:right">
+            <button class="btn" id="resetAll">🗑️ Start over (clears saved work)</button>
+        </div>
+    </section>
+
+    <div class="step-nav">
+        <button class="btn" id="prevBtn">← Back</button>
+        <span class="muted" id="navInfo"></span>
+        <button class="btn primary" id="nextBtn">Next →</button>
+    </div>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   Data
+   ========================================================= */
+const METALS = {
+    al: { name: 'Aluminum', rho: 2.70, color: '#c7ccd4', colorName: 'silvery gray' },
+    cu: { name: 'Copper',   rho: 8.96, color: '#c8743f', colorName: 'reddish orange' },
+};
+
+const REFERENCE = [
+    ['Aluminum', 2.70], ['Titanium', 4.51], ['Zinc', 7.14], ['Iron', 7.87],
+    ['Copper', 8.96], ['Silver', 10.49], ['Lead', 11.34], ['Gold', 19.32],
+];
+
+const UNKNOWNS = {
+    X: { V: 31.0, rho: 7.14, metal: 'Zinc',     color: '#a6afb9' },
+    Y: { V: 6.5,  rho: 7.14, metal: 'Zinc',     color: '#a6afb9' },
+    Z: { V: 18.0, rho: 4.51, metal: 'Titanium', color: '#a3a6ab' },
+};
+
+const PRED_PROPS = [
+    { id: 'mass', name: 'Mass', actual: 'changes' },
+    { id: 'volume', name: 'Volume', actual: 'changes' },
+    { id: 'density', name: 'Density', actual: 'same' },
+    { id: 'temp', name: 'Temperature', actual: 'same' },
+    { id: 'color', name: 'Color', actual: 'same' },
+    { id: 'bp', name: 'Boiling point', actual: 'same' },
+];
+
+const SORT_PROPS = [
+    ['Mass', 'E'], ['Volume', 'E'], ['Length', 'E'], ['Weight', 'E'],
+    ['Energy needed to boil', 'E'], ['Number of atoms', 'E'],
+    ['Density', 'I'], ['Temperature', 'I'], ['Boiling point', 'I'], ['Melting point', 'I'],
+    ['Color', 'I'], ['Hardness', 'I'], ['Odor', 'I'], ['Electrical conductivity', 'I'],
+];
+
+const CHG = ['increased', 'decreased', 'stayed the same'];
+const IE = ['intensive', 'extensive'];
+
+const QUESTIONS = {
+    p1: [
+        { id: 'p1m', text: 'When you cut a sample in half, its <b>mass</b>…', opts: CHG, ans: 1, why: 'Less metal means less mass. Half the bar has half the mass.' },
+        { id: 'p1v', text: 'When you cut a sample in half, its <b>volume</b>…', opts: CHG, ans: 1, why: 'Half the bar takes up half the space.' },
+        { id: 'p1d', text: 'When you cut a sample in half, its <b>density</b>…', opts: CHG, ans: 2, why: 'Mass and volume both got cut in half, so mass ÷ volume did not change.' },
+        { id: 'p1t', text: 'When you cut a sample in half, its <b>temperature</b>…', opts: CHG, ans: 2, why: 'Both pieces stayed at room temperature.' },
+        { id: 'p1c', text: 'Compare aluminum and copper. Which metal has the <b>greater density</b>?', opts: ['Aluminum', 'Copper', 'They are equal'], ans: 1, why: 'Copper packs about 9 g into each cm³. Aluminum packs only about 2.7 g.' },
+        { id: 'p1s', text: 'On the mass vs. volume graph, the <b>slope</b> of each metal\'s line represents its…', opts: ['mass', 'volume', 'density', 'temperature'], ans: 2, why: 'Slope = rise ÷ run = mass ÷ volume = density. A steeper line means a denser metal.' },
+    ],
+    p2: [
+        { id: 'p2bp', text: 'As the amount of water increased, the <b>boiling temperature</b>…', opts: CHG, ans: 2, why: 'Every beaker boiled at 100 °C, no matter how much water was in it.' },
+        { id: 'p2e', text: 'As the amount of water increased, the <b>energy needed to reach boiling</b>…', opts: CHG, ans: 0, why: 'More water has more molecules to heat up, so it needs more energy and more time.' },
+        { id: 'p2bpie', text: 'Boiling point is an ___ property.', opts: IE, ans: 0, why: 'It does not depend on the amount of water.' },
+        { id: 'p2eie', text: 'The energy needed to heat a sample is an ___ property.', opts: IE, ans: 1, why: 'It depends on the amount: 500 mL needed about 10× the energy of 50 mL.' },
+    ],
+    mix: [
+        { id: 'mixp', text: '<b>Predict:</b> what will the temperature of the combined 200 mL be?', opts: ['30 °C', '60 °C', '120 °C'], ans: null },
+    ],
+    mixAfter: [
+        { id: 'mixt', text: 'When you combined the water, the <b>volume</b> doubled. Volume is…', opts: IE, ans: 1, why: '100 mL + 100 mL = 200 mL. Volume adds up because it depends on amount.' },
+        { id: 'mixtt', text: 'The <b>temperature</b> did not double. Temperature is…', opts: IE, ans: 0, why: 'Temperature measures the average energy of the particles, so it doesn\'t depend on how many particles there are.' },
+    ],
+    p3: [
+        { id: 'p3same', text: 'Which two samples are made of the <b>same substance</b>?', opts: ['X and Y', 'X and Z', 'Y and Z', 'None of them'], ans: 0, why: 'X and Y have very different masses and volumes, but the same density (about 7.1 g/cm³).' },
+        { id: 'p3ev', text: 'Which property was the <b>best evidence</b> for identifying the metals?', opts: ['Mass', 'Volume', 'Color', 'Density'], ans: 3, why: 'Density is intensive, so it is a "fingerprint" of the substance no matter the sample size. All three were gray, so color didn\'t help here.' },
+        { id: 'p3big', text: 'Sample X is much bigger than Sample Z. Does that mean X is made of a denser material?', opts: ['Yes, bigger means denser', 'No, size does not determine density'], ans: 1, why: 'Size is extensive. You need mass ÷ volume to compare materials.' },
+    ],
+    p4: [
+        { id: 'p4a', text: 'A gold ring has a mass of 5 g. A gold bar has a mass of 500 g. Which property is the <b>same</b> for both?', opts: ['Mass', 'Volume', 'Density', 'Weight'], ans: 2, why: 'They are both pure gold, so both have a density of 19.3 g/cm³.' },
+        { id: 'p4b', text: 'Which pair of properties would <b>best identify</b> an unknown clear liquid?', opts: ['Mass and volume', 'Boiling point and density', 'Volume and temperature', 'Mass and length'], ans: 1, why: 'Both are intensive, so they describe the substance itself, not how much you have.' },
+        { id: 'p4c', text: 'Density = mass ÷ volume. Why is density intensive, even though mass and volume are both extensive?', opts: ['Because mass and volume change by the same factor, so their ratio stays the same', 'Because density is always measured in g/cm³', 'Because density only applies to metals', 'Because volume never changes'], ans: 0, why: 'Cut a bar in half: mass ÷ 2 and volume ÷ 2, so (m/2) ÷ (V/2) = m/V.' },
+    ],
+};
+
+const STEPS = [
+    { label: 'Predict', mins: 3 },
+    { label: 'Cut It Down', mins: 10 },
+    { label: 'Heat It Up', mins: 7 },
+    { label: 'Mystery Metals', mins: 5 },
+    { label: 'Sort & Conclude', mins: 5 },
+    { label: 'Report', mins: 0 },
+];
+
+/* =========================================================
+   State + persistence
+   ========================================================= */
+const KEY = 'science2-intensive-extensive-v1';
+const blank = () => ({
+    step: 0, name: '', period: '',
+    pred: {},
+    ans: {}, first: {},
+    trials: [],
+    runs: [],
+    mixDone: false,
+    unk: {},          // X: {mass, vi, vf, volIn, densIn, id}
+    sort: {}, sortChecked: false,
+    cer: '',
+    unkMass: null,    // fixed per student once generated
+});
+let S = blank();
+try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) S = Object.assign(blank(), JSON.parse(raw));
+} catch (e) { /* storage unavailable: run fresh */ }
+
+let saveTimer = null;
+function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+    }, 150);
+}
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r1 = x => Math.round(x * 10) / 10;
+const r2 = x => Math.round(x * 100) / 100;
+const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+const noisyMass = (rho, V) => r2(rho * V * (1 + gauss() * 0.0025));
+const roomTemp = () => r1(21.5 + (Math.random() - 0.5) * 0.2);
+const svgNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}, parent) {
+    const n = document.createElementNS(svgNS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+}
+function shade(hex, f) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    const t = f < 0 ? 0 : 255, p = Math.abs(f);
+    r = Math.round((t - r) * p + r); g = Math.round((t - g) * p + g); b = Math.round((t - b) * p + b);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+function tween(from, to, ms, fn, done) {
+    const t0 = performance.now();
+    function f(now) {
+        const k = Math.min(1, (now - t0) / ms), e = k * (2 - k);
+        fn(from + (to - from) * e);
+        if (k < 1) requestAnimationFrame(f); else if (done) done();
+    }
+    requestAnimationFrame(f);
+}
+function sizeLabel(V) {
+    const map = { 80: '2 bars', 40: '1 whole bar', 20: '½ bar', 10: '¼ bar', 5: '⅛ bar', 2.5: '1/16 bar' };
+    return map[V] || V + ' cm³';
+}
+
+/* =========================================================
+   Multiple-choice questions
+   ========================================================= */
+function renderQs(container, list, onChange) {
+    container.innerHTML = list.map(q => `
+        <div class="q" data-q="${q.id}">
+            <p>${q.text}</p>
+            <div class="choices">${q.opts.map((o, i) => `<button type="button" class="choice" data-i="${i}">${o}</button>`).join('')}</div>
+            <div class="fb"></div>
+        </div>`).join('');
+    const paint = q => {
+        const box = $(`[data-q="${q.id}"]`, container);
+        const pick = S.ans[q.id];
+        $$('.choice', box).forEach(b => {
+            const i = +b.dataset.i;
+            b.className = 'choice';
+            if (i === pick) b.classList.add('picked', q.ans == null ? 'neutral' : (i === q.ans ? 'right' : 'wrong'));
+        });
+        const fb = $('.fb', box);
+        if (pick == null || q.ans == null) { fb.textContent = ''; fb.className = 'fb'; }
+        else if (pick === q.ans) { fb.textContent = '✓ ' + q.why; fb.className = 'fb ok'; }
+        else { fb.textContent = '✗ Not quite. Look back at your data and try again.'; fb.className = 'fb bad'; }
+    };
+    container.addEventListener('click', e => {
+        const b = e.target.closest('.choice');
+        if (!b) return;
+        const id = b.closest('.q').dataset.q;
+        const q = list.find(x => x.id === id);
+        const i = +b.dataset.i;
+        S.ans[id] = i;
+        if (S.first[id] === undefined) S.first[id] = i;
+        paint(q); save();
+        if (onChange) onChange();
+        refreshProgress();
+    });
+    list.forEach(paint);
+}
+const qsCorrect = list => list.every(q => q.ans == null ? S.ans[q.id] != null : S.ans[q.id] === q.ans);
+const qsAnswered = list => list.every(q => S.ans[q.id] != null);
+
+/* =========================================================
+   Step 0: predictions
+   ========================================================= */
+function renderPreds() {
+    $('#predGrid').innerHTML = PRED_PROPS.map(p => `
+        <div class="pred" data-p="${p.id}">
+            <div class="name">${p.name}</div>
+            <div class="choices">
+                <button type="button" class="choice" data-v="changes">Changes</button>
+                <button type="button" class="choice" data-v="same">Stays the same</button>
+            </div>
+        </div>`).join('');
+    paintPreds();
+    $('#predGrid').addEventListener('click', e => {
+        const b = e.target.closest('.choice');
+        if (!b) return;
+        S.pred[b.closest('.pred').dataset.p] = b.dataset.v;
+        paintPreds(); save(); refreshProgress();
+    });
+}
+function paintPreds() {
+    $$('#predGrid .pred').forEach(box => {
+        $$('.choice', box).forEach(b => b.classList.toggle('picked', S.pred[box.dataset.p] === b.dataset.v));
+        $$('.choice', box).forEach(b => b.classList.toggle('neutral', S.pred[box.dataset.p] === b.dataset.v));
+    });
+}
+
+/* =========================================================
+   Bench (shared by Part 1 and Part 3)
+   ========================================================= */
+const CYL = { x: 495, w: 64, top: 40, bot: 256, cap: 250 };
+const yOfMl = ml => CYL.bot - ml * (CYL.bot - CYL.top) / CYL.cap;
+const INITIAL_WATER = 100.0;
+
+function buildBench(svg) {
+    svg.innerHTML = '';
+    // bench surface
+    el('rect', { x: 0, y: 258, width: 640, height: 32, class: 's-bench' }, svg);
+    // tray
+    el('rect', { x: 40, y: 250, width: 130, height: 8, rx: 2, class: 's-pan' }, svg);
+    const tl = el('text', { x: 105, y: 280, 'text-anchor': 'middle', 'font-size': 12, class: 's-muted', 'font-weight': 600 }, svg);
+    tl.textContent = 'Sample tray';
+    // balance
+    el('rect', { x: 225, y: 216, width: 170, height: 42, rx: 6, class: 's-device' }, svg);
+    el('rect', { x: 268, y: 226, width: 84, height: 24, rx: 3, class: 's-screen' }, svg);
+    const lcd = el('text', { x: 346, y: 243, 'text-anchor': 'end', 'font-size': 14, class: 's-lcd' }, svg);
+    el('rect', { x: 300, y: 208, width: 20, height: 8, class: 's-device' }, svg);
+    el('rect', { x: 245, y: 202, width: 130, height: 7, rx: 2, class: 's-pan' }, svg);
+    const bl = el('text', { x: 310, y: 280, 'text-anchor': 'middle', 'font-size': 12, class: 's-muted', 'font-weight': 600 }, svg);
+    bl.textContent = 'Balance (g)';
+    // block first, then water, glass, and ticks on top so a submerged sample looks underwater
+    const blockG = el('g', {}, svg);
+    const water = el('rect', { x: CYL.x + 2, width: CYL.w - 4, class: 's-water' }, svg);
+    const wline = el('line', { x1: CYL.x + 2, x2: CYL.x + CYL.w - 2, class: 's-waterline', 'stroke-width': 2 }, svg);
+    el('rect', { x: CYL.x, y: CYL.top - 12, width: CYL.w, height: CYL.bot - CYL.top + 14, class: 's-glass', 'stroke-width': 2, rx: 3 }, svg);
+    el('rect', { x: CYL.x - 14, y: CYL.bot, width: CYL.w + 28, height: 4, rx: 2, class: 's-device' }, svg);
+    for (let ml = 0; ml <= CYL.cap; ml += 10) {
+        const y = yOfMl(ml), major = ml % 50 === 0;
+        el('line', { x1: CYL.x, x2: CYL.x + (major ? 16 : 9), y1: y, y2: y, class: 's-line', 'stroke-width': major ? 1.5 : 1 }, svg);
+        if (major && ml > 0) {
+            const t = el('text', { x: CYL.x - 5, y: y + 4, 'text-anchor': 'end', 'font-size': 11, class: 's-muted', 'font-family': 'JetBrains Mono, monospace' }, svg);
+            t.textContent = ml;
+        }
+    }
+    const cl = el('text', { x: CYL.x + CYL.w / 2, y: 280, 'text-anchor': 'middle', 'font-size': 12, class: 's-muted', 'font-weight': 600 }, svg);
+    cl.textContent = 'Cylinder (mL)';
+    const lvl = el('text', { x: CYL.x + CYL.w + 8, 'font-size': 12, class: 's-ink', 'font-weight': 700, 'font-family': 'JetBrains Mono, monospace' }, svg);
+    const front = el('rect', {}, blockG), top = el('polygon', {}, blockG), side = el('polygon', {}, blockG);
+    return { svg, lcd, water, wline, lvl, blockG, front, top, side, level: INITIAL_WATER };
+}
+
+function drawBench(B, sample, loc, animate = true) {
+    const s = 10 * Math.cbrt(sample.V), d = s * 0.25;
+    const base = sample.color;
+    B.front.setAttribute('x', 0); B.front.setAttribute('y', -s);
+    B.front.setAttribute('width', s); B.front.setAttribute('height', s);
+    B.front.setAttribute('fill', base); B.front.setAttribute('stroke', shade(base, -0.4)); B.front.setAttribute('stroke-width', 1);
+    B.top.setAttribute('points', `0,${-s} ${d},${-s - d} ${s + d},${-s - d} ${s},${-s}`);
+    B.top.setAttribute('fill', shade(base, 0.35)); B.top.setAttribute('stroke', shade(base, -0.4)); B.top.setAttribute('stroke-width', 1);
+    B.side.setAttribute('points', `${s},${-s} ${s + d},${-s - d} ${s + d},${-d} ${s},0`);
+    B.side.setAttribute('fill', shade(base, -0.25)); B.side.setAttribute('stroke', shade(base, -0.4)); B.side.setAttribute('stroke-width', 1);
+
+    const pos = {
+        tray: [105 - (s + d) / 2, 250],
+        balance: [310 - (s + d) / 2, 202],
+        cylinder: [CYL.x + (CYL.w - s - d) / 2, CYL.bot],
+    }[loc];
+    B.blockG.style.transition = animate ? 'transform 0.6s cubic-bezier(.5,0,.3,1)' : 'none';
+    B.blockG.style.transform = `translate(${pos[0]}px, ${pos[1]}px)`;
+
+    B.lcd.textContent = loc === 'balance' ? sample.mass.toFixed(2) : '0.00';
+
+    const target = INITIAL_WATER + (loc === 'cylinder' ? sample.V : 0);
+    const setLevel = ml => {
+        const y = yOfMl(ml);
+        B.water.setAttribute('y', y); B.water.setAttribute('height', CYL.bot - y);
+        B.wline.setAttribute('y1', y); B.wline.setAttribute('y2', y);
+        B.lvl.setAttribute('y', y + 4); B.lvl.textContent = '◀ ' + (Math.round(ml * 2) / 2).toFixed(1);
+        B.level = ml;
+    };
+    if (animate && target !== B.level) setTimeout(() => tween(B.level, target, 500, setLevel), loc === 'cylinder' ? 450 : 0);
+    else setLevel(target);
+}
+
+function readoutsHTML(sample, st, extra = '') {
+    const m = st.massRead != null ? `${st.massRead.toFixed(2)} g` : '—';
+    const v = st.levelRead != null ? `${st.levelRead.toFixed(1)} mL` : '—';
+    return `
+        <div class="readout"><div class="lbl">Mass reading</div><div class="val ${st.massRead == null ? 'pending' : ''}">${m}</div></div>
+        <div class="readout"><div class="lbl">Water start</div><div class="val">${INITIAL_WATER.toFixed(1)} mL</div></div>
+        <div class="readout"><div class="lbl">Water with sample</div><div class="val ${st.levelRead == null ? 'pending' : ''}">${v}</div></div>
+        <div class="readout"><div class="lbl">Thermometer</div><div class="val">${st.temp.toFixed(1)} °C</div></div>
+        ${extra}`;
+}
+
+/* =========================================================
+   Part 1
+   ========================================================= */
+let sampleSeq = 1;
+const P1 = { metal: 'al', V: 40, loc: 'tray', massRead: null, levelRead: null, temp: roomTemp(), id: 0, mass: 0 };
+function newP1Sample() {
+    P1.mass = noisyMass(METALS[P1.metal].rho, P1.V);
+    P1.massRead = null; P1.levelRead = null; P1.temp = roomTemp(); P1.id = sampleSeq++;
+}
+let B1;
+function p1Sample() { const m = METALS[P1.metal]; return { V: P1.V, mass: P1.mass, color: m.color }; }
+function p1Draw(animate = true) {
+    drawBench(B1, p1Sample(), P1.loc, animate);
+    $('#p1Size').textContent = `Sample: ${sizeLabel(P1.V)}`;
+    $('#p1Readouts').innerHTML = readoutsHTML(p1Sample(), P1,
+        `<div class="readout"><div class="lbl">Color</div><div class="val" style="font-family:var(--font-main);font-size:0.9rem"><span class="swatch" style="display:inline-block;width:.8rem;height:.8rem;border-radius:3px;background:${METALS[P1.metal].color};vertical-align:-1px"></span> ${METALS[P1.metal].colorName}</div></div>`);
+}
+function p1Msg(t) { $('#p1Msg').textContent = t; }
+
+function p1Act(act) {
+    const m = METALS[P1.metal];
+    if (act === 'balance') { P1.loc = 'balance'; P1.massRead = P1.mass; p1Msg(`The balance reads ${P1.mass.toFixed(2)} g.`); }
+    else if (act === 'cylinder') {
+        P1.loc = 'cylinder';
+        P1.levelRead = INITIAL_WATER + P1.V;
+        p1Msg(`The water rose from ${INITIAL_WATER.toFixed(1)} mL to ${P1.levelRead.toFixed(1)} mL.`);
+    }
+    else if (act === 'tray') { P1.loc = 'tray'; p1Msg(''); }
+    else if (act === 'cut') {
+        if (P1.V <= 2.5) return p1Msg('That piece is too small to cut again.');
+        P1.V /= 2; P1.loc = 'tray'; newP1Sample();
+        p1Msg(`Cut! You kept one half: ${sizeLabel(P1.V)}. Measure it again.`);
+    }
+    else if (act === 'join') {
+        if (P1.V >= 80) return p1Msg('That is as big as the cylinder can handle.');
+        P1.V *= 2; P1.loc = 'tray'; newP1Sample();
+        p1Msg(`You joined an identical piece: ${sizeLabel(P1.V)}. Measure it again.`);
+    }
+    else if (act === 'record') {
+        if (P1.massRead == null || P1.levelRead == null) return p1Msg('Measure both the mass (balance) and the water level (cylinder) before recording.');
+        if (S.trials.some(t => t.sid === P1.id)) return p1Msg('You already recorded this sample. Cut it or join a piece to make a new one.');
+        S.trials.push({ sid: P1.id, metal: P1.metal, size: sizeLabel(P1.V), mass: P1.massRead, vi: INITIAL_WATER, vf: P1.levelRead, temp: P1.temp, volIn: '', densIn: '' });
+        save(); renderP1Table(); renderP1Graph(); refreshProgress();
+        p1Msg(`Trial ${S.trials.length} recorded. Now fill in volume and density in the table below.`);
+        return;
+    }
+    p1Draw();
+}
+
+function trialChecks(t) {
+    const vol = t.vf - t.vi;
+    const vIn = parseFloat(t.volIn), dIn = parseFloat(t.densIn);
+    const volOk = isFinite(vIn) && Math.abs(vIn - vol) <= 0.05;
+    const dTrue = t.mass / vol;
+    const densOk = isFinite(dIn) && Math.abs(dIn - dTrue) / dTrue <= 0.015;
+    return { volOk, densOk, vol, dTrue, volEntered: t.volIn !== '', densEntered: t.densIn !== '' };
+}
+
+function renderP1Table() {
+    const tb = $('#p1Table');
+    const head = `<thead><tr><th>#</th><th>Metal</th><th>Sample size</th><th>Mass (g)</th><th>Initial water (mL)</th><th>Final water (mL)</th><th>Volume (cm³)</th><th>Density (g/cm³)</th><th>Temp (°C)</th><th>Color</th><th></th></tr></thead>`;
+    if (!S.trials.length) { tb.innerHTML = head + '<tbody><tr class="empty-row"><td colspan="11">No trials yet. Measure a sample and click Record trial.</td></tr></tbody>'; return; }
+    tb.innerHTML = head + '<tbody>' + S.trials.map((t, i) => {
+        const m = METALS[t.metal];
+        return `<tr data-i="${i}">
+            <td>${i + 1}</td>
+            <td>${m.name}</td>
+            <td>${t.size}</td>
+            <td class="mono">${t.mass.toFixed(2)}</td>
+            <td class="mono">${t.vi.toFixed(1)}</td>
+            <td class="mono">${t.vf.toFixed(1)}</td>
+            <td><input class="num-in" data-f="volIn" inputmode="decimal" value="${esc(t.volIn)}" aria-label="Volume for trial ${i + 1}"></td>
+            <td><input class="num-in" data-f="densIn" inputmode="decimal" value="${esc(t.densIn)}" aria-label="Density for trial ${i + 1}"></td>
+            <td class="mono">${t.temp.toFixed(1)}</td>
+            <td><span class="swatch" style="background:${m.color}"></span>${m.colorName}</td>
+            <td><button class="btn" data-del="${i}" title="Delete trial" style="padding:0.2rem 0.5rem">✕</button></td>
+        </tr>`;
+    }).join('') + '</tbody>';
+    paintP1Inputs();
+}
+function paintP1Inputs() {
+    $$('#p1Table tr[data-i]').forEach(tr => {
+        const t = S.trials[+tr.dataset.i], c = trialChecks(t);
+        const vi = $('[data-f="volIn"]', tr), di = $('[data-f="densIn"]', tr);
+        vi.className = 'num-in' + (c.volEntered ? (c.volOk ? ' ok' : ' bad') : '');
+        di.className = 'num-in' + (c.densEntered ? (c.densOk ? ' ok' : ' bad') : '');
+        di.title = c.densEntered && !c.densOk ? 'Check: density = mass ÷ volume' : '';
+        vi.title = c.volEntered && !c.volOk ? 'Check: volume = final − initial water level' : '';
+    });
+}
+
+function renderGraph(svg, points, lines, opts) {
+    // points: [{x,y,color}], lines: [{slope,color,label}]
+    svg.innerHTML = '';
+    const W = 480, H = 300, L = 58, R = 16, T = 16, Bm = 44;
+    const xmax = opts.xmax, ymax = opts.ymax;
+    const X = x => L + (x / xmax) * (W - L - R);
+    const Y = y => H - Bm - (y / ymax) * (H - T - Bm);
+    for (let i = 0; i <= 5; i++) {
+        const gx = xmax * i / 5, gy = ymax * i / 5;
+        el('line', { x1: X(gx), x2: X(gx), y1: T, y2: H - Bm, class: 's-grid' }, svg);
+        el('line', { x1: L, x2: W - R, y1: Y(gy), y2: Y(gy), class: 's-grid' }, svg);
+        const tx = el('text', { x: X(gx), y: H - Bm + 16, 'text-anchor': 'middle', 'font-size': 11, class: 's-muted' }, svg); tx.textContent = opts.fx(gx);
+        const ty = el('text', { x: L - 6, y: Y(gy) + 4, 'text-anchor': 'end', 'font-size': 11, class: 's-muted' }, svg); ty.textContent = opts.fy(gy);
+    }
+    el('line', { x1: L, x2: W - R, y1: H - Bm, y2: H - Bm, class: 's-line', 'stroke-width': 1.5 }, svg);
+    el('line', { x1: L, x2: L, y1: T, y2: H - Bm, class: 's-line', 'stroke-width': 1.5 }, svg);
+    const xl = el('text', { x: (L + W - R) / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, class: 's-ink' }, svg); xl.textContent = opts.xlabel;
+    const yl = el('text', { x: 14, y: (T + H - Bm) / 2, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, class: 's-ink', transform: `rotate(-90 14 ${(T + H - Bm) / 2})` }, svg); yl.textContent = opts.ylabel;
+    if (opts.empty) {
+        const t = el('text', { x: (L + W - R) / 2, y: (T + H - Bm) / 2, 'text-anchor': 'middle', 'font-size': 13, class: 's-muted' }, svg); t.textContent = opts.empty;
+    }
+    return { X, Y, L, R, T, Bm, W, H };
+}
+
+function renderP1Graph() {
+    const svg = $('#p1Graph');
+    const pts = S.trials.map(t => ({ x: t.vf - t.vi, y: t.mass, metal: t.metal }));
+    const xmax = Math.max(50, ...pts.map(p => p.x)) * 1.1;
+    const ymaxRaw = Math.max(100, ...pts.map(p => p.y)) * 1.1;
+    const ystep = ymaxRaw > 500 ? 200 : ymaxRaw > 250 ? 100 : 50;
+    const ymax = Math.ceil(ymaxRaw / ystep) * ystep;
+    const xm = Math.ceil(xmax / 10) * 10;
+    const g = renderGraph(svg, pts, [], {
+        xmax: xm, ymax, xlabel: 'Volume (cm³)', ylabel: 'Mass (g)',
+        fx: v => Math.round(v), fy: v => Math.round(v),
+        empty: pts.length ? '' : 'Record trials to plot them here',
+    });
+    for (const k of Object.keys(METALS)) {
+        const mine = pts.filter(p => p.metal === k);
+        if (!mine.length) continue;
+        const slope = mine.reduce((a, p) => a + p.y / p.x, 0) / mine.length;
+        const xEnd = Math.min(xm, ymax / slope);
+        el('line', { x1: g.X(0), y1: g.Y(0), x2: g.X(xEnd), y2: g.Y(slope * xEnd), stroke: METALS[k].color, 'stroke-width': 2, 'stroke-dasharray': '6 5' }, svg);
+        const lab = el('text', { x: g.X(xEnd) - 4, y: g.Y(slope * xEnd) + (xEnd < xm ? 14 : -6), 'text-anchor': 'end', 'font-size': 12, 'font-weight': 700, class: 's-ink' }, svg);
+        lab.textContent = `${METALS[k].name}: slope ≈ ${slope.toFixed(2)}`;
+        mine.forEach(p => el('circle', { cx: g.X(p.x), cy: g.Y(p.y), r: 6, fill: METALS[k].color, stroke: shade(METALS[k].color, -0.45), 'stroke-width': 1.5 }, svg));
+    }
+}
+
+function p1DataDone() {
+    if (S.trials.length < 4) return false;
+    const metals = new Set(S.trials.map(t => t.metal));
+    if (metals.size < 2) return false;
+    const sizesBy = {};
+    S.trials.forEach(t => (sizesBy[t.metal] = sizesBy[t.metal] || new Set()).add(t.size));
+    if (!Object.values(sizesBy).some(s => s.size >= 3)) return false;
+    return S.trials.every(t => { const c = trialChecks(t); return c.volOk && c.densOk; });
+}
+function p1GateText() {
+    const n = S.trials.length;
+    const metals = new Set(S.trials.map(t => t.metal));
+    const sizesBy = {};
+    S.trials.forEach(t => (sizesBy[t.metal] = sizesBy[t.metal] || new Set()).add(t.size));
+    const maxSizes = Math.max(0, ...Object.values(sizesBy).map(s => s.size));
+    const calcOk = S.trials.filter(t => { const c = trialChecks(t); return c.volOk && c.densOk; }).length;
+    const items = [
+        [maxSizes >= 3, `3 sizes of one metal (${maxSizes}/3)`],
+        [metals.size >= 2, `both metals (${metals.size}/2)`],
+        [n >= 4 && calcOk === n, `all calculations correct (${calcOk}/${Math.max(n, 4)})`],
+    ];
+    return items.map(([ok, t]) => `${ok ? '✅' : '⬜'} ${t}`).join(' &nbsp; ');
+}
+function renderP1Key() {
+    const ready = qsCorrect(QUESTIONS.p1);
+    $('#p1Key').innerHTML = ready ? `
+        <h3>🔑 Key idea: two kinds of properties</h3>
+        <p>Your data show two different behaviors when the amount of metal changed.</p>
+        <div class="defs">
+            <div class="def e"><b>Extensive properties</b>change when the amount of matter changes. <br><i>Examples from your data: mass, volume.</i></div>
+            <div class="def i"><b>Intensive properties</b>stay the same no matter how much matter you have. <br><i>Examples from your data: density, temperature, color.</i></div>
+        </div>` : `<h3>🔒 Key idea</h3><p class="locked">Answer all of the "Analyze your data" questions correctly to unlock the key idea for this part.</p>`;
+}
+
+/* =========================================================
+   Part 2: heating
+   ========================================================= */
+const POWER = 300, C_WATER = 4.18, T0 = 20, SPEED = 50, PLATEAU = 60;
+const VOLS = [50, 100, 250, 500];
+const VOL_COLORS = { 50: '#0ea5e9', 100: '#14b8a6', 250: '#f59e0b', 500: '#ef4444' };
+const H = { vol: 100, t: 0, T: T0, running: false, pts: [], eff: 1, last: 0, done: false };
+let P2 = {};
+
+function buildHeat() {
+    const svg = $('#p2Svg'); svg.innerHTML = '';
+    el('rect', { x: 0, y: 270, width: 320, height: 30, class: 's-bench' }, svg);
+    el('rect', { x: 40, y: 248, width: 190, height: 22, rx: 4, class: 's-device' }, svg);
+    P2.coil = el('rect', { x: 55, y: 244, width: 160, height: 6, rx: 3, fill: '#64748b' }, svg);
+    P2.knob = el('circle', { cx: 210, cy: 259, r: 6, fill: '#94a3b8' }, svg);
+    // beaker
+    const bx = 65, bw = 140, btop = 50, bbot = 242;
+    P2.geom = { bx, bw, btop, bbot, cap: 600 };
+    P2.water = el('rect', { x: bx + 2, width: bw - 4, class: 's-water' }, svg);
+    P2.bubbles = el('g', {}, svg);
+    el('path', { d: `M${bx} ${btop} L${bx} ${bbot} Q${bx} ${bbot + 2} ${bx + 4} ${bbot + 2} L${bx + bw - 4} ${bbot + 2} Q${bx + bw} ${bbot + 2} ${bx + bw} ${bbot} L${bx + bw} ${btop}`, class: 's-glass', 'stroke-width': 2.5 }, svg);
+    for (let ml = 100; ml <= 500; ml += 100) {
+        const y = bbot - ml * (bbot - btop) / 600;
+        el('line', { x1: bx + 6, x2: bx + 22, y1: y, y2: y, class: 's-line' }, svg);
+        const t = el('text', { x: bx + 26, y: y + 4, 'font-size': 10, class: 's-muted', 'font-family': 'JetBrains Mono, monospace' }, svg); t.textContent = ml;
+    }
+    // steam
+    P2.steam = el('g', { opacity: 0 }, svg);
+    [95, 135, 170].forEach((x, i) => el('path', { d: `M${x} 45 q-8 -10 0 -20 q8 -10 0 -20`, fill: 'none', stroke: 'var(--text-muted)', 'stroke-width': 2, 'stroke-linecap': 'round', opacity: 0.6 - i * 0.1 }, P2.steam));
+    // thermometer
+    const tx = 260, ttop = 30, tbot = 230;
+    P2.tg = { tx, ttop, tbot };
+    el('rect', { x: tx - 7, y: ttop - 4, width: 14, height: tbot - ttop + 8, rx: 7, fill: 'var(--card-bg)', stroke: 'var(--glass-edge)', 'stroke-width': 2 }, svg);
+    el('circle', { cx: tx, cy: tbot + 12, r: 12, fill: '#ef4444', stroke: 'var(--glass-edge)', 'stroke-width': 2 }, svg);
+    P2.mercury = el('rect', { x: tx - 3, width: 6, fill: '#ef4444' }, svg);
+    for (let c = 0; c <= 100; c += 20) {
+        const y = tbot - c * (tbot - ttop) / 110;
+        el('line', { x1: tx + 7, x2: tx + 13, y1: y, y2: y, class: 's-line' }, svg);
+        const t = el('text', { x: tx + 16, y: y + 4, 'font-size': 10, class: 's-muted', 'font-family': 'JetBrains Mono, monospace' }, svg); t.textContent = c;
+    }
+    const lbl = el('text', { x: tx, y: 18, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 700, class: 's-muted' }, svg); lbl.textContent = '°C';
+
+    $('#p2Vols').insertAdjacentHTML('beforeend', VOLS.map(v => `<button class="btn" data-vol="${v}">${v} mL</button>`).join(''));
+    $('#p2Vols').addEventListener('click', e => {
+        const b = e.target.closest('[data-vol]'); if (!b || H.running) return;
+        H.vol = +b.dataset.vol; heatReset();
+    });
+}
+
+function heatDraw() {
+    const g = P2.geom;
+    const y = g.bbot - H.vol * (g.bbot - g.btop) / g.cap;
+    P2.water.setAttribute('y', y); P2.water.setAttribute('height', g.bbot - y);
+    const tg = P2.tg, my = tg.tbot - H.T * (tg.tbot - tg.ttop) / 110;
+    P2.mercury.setAttribute('y', my); P2.mercury.setAttribute('height', tg.tbot + 4 - my);
+    P2.coil.setAttribute('class', H.running ? 'flame-on' : '');
+    P2.coil.setAttribute('fill', H.running ? '#f97316' : '#64748b');
+    P2.knob.setAttribute('fill', H.running ? '#f97316' : '#94a3b8');
+    // bubbles
+    P2.bubbles.innerHTML = '';
+    const boiling = H.T >= 99.95, nb = boiling ? 14 : H.T > 85 ? 4 : 0;
+    for (let i = 0; i < nb; i++) {
+        const bx = g.bx + 12 + Math.random() * (g.bw - 24);
+        const by = y + 6 + Math.random() * Math.max(4, g.bbot - y - 10);
+        el('circle', { cx: bx, cy: by, r: 1.5 + Math.random() * 3, fill: 'none', stroke: '#e0f2fe', 'stroke-width': 1.2 }, P2.bubbles);
+    }
+    P2.steam.setAttribute('opacity', boiling ? 1 : 0);
+    $$('#p2Vols [data-vol]').forEach(b => { b.classList.toggle('sel', +b.dataset.vol === H.vol); b.disabled = H.running; });
+    $('#p2Start').disabled = H.running || H.done;
+    const E = POWER * H.eff * H.t;
+    $('#p2Readouts').innerHTML = `
+        <div class="readout"><div class="lbl">Water</div><div class="val">${H.vol} mL = ${H.vol} g</div></div>
+        <div class="readout"><div class="lbl">Time</div><div class="val">${H.t.toFixed(0)} s</div></div>
+        <div class="readout"><div class="lbl">Temperature</div><div class="val">${H.T.toFixed(1)} °C</div></div>
+        <div class="readout"><div class="lbl">Energy added</div><div class="val">${Math.round(E).toLocaleString()} J</div></div>`;
+}
+
+function heatReset() {
+    H.running = false; H.t = 0; H.T = T0; H.pts = [[0, T0]]; H.done = false;
+    heatDraw(); renderP2Graph();
+}
+
+function heatStart() {
+    if (H.running) return;
+    H.t = 0; H.T = T0; H.pts = [[0, T0]]; H.done = false;
+    H.eff = 1 + (Math.random() - 0.5) * 0.03;
+    H.running = true; H.last = performance.now();
+    requestAnimationFrame(heatLoop);
+}
+
+let lastBubble = 0;
+function heatLoop(now) {
+    if (!H.running) return;
+    const dt = Math.min(0.1, (now - H.last) / 1000) * SPEED;
+    H.last = now;
+    const rate = POWER * H.eff / (H.vol * C_WATER);   // °C per second
+    const tBoil = (100 - T0) / rate;
+    H.t += dt;
+    H.T = Math.min(100, T0 + rate * H.t);
+    const lastPt = H.pts[H.pts.length - 1];
+    if (H.t - lastPt[0] > 2) H.pts.push([H.t, H.T]);
+    if (H.t >= tBoil + PLATEAU) {
+        H.running = false; H.done = true;
+        H.pts.push([H.t, 100]);
+        const run = { vol: H.vol, mass: H.vol, time: r1(tBoil), bp: 100.0, energy: Math.round(POWER * H.eff * tBoil), pts: H.pts.filter((_, i) => i % 2 === 0 || i === H.pts.length - 1).map(p => [r1(p[0]), r1(p[1])]) };
+        S.runs = S.runs.filter(r => r.vol !== H.vol);
+        S.runs.push(run); S.runs.sort((a, b) => a.vol - b.vol);
+        save(); renderP2Table(); refreshProgress();
+    }
+    if (now - lastBubble > 120 || !H.running) { heatDraw(); lastBubble = now; }
+    renderP2Graph();
+    if (H.running) requestAnimationFrame(heatLoop);
+}
+
+function renderP2Graph() {
+    const svg = $('#p2Graph');
+    const g = renderGraph(svg, [], [], {
+        xmax: 700, ymax: 125, xlabel: 'Time (s)', ylabel: 'Temperature (°C)',
+        fx: v => Math.round(v), fy: v => Math.round(v),
+    });
+    el('line', { x1: g.X(0), x2: g.X(700), y1: g.Y(100), y2: g.Y(100), stroke: 'var(--bad)', 'stroke-dasharray': '3 4', 'stroke-width': 1 }, svg);
+    const draw = (pts, color, w) => el('polyline', { points: pts.map(p => `${g.X(Math.min(700, p[0]))},${g.Y(p[1])}`).join(' '), fill: 'none', stroke: color, 'stroke-width': w, 'stroke-linejoin': 'round' }, svg);
+    S.runs.forEach(r => draw(r.pts, VOL_COLORS[r.vol], 2.5));
+    if (H.running || H.done) draw([...H.pts, [H.t, H.T]], VOL_COLORS[H.vol], 3.5);
+    // legend
+    let lx = g.L + 10;
+    VOLS.forEach(v => {
+        if (!S.runs.some(r => r.vol === v) && !(H.vol === v && (H.running || H.done))) return;
+        el('rect', { x: lx, y: g.T + 4, width: 12, height: 4, fill: VOL_COLORS[v] }, svg);
+        const t = el('text', { x: lx + 16, y: g.T + 10, 'font-size': 11, class: 's-ink' }, svg); t.textContent = v + ' mL';
+        lx += 70;
+    });
+}
+
+function renderP2Table() {
+    const head = '<thead><tr><th>Water (mL)</th><th>Mass (g)</th><th>Time to boil (s)</th><th>Boiling temp (°C)</th><th>Energy to reach boiling (J)</th></tr></thead>';
+    $('#p2Table').innerHTML = head + '<tbody>' + (S.runs.length ? S.runs.map(r => `
+        <tr><td><span class="swatch" style="background:${VOL_COLORS[r.vol]}"></span>${r.vol}</td><td class="mono">${r.mass}</td><td class="mono">${r.time.toFixed(1)}</td><td class="mono">${r.bp.toFixed(1)}</td><td class="mono">${r.energy.toLocaleString()}</td></tr>`).join('')
+        : '<tr class="empty-row"><td colspan="5">No runs yet. Pick an amount of water and start heating.</td></tr>') + '</tbody>';
+}
+
+function renderMix() {
+    const done = S.mixDone;
+    const beaker = (ml, T, h) => `<div class="beaker-css" style="height:${h}px;width:${ml > 100 ? 110 : 70}px"><span class="lab">${ml} mL<br>${T}</span><div class="liq" style="height:${ml > 100 ? 80 : 55}%"></div></div>`;
+    $('#mixStage').innerHTML = done
+        ? beaker(200, '60.0 °C', 130)
+        : beaker(100, '60.0 °C', 100) + '<span class="plus">+</span>' + beaker(100, '60.0 °C', 100);
+    $('#mixPour').disabled = done || S.ans.mixp == null;
+    const r = $('#mixResult');
+    if (done) {
+        const p = S.first.mixp;
+        const said = QUESTIONS.mix[0].opts[p];
+        r.className = 'fb ' + (p === 1 ? 'ok' : 'bad');
+        r.innerHTML = `Result: <b>200 mL at 60.0 °C</b>. You first predicted ${esc(said)}. ${p === 1 ? 'Nice! ' : ''}Temperature did not add up, but volume did.`;
+        $('#mixAfterQs').style.display = '';
+    } else {
+        r.textContent = ''; $('#mixAfterQs').style.display = 'none';
+    }
+}
+
+/* =========================================================
+   Part 3
+   ========================================================= */
+let B3;
+const P3 = { key: 'X', loc: 'tray', massRead: null, levelRead: null, temp: roomTemp() };
+function unkMass(k) {
+    if (!S.unkMass) {
+        S.unkMass = {};
+        for (const kk in UNKNOWNS) S.unkMass[kk] = noisyMass(UNKNOWNS[kk].rho, UNKNOWNS[kk].V);
+        save();
+    }
+    return S.unkMass[k];
+}
+function p3Sample() { const u = UNKNOWNS[P3.key]; return { V: u.V, mass: unkMass(P3.key), color: u.color }; }
+function p3Draw(animate = true) {
+    drawBench(B3, p3Sample(), P3.loc, animate);
+    $('#p3Readouts').innerHTML = readoutsHTML(p3Sample(), P3, `<div class="readout"><div class="lbl">Color</div><div class="val" style="font-family:var(--font-main);font-size:0.9rem">gray</div></div>`);
+    $$('#p3Picks [data-k]').forEach(b => b.classList.toggle('sel', b.dataset.k === P3.key));
+}
+function p3Msg(t) { $('#p3Msg').textContent = t; }
+function p3Act(act) {
+    const smp = p3Sample();
+    if (act === 'balance') { P3.loc = 'balance'; P3.massRead = smp.mass; p3Msg(`The balance reads ${smp.mass.toFixed(2)} g.`); }
+    else if (act === 'cylinder') { P3.loc = 'cylinder'; P3.levelRead = INITIAL_WATER + smp.V; p3Msg(`The water rose to ${P3.levelRead.toFixed(1)} mL.`); }
+    else if (act === 'tray') { P3.loc = 'tray'; p3Msg(''); }
+    else if (act === 'record') {
+        if (P3.massRead == null || P3.levelRead == null) return p3Msg('Measure both mass and water level first.');
+        const prev = S.unk[P3.key] || {};
+        S.unk[P3.key] = Object.assign({ volIn: '', densIn: '', id: '' }, prev, { mass: P3.massRead, vi: INITIAL_WATER, vf: P3.levelRead });
+        save(); renderP3Table(); refreshProgress();
+        p3Msg(`Sample ${P3.key} recorded. ${Object.keys(S.unk).length < 3 ? 'Pick the next sample.' : 'All three recorded. Finish the table.'}`);
+        return;
+    }
+    p3Draw();
+}
+function unkChecks(k) {
+    const u = S.unk[k]; if (!u) return null;
+    const c = trialChecks(u);
+    const nearest = REFERENCE.reduce((best, r) => Math.abs(r[1] - c.dTrue) < Math.abs(best[1] - c.dTrue) ? r : best)[0];
+    return Object.assign(c, { idOk: u.id === nearest, idEntered: !!u.id });
+}
+function renderP3Table() {
+    const head = '<thead><tr><th>Sample</th><th>Mass (g)</th><th>Initial water (mL)</th><th>Final water (mL)</th><th>Volume (cm³)</th><th>Density (g/cm³)</th><th>Identity</th></tr></thead>';
+    $('#p3Table').innerHTML = head + '<tbody>' + Object.keys(UNKNOWNS).map(k => {
+        const u = S.unk[k];
+        if (!u) return `<tr><td><b>${k}</b></td><td colspan="6" class="muted">Not measured yet</td></tr>`;
+        return `<tr data-k="${k}">
+            <td><b>${k}</b></td>
+            <td class="mono">${u.mass.toFixed(2)}</td><td class="mono">${u.vi.toFixed(1)}</td><td class="mono">${u.vf.toFixed(1)}</td>
+            <td><input class="num-in" data-f="volIn" inputmode="decimal" value="${esc(u.volIn)}" aria-label="Volume of sample ${k}"></td>
+            <td><input class="num-in" data-f="densIn" inputmode="decimal" value="${esc(u.densIn)}" aria-label="Density of sample ${k}"></td>
+            <td><select data-f="id" aria-label="Identity of sample ${k}"><option value="">Choose…</option>${REFERENCE.map(r => `<option ${u.id === r[0] ? 'selected' : ''}>${r[0]}</option>`).join('')}</select><span class="mark"></span></td>
+        </tr>`;
+    }).join('') + '</tbody>';
+    paintP3Inputs();
+}
+function paintP3Inputs() {
+    $$('#p3Table tr[data-k]').forEach(tr => {
+        const c = unkChecks(tr.dataset.k);
+        const vi = $('[data-f="volIn"]', tr), di = $('[data-f="densIn"]', tr), mk = $('.mark', tr);
+        vi.className = 'num-in' + (c.volEntered ? (c.volOk ? ' ok' : ' bad') : '');
+        di.className = 'num-in' + (c.densEntered ? (c.densOk ? ' ok' : ' bad') : '');
+        if (!c.idEntered) { mk.textContent = ''; mk.className = 'mark'; }
+        else if (!c.densOk) { mk.textContent = ' check density first'; mk.className = 'mark bad'; mk.style.fontWeight = 500; }
+        else { mk.textContent = c.idOk ? ' ✓' : ' ✗'; mk.className = 'mark ' + (c.idOk ? 'ok' : 'bad'); mk.style.fontWeight = 800; }
+    });
+}
+function p3DataDone() {
+    return Object.keys(UNKNOWNS).every(k => { const c = unkChecks(k); return c && c.volOk && c.densOk && c.idOk; });
+}
+
+/* =========================================================
+   Part 4: sorting
+   ========================================================= */
+let picked = null;
+function renderSort() {
+    const chip = ([name, ans]) => {
+        let cls = 'chip';
+        if (name === picked) cls += ' picked';
+        if (S.sortChecked && S.sort[name]) cls += S.sort[name] === ans ? ' right' : ' wrong';
+        return `<span class="${cls}" draggable="true" data-chip="${esc(name)}" tabindex="0" role="button">${esc(name)}</span>`;
+    };
+    $('#sortPool').innerHTML = SORT_PROPS.filter(p => !S.sort[p[0]]).map(chip).join('') || '<span class="muted">All sorted! Click "Check my sort."</span>';
+    $('.bin[data-bin="I"] .bin-body').innerHTML = SORT_PROPS.filter(p => S.sort[p[0]] === 'I').map(chip).join('');
+    $('.bin[data-bin="E"] .bin-body').innerHTML = SORT_PROPS.filter(p => S.sort[p[0]] === 'E').map(chip).join('');
+    const fb = $('#sortFb');
+    if (S.sortChecked) {
+        const right = sortScore();
+        fb.className = 'fb ' + (right === SORT_PROPS.length ? 'ok' : 'bad');
+        fb.textContent = right === SORT_PROPS.length ? `✓ All ${right} correct!` : `${right} of ${SORT_PROPS.length} correct. Move the red cards and check again.`;
+    } else fb.textContent = '';
+}
+const sortScore = () => SORT_PROPS.filter(([n, a]) => S.sort[n] === a).length;
+function placeChip(name, bin) {
+    if (bin) S.sort[name] = bin; else delete S.sort[name];
+    S.sortChecked = false; picked = null;
+    save(); renderSort(); refreshProgress();
+}
+function setupSort() {
+    const step = $('[data-step="4"]');
+    step.addEventListener('click', e => {
+        const c = e.target.closest('.chip');
+        if (c) { picked = picked === c.dataset.chip ? null : c.dataset.chip; renderSort(); e.stopPropagation(); return; }
+        const bin = e.target.closest('.bin');
+        if (bin && picked) placeChip(picked, bin.dataset.bin);
+        const pool = e.target.closest('#sortPool');
+        if (pool && picked && S.sort[picked]) placeChip(picked, null);
+    });
+    step.addEventListener('keydown', e => {
+        const c = e.target.closest('.chip');
+        if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); picked = c.dataset.chip; renderSort(); }
+        if (c && (e.key === 'i' || e.key === 'I')) placeChip(c.dataset.chip, 'I');
+        if (c && (e.key === 'e' || e.key === 'E')) placeChip(c.dataset.chip, 'E');
+    });
+    step.addEventListener('dragstart', e => {
+        const c = e.target.closest('.chip'); if (!c) return;
+        e.dataTransfer.setData('text/plain', c.dataset.chip); e.dataTransfer.effectAllowed = 'move';
+    });
+    const zones = [...$$('.bin', step), $('#sortPool')];
+    zones.forEach(z => {
+        z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+        z.addEventListener('dragleave', () => z.classList.remove('over'));
+        z.addEventListener('drop', e => {
+            e.preventDefault(); z.classList.remove('over');
+            const name = e.dataTransfer.getData('text/plain');
+            if (SORT_PROPS.some(p => p[0] === name)) placeChip(name, z.dataset.bin || null);
+        });
+    });
+    $('#sortCheck').addEventListener('click', () => {
+        if (Object.keys(S.sort).length < SORT_PROPS.length) { $('#sortFb').className = 'fb bad'; $('#sortFb').textContent = 'Sort every card first.'; return; }
+        S.sortChecked = true;
+        if (S.sortFirst == null) S.sortFirst = sortScore();
+        save(); renderSort(); refreshProgress();
+    });
+}
+
+function renderPredCompare() {
+    const lab = v => v === 'changes' ? 'Changes' : v === 'same' ? 'Stays the same' : '<span class="muted">no prediction</span>';
+    $('#predCompare').innerHTML = '<thead><tr><th>Property</th><th>Your prediction</th><th>What the data showed</th><th>Type</th></tr></thead><tbody>' +
+        PRED_PROPS.map(p => {
+            const match = S.pred[p.id] === p.actual;
+            return `<tr><td><b>${p.name}</b></td><td>${lab(S.pred[p.id])}${S.pred[p.id] ? `<span class="mark ${match ? 'ok' : 'bad'}">${match ? '✓' : '✗'}</span>` : ''}</td><td>${lab(p.actual)}</td><td style="color:var(--${p.actual === 'same' ? 'intensive' : 'extensive'});font-weight:700">${p.actual === 'same' ? 'Intensive' : 'Extensive'}</td></tr>`;
+        }).join('') + '</tbody>';
+}
+
+/* =========================================================
+   Progress / navigation
+   ========================================================= */
+function stepDone(i) {
+    switch (i) {
+        case 0: return PRED_PROPS.every(p => S.pred[p.id]) && S.name.trim() !== '';
+        case 1: return p1DataDone() && qsCorrect(QUESTIONS.p1);
+        case 2: return new Set(S.runs.map(r => r.vol)).size >= 3 && S.mixDone && qsCorrect(QUESTIONS.p2) && qsCorrect(QUESTIONS.mixAfter);
+        case 3: return p3DataDone() && qsCorrect(QUESTIONS.p3);
+        case 4: return S.sortChecked && sortScore() === SORT_PROPS.length && qsAnswered(QUESTIONS.p4) && S.cer.trim().length >= 40;
+        case 5: return [0, 1, 2, 3, 4].every(stepDone);
+    }
+}
+
+function refreshProgress() {
+    $('#stepper').innerHTML = STEPS.map((s, i) => `
+        <button class="${i === S.step ? 'active' : ''} ${stepDone(i) ? 'done' : ''}" data-go="${i}">
+            <span class="num">${stepDone(i) ? '✓' : i + 1}</span>${s.label}${s.mins ? ` <span class="mins">${s.mins}m</span>` : ''}
+        </button>`).join('');
+
+    // gates
+    const pg = $('#predGate');
+    const missing = PRED_PROPS.filter(p => !S.pred[p.id]).length;
+    pg.className = 'gate' + (stepDone(0) ? ' ok' : '');
+    pg.textContent = stepDone(0) ? '✓ Predictions saved. Click Next to start Part 1.' :
+        !S.name.trim() ? 'Type your name at the top of the page.' + (missing ? ` Then make ${missing} more prediction${missing > 1 ? 's' : ''}.` : '') :
+            `Make ${missing} more prediction${missing > 1 ? 's' : ''}.`;
+
+    const g1 = $('#p1Gate');
+    g1.className = 'gate' + (p1DataDone() ? ' ok' : '');
+    g1.innerHTML = p1GateText();
+
+    const nv = new Set(S.runs.map(r => r.vol)).size;
+    const g2 = $('#p2Gate');
+    g2.className = 'gate' + (nv >= 3 ? ' ok' : '');
+    g2.textContent = nv >= 3 ? `✓ ${nv} amounts tested.` : `${nv} of 3 amounts tested.`;
+
+    const g3 = $('#p3Gate');
+    const n3 = Object.keys(UNKNOWNS).filter(k => { const c = unkChecks(k); return c && c.volOk && c.densOk && c.idOk; }).length;
+    g3.className = 'gate' + (n3 === 3 ? ' ok' : '');
+    g3.textContent = n3 === 3 ? '✓ All three samples identified.' : `${n3} of 3 samples correctly calculated and identified.`;
+
+    renderP1Key();
+    renderMix();
+    const prev = $('#prevBtn'), next = $('#nextBtn');
+    prev.style.visibility = S.step === 0 ? 'hidden' : 'visible';
+    next.style.visibility = S.step === STEPS.length - 1 ? 'hidden' : 'visible';
+    next.textContent = S.step === STEPS.length - 2 ? 'See my report →' : 'Next →';
+    $('#navInfo').textContent = stepDone(S.step) || S.step === 5 ? '' : 'This part isn\'t finished yet. You can come back to it.';
+}
+
+function go(i) {
+    S.step = Math.max(0, Math.min(STEPS.length - 1, i));
+    $$('.step').forEach(s => s.classList.toggle('active', +s.dataset.step === S.step));
+    if (S.step === 4) { renderPredCompare(); renderSort(); }
+    if (S.step === 5) renderReport();
+    if (S.step === 1) p1Draw(false);
+    if (S.step === 3) p3Draw(false);
+    save(); refreshProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* =========================================================
+   Report
+   ========================================================= */
+function firstTryScore(list) {
+    const graded = list.filter(q => q.ans != null);
+    return [graded.filter(q => S.first[q.id] === q.ans).length, graded.length];
+}
+function renderReport() {
+    const allQ = [...QUESTIONS.p1, ...QUESTIONS.p2, ...QUESTIONS.mixAfter, ...QUESTIONS.p3, ...QUESTIONS.p4];
+    const [ft, ftn] = firstTryScore(allQ);
+    const predRight = PRED_PROPS.filter(p => S.pred[p.id] === p.actual).length;
+    const done = [1, 2, 3, 4].filter(stepDone).length;
+    const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const lab = v => v === 'changes' ? 'Changes' : v === 'same' ? 'Same' : '—';
+    const qRow = q => {
+        const a = S.ans[q.id], f = S.first[q.id];
+        return `<tr><td>${q.text.replace(/<[^>]+>/g, '')}</td><td>${a != null ? esc(q.opts[a].replace(/<[^>]+>/g, '')) : '—'}</td><td>${q.ans == null ? '' : f == null ? '—' : f === q.ans ? '<span class="mark ok">✓</span>' : '<span class="mark bad">✗</span>'}</td></tr>`;
+    };
+    $('#report').innerHTML = `
+        <h3 style="font-size:1.25rem">Intensive vs. Extensive Properties Lab</h3>
+        <p><b>Name:</b> ${esc(S.name) || '<span class="muted">(no name entered)</span>'} &nbsp; · &nbsp; <b>Period:</b> ${esc(S.period) || '—'} &nbsp; · &nbsp; <b>Date:</b> ${date}</p>
+        <div class="score-row">
+            <div class="score">Parts complete<b>${done} / 4</b></div>
+            <div class="score">Questions right on 1st try<b>${ft} / ${ftn}</b></div>
+            <div class="score">Property sort (1st check)<b>${S.sortFirst != null ? S.sortFirst : '—'} / ${SORT_PROPS.length}</b></div>
+            <div class="score">Predictions matching data<b>${predRight} / ${PRED_PROPS.length}</b></div>
+        </div>
+
+        <h4>Predictions</h4>
+        <div class="table-wrap"><table class="data" style="min-width:0"><thead><tr><th>Property</th><th>Predicted</th><th>Actual</th></tr></thead><tbody>
+            ${PRED_PROPS.map(p => `<tr><td>${p.name}</td><td>${lab(S.pred[p.id])}</td><td>${lab(p.actual)}</td></tr>`).join('')}
+        </tbody></table></div>
+
+        <h4>Part 1: Cut It Down</h4>
+        <div class="table-wrap"><table class="data"><thead><tr><th>#</th><th>Metal</th><th>Size</th><th>Mass (g)</th><th>Volume (cm³)</th><th>Density (g/cm³)</th><th>Temp (°C)</th></tr></thead><tbody>
+            ${S.trials.length ? S.trials.map((t, i) => { const c = trialChecks(t); return `<tr><td>${i + 1}</td><td>${METALS[t.metal].name}</td><td>${t.size}</td><td class="mono">${t.mass.toFixed(2)}</td><td class="mono">${esc(t.volIn) || '—'}${c.volEntered ? `<span class="mark ${c.volOk ? 'ok' : 'bad'}">${c.volOk ? '✓' : '✗'}</span>` : ''}</td><td class="mono">${esc(t.densIn) || '—'}${c.densEntered ? `<span class="mark ${c.densOk ? 'ok' : 'bad'}">${c.densOk ? '✓' : '✗'}</span>` : ''}</td><td class="mono">${t.temp.toFixed(1)}</td></tr>`; }).join('') : '<tr class="empty-row"><td colspan="7">No trials recorded</td></tr>'}
+        </tbody></table></div>
+
+        <h4>Part 2: Heat It Up</h4>
+        <div class="table-wrap"><table class="data"><thead><tr><th>Water (mL)</th><th>Time to boil (s)</th><th>Boiling temp (°C)</th><th>Energy (J)</th></tr></thead><tbody>
+            ${S.runs.length ? S.runs.map(r => `<tr><td>${r.vol}</td><td class="mono">${r.time.toFixed(1)}</td><td class="mono">${r.bp.toFixed(1)}</td><td class="mono">${r.energy.toLocaleString()}</td></tr>`).join('') : '<tr class="empty-row"><td colspan="4">No runs recorded</td></tr>'}
+        </tbody></table></div>
+        <p class="muted" style="margin-top:0.4rem">Mixing prediction (first try): ${S.first.mixp != null ? esc(QUESTIONS.mix[0].opts[S.first.mixp]) : '—'} · actual: 60 °C</p>
+
+        <h4>Part 3: Mystery Metals</h4>
+        <div class="table-wrap"><table class="data"><thead><tr><th>Sample</th><th>Mass (g)</th><th>Volume (cm³)</th><th>Density (g/cm³)</th><th>Identified as</th></tr></thead><tbody>
+            ${Object.keys(UNKNOWNS).map(k => { const u = S.unk[k]; if (!u) return `<tr><td>${k}</td><td colspan="4" class="muted">not measured</td></tr>`; const c = unkChecks(k); return `<tr><td>${k}</td><td class="mono">${u.mass.toFixed(2)}</td><td class="mono">${esc(u.volIn) || '—'}</td><td class="mono">${esc(u.densIn) || '—'}${c.densEntered ? `<span class="mark ${c.densOk ? 'ok' : 'bad'}">${c.densOk ? '✓' : '✗'}</span>` : ''}</td><td>${esc(u.id) || '—'}${c.idEntered ? `<span class="mark ${c.idOk && c.densOk ? 'ok' : 'bad'}">${c.idOk && c.densOk ? '✓' : '✗'}</span>` : ''}</td></tr>`; }).join('')}
+        </tbody></table></div>
+
+        <h4>Questions (✓/✗ = first attempt)</h4>
+        <div class="table-wrap"><table class="data" style="min-width:0"><thead><tr><th>Question</th><th>Final answer</th><th>1st try</th></tr></thead><tbody>
+            ${allQ.map(qRow).join('')}
+        </tbody></table></div>
+
+        <h4>Claim, Evidence, Reasoning</h4>
+        <blockquote>${esc(S.cer) || '<span class="muted">(not written yet)</span>'}</blockquote>
+    `;
+}
+
+/* =========================================================
+   Wire-up
+   ========================================================= */
+function init() {
+    // Student info
+    $('#stuName').value = S.name; $('#stuPeriod').value = S.period;
+    $('#stuName').addEventListener('input', e => { S.name = e.target.value; save(); refreshProgress(); });
+    $('#stuPeriod').addEventListener('input', e => { S.period = e.target.value; save(); });
+
+    renderPreds();
+
+    // Part 1
+    B1 = buildBench($('#p1Svg'));
+    newP1Sample();
+    p1Draw(false);
+    $('#p1Metal').addEventListener('change', e => {
+        P1.metal = e.target.value; P1.V = 40; P1.loc = 'tray'; newP1Sample(); p1Draw();
+        p1Msg(`New ${METALS[P1.metal].name.toLowerCase()} bar on the tray.`);
+    });
+    $$('[data-step="1"] [data-act]').forEach(b => b.addEventListener('click', () => p1Act(b.dataset.act)));
+    renderP1Table(); renderP1Graph();
+    $('#p1Table').addEventListener('input', e => {
+        const inp = e.target.closest('input[data-f]'); if (!inp) return;
+        S.trials[+inp.closest('tr').dataset.i][inp.dataset.f] = inp.value.trim();
+        save(); paintP1Inputs(); refreshProgress();
+    });
+    $('#p1Table').addEventListener('click', e => {
+        const d = e.target.closest('[data-del]'); if (!d) return;
+        if (!confirm('Delete this trial?')) return;
+        S.trials.splice(+d.dataset.del, 1); save(); renderP1Table(); renderP1Graph(); refreshProgress();
+    });
+    renderQs($('#p1Qs'), QUESTIONS.p1);
+
+    // Part 2
+    buildHeat(); heatReset(); renderP2Table();
+    $('#p2Start').addEventListener('click', heatStart);
+    $('#p2Reset').addEventListener('click', () => { if (!H.running) heatReset(); });
+    renderQs($('#p2Qs'), QUESTIONS.p2);
+    renderQs($('#mixQs'), QUESTIONS.mix, renderMix);
+    renderQs($('#mixAfterQs'), QUESTIONS.mixAfter);
+    $('#mixPour').addEventListener('click', () => { S.mixDone = true; save(); renderMix(); refreshProgress(); });
+    $('#mixReset').addEventListener('click', () => { S.mixDone = false; save(); renderMix(); refreshProgress(); });
+
+    // Part 3
+    $('#refTable').innerHTML = '<thead><tr><th>Metal</th><th>Density (g/cm³)</th></tr></thead><tbody>' +
+        REFERENCE.map(r => `<tr><td>${r[0]}</td><td class="mono">${r[1].toFixed(2)}</td></tr>`).join('') + '</tbody>';
+    $('#p3Picks').insertAdjacentHTML('beforeend', Object.keys(UNKNOWNS).map(k => `<button class="btn" data-k="${k}">Sample ${k}</button>`).join(''));
+    $('#p3Picks').addEventListener('click', e => {
+        const b = e.target.closest('[data-k]'); if (!b) return;
+        P3.key = b.dataset.k; P3.loc = 'tray'; P3.massRead = null; P3.levelRead = null; P3.temp = roomTemp();
+        p3Draw(); p3Msg(`Sample ${P3.key} is on the tray.`);
+    });
+    B3 = buildBench($('#p3Svg'));
+    p3Draw(false);
+    $$('[data-step="3"] [data-act]').forEach(b => b.addEventListener('click', () => p3Act(b.dataset.act)));
+    renderP3Table();
+    const onP3 = e => {
+        const inp = e.target.closest('[data-f]'); if (!inp) return;
+        S.unk[inp.closest('tr').dataset.k][inp.dataset.f] = inp.value.trim();
+        save(); paintP3Inputs(); refreshProgress();
+    };
+    $('#p3Table').addEventListener('input', onP3);
+    $('#p3Table').addEventListener('change', onP3);
+    renderQs($('#p3Qs'), QUESTIONS.p3);
+
+    // Part 4
+    setupSort();
+    renderQs($('#p4Qs'), QUESTIONS.p4);
+    const cer = $('#cer');
+    cer.value = S.cer;
+    const cerCount = () => {
+        const w = S.cer.trim() ? S.cer.trim().split(/\s+/).length : 0;
+        $('#cerCount').textContent = `${w} words${w < 8 ? ': write at least a few sentences' : ''}`;
+    };
+    cerCount();
+    cer.addEventListener('input', () => { S.cer = cer.value; save(); cerCount(); refreshProgress(); });
+
+    // Nav
+    $('#stepper').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) go(+b.dataset.go); });
+    $('#prevBtn').addEventListener('click', () => go(S.step - 1));
+    $('#nextBtn').addEventListener('click', () => go(S.step + 1));
+    $('#resetAll').addEventListener('click', () => {
+        if (!confirm('Erase all of your work in this lab? This cannot be undone.')) return;
+        try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+        location.reload();
+    });
+    window.addEventListener('beforeprint', renderReport);
+
+    go(S.step);
+}
+
+init();
+})();
+</script>
+</body>
+</html>
