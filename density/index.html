@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full w-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Density & Buoyancy Science Lab</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    .glow-step-1 {
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.12);
+    }
+    .glow-step-2 {
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.12);
+    }
+    .glow-step-3 {
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.12);
+    }
+    .glow-calc {
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.12);
+    }
+
+    canvas {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Keypad Animation */
+    .calc-btn {
+      transition: all 0.08s ease-out;
+    }
+    .calc-btn:active {
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col antialiased selection:bg-indigo-500 selection:text-white text-xs select-none">
+
+  <!-- Header Navigation & Lab Bar (h-10 shrink-0) -->
+  <header class="bg-slate-900 border-b border-slate-800 shrink-0 h-10 px-3 flex items-center justify-between z-30">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-500 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-indigo-500/20">
+        <i class="fa-solid fa-flask-vial"></i>
+      </div>
+      <div>
+        <h1 class="text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent flex items-center gap-1.5 leading-none">
+          Density &amp; Buoyancy Science Lab
+        </h1>
+        <p class="text-[9px] text-slate-400 hidden sm:block leading-none mt-0.5">Archimedes Principle | Mass (g) | Volume (mL) | Density (g/mL)</p>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-2">
+      <!-- Progress Pill -->
+      <div class="bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg flex items-center gap-1 text-[10px]">
+        <i class="fa-solid fa-trophy text-amber-400 text-xs"></i>
+        <span class="text-slate-400 hidden md:inline">Progress:</span>
+        <span id="headerProgressCount" class="font-mono font-bold text-emerald-400">0 / 8 Solved</span>
+      </div>
+
+      <!-- Fluid Selector -->
+      <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 text-[10px]">
+        <i class="fa-solid fa-droplet text-sky-400 text-xs"></i>
+        <span class="text-slate-400 hidden sm:inline">Fluid:</span>
+        <select id="selectFluid" class="bg-transparent text-[10px] text-slate-200 font-medium focus:outline-none cursor-pointer">
+          <option value="water" class="bg-slate-900">Water (1.00 g/mL)</option>
+          <option value="oil" class="bg-slate-900">Vegetable Oil (0.92 g/mL)</option>
+          <option value="syrup" class="bg-slate-900">Corn Syrup (1.38 g/mL)</option>
+        </select>
+      </div>
+
+      <!-- Sound Toggle -->
+      <button id="btnSoundToggle" title="Toggle Sound Effects" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700 text-xs">
+        <i class="fa-solid fa-volume-high text-indigo-400" id="soundIcon"></i>
+      </button>
+
+      <!-- Reset All Data -->
+      <button id="btnResetAllData" title="Clear all saved lab progress" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 hover:text-rose-300 text-slate-400 transition border border-slate-700 text-[10px] font-semibold flex items-center gap-1">
+        <i class="fa-solid fa-rotate-right text-rose-400 text-[10px]"></i>
+        <span class="hidden sm:inline">Reset Lab</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Top Ribbon: Material Sample Shelf (h-11 shrink-0) -->
+  <section class="bg-slate-900/90 border-b border-slate-800/80 px-2 py-1 shrink-0 overflow-x-auto h-11 flex items-center">
+    <div class="flex items-center gap-1.5 min-w-max" id="shelfContainer">
+      <!-- Dynamic material cards -->
+    </div>
+  </section>
+
+  <!-- Main Viewport Area (Strict Window Fit, No Main Scrollbar) -->
+  <main class="flex-1 min-h-0 p-2 grid grid-cols-12 gap-2 overflow-hidden">
+
+    <!-- LEFT COLUMN (6 cols): Canvas Simulation + Notebook Table -->
+    <div class="col-span-12 lg:col-span-6 flex flex-col gap-2 min-h-0 h-full overflow-hidden">
+
+      <!-- Interactive Simulation Canvas Card -->
+      <section class="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-xl p-1.5 shadow-lg flex flex-col gap-1 relative overflow-hidden">
+        
+        <!-- Canvas Control Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-1 bg-slate-950/80 p-1 rounded-lg border border-slate-800 shrink-0 text-[10px]">
+          <span class="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium text-[9px] flex items-center gap-1">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <span>Drag block to Scale or Beaker</span>
+          </span>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-1">
+            <button id="btnQuickScale" class="px-2 py-0.5 rounded bg-indigo-900/40 hover:bg-indigo-800/60 text-indigo-300 border border-indigo-500/30 font-medium transition flex items-center gap-1">
+              <i class="fa-solid fa-scale-unbalanced text-[9px]"></i>
+              <span>Scale</span>
+            </button>
+            <button id="btnQuickBeaker" class="px-2 py-0.5 rounded bg-cyan-900/40 hover:bg-cyan-800/60 text-cyan-300 border border-cyan-500/30 font-medium transition flex items-center gap-1">
+              <i class="fa-solid fa-vial text-[9px]"></i>
+              <span>Beaker</span>
+            </button>
+            <button id="btnSubmergeToggle" disabled class="px-2 py-0.5 rounded bg-slate-800 text-slate-500 border border-slate-700 font-semibold flex items-center gap-1 transition cursor-not-allowed">
+              <i class="fa-solid fa-hand-back-fist text-amber-400 text-[9px]"></i>
+              <span id="submergeBtnText">⬇️ Hold Underwater</span>
+            </button>
+            <button id="btnResetBench" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center gap-1 transition border border-slate-700">
+              <i class="fa-solid fa-rotate-left text-indigo-400 text-[9px]"></i>
+              <span>Desk</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- HTML5 Canvas Container -->
+        <div id="canvasParent" class="relative flex-1 min-h-0 w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-lg border border-slate-800/80 overflow-hidden shadow-inner">
+          <canvas id="simCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing touch-none select-none"></canvas>
+          <canvas id="confettiCanvas" class="absolute inset-0 pointer-events-none w-full h-full z-20"></canvas>
+
+          <!-- Floating Info Overlay Banner -->
+          <div id="simInfoOverlay" class="absolute top-1.5 left-1.5 bg-slate-950/90 backdrop-blur px-2 py-0.5 rounded border border-slate-800 text-[9px] text-slate-300 pointer-events-none flex items-center gap-1 shadow z-10">
+            <i class="fa-solid fa-circle-info text-indigo-400"></i>
+            <span id="infoOverlayText">Select a material sample to test.</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Permanent Data Notebook Card (h-36 to h-40 shrink-0) -->
+      <section class="h-36 sm:h-40 shrink-0 bg-slate-900 border border-slate-800 rounded-xl p-2 flex flex-col min-h-0 shadow-lg">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-800 shrink-0">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-solid fa-book-bookmark text-sky-400 text-xs"></i>
+            <h2 class="text-xs font-bold text-white leading-none">Lab Data Notebook</h2>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button id="btnAutoLogActive" title="Log active worksheet into notebook" class="px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-semibold transition flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-file-circle-plus"></i>
+              <span>Log Active</span>
+            </button>
+            <button id="btnExportCSV" title="Download lab readings as CSV" class="px-2 py-0.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-semibold transition flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-file-csv"></i>
+              <span>CSV</span>
+            </button>
+            <button id="btnClearNotebook" title="Clear recorded rows" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold transition border border-slate-700">
+              <i class="fa-solid fa-trash-can text-rose-400"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Notebook Table Container -->
+        <div class="flex-1 overflow-y-auto min-h-0 mt-1">
+          <table class="w-full text-left border-collapse text-[10px] font-mono">
+            <thead class="sticky top-0 bg-slate-950 z-10 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-0.5 px-1 font-semibold">Material</th>
+                <th class="py-0.5 px-1 font-semibold">Mass (g)</th>
+                <th class="py-0.5 px-1 font-semibold">V₁ (mL)</th>
+                <th class="py-0.5 px-1 font-semibold">V₂ (mL)</th>
+                <th class="py-0.5 px-1 font-semibold">ΔV (mL)</th>
+                <th class="py-0.5 px-1 font-semibold">Calc D</th>
+                <th class="py-0.5 px-1 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody id="notebookTableBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT COLUMN (6 cols): Side-by-Side Workstation Solver & Inset Calculator -->
+    <div class="col-span-12 lg:col-span-6 grid grid-cols-1 md:grid-cols-2 gap-2 min-h-0 h-full overflow-y-auto lg:overflow-hidden pr-0.5">
+
+      <!-- WORKSTATION (Left Sub-column) -->
+      <div class="flex flex-col gap-1.5 min-h-0 overflow-y-auto">
+        
+        <!-- Active Material Header Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-1.5 shadow shrink-0 flex items-center justify-between">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <div id="activeSampleIcon" class="w-6 h-6 rounded-lg bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0">
+              ?
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1 flex-wrap">
+                <h2 id="activeSampleTitle" class="text-xs font-bold text-white truncate leading-none">Select Material</h2>
+                <span id="activeSampleBadge" class="px-1 py-0.2 rounded text-[8px] font-mono bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
+                  UNSOLVED
+                </span>
+              </div>
+              <p id="activeSampleSubtitle" class="text-[9px] text-slate-400 truncate leading-tight mt-0.5">Measure Mass &amp; Volume to solve.</p>
+            </div>
+          </div>
+
+          <button id="btnClearWorksheet" title="Clear current worksheet inputs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs transition border border-slate-700 shrink-0">
+            <i class="fa-solid fa-eraser"></i>
+          </button>
+        </div>
+
+        <!-- STEP 1: MASS MEASUREMENT (Indigo Card) -->
+        <div class="bg-indigo-950/20 border border-indigo-500/30 rounded-xl p-1.5 shadow shrink-0 glow-step-1">
+          <div class="flex items-center justify-between mb-0.5">
+            <div class="flex items-center gap-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[8px]">1</span>
+              <h3 class="text-[9px] font-bold text-indigo-200 uppercase tracking-wide">Measure Mass (M)</h3>
+            </div>
+            <span class="text-[9px] text-indigo-300/80 font-mono">g</span>
+          </div>
+
+          <div class="space-y-1">
+            <div class="relative w-full">
+              <input type="number" step="0.1" id="inputMass" placeholder="e.g. 81.0" class="w-full bg-slate-950 border border-indigo-500/50 rounded-lg pl-2 pr-5 py-0.5 text-xs font-mono font-bold text-indigo-200 focus:outline-none focus:border-indigo-400 transition">
+              <span class="absolute right-2 top-1 text-[9px] text-slate-500 font-mono">g</span>
+            </div>
+            <button id="btnReadScale" class="w-full py-0.5 px-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-semibold transition flex items-center justify-center gap-1 shadow-sm">
+              <i class="fa-solid fa-scale-unbalanced text-[9px]"></i>
+              <span>⚖️ Capture Scale Mass</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: DISPLACEMENT VOLUME MEASUREMENT (Cyan Card) -->
+        <div class="bg-cyan-950/20 border border-cyan-500/30 rounded-xl p-1.5 shadow shrink-0 glow-step-2">
+          <div class="flex items-center justify-between mb-0.5">
+            <div class="flex items-center gap-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold text-[8px]">2</span>
+              <h3 class="text-[9px] font-bold text-cyan-200 uppercase tracking-wide">Displacement Vol (ΔV)</h3>
+            </div>
+            <span class="text-[9px] text-cyan-300/80 font-mono">mL</span>
+          </div>
+
+          <div class="space-y-1">
+            <div class="bg-slate-950/80 border border-slate-800 rounded px-1 py-0.5 text-center text-[9px] font-mono text-cyan-300 flex items-center justify-center gap-1 leading-none">
+              <span class="font-bold">ΔV = V₂ - V₁</span>
+              <span class="text-slate-600">|</span>
+              <span class="text-slate-400 text-[8px]">1 mL = 1 cm³</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-1">
+              <div>
+                <label class="text-[8px] font-semibold text-slate-400 block">Initial (V₁)</label>
+                <input type="number" step="0.1" id="inputV1" value="100.0" class="w-full bg-slate-950 border border-cyan-500/30 rounded px-1 py-0.5 text-xs font-mono font-bold text-cyan-300 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[8px] font-semibold text-slate-400 block">Final (V₂)</label>
+                <input type="number" step="0.1" id="inputV2" placeholder="e.g. 130" class="w-full bg-slate-950 border border-cyan-500/30 rounded px-1 py-0.5 text-xs font-mono font-bold text-cyan-300 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[8px] font-semibold text-slate-300 block">Displaced (ΔV)</label>
+                <input type="number" step="0.1" id="inputDisplaced" placeholder="V₂ - V₁" class="w-full bg-slate-950 border border-cyan-400 rounded px-1 py-0.5 text-xs font-mono font-bold text-cyan-200 focus:outline-none">
+              </div>
+            </div>
+
+            <span id="floatingHintText" class="text-[8px] text-amber-300/90 italic block leading-tight hidden">
+              💡 Floating block! Hold underwater for full displacement.
+            </span>
+
+            <button id="btnReadBeaker" class="w-full py-0.5 px-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-semibold transition flex items-center justify-center gap-1 shadow-sm">
+              <i class="fa-solid fa-vial text-[9px]"></i>
+              <span>🧪 Capture Beaker Vol</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: DENSITY CALCULATION & VERIFICATION (Emerald Card) -->
+        <div class="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-1.5 shadow shrink-0 glow-step-3 flex flex-col justify-between flex-1 min-h-0">
+          <div>
+            <div class="flex items-center justify-between mb-0.5">
+              <div class="flex items-center gap-1">
+                <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-[8px]">3</span>
+                <h3 class="text-[9px] font-bold text-emerald-200 uppercase tracking-wide">Calculate Density</h3>
+              </div>
+              <button id="btnAutoCalc" class="text-[8px] text-emerald-400 hover:underline font-mono">
+                Auto (M ÷ ΔV)
+              </button>
+            </div>
+
+            <!-- Fraction Formula Stack -->
+            <div class="bg-slate-950/90 border border-slate-800 rounded p-1 text-center my-0.5 shadow-inner">
+              <div class="inline-flex items-center gap-1 font-mono text-[10px]">
+                <span class="font-bold text-emerald-400">Density (D)</span>
+                <span class="text-slate-500">=</span>
+                <div class="inline-flex flex-col items-center mx-0.5">
+                  <span class="border-b border-slate-600 px-1 py-0 text-indigo-300 font-bold text-[9px]">Mass (M)</span>
+                  <span class="px-1 py-0 text-cyan-300 font-bold text-[9px]">Displaced Vol (ΔV)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <div class="relative w-full">
+                <input type="number" step="0.01" id="inputDensity" placeholder="Calculated g/mL" class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg pl-2 pr-10 py-0.5 text-xs font-mono font-bold text-emerald-300 focus:outline-none focus:border-emerald-400 transition">
+                <span class="absolute right-2 top-1 text-[9px] text-slate-500 font-mono">g/mL</span>
+              </div>
+
+              <button id="btnCheckDensity" class="w-full py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[10px] shadow transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-circle-check text-xs"></i>
+                <span>Check Answer ✓</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="verifyFeedback" class="hidden mt-1 p-1 rounded text-[9px] font-medium border leading-tight"></div>
+        </div>
+
+      </div>
+
+      <!-- PERMANENT INSET CALCULATOR (Right Sub-column) -->
+      <div class="bg-purple-950/20 border border-purple-500/30 rounded-xl p-2 shadow glow-calc flex flex-col justify-between h-full min-h-[290px] shrink-0">
+        
+        <div class="flex items-center justify-between border-b border-purple-500/20 pb-1 shrink-0">
+          <div class="flex items-center gap-1">
+            <div class="w-4 h-4 rounded bg-purple-600/30 border border-purple-400/30 flex items-center justify-center text-purple-300 text-[9px]">
+              <i class="fa-solid fa-calculator"></i>
+            </div>
+            <h3 class="text-[9px] font-bold text-purple-200 uppercase tracking-wider">Calculator</h3>
+          </div>
+          <span class="text-[8px] text-purple-300/70 font-mono">Inset</span>
+        </div>
+
+        <!-- Display Screen -->
+        <div class="bg-slate-950 p-1 rounded-lg border border-purple-500/30 flex flex-col items-end justify-center min-h-[40px] shadow-inner my-1 shrink-0">
+          <div id="calcFormula" class="text-[8px] font-mono text-purple-300/70 h-3 overflow-hidden text-ellipsis whitespace-nowrap w-full text-right leading-none"></div>
+          <div id="calcDisplay" class="text-sm font-mono font-bold text-purple-200 tracking-wider overflow-x-auto w-full text-right leading-tight">0</div>
+        </div>
+
+        <!-- Transfer Quick Buttons -->
+        <div class="grid grid-cols-3 gap-1 mb-1 shrink-0">
+          <button id="btnCalcInsertMass" title="Paste mass value into calculator" class="px-1 py-0.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/30 rounded text-[8px] font-mono font-semibold transition flex items-center justify-center">
+            <span>📥 Mass</span>
+          </button>
+          <button id="btnCalcInsertVol" title="Paste displaced volume into calculator" class="px-1 py-0.5 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 rounded text-[8px] font-mono font-semibold transition flex items-center justify-center">
+            <span>📥 Vol</span>
+          </button>
+          <button id="btnCalcUseAnswer" title="Set calculator output as Step 3 Density" class="px-1 py-0.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 rounded text-[8px] font-mono font-semibold transition flex items-center justify-center">
+            <span>📤 Set D</span>
+          </button>
+        </div>
+
+        <!-- Keypad Grid -->
+        <div class="grid grid-cols-4 gap-1 text-xs font-mono font-bold flex-1">
+          <button onclick="calcClear()" class="calc-btn rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-500/30 text-[10px] py-1">C</button>
+          <button onclick="calcBackspace()" class="calc-btn rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] py-1">⌫</button>
+          <button onclick="calcInput('(')" class="calc-btn rounded bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 text-[10px] py-1">(</button>
+          <button onclick="calcInput(')')" class="calc-btn rounded bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 text-[10px] py-1">)</button>
+
+          <button onclick="calcInput('7')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">7</button>
+          <button onclick="calcInput('8')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">8</button>
+          <button onclick="calcInput('9')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">9</button>
+          <button onclick="calcInput('/')" class="calc-btn rounded bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30 text-[10px] py-1">÷</button>
+
+          <button onclick="calcInput('4')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">4</button>
+          <button onclick="calcInput('5')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">5</button>
+          <button onclick="calcInput('6')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">6</button>
+          <button onclick="calcInput('*')" class="calc-btn rounded bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30 text-[10px] py-1">×</button>
+
+          <button onclick="calcInput('1')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">1</button>
+          <button onclick="calcInput('2')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">2</button>
+          <button onclick="calcInput('3')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">3</button>
+          <button onclick="calcInput('-')" class="calc-btn rounded bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30 text-[10px] py-1">-</button>
+
+          <button onclick="calcInput('0')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">0</button>
+          <button onclick="calcInput('.')" class="calc-btn rounded bg-slate-950 hover:bg-slate-800 text-slate-100 border border-slate-800 text-[10px] py-1">.</button>
+          <button onclick="calcEquals()" class="calc-btn rounded bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow text-[10px] py-1">=</button>
+          <button onclick="calcInput('+')" class="calc-btn rounded bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30 text-[10px] py-1">+</button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JavaScript Application Logic & Physics Simulation Engine -->
+  <script>
+    /* ====================================================================
+       1. LAB MATERIALS & FLUID DEFINITIONS
+       ==================================================================== */
+    const SAMPLE_DEFINITIONS = {
+      cork: { id: 'cork', name: 'Cork', mass: 12.0, volume: 50.0, density: 0.24, color: '#D4A373', pattern: 'porous', labelColor: '#3D2314' },
+      wood: { id: 'wood', name: 'Wood', mass: 25.0, volume: 50.0, density: 0.50, color: '#C18C5D', pattern: 'wood', labelColor: '#4A2A0C' },
+      aluminum: { id: 'aluminum', name: 'Aluminum', mass: 81.0, volume: 30.0, density: 2.70, color: '#9CA3AF', pattern: 'metallic', labelColor: '#1F2937' },
+      copper: { id: 'copper', name: 'Copper', mass: 179.2, volume: 20.0, density: 8.96, color: '#B87333', pattern: 'copper', labelColor: '#3E1F00' },
+      lead: { id: 'lead', name: 'Lead', mass: 226.8, volume: 20.0, density: 11.34, color: '#475569', pattern: 'lead', labelColor: '#F8FAFC' },
+      gold: { id: 'gold', name: 'Gold', mass: 289.8, volume: 15.0, density: 19.32, color: '#F59E0B', pattern: 'gold', labelColor: '#78350F' },
+      mysteryA: { id: 'mysteryA', name: 'Mystery A', mass: 20.0, volume: 40.0, density: 0.50, color: '#8B5CF6', pattern: 'mystery', labelColor: '#FFFFFF', isMystery: true },
+      mysteryB: { id: 'mysteryB', name: 'Mystery B', mass: 226.8, volume: 20.0, density: 11.34, color: '#64748B', pattern: 'mystery', labelColor: '#0F172A', isMystery: true }
+    };
+
+    const FLUID_DEFINITIONS = {
+      water: { id: 'water', name: 'Water', density: 1.00, colorTop: 'rgba(56, 189, 248, 0.7)', colorBase: 'rgba(3, 105, 161, 0.85)', waveColor: 'rgba(186, 230, 253, 0.5)' },
+      oil: { id: 'oil', name: 'Vegetable Oil', density: 0.92, colorTop: 'rgba(245, 158, 11, 0.75)', colorBase: 'rgba(180, 83, 9, 0.88)', waveColor: 'rgba(253, 230, 138, 0.5)' },
+      syrup: { id: 'syrup', name: 'Corn Syrup', density: 1.38, colorTop: 'rgba(217, 119, 6, 0.85)', colorBase: 'rgba(120, 53, 15, 0.95)', waveColor: 'rgba(253, 186, 116, 0.6)' }
+    };
+
+    const STORAGE_KEY = 'DENSITY_LAB_EMBEDDED_NOTEBOOK_V7';
+    const BASE_FLUID_VOL = 100.0; // mL
+
+    // Global Lab State
+    let state = {
+      soundEnabled: true,
+      selectedFluidKey: 'water',
+      selectedActiveKey: 'cork',
+      blockLocations: {},
+      isSubmergedForced: false,
+      displayScaleMass: 0.0,
+      displayWaterVol: 100.0,
+      waveTime: 0,
+      solvedMap: {},
+      worksheetData: {},
+      notebookRows: []
+    };
+
+    // Initialize block positions on desk
+    Object.keys(SAMPLE_DEFINITIONS).forEach(k => {
+      state.blockLocations[k] = 'desk';
+    });
+
+    function getDefaultWorksheetData() {
+      const data = {};
+      Object.keys(SAMPLE_DEFINITIONS).forEach(k => {
+        data[k] = { mass: '', v1: '100.0', v2: '', displaced: '', density: '' };
+      });
+      return data;
+    }
+
+    state.worksheetData = getDefaultWorksheetData();
+
+    /* ====================================================================
+       2. LOCAL STORAGE PERSISTENCE
+       ==================================================================== */
+    function loadStateFromStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.solvedMap) state.solvedMap = parsed.solvedMap;
+          if (parsed.worksheetData) state.worksheetData = Object.assign(getDefaultWorksheetData(), parsed.worksheetData);
+          if (parsed.notebookRows) state.notebookRows = parsed.notebookRows;
+        }
+      } catch(e) {
+        console.warn('Could not load saved state:', e);
+      }
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          solvedMap: state.solvedMap,
+          worksheetData: state.worksheetData,
+          notebookRows: state.notebookRows
+        }));
+      } catch(e) {
+        console.warn('Could not save state:', e);
+      }
+    }
+
+    /* ====================================================================
+       3. SYNTHESIZED WEB AUDIO ENGINE
+       ==================================================================== */
+    class WebAudioSynth {
+      constructor() { this.ctx = null; }
+      init() {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playClick() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.03);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.03);
+      }
+      playGrab() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+      }
+      playScaleBeep() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(650, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+      }
+      playSplash() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const bufferSize = this.ctx.sampleRate * 0.2;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.2);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+        noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+        noise.start();
+      }
+      playVictory() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          const startTime = this.ctx.currentTime + idx * 0.08;
+          gain.gain.setValueAtTime(0.12, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(startTime); osc.stop(startTime + 0.3);
+        });
+      }
+      playError() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(160, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+      }
+    }
+    const audio = new WebAudioSynth();
+
+    /* ====================================================================
+       4. CONFETTI ANIMATION ENGINE
+       ==================================================================== */
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const confettiCtx = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+
+    function triggerConfetti() {
+      confettiCanvas.width = confettiCanvas.parentElement.clientWidth;
+      confettiCanvas.height = confettiCanvas.parentElement.clientHeight;
+
+      const colors = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+      confettiParticles = [];
+
+      for (let i = 0; i < 70; i++) {
+        confettiParticles.push({
+          x: confettiCanvas.width / 2,
+          y: confettiCanvas.height / 2,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.8) * 12,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          radius: Math.random() * 4 + 3,
+          alpha: 1.0
+        });
+      }
+    }
+
+    function renderConfetti() {
+      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      confettiParticles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.22;
+        p.alpha -= 0.015;
+
+        if (p.alpha > 0) {
+          confettiCtx.save();
+          confettiCtx.globalAlpha = p.alpha;
+          confettiCtx.fillStyle = p.color;
+          confettiCtx.beginPath();
+          confettiCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          confettiCtx.fill();
+          confettiCtx.restore();
+        }
+      });
+      confettiParticles = confettiParticles.filter(p => p.alpha > 0);
+      if (confettiParticles.length > 0) requestAnimationFrame(renderConfetti);
+    }
+
+    /* ====================================================================
+       5. SIMULATION CANVAS RENDERING & UNIFIED POINTER EVENTS
+       ==================================================================== */
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const canvasParent = document.getElementById('canvasParent');
+
+    const LOGICAL_W = 800;
+    const LOGICAL_H = 420;
+
+    const SCALE_POS = { x: 250, y: 290, panY: 215, panWidth: 150 };
+    const BEAKER_POS = { x: 600, y: 110, width: 180, height: 250, baseWaterY: 330, topY: 110 };
+    const DESK_POS = { x: 80, y: 290 };
+
+    let pointerState = {
+      isDragging: false,
+      pointerId: null,
+      blockKey: null,
+      dragPos: { x: 0, y: 0 },
+      hoverZone: null
+    };
+
+    function resizeCanvas() {
+      const rect = canvasParent.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+    }
+
+    const resizeObserver = new ResizeObserver(() => resizeCanvas());
+    resizeObserver.observe(canvasParent);
+
+    function getLogicalCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = LOGICAL_W / rect.width;
+      const scaleY = LOGICAL_H / rect.height;
+
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      return {
+        x: Math.max(20, Math.min(LOGICAL_W - 20, x)),
+        y: Math.max(20, Math.min(LOGICAL_H - 20, y))
+      };
+    }
+
+    function checkZoneHit(pos) {
+      if (pos.x >= 150 && pos.x <= 350 && pos.y >= 130 && pos.y <= 360) {
+        return 'scale';
+      }
+      if (pos.x >= 480 && pos.x <= 720 && pos.y >= 60 && pos.y <= 370) {
+        return 'beaker';
+      }
+      return 'desk';
+    }
+
+    function getBlockOnScale() {
+      return Object.keys(state.blockLocations).find(k => state.blockLocations[k] === 'scale') || null;
+    }
+
+    function getBlockInBeaker() {
+      return Object.keys(state.blockLocations).find(k => state.blockLocations[k] === 'beaker') || null;
+    }
+
+    function renderSimulation() {
+      const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
+
+      // Scale Mass Interpolation
+      const scaleBlockKey = getBlockOnScale();
+      const scaleObj = SAMPLE_DEFINITIONS[scaleBlockKey];
+      const targetMass = scaleObj ? scaleObj.mass : 0.0;
+      state.displayScaleMass += (targetMass - state.displayScaleMass) * 0.2;
+
+      // Beaker Liquid Volume Interpolation
+      const beakerBlockKey = getBlockInBeaker();
+      const beakerObj = SAMPLE_DEFINITIONS[beakerBlockKey];
+      let targetFluidVol = BASE_FLUID_VOL;
+
+      if (beakerObj) {
+        const isSinking = beakerObj.density >= fluid.density;
+        if (isSinking || state.isSubmergedForced) {
+          targetFluidVol = BASE_FLUID_VOL + beakerObj.volume;
+        } else {
+          targetFluidVol = BASE_FLUID_VOL + (beakerObj.mass / fluid.density);
+        }
+      }
+
+      state.displayWaterVol += (targetFluidVol - state.displayWaterVol) * 0.15;
+      state.waveTime += 0.05;
+
+      ctx.save();
+      ctx.scale(canvas.width / LOGICAL_W, canvas.height / LOGICAL_H);
+
+      // Background Environment
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+      // Lab Workbench
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 345, LOGICAL_W, 75);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 345, LOGICAL_W, 4);
+
+      // Drag Hover Zone Highlights
+      if (pointerState.isDragging) {
+        if (pointerState.hoverZone === 'scale') {
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.22)';
+          ctx.strokeStyle = 'rgba(129, 140, 248, 0.8)';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.roundRect(SCALE_POS.x - 85, SCALE_POS.y - 110, 170, 160, 14);
+          ctx.fill(); ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (pointerState.hoverZone === 'beaker') {
+          ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.8)';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.roundRect(BEAKER_POS.x - BEAKER_POS.width / 2 - 12, BEAKER_POS.topY - 12, BEAKER_POS.width + 24, BEAKER_POS.height + 24, 16);
+          ctx.fill(); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+
+      // Draw Equipment
+      drawDeskRestingArea(DESK_POS);
+      drawScale(SCALE_POS, state.displayScaleMass, pointerState.hoverZone === 'scale');
+      drawBeaker(BEAKER_POS, state.displayWaterVol, fluid, pointerState.hoverZone === 'beaker');
+
+      // Draw Blocks
+      const activeKey = state.selectedActiveKey;
+      const activeLoc = state.blockLocations[activeKey];
+
+      if (activeLoc === 'desk' && pointerState.blockKey !== activeKey) {
+        const activeObj = SAMPLE_DEFINITIONS[activeKey];
+        const dim = getBlockDimensions(activeObj.volume);
+        drawBlockAt(DESK_POS.x, DESK_POS.y - dim.height / 2, activeObj);
+      }
+
+      if (scaleBlockKey && pointerState.blockKey !== scaleBlockKey) {
+        drawBlockOnScale(SCALE_POS, SAMPLE_DEFINITIONS[scaleBlockKey]);
+      }
+
+      if (beakerBlockKey && pointerState.blockKey !== beakerBlockKey) {
+        drawBlockInBeaker(BEAKER_POS, SAMPLE_DEFINITIONS[beakerBlockKey], fluid);
+      }
+
+      if (pointerState.isDragging && pointerState.blockKey) {
+        drawBlockAt(pointerState.dragPos.x, pointerState.dragPos.y, SAMPLE_DEFINITIONS[pointerState.blockKey], 1.12, true);
+      }
+
+      ctx.restore();
+
+      updateUIReadouts();
+      requestAnimationFrame(renderSimulation);
+    }
+
+    function drawDeskRestingArea(pos) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(pos.x - 50, pos.y - 10, 100, 65, 10);
+      ctx.fill(); ctx.stroke();
+
+      ctx.font = '600 9px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Desk Zone', pos.x, pos.y + 45);
+    }
+
+    function drawScale(pos, currentMass, isHovered) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(pos.x, pos.y + 50, 75, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Scale Base
+      ctx.fillStyle = isHovered ? '#1e1b4b' : '#1e293b';
+      ctx.strokeStyle = isHovered ? '#818cf8' : '#475569';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(pos.x - 70, pos.y, 140, 55, 10);
+      ctx.fill(); ctx.stroke();
+
+      // Digital Screen
+      ctx.fillStyle = '#020617';
+      ctx.beginPath();
+      ctx.roundRect(pos.x - 52, pos.y + 12, 104, 30, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.2; ctx.stroke();
+
+      ctx.font = '700 16px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#a5b4fc';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(currentMass.toFixed(1) + ' g', pos.x + 42, pos.y + 27);
+
+      // Pan
+      const panDepress = Math.min(5, (currentMass / 300) * 5);
+      const panY = pos.panY + panDepress;
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(pos.x - 7, panY, 14, pos.y - panY);
+
+      ctx.fillStyle = isHovered ? '#c7d2fe' : '#94a3b8';
+      ctx.beginPath();
+      ctx.ellipse(pos.x, panY, pos.panWidth / 2, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    function drawBeaker(pos, fluidVol, fluid, isHovered) {
+      const maxVol = 250;
+      const minVol = 50;
+      const fillPercent = Math.min(1.0, Math.max(0.1, (fluidVol - minVol) / (maxVol - minVol)));
+      const liquidHeight = fillPercent * (pos.height - 35);
+      const liquidTopY = pos.baseWaterY - liquidHeight;
+
+      // Liquid interior
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(pos.x - pos.width / 2 + 4, pos.topY + 10, pos.width - 8, pos.height - 15, [0, 0, 10, 10]);
+      ctx.clip();
+
+      const grad = ctx.createLinearGradient(pos.x, liquidTopY, pos.x, pos.baseWaterY + 30);
+      grad.addColorStop(0, fluid.colorTop);
+      grad.addColorStop(1, fluid.colorBase);
+      ctx.fillStyle = grad;
+      ctx.fillRect(pos.x - pos.width / 2, liquidTopY, pos.width, pos.baseWaterY - liquidTopY + 40);
+
+      // Waves
+      ctx.fillStyle = fluid.waveColor;
+      ctx.beginPath();
+      ctx.moveTo(pos.x - pos.width / 2, liquidTopY);
+      for (let x = -pos.width / 2; x <= pos.width / 2; x += 10) {
+        ctx.lineTo(pos.x + x, liquidTopY + Math.sin(x * 0.08 + state.waveTime) * 2);
+      }
+      ctx.lineTo(pos.x + pos.width / 2, liquidTopY + 10);
+      ctx.lineTo(pos.x - pos.width / 2, liquidTopY + 10);
+      ctx.fill();
+      ctx.restore();
+
+      // Beaker Outline
+      ctx.strokeStyle = isHovered ? '#38bdf8' : 'rgba(203, 213, 225, 0.7)';
+      ctx.lineWidth = isHovered ? 3 : 2;
+      ctx.beginPath();
+      ctx.moveTo(pos.x - pos.width / 2 - 6, pos.topY);
+      ctx.lineTo(pos.x - pos.width / 2, pos.topY + 8);
+      ctx.lineTo(pos.x - pos.width / 2, pos.topY + pos.height - 10);
+      ctx.quadraticCurveTo(pos.x - pos.width / 2, pos.topY + pos.height, pos.x - pos.width / 2 + 10, pos.topY + pos.height);
+      ctx.lineTo(pos.x + pos.width / 2 - 10, pos.topY + pos.height);
+      ctx.quadraticCurveTo(pos.x + pos.width / 2, pos.topY + pos.height, pos.x + pos.width / 2, pos.topY + pos.height - 10);
+      ctx.lineTo(pos.x + pos.width / 2, pos.topY + 8);
+      ctx.lineTo(pos.x + pos.width / 2 + 6, pos.topY);
+      ctx.stroke();
+
+      // Graduations
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.font = '600 9px Inter, sans-serif';
+      ctx.textAlign = 'left';
+
+      for (let v = 50; v <= 200; v += 25) {
+        const pct = (v - minVol) / (maxVol - minVol);
+        const yMark = pos.baseWaterY - pct * (pos.height - 35);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = v % 50 === 0 ? 1.8 : 1;
+        ctx.beginPath();
+        ctx.moveTo(pos.x - pos.width / 2 + 4, yMark);
+        ctx.lineTo(pos.x - pos.width / 2 + (v % 50 === 0 ? 18 : 10), yMark);
+        ctx.stroke();
+
+        if (v % 50 === 0) ctx.fillText(v + ' mL', pos.x - pos.width / 2 + 22, yMark + 3);
+      }
+
+      // Readout Indicator
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(pos.x + pos.width / 2 + 4, liquidTopY);
+      ctx.lineTo(pos.x + pos.width / 2 + 12, liquidTopY - 5);
+      ctx.lineTo(pos.x + pos.width / 2 + 12, liquidTopY + 5);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.font = '700 11px "JetBrains Mono", monospace';
+      ctx.fillText(fluidVol.toFixed(1) + ' mL', pos.x + pos.width / 2 + 16, liquidTopY + 3);
+    }
+
+    function getBlockDimensions(volume) {
+      const size = Math.min(50, Math.max(28, 24 + Math.cbrt(volume) * 7.0));
+      return { width: size, height: size };
+    }
+
+    function drawBlockAt(x, y, obj, scale = 1.0, isDragging = false) {
+      if (!obj) return;
+      const dim = getBlockDimensions(obj.volume);
+      const w = dim.width * scale;
+      const h = dim.height * scale;
+
+      ctx.save();
+      ctx.translate(x, y);
+
+      if (isDragging) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, h / 2 + 14, w / 2, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = obj.color;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 6);
+      ctx.fill();
+
+      if (obj.pattern === 'wood') {
+        ctx.strokeStyle = 'rgba(74, 42, 12, 0.35)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 + 3, -h / 4); ctx.lineTo(w / 2 - 3, -h / 4);
+        ctx.moveTo(-w / 2 + 3, h / 4); ctx.lineTo(w / 2 - 3, h / 4);
+        ctx.stroke();
+      } else if (obj.pattern === 'porous') {
+        ctx.fillStyle = 'rgba(61, 35, 20, 0.25)';
+        ctx.beginPath();
+        ctx.arc(-w / 4, -h / 4, 1.8, 0, Math.PI * 2);
+        ctx.arc(w / 4, -h / 6, 2, 0, Math.PI * 2);
+        ctx.arc(-w / 6, h / 4, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (obj.pattern === 'mystery') {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6);
+      } else {
+        const sheen = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+        sheen.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+        sheen.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+        ctx.fillStyle = sheen;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h, 6);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 6);
+      ctx.stroke();
+
+      ctx.fillStyle = obj.labelColor || '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (obj.isMystery) {
+        ctx.font = '800 12px Inter, sans-serif';
+        ctx.fillText(obj.name.replace('Mystery ', '? '), 0, 0);
+      } else {
+        ctx.font = '700 9px Inter, sans-serif';
+        ctx.fillText(obj.name, 0, 0);
+      }
+
+      ctx.restore();
+    }
+
+    function drawBlockOnScale(scalePos, obj) {
+      const panY = scalePos.panY + Math.min(5, (obj.mass / 300) * 5);
+      const dim = getBlockDimensions(obj.volume);
+      drawBlockAt(scalePos.x, panY - dim.height / 2, obj);
+    }
+
+    function drawBlockInBeaker(beakerPos, obj, fluid) {
+      const minVol = 50;
+      const maxVol = 250;
+      const fillPercent = Math.min(1.0, Math.max(0.1, (state.displayWaterVol - minVol) / (maxVol - minVol)));
+      const liquidHeight = fillPercent * (beakerPos.height - 35);
+      const liquidTopY = beakerPos.baseWaterY - liquidHeight;
+
+      const dim = getBlockDimensions(obj.volume);
+      let targetY = 0;
+      const isSinking = obj.density >= fluid.density;
+
+      if (isSinking) {
+        targetY = beakerPos.baseWaterY - dim.height / 2 + 2;
+      } else {
+        if (state.isSubmergedForced) {
+          targetY = beakerPos.baseWaterY - dim.height / 2 - 10;
+        } else {
+          const subFraction = Math.min(0.95, obj.density / fluid.density);
+          targetY = liquidTopY + (dim.height * (subFraction - 0.5));
+          targetY += Math.sin(state.waveTime * 2) * 1.5;
+        }
+      }
+
+      drawBlockAt(beakerPos.x, targetY, obj);
+
+      if (!isSinking && state.isSubmergedForced) {
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(beakerPos.x, liquidTopY - 15);
+        ctx.lineTo(beakerPos.x, targetY - dim.height / 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(beakerPos.x, liquidTopY - 17, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    /* ====================================================================
+       6. UNIFIED POINTER EVENTS HANDLERS
+       ==================================================================== */
+    function checkHitBlockOnCanvas(pos) {
+      const scaleKey = getBlockOnScale();
+      if (scaleKey) {
+        const panY = SCALE_POS.panY + Math.min(5, (SAMPLE_DEFINITIONS[scaleKey].mass / 300) * 5);
+        if (Math.hypot(pos.x - SCALE_POS.x, pos.y - panY) < 45) return scaleKey;
+      }
+
+      const beakerKey = getBlockInBeaker();
+      if (beakerKey) {
+        if (Math.hypot(pos.x - BEAKER_POS.x, pos.y - 230) < 55) return beakerKey;
+      }
+
+      const activeKey = state.selectedActiveKey;
+      if (state.blockLocations[activeKey] === 'desk') {
+        const dim = getBlockDimensions(SAMPLE_DEFINITIONS[activeKey].volume);
+        if (Math.hypot(pos.x - DESK_POS.x, pos.y - (DESK_POS.y - dim.height / 2)) < 45) {
+          return activeKey;
+        }
+      }
+
+      return null;
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const pos = getLogicalCoords(e);
+      const hitKey = checkHitBlockOnCanvas(pos);
+
+      if (hitKey) {
+        pointerState.isDragging = true;
+        pointerState.pointerId = e.pointerId;
+        pointerState.blockKey = hitKey;
+        pointerState.dragPos = pos;
+        pointerState.hoverZone = checkZoneHit(pos);
+
+        state.selectedActiveKey = hitKey;
+        audio.playGrab();
+
+        try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
+
+        syncWorksheetUI();
+        renderShelf();
+        renderNotebookTable();
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (pointerState.isDragging && pointerState.pointerId === e.pointerId) {
+        const pos = getLogicalCoords(e);
+        pointerState.dragPos = pos;
+        pointerState.hoverZone = checkZoneHit(pos);
+      }
+    });
+
+    function handlePointerUpOrCancel(e) {
+      if (pointerState.isDragging && pointerState.pointerId === e.pointerId) {
+        const dropZone = checkZoneHit(pointerState.dragPos);
+        const blockKey = pointerState.blockKey;
+
+        // Clear previous location of blockKey
+        state.blockLocations[blockKey] = 'desk';
+
+        if (dropZone === 'scale') {
+          // Eject existing block on scale to desk
+          const existingOnScale = getBlockOnScale();
+          if (existingOnScale) state.blockLocations[existingOnScale] = 'desk';
+          state.blockLocations[blockKey] = 'scale';
+          audio.playScaleBeep();
+        } else if (dropZone === 'beaker') {
+          // Eject existing block in beaker to desk
+          const existingInBeaker = getBlockInBeaker();
+          if (existingInBeaker) state.blockLocations[existingInBeaker] = 'desk';
+          state.blockLocations[blockKey] = 'beaker';
+          audio.playSplash();
+        } else {
+          audio.playClick();
+        }
+
+        pointerState.isDragging = false;
+        pointerState.pointerId = null;
+        pointerState.blockKey = null;
+        pointerState.hoverZone = null;
+
+        try { canvas.releasePointerCapture(e.pointerId); } catch(err) {}
+
+        syncWorksheetUI();
+        renderShelf();
+      }
+    }
+
+    canvas.addEventListener('pointerup', handlePointerUpOrCancel);
+    canvas.addEventListener('pointercancel', handlePointerUpOrCancel);
+
+    /* ====================================================================
+       7. UI INTERACTION & SOLVER LOGIC
+       ==================================================================== */
+    function renderShelf() {
+      const shelfContainer = document.getElementById('shelfContainer');
+      shelfContainer.innerHTML = '';
+
+      Object.keys(SAMPLE_DEFINITIONS).forEach((k) => {
+        const item = SAMPLE_DEFINITIONS[k];
+        const isSelected = state.selectedActiveKey === k;
+        const isSolved = state.solvedMap[k];
+        const location = state.blockLocations[k];
+
+        let locBadge = '';
+        if (location === 'scale') locBadge = '⚖️ Scale';
+        else if (location === 'beaker') locBadge = '🧪 Beaker';
+
+        const card = document.createElement('div');
+        card.className = `px-2 py-1 rounded-lg border text-left cursor-pointer transition flex items-center gap-1.5 ${
+          isSelected
+            ? 'bg-indigo-950/80 border-indigo-500 shadow-sm ring-1 ring-indigo-400'
+            : 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+        }`;
+
+        card.innerHTML = `
+          <div class="w-4 h-4 rounded flex items-center justify-center font-bold text-[8px] text-white" style="background-color: ${item.color}">
+            ${isSolved ? '✓' : ''}
+          </div>
+          <div class="flex flex-col leading-tight">
+            <div class="flex items-center gap-1">
+              <span class="font-bold text-[10px] ${isSelected ? 'text-indigo-200' : 'text-slate-200'}">${item.name}</span>
+              ${isSolved ? '<span class="text-[8px] text-emerald-400 font-semibold">✓</span>' : ''}
+            </div>
+            <span class="text-[8px] text-slate-400 font-mono">${locBadge || item.mass + 'g'}</span>
+          </div>
+        `;
+
+        card.onclick = () => {
+          state.selectedActiveKey = k;
+          audio.playClick();
+          syncWorksheetUI();
+          renderShelf();
+        };
+
+        shelfContainer.appendChild(card);
+      });
+
+      // Update Header solved count
+      const solvedCount = Object.keys(state.solvedMap).filter(k => state.solvedMap[k]).length;
+      document.getElementById('headerProgressCount').innerText = `${solvedCount} / ${Object.keys(SAMPLE_DEFINITIONS).length} Solved`;
+    }
+
+    function syncWorksheetUI() {
+      const activeKey = state.selectedActiveKey;
+      const item = SAMPLE_DEFINITIONS[activeKey];
+      const isSolved = state.solvedMap[activeKey];
+      const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
+
+      // Header card
+      document.getElementById('activeSampleTitle').innerText = item.name;
+      document.getElementById('activeSampleSubtitle').innerText = `${item.name} (${item.pattern} structure)`;
+      const iconEl = document.getElementById('activeSampleIcon');
+      iconEl.style.backgroundColor = item.color;
+      iconEl.style.color = item.labelColor || '#FFFFFF';
+      iconEl.innerText = item.isMystery ? '?' : item.name[0];
+
+      const badgeEl = document.getElementById('activeSampleBadge');
+      if (isSolved) {
+        badgeEl.innerText = 'SOLVED ✓';
+        badgeEl.className = 'px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/40 shrink-0';
+      } else {
+        badgeEl.innerText = 'UNSOLVED';
+        badgeEl.className = 'px-1 py-0.2 rounded text-[8px] font-mono bg-slate-800 text-slate-400 border border-slate-700 shrink-0';
+      }
+
+      // Input Worksheet values
+      const ws = state.worksheetData[activeKey] || { mass: '', v1: '100.0', v2: '', displaced: '', density: '' };
+      document.getElementById('inputMass').value = ws.mass;
+      document.getElementById('inputV1').value = ws.v1 || '100.0';
+      document.getElementById('inputV2').value = ws.v2;
+      document.getElementById('inputDisplaced').value = ws.displaced;
+      document.getElementById('inputDensity').value = ws.density;
+
+      // Submerge button state
+      const beakerKey = getBlockInBeaker();
+      const beakerObj = SAMPLE_DEFINITIONS[beakerKey];
+      const submergeBtn = document.getElementById('btnSubmergeToggle');
+
+      if (beakerObj && beakerObj.density < fluid.density) {
+        submergeBtn.disabled = false;
+        submergeBtn.className = `px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 transition shadow-sm ${
+          state.isSubmergedForced
+            ? 'bg-amber-600 text-white border border-amber-400 ring-1 ring-amber-400'
+            : 'bg-amber-950/80 text-amber-300 hover:bg-amber-900 border border-amber-500/40'
+        }`;
+        document.getElementById('floatingHintText').classList.remove('hidden');
+      } else {
+        submergeBtn.disabled = true;
+        submergeBtn.className = 'px-2 py-0.5 rounded bg-slate-800 text-slate-500 border border-slate-700 text-[10px] font-semibold flex items-center gap-1 transition cursor-not-allowed';
+        document.getElementById('floatingHintText').classList.add('hidden');
+        state.isSubmergedForced = false;
+      }
+
+      // Hide feedback box
+      const fb = document.getElementById('verifyFeedback');
+      fb.classList.add('hidden');
+
+      // Update sim overlay text
+      const overlayText = document.getElementById('infoOverlayText');
+      if (state.blockLocations[activeKey] === 'scale') {
+        overlayText.innerText = `${item.name} is resting on the digital scale.`;
+      } else if (state.blockLocations[activeKey] === 'beaker') {
+        if (item.density < fluid.density) {
+          overlayText.innerText = `${item.name} floats in ${fluid.name}! (${state.isSubmergedForced ? 'Held Underwater' : 'Partially submerged'})`;
+        } else {
+          overlayText.innerText = `${item.name} sinks to the bottom of ${fluid.name}.`;
+        }
+      } else {
+        overlayText.innerText = `${item.name} is on the desk. Drag to scale or beaker.`;
+      }
+    }
+
+    function saveActiveWorksheetInputs() {
+      const activeKey = state.selectedActiveKey;
+      state.worksheetData[activeKey] = {
+        mass: document.getElementById('inputMass').value,
+        v1: document.getElementById('inputV1').value,
+        v2: document.getElementById('inputV2').value,
+        displaced: document.getElementById('inputDisplaced').value,
+        density: document.getElementById('inputDensity').value
+      };
+      saveStateToStorage();
+    }
+
+    /* Input event listeners */
+    ['inputMass', 'inputV1', 'inputV2', 'inputDisplaced', 'inputDensity'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        if (id === 'inputV1' || id === 'inputV2') {
+          const v1 = parseFloat(document.getElementById('inputV1').value) || 0;
+          const v2 = parseFloat(document.getElementById('inputV2').value) || 0;
+          if (v2 >= v1) {
+            document.getElementById('inputDisplaced').value = (v2 - v1).toFixed(1);
+          }
+        }
+        saveActiveWorksheetInputs();
+      });
+    });
+
+    /* Quick Transfer Controls */
+    document.getElementById('btnQuickScale').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      const prevScale = getBlockOnScale();
+      if (prevScale) state.blockLocations[prevScale] = 'desk';
+      state.blockLocations[activeKey] = 'scale';
+      audio.playScaleBeep();
+      syncWorksheetUI();
+      renderShelf();
+    };
+
+    document.getElementById('btnQuickBeaker').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      const prevBeaker = getBlockInBeaker();
+      if (prevBeaker) state.blockLocations[prevBeaker] = 'desk';
+      state.blockLocations[activeKey] = 'beaker';
+      audio.playSplash();
+      syncWorksheetUI();
+      renderShelf();
+    };
+
+    document.getElementById('btnResetBench').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      state.blockLocations[activeKey] = 'desk';
+      audio.playClick();
+      syncWorksheetUI();
+      renderShelf();
+    };
+
+    document.getElementById('btnSubmergeToggle').onclick = () => {
+      state.isSubmergedForced = !state.isSubmergedForced;
+      audio.playClick();
+      syncWorksheetUI();
+    };
+
+    /* Solver Action Buttons */
+    document.getElementById('btnReadScale').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      const item = SAMPLE_DEFINITIONS[activeKey];
+      document.getElementById('inputMass').value = item.mass.toFixed(1);
+      audio.playScaleBeep();
+      saveActiveWorksheetInputs();
+    };
+
+    document.getElementById('btnReadBeaker').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      const item = SAMPLE_DEFINITIONS[activeKey];
+      const fluid = FLUID_DEFINITIONS[state.selectedFluidKey];
+
+      const v1 = BASE_FLUID_VOL;
+      let v2 = v1;
+
+      if (state.blockLocations[activeKey] === 'beaker') {
+        const isSinking = item.density >= fluid.density;
+        if (isSinking || state.isSubmergedForced) {
+          v2 = v1 + item.volume;
+        } else {
+          v2 = v1 + (item.mass / fluid.density);
+        }
+      } else {
+        // If not in beaker, capture standard full volume measurement
+        v2 = v1 + item.volume;
+      }
+
+      document.getElementById('inputV1').value = v1.toFixed(1);
+      document.getElementById('inputV2').value = v2.toFixed(1);
+      document.getElementById('inputDisplaced').value = (v2 - v1).toFixed(1);
+
+      audio.playSplash();
+      saveActiveWorksheetInputs();
+    };
+
+    document.getElementById('btnAutoCalc').onclick = () => {
+      const m = parseFloat(document.getElementById('inputMass').value);
+      const dv = parseFloat(document.getElementById('inputDisplaced').value);
+
+      if (!isNaN(m) && !isNaN(dv) && dv > 0) {
+        document.getElementById('inputDensity').value = (m / dv).toFixed(2);
+        audio.playClick();
+        saveActiveWorksheetInputs();
+      } else {
+        audio.playError();
+      }
+    };
+
+    document.getElementById('btnCheckDensity').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      const item = SAMPLE_DEFINITIONS[activeKey];
+      const userD = parseFloat(document.getElementById('inputDensity').value);
+      const fb = document.getElementById('verifyFeedback');
+      fb.classList.remove('hidden');
+
+      if (isNaN(userD)) {
+        fb.className = 'mt-1 p-1 rounded bg-rose-950/80 text-rose-300 border border-rose-500/40 text-[9px] font-medium';
+        fb.innerText = '❌ Please calculate and enter a density value first.';
+        audio.playError();
+        return;
+      }
+
+      const tolerance = 0.05;
+      const diff = Math.abs(userD - item.density);
+
+      if (diff <= tolerance) {
+        fb.className = 'mt-1 p-1 rounded bg-emerald-950/90 text-emerald-200 border border-emerald-500/50 text-[9px] font-medium';
+        fb.innerText = `🎉 Correct! Density of ${item.name} is ${item.density.toFixed(2)} g/mL.`;
+
+        state.solvedMap[activeKey] = true;
+        audio.playVictory();
+        triggerConfetti();
+        renderConfetti();
+
+        // Auto Log to Notebook
+        autoLogSampleToNotebook(activeKey);
+
+        saveStateToStorage();
+        renderShelf();
+        syncWorksheetUI();
+      } else {
+        fb.className = 'mt-1 p-1 rounded bg-amber-950/80 text-amber-200 border border-amber-500/40 text-[9px] font-medium';
+        if (item.density < 1.0 && !state.isSubmergedForced) {
+          fb.innerText = `❌ Incorrect (${userD.toFixed(2)} g/mL). Hint: Did you hold the floating object underwater for full volume displacement?`;
+        } else {
+          fb.innerText = `❌ Incorrect (${userD.toFixed(2)} g/mL). Double check: Density = Mass ÷ Displaced Vol.`;
+        }
+        audio.playError();
+      }
+    };
+
+    document.getElementById('btnClearWorksheet').onclick = () => {
+      const activeKey = state.selectedActiveKey;
+      state.worksheetData[activeKey] = { mass: '', v1: '100.0', v2: '', displaced: '', density: '' };
+      audio.playClick();
+      saveStateToStorage();
+      syncWorksheetUI();
+    };
+
+    /* ====================================================================
+       8. PERMANENT INSET CALCULATOR ENGINE
+       ==================================================================== */
+    let calcState = {
+      formula: '',
+      display: '0',
+      resetNext: false
+    };
+
+    function updateCalcDisplay() {
+      document.getElementById('calcFormula').innerText = calcState.formula;
+      document.getElementById('calcDisplay').innerText = calcState.display;
+    }
+
+    function calcInput(char) {
+      audio.playClick();
+      if (calcState.resetNext) {
+        calcState.display = '0';
+        calcState.resetNext = false;
+      }
+
+      if (['+', '-', '*', '/'].includes(char)) {
+        calcState.formula += calcState.display + ' ' + char + ' ';
+        calcState.resetNext = true;
+        updateCalcDisplay();
+        return;
+      }
+
+      if (calcState.display === '0' && char !== '.') {
+        calcState.display = char;
+      } else {
+        if (char === '.' && calcState.display.includes('.')) return;
+        calcState.display += char;
+      }
+      updateCalcDisplay();
+    }
+
+    function calcClear() {
+      audio.playClick();
+      calcState = { formula: '', display: '0', resetNext: false };
+      updateCalcDisplay();
+    }
+
+    function calcBackspace() {
+      audio.playClick();
+      if (calcState.display.length > 1) {
+        calcState.display = calcState.display.slice(0, -1);
+      } else {
+        calcState.display = '0';
+      }
+      updateCalcDisplay();
+    }
+
+    function calcEquals() {
+      audio.playClick();
+      try {
+        const expr = (calcState.formula + calcState.display).replace(/×/g, '*').replace(/÷/g, '/');
+        // Safe evaluation
+        const result = Function(`'use strict'; return (${expr})`)();
+        if (!isFinite(result) || isNaN(result)) throw new Error();
+
+        calcState.formula = expr + ' =';
+        calcState.display = (Math.round(result * 1000) / 1000).toString();
+        calcState.resetNext = true;
+      } catch(e) {
+        calcState.display = 'Error';
+        calcState.resetNext = true;
+      }
+      updateCalcDisplay();
+    }
+
+    /* Calculator Transfer Buttons */
+    document.getElementById('btnCalcInsertMass').onclick = () => {
+      const val = document.getElementById('inputMass').value;
+      if (val) {
+        calcState.display = val;
+        calcState.resetNext = false;
+        audio.playClick();
+        updateCalcDisplay();
+      }
+    };
+
+    document.getElementById('btnCalcInsertVol').onclick = () => {
+      const val = document.getElementById('inputDisplaced').value;
+      if (val) {
+        calcState.display = val;
+        calcState.resetNext = false;
+        audio.playClick();
+        updateCalcDisplay();
+      }
+    };
+
+    document.getElementById('btnCalcUseAnswer').onclick = () => {
+      const val = parseFloat(calcState.display);
+      if (!isNaN(val)) {
+        document.getElementById('inputDensity').value = val.toFixed(2);
+        audio.playClick();
+        saveActiveWorksheetInputs();
+      }
+    };
+
+    /* ====================================================================
+       9. PERMANENT EMBEDDED LAB DATA NOTEBOOK
+       ==================================================================== */
+    function autoLogSampleToNotebook(sampleKey) {
+      const item = SAMPLE_DEFINITIONS[sampleKey];
+      const ws = state.worksheetData[sampleKey] || {};
+
+      // Check if row exists
+      const existingIdx = state.notebookRows.findIndex(r => r.key === sampleKey);
+      const rowData = {
+        key: sampleKey,
+        name: item.name,
+        mass: ws.mass || item.mass.toFixed(1),
+        v1: ws.v1 || '100.0',
+        v2: ws.v2 || (100.0 + item.volume).toFixed(1),
+        displaced: ws.displaced || item.volume.toFixed(1),
+        density: ws.density || item.density.toFixed(2),
+        status: 'VERIFIED ✓'
+      };
+
+      if (existingIdx >= 0) {
+        state.notebookRows[existingIdx] = rowData;
+      } else {
+        state.notebookRows.push(rowData);
+      }
+
+      saveStateToStorage();
+      renderNotebookTable();
+    }
+
+    document.getElementById('btnAutoLogActive').onclick = () => {
+      audio.playClick();
+      autoLogSampleToNotebook(state.selectedActiveKey);
+    };
+
+    function renderNotebookTable() {
+      const tbody = document.getElementById('notebookTableBody');
+      tbody.innerHTML = '';
+
+      if (state.notebookRows.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-3 text-center text-slate-500 italic">
+              No material observations logged yet. Solve samples or click "Log Active".
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      state.notebookRows.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/50 transition border-b border-slate-800/40';
+        tr.innerHTML = `
+          <td class="py-1 px-1 font-bold text-indigo-300">${r.name}</td>
+          <td class="py-1 px-1 text-slate-300">${r.mass}</td>
+          <td class="py-1 px-1 text-cyan-300/80">${r.v1}</td>
+          <td class="py-1 px-1 text-cyan-300">${r.v2}</td>
+          <td class="py-1 px-1 font-bold text-cyan-200">${r.displaced}</td>
+          <td class="py-1 px-1 font-bold text-emerald-300">${r.density}</td>
+          <td class="py-1 px-1 font-semibold text-emerald-400 text-[9px]">${r.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('btnClearNotebook').onclick = () => {
+      audio.playClick();
+      state.notebookRows = [];
+      saveStateToStorage();
+      renderNotebookTable();
+    };
+
+    document.getElementById('btnExportCSV').onclick = () => {
+      audio.playClick();
+      if (state.notebookRows.length === 0) return;
+
+      let csv = 'Material,Mass (g),V1 Initial (mL),V2 Final (mL),Displaced Vol (mL),Calculated Density (g/mL),Status\n';
+      state.notebookRows.forEach(r => {
+        csv += `"${r.name}",${r.mass},${r.v1},${r.v2},${r.displaced},${r.density},"${r.status}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'density_lab_notebook_data.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    /* ====================================================================
+       10. HEADER CONTROLS & GLOBAL INIT
+       ==================================================================== */
+    document.getElementById('selectFluid').addEventListener('change', (e) => {
+      state.selectedFluidKey = e.target.value;
+      audio.playClick();
+      syncWorksheetUI();
+    });
+
+    document.getElementById('btnSoundToggle').onclick = () => {
+      state.soundEnabled = !state.soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      if (state.soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-indigo-400';
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+      }
+    };
+
+    document.getElementById('btnResetAllData').onclick = () => {
+      if (confirm('Reset all saved progress, worksheets, and lab notebook records?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        state.solvedMap = {};
+        state.worksheetData = getDefaultWorksheetData();
+        state.notebookRows = [];
+        Object.keys(SAMPLE_DEFINITIONS).forEach(k => { state.blockLocations[k] = 'desk'; });
+        audio.playClick();
+        renderShelf();
+        syncWorksheetUI();
+        renderNotebookTable();
+      }
+    };
+
+    function updateUIReadouts() {
+      // Periodic UI updates handled smoothly via state sync
+    }
+
+    /* On Window Load */
+    window.onload = () => {
+      resizeCanvas();
+      loadStateFromStorage();
+      renderShelf();
+      syncWorksheetUI();
+      renderNotebookTable();
+      requestAnimationFrame(renderSimulation);
+    };
+  </script>
+</body>
+</html>
