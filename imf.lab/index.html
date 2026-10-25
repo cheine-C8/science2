@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intermolecular Forces Lab</title>
+    <meta name="description" content="See how intermolecular forces (London dispersion, dipole-dipole, hydrogen bonding) set melting point, boiling point, evaporation, surface tension and viscosity.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-soft: #dbeafe;
+            --primary-gradient: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --inset: #f1f5f9;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --text-muted: #64748b;
+            --ok: #15803d;
+            --ok-soft: #dcfce7;
+            --bad: #b91c1c;
+            --bad-soft: #fee2e2;
+            --warn-soft: #fef3c7;
+            --warn: #92400e;
+            /* intermolecular force identity colors */
+            --ldf: #64748b;
+            --ldf-soft: #e2e8f0;
+            --dd: #9333ea;
+            --dd-soft: #f3e8ff;
+            --hb: #0891b2;
+            --hb-soft: #cffafe;
+            /* phases */
+            --solid: #3b82f6;
+            --liquid: #10b981;
+            --gas: #f97316;
+            --sim-bg: #f8fafc;
+            --sim-wall: #cbd5e1;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #60a5fa;
+                --primary-soft: #1e3a5f;
+                --bg: #0b0f19;
+                --card-bg: #141b2d;
+                --inset: #0f1626;
+                --border: #26334d;
+                --text-main: #f1f5f9;
+                --text-sub: #cbd5e1;
+                --text-muted: #94a3b8;
+                --ok: #4ade80;
+                --ok-soft: #12321f;
+                --bad: #f87171;
+                --bad-soft: #3b1414;
+                --warn-soft: #3a2a0a;
+                --warn: #fbbf24;
+                --ldf: #94a3b8;
+                --ldf-soft: #1e293b;
+                --dd: #c084fc;
+                --dd-soft: #2e1a47;
+                --hb: #22d3ee;
+                --hb-soft: #0c3440;
+                --solid: #60a5fa;
+                --liquid: #34d399;
+                --gas: #fb923c;
+                --sim-bg: #0f1626;
+                --sim-wall: #334155;
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+                --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            color: var(--text-main);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---------- Header ---------- */
+        header {
+            background: var(--primary-gradient);
+            color: #fff;
+            padding: 1.25rem 1rem 1.5rem;
+        }
+        .hero { max-width: 1100px; margin: 0 auto; }
+        .back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+        .back:hover { color: #fff; }
+        header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.3rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-top: 0.35rem;
+        }
+        header p { opacity: 0.92; font-size: 0.98rem; max-width: 720px; }
+
+        /* ---------- Stepper ---------- */
+        .stepper-wrap {
+            position: sticky; top: 0; z-index: 20;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .stepper {
+            max-width: 1100px; margin: 0 auto;
+            display: flex; gap: 0.25rem; overflow-x: auto;
+            padding: 0.5rem 1rem;
+            scrollbar-width: none;
+        }
+        .stepper::-webkit-scrollbar { display: none; }
+        .stepper button {
+            font: inherit; font-size: 0.85rem; font-weight: 600;
+            border: none; background: transparent; color: var(--text-sub);
+            padding: 0.45rem 0.8rem; border-radius: 999px; cursor: pointer;
+            white-space: nowrap; display: flex; align-items: center; gap: 0.4rem;
+        }
+        .stepper button:hover { background: var(--inset); }
+        .stepper button .num {
+            display: inline-grid; place-items: center;
+            width: 1.4rem; height: 1.4rem; border-radius: 50%;
+            background: var(--inset); color: var(--text-muted); font-size: 0.75rem;
+        }
+        .stepper button.active { background: var(--primary-soft); color: var(--primary); }
+        .stepper button.active .num { background: var(--primary); color: #fff; }
+
+        main { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+        .step { display: none; }
+        .step.active { display: block; animation: fade 0.25s ease; }
+        @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+        .step-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+        .step-head h2 { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; }
+        .lead { color: var(--text-sub); max-width: 820px; margin-bottom: 1rem; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.1rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+        }
+        .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .card p + p { margin-top: 0.5rem; }
+        .muted { color: var(--text-muted); }
+        .small { font-size: 0.85rem; }
+        .mono { font-family: var(--font-mono); }
+
+        .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+        .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+        .sim-layout { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+        @media (max-width: 820px) {
+            .grid2, .grid3, .sim-layout { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        /* ---------- Simulation box ---------- */
+        .sim-wrap { position: relative; }
+        canvas.sim {
+            width: 100%; aspect-ratio: 1 / 1; display: block;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--sim-bg);
+        }
+        .phase-pill {
+            position: absolute; top: 0.6rem; left: 0.6rem;
+            font-weight: 800; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+            padding: 0.25rem 0.65rem; border-radius: 999px; color: #fff;
+            background: var(--solid);
+            box-shadow: var(--shadow-sm);
+        }
+        .phase-pill.liquid { background: var(--liquid); }
+        .phase-pill.gas { background: var(--gas); }
+        .phase-pill.mixed { background: linear-gradient(90deg, var(--solid), var(--liquid)); }
+        .phase-pill.mixed2 { background: linear-gradient(90deg, var(--liquid), var(--gas)); }
+        .temp-pill {
+            position: absolute; top: 0.6rem; right: 0.6rem;
+            font-family: var(--font-mono); font-weight: 600; font-size: 0.85rem;
+            padding: 0.2rem 0.55rem; border-radius: var(--radius-sm);
+            background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main);
+        }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; font-size: 0.78rem; color: var(--text-sub); margin-top: 0.5rem; }
+        .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+        .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .sw-line { width: 18px; height: 0; border-top: 2px solid; display: inline-block; }
+
+        /* ---------- Controls ---------- */
+        .control { margin-bottom: 0.9rem; }
+        .control label, .control .lbl { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.88rem; margin-bottom: 0.25rem; gap: 0.5rem; }
+        .control label .val { font-family: var(--font-mono); font-weight: 600; color: var(--primary); }
+        input[type=range] { width: 100%; accent-color: var(--primary); height: 1.6rem; }
+        select {
+            font: inherit; font-size: 0.92rem; padding: 0.45rem 0.6rem; width: 100%;
+            border-radius: var(--radius-sm); border: 1px solid var(--border);
+            background: var(--card-bg); color: var(--text-main);
+        }
+        .btn {
+            font: inherit; font-weight: 700; font-size: 0.88rem;
+            padding: 0.5rem 0.9rem; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main);
+            cursor: pointer;
+        }
+        .btn:hover { background: var(--inset); }
+        .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .btn.primary:hover { filter: brightness(1.08); }
+        .btn.hot { background: #dc2626; border-color: #dc2626; color: #fff; }
+        .btn.cold { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .btn.on { outline: 3px solid var(--primary-soft); }
+        .btn-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+        .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; flex-wrap: wrap; }
+        .seg button { font: inherit; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 0.7rem; border: none; background: var(--card-bg); color: var(--text-sub); cursor: pointer; border-right: 1px solid var(--border); }
+        .seg button:last-child { border-right: none; }
+        .seg button.sel { background: var(--primary); color: #fff; }
+        .seg button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); cursor: pointer; }
+
+        /* ---------- Who's winning meter ---------- */
+        .meter { margin: 0.4rem 0 0.2rem; }
+        .meter-track { position: relative; height: 34px; border-radius: var(--radius-sm); overflow: hidden; display: flex; }
+        .meter-track .z { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; color: #fff; text-transform: uppercase; overflow: hidden; white-space: nowrap; }
+        .meter-track .z.s { background: var(--solid); }
+        .meter-track .z.l { background: var(--liquid); }
+        .meter-track .z.g { background: var(--gas); }
+        .meter-marker { position: absolute; top: -6px; bottom: -6px; width: 0; transition: left 0.15s; }
+        .meter-marker::before { content: ''; position: absolute; left: -2px; top: 0; bottom: 0; width: 4px; background: var(--text-main); border-radius: 2px; }
+        .meter-marker::after { content: ''; position: absolute; left: -7px; top: -2px; border: 7px solid transparent; border-top-color: var(--text-main); }
+        .meter-wrap { position: relative; padding-top: 6px; padding-bottom: 6px; }
+        .meter-axis { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.15rem; }
+        .meter-cap { font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; gap: 0.5rem; }
+
+        .verdict {
+            border-radius: var(--radius-md); padding: 0.8rem 0.95rem; margin-top: 0.75rem;
+            background: var(--inset); border-left: 5px solid var(--primary);
+        }
+        .verdict b.big { font-size: 1.15rem; }
+        .callout { background: var(--warn-soft); color: var(--text-main); border-radius: var(--radius-md); padding: 0.75rem 0.9rem; font-size: 0.92rem; }
+        .callout b { color: var(--warn); }
+        .try { margin-top: 0.4rem; padding-left: 1.1rem; color: var(--text-sub); font-size: 0.92rem; }
+        .try li { margin-bottom: 0.3rem; }
+
+        /* ---------- Thermometer ---------- */
+        .thermo-row { display: flex; gap: 0.9rem; align-items: stretch; }
+        .thermo { position: relative; width: 22px; flex: none; border-radius: 11px; background: var(--inset); border: 1px solid var(--border); min-height: 240px; }
+        .thermo .fill { position: absolute; left: 3px; right: 3px; bottom: 3px; border-radius: 8px; background: linear-gradient(0deg, #3b82f6, #ef4444); transition: height 0.15s; }
+        .thermo .tick { position: absolute; left: -4px; right: -4px; height: 0; border-top: 2px dashed var(--text-main); }
+        .thermo .tick span { position: absolute; left: 30px; top: -0.65rem; font-size: 0.72rem; font-weight: 700; white-space: nowrap; color: var(--text-sub); }
+
+        /* ---------- Chips ---------- */
+        .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .chip { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; border: 1px solid transparent; }
+        .chip.ldf { background: var(--ldf-soft); color: var(--text-main); border-color: var(--ldf); }
+        .chip.dd { background: var(--dd-soft); color: var(--text-main); border-color: var(--dd); }
+        .chip.hb { background: var(--hb-soft); color: var(--text-main); border-color: var(--hb); }
+        .tag { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+
+        .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem 0.8rem; font-size: 0.85rem; margin: 0.6rem 0; }
+        .facts div { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); padding-bottom: 0.15rem; gap: 0.4rem; }
+        .facts b { font-family: var(--font-mono); font-weight: 600; }
+
+        .grip { margin-top: 0.4rem; }
+        .grip .bar { height: 12px; border-radius: 0 4px 4px 0; background: var(--primary); transition: width 0.3s; }
+        .grip .row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
+        .grip .track { flex: 1; background: var(--inset); border-radius: 4px; height: 12px; }
+
+        /* ---------- Heating curve ---------- */
+        canvas.chart { width: 100%; height: 280px; display: block; }
+        .energy-split { display: flex; height: 18px; border-radius: 4px; overflow: hidden; background: var(--inset); gap: 2px; }
+        .energy-split div { height: 100%; transition: width 0.15s; }
+        .now-box { border-radius: var(--radius-md); padding: 0.75rem 0.9rem; background: var(--inset); border-left: 5px solid var(--primary); min-height: 4.5rem; }
+
+        /* ---------- IMF type cards ---------- */
+        .imf-card { border-top: 5px solid var(--ldf); }
+        .imf-card.dd { border-top-color: var(--dd); }
+        .imf-card.hb { border-top-color: var(--hb); }
+        .imf-card svg { width: 100%; height: auto; display: block; margin: 0.3rem 0 0.5rem; }
+        .strength { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* ---------- Ranked bar list ---------- */
+        .rank-list { display: flex; flex-direction: column; gap: 3px; }
+        .rank-row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 4.2rem; align-items: center; gap: 0.5rem; font-size: 0.8rem; padding: 1px 4px; border-radius: 6px; }
+        .rank-row .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rank-row .b { height: 10px; border-radius: 0 4px 4px 0; min-width: 3px; }
+        .rank-row .v { font-family: var(--font-mono); text-align: right; color: var(--text-sub); }
+        .rank-row.you { background: var(--primary-soft); font-weight: 800; outline: 2px solid var(--primary); }
+        .rank-row.room { border-top: 2px dashed var(--text-muted); margin-top: 3px; padding-top: 3px; }
+
+        .stack { display: flex; height: 26px; border-radius: 0 4px 4px 0; gap: 2px; background: var(--inset); }
+        .stack div { height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: 700; overflow: hidden; white-space: nowrap; transition: width 0.2s; }
+        .stack div:last-child { border-radius: 0 4px 4px 0; }
+
+        /* ---------- Properties ---------- */
+        .pick { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .pick button { font: inherit; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-sub); cursor: pointer; }
+        .pick button.sel { background: var(--primary); border-color: var(--primary); color: #fff; }
+        canvas.demo { width: 100%; height: 220px; display: block; border-radius: var(--radius-md); background: var(--sim-bg); border: 1px solid var(--border); }
+        table.summary { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        table.summary th, table.summary td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+        table.summary th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+        .up { color: var(--ok); font-weight: 800; }
+        .down { color: var(--bad); font-weight: 800; }
+        .tbl-wrap { overflow-x: auto; }
+
+        /* ---------- Challenge ---------- */
+        .rank-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7rem; }
+        @media (max-width: 620px) { .rank-choices { grid-template-columns: minmax(0, 1fr); } }
+        .choice {
+            font: inherit; text-align: left; cursor: pointer;
+            border: 2px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem;
+            background: var(--card-bg); color: var(--text-main); position: relative;
+        }
+        .choice:hover { border-color: var(--primary); }
+        .choice.picked { border-color: var(--primary); background: var(--primary-soft); }
+        .choice.right { border-color: var(--ok); background: var(--ok-soft); }
+        .choice.wrong { border-color: var(--bad); background: var(--bad-soft); }
+        .choice .order { position: absolute; top: 0.5rem; right: 0.6rem; width: 1.7rem; height: 1.7rem; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--primary); color: #fff; }
+        .choice .f { font-size: 1.3rem; font-weight: 800; }
+        .score { font-family: var(--font-mono); font-weight: 600; }
+        .feedback { margin-top: 0.8rem; }
+
+        .nav-row { display: flex; justify-content: space-between; margin-top: 1rem; gap: 0.5rem; }
+        footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 1rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="hero">
+        <a class="back" href="../">← Science2</a>
+        <h1>Intermolecular Forces Lab</h1>
+        <p>Why does water boil at 100 °C while methane boils at −162 °C? It comes down to how strongly the molecules pull on each other.</p>
+    </div>
+</header>
+
+<div class="stepper-wrap"><nav class="stepper" id="stepper" aria-label="Lab sections"></nav></div>
+
+<main>
+
+    <!-- ===================== STEP 1: TUG OF WAR ===================== -->
+    <section class="step" data-step="0" data-title="Tug-of-war">
+        <div class="step-head"><h2>The big idea: a tug-of-war</h2></div>
+        <p class="lead">
+            Molecules are always moving. Temperature measures <b>how much motion energy</b> they have.
+            Molecules also <b>attract</b> each other. These attractions between separate molecules are called
+            <b>intermolecular forces (IMFs)</b>. Whether a substance is a solid, liquid, or gas depends on which side wins:
+            <b>motion pulling molecules apart</b> or <b>IMFs holding them together</b>.
+        </p>
+        <div class="sim-layout">
+            <div class="card">
+                <div class="sim-wrap">
+                    <canvas class="sim" id="simA"></canvas>
+                    <div class="phase-pill" id="pillA">Solid</div>
+                    <div class="temp-pill" id="tpillA">25 °C</div>
+                </div>
+                <div class="legend">
+                    <span><i class="sw-line" style="border-color: var(--ldf)"></i>Attraction between molecules (thicker = stronger)</span>
+                </div>
+            </div>
+            <div>
+                <div class="card">
+                    <div class="control">
+                        <label for="imfSlider">Strength of the intermolecular forces <span class="val" id="imfVal">5</span></label>
+                        <input type="range" id="imfSlider" min="1" max="10" step="0.1" value="5">
+                        <div class="meter-cap"><span>Weak "grip"</span><span>Strong "grip"</span></div>
+                    </div>
+                    <div class="control">
+                        <label for="tempSlider">Temperature (motion energy) <span class="val" id="tempVal">25 °C</span></label>
+                        <input type="range" id="tempSlider" min="-250" max="400" step="1" value="25">
+                        <div class="meter-cap"><span>Slow molecules</span><span>Fast molecules</span></div>
+                    </div>
+                    <div class="lbl" style="font-weight:700;font-size:.88rem">Who's winning?</div>
+                    <div id="meterA"></div>
+                    <div class="verdict" id="verdictA"></div>
+                </div>
+                <div class="card">
+                    <h3>Try this</h3>
+                    <ol class="try">
+                        <li>Set the temperature to <b>25 °C</b> (room temperature). Slowly drag the IMF strength from 1 up to 10. What happens to the molecules, even though the temperature never changed?</li>
+                        <li>Watch the green "liquid" and orange "gas" zones on the meter as you change IMF strength. Which way do the melting and boiling points move?</li>
+                        <li>Set IMF strength to 8. How hot do you have to make it to boil? Now try strength 3.</li>
+                    </ol>
+                    <p class="callout" style="margin-top:.6rem"><b>Key idea:</b> Melting and boiling don't break molecules apart. The atoms inside each molecule stay bonded. Only the attractions <i>between</i> molecules are overcome. Stronger IMFs need more motion energy to overcome, so they need a higher temperature.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 2: TYPES OF IMFs ===================== -->
+    <section class="step" data-step="1" data-title="Types of forces">
+        <div class="step-head"><h2>What makes the forces strong or weak?</h2></div>
+        <p class="lead">There are three kinds of intermolecular forces. Every molecule has the first kind. Some molecules also have the second or third.</p>
+        <div class="grid3">
+            <div class="card imf-card">
+                <h3>London dispersion</h3>
+                <div class="strength">Every molecule · weak per contact, grows with size</div>
+                <svg viewBox="0 0 260 110" aria-label="Two molecules with shifting electron clouds creating temporary dipoles">
+                    <defs>
+                        <radialGradient id="cloudA" cx="30%" cy="50%" r="70%"><stop offset="0" stop-color="#94a3b8" stop-opacity=".95"/><stop offset="1" stop-color="#94a3b8" stop-opacity=".25"/></radialGradient>
+                        <radialGradient id="cloudB" cx="30%" cy="50%" r="70%"><stop offset="0" stop-color="#94a3b8" stop-opacity=".95"/><stop offset="1" stop-color="#94a3b8" stop-opacity=".25"/></radialGradient>
+                    </defs>
+                    <g class="ldf-anim">
+                        <ellipse cx="70" cy="55" rx="48" ry="36" fill="url(#cloudA)"/>
+                        <ellipse cx="190" cy="55" rx="48" ry="36" fill="url(#cloudB)"/>
+                    </g>
+                    <text x="38" y="60" font-size="16" font-weight="800" fill="#dc2626">δ−</text>
+                    <text x="92" y="60" font-size="16" font-weight="800" fill="#2563eb">δ+</text>
+                    <text x="158" y="60" font-size="16" font-weight="800" fill="#dc2626">δ−</text>
+                    <text x="212" y="60" font-size="16" font-weight="800" fill="#2563eb">δ+</text>
+                    <line x1="112" y1="55" x2="150" y2="55" stroke="#64748b" stroke-width="2" stroke-dasharray="2 4"/>
+                </svg>
+                <p class="small">Electrons are always moving. For an instant, more of them may be on one side. That makes a <b>temporary dipole</b>, which pushes the electrons in the next molecule over to shift the same way. The two molecules attract for that instant.</p>
+                <p class="small"><b>More electrons = stronger.</b> A bigger electron cloud shifts more easily, so a big molecule like I₂ (106 e⁻) grips much harder than F₂ (18 e⁻). Long, stretched-out molecules also have more surface touching their neighbors.</p>
+            </div>
+            <div class="card imf-card dd">
+                <h3>Dipole–dipole</h3>
+                <div class="strength">Polar molecules only · medium</div>
+                <svg viewBox="0 0 260 110" aria-label="Two polar molecules lined up positive end to negative end">
+                    <g>
+                        <rect x="20" y="35" width="90" height="40" rx="20" fill="#9333ea" fill-opacity=".18" stroke="#9333ea"/>
+                        <circle cx="42" cy="55" r="14" fill="#2563eb" fill-opacity=".8"/><circle cx="88" cy="55" r="17" fill="#dc2626" fill-opacity=".8"/>
+                        <text x="36" y="30" font-size="14" font-weight="800" fill="#2563eb">δ+</text><text x="80" y="30" font-size="14" font-weight="800" fill="#dc2626">δ−</text>
+                        <rect x="150" y="35" width="90" height="40" rx="20" fill="#9333ea" fill-opacity=".18" stroke="#9333ea"/>
+                        <circle cx="172" cy="55" r="14" fill="#2563eb" fill-opacity=".8"/><circle cx="218" cy="55" r="17" fill="#dc2626" fill-opacity=".8"/>
+                        <text x="166" y="30" font-size="14" font-weight="800" fill="#2563eb">δ+</text><text x="210" y="30" font-size="14" font-weight="800" fill="#dc2626">δ−</text>
+                        <line x1="106" y1="55" x2="157" y2="55" stroke="#9333ea" stroke-width="3"/>
+                    </g>
+                    <text x="130" y="100" font-size="12" text-anchor="middle" fill="#9333ea" font-weight="700">δ− attracts δ+</text>
+                </svg>
+                <p class="small">When atoms with different electronegativities bond, electrons are shared unevenly. One end of the molecule is always slightly negative (δ−), the other slightly positive (δ+). This is a <b>permanent dipole</b>.</p>
+                <p class="small">The δ+ end of one molecule attracts the δ− end of its neighbor. This adds <b>extra grip on top of</b> London dispersion.</p>
+            </div>
+            <div class="card imf-card hb">
+                <h3>Hydrogen bonding</h3>
+                <div class="strength">H bonded to N, O, or F · strongest</div>
+                <svg viewBox="0 0 260 110" aria-label="Two water molecules joined by a hydrogen bond">
+                    <g>
+                        <circle cx="60" cy="55" r="20" fill="#dc2626" fill-opacity=".85"/><text x="54" y="60" font-size="14" font-weight="800" fill="#fff">O</text>
+                        <circle cx="35" cy="80" r="11" fill="#e2e8f0" stroke="#64748b"/><text x="31" y="84" font-size="10" font-weight="800" fill="#0f172a">H</text>
+                        <circle cx="90" cy="65" r="11" fill="#e2e8f0" stroke="#64748b"/><text x="86" y="69" font-size="10" font-weight="800" fill="#0f172a">H</text>
+                        <circle cx="175" cy="58" r="20" fill="#dc2626" fill-opacity=".85"/><text x="169" y="63" font-size="14" font-weight="800" fill="#fff">O</text>
+                        <circle cx="200" cy="35" r="11" fill="#e2e8f0" stroke="#64748b"/><text x="196" y="39" font-size="10" font-weight="800" fill="#0f172a">H</text>
+                        <circle cx="205" cy="78" r="11" fill="#e2e8f0" stroke="#64748b"/><text x="201" y="82" font-size="10" font-weight="800" fill="#0f172a">H</text>
+                        <line x1="102" y1="64" x2="154" y2="59" stroke="#0891b2" stroke-width="3.5" stroke-dasharray="6 4"/>
+                        <text x="128" y="50" font-size="11" text-anchor="middle" fill="#0891b2" font-weight="800">H-bond</text>
+                    </g>
+                </svg>
+                <p class="small">When H is bonded to a very electronegative N, O, or F, the H is left almost bare: a <b>very strong δ+</b>. It is pulled hard toward a lone pair on an N, O, or F of a neighboring molecule.</p>
+                <p class="small">It's an especially strong dipole–dipole attraction. Water can form up to <b>four</b> H-bonds per molecule, which is why it's so "sticky."</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Build a molecule <span class="tag">Model</span></h3>
+            <p class="small muted" style="margin-bottom:.8rem">Design an imaginary molecule and see where its boiling point lands among real substances.</p>
+            <div class="grid2">
+                <div>
+                    <div class="control">
+                        <label for="eSlider">Size: number of electrons <span class="val" id="eVal">26</span></label>
+                        <input type="range" id="eSlider" min="2" max="120" step="1" value="26">
+                    </div>
+                    <div class="control">
+                        <div class="lbl">Polarity</div>
+                        <div class="seg" id="polSeg">
+                            <button data-v="0" class="sel">Nonpolar</button><button data-v="1">Slightly polar</button><button data-v="2">Very polar</button>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <div class="lbl">Hydrogen bonding (H on N, O, F)</div>
+                        <div class="seg" id="hbSeg">
+                            <button data-v="0" class="sel">None</button><button data-v="1">One group (like –OH)</button><button data-v="2">Many (like water)</button>
+                        </div>
+                        <div class="small muted" id="hbNote" style="margin-top:.3rem"></div>
+                    </div>
+                    <div class="lbl" style="font-weight:700;font-size:.88rem;margin-bottom:.3rem">Where the "grip" comes from</div>
+                    <div class="stack" id="buildStack"></div>
+                    <div class="legend">
+                        <span><i class="sw" style="background:var(--ldf)"></i>London dispersion</span>
+                        <span><i class="sw" style="background:var(--dd)"></i>Dipole–dipole</span>
+                        <span><i class="sw" style="background:var(--hb)"></i>Hydrogen bonding</span>
+                    </div>
+                    <div class="verdict" id="buildVerdict"></div>
+                </div>
+                <div>
+                    <div class="lbl" style="font-weight:700;font-size:.88rem;margin-bottom:.3rem">Boiling points, highest to lowest</div>
+                    <div class="rank-list" id="buildRank"></div>
+                    <div class="legend">
+                        <span><i class="sw" style="background:var(--ldf)"></i>Strongest IMF: dispersion</span>
+                        <span><i class="sw" style="background:var(--dd)"></i>dipole–dipole</span>
+                        <span><i class="sw" style="background:var(--hb)"></i>H-bonding</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 3: HEATING CURVE ===================== -->
+    <section class="step" data-step="2" data-title="Heat it up">
+        <div class="step-head"><h2>Heat it up: where does the energy go?</h2></div>
+        <p class="lead">
+            Turn on the heater and watch the thermometer. While a substance melts or boils, the temperature <b>stops rising</b>,
+            even though you keep adding heat. That energy is being used to pull molecules away from each other, breaking IMFs, instead of making them move faster.
+        </p>
+        <div class="sim-layout">
+            <div class="card">
+                <div class="control">
+                    <label for="heatSub">Substance</label>
+                    <select id="heatSub"></select>
+                </div>
+                <div class="sim-wrap">
+                    <canvas class="sim" id="simH"></canvas>
+                    <div class="phase-pill" id="pillH">Solid</div>
+                    <div class="temp-pill" id="tpillH">0 °C</div>
+                </div>
+                <div class="legend" id="legendH"></div>
+                <div class="btn-row" style="margin-top:.7rem">
+                    <button class="btn hot" id="btnHeat">Heat</button>
+                    <button class="btn" id="btnHold">Hold</button>
+                    <button class="btn cold" id="btnCool">Cool</button>
+                    <button class="btn" id="btnResetH">Reset</button>
+                </div>
+                <div class="control" style="margin-top:.6rem;margin-bottom:0">
+                    <label for="powerSlider">Heater power <span class="val" id="powerVal">1×</span></label>
+                    <input type="range" id="powerSlider" min="0.25" max="4" step="0.25" value="1">
+                </div>
+            </div>
+            <div>
+                <div class="card">
+                    <h3 id="curveTitle">Heating curve</h3>
+                    <canvas class="chart" id="curve" aria-label="Heating curve: temperature versus energy added"></canvas>
+                    <div class="small muted" id="curveHover" style="min-height:1.3rem;margin-top:.2rem"></div>
+                    <div class="lbl" style="font-weight:700;font-size:.85rem;margin:.4rem 0 .25rem">Energy added so far: <span class="mono" id="eTotal">0 kJ/mol</span></div>
+                    <div class="energy-split"><div id="eKE" style="background:#ef4444;width:0"></div><div id="eIMF" style="background:var(--hb);width:0"></div></div>
+                    <div class="legend">
+                        <span><i class="sw" style="background:#ef4444"></i>Speeding molecules up (temperature rises): <b class="mono" id="eKEv">0</b></span>
+                        <span><i class="sw" style="background:var(--hb)"></i>Breaking IMFs (temperature flat): <b class="mono" id="eIMFv">0</b></span>
+                    </div>
+                </div>
+                <div class="now-box" id="nowBox"></div>
+                <div class="card" style="margin-top:1rem">
+                    <h3>Try this</h3>
+                    <ol class="try">
+                        <li>Heat <b>water</b> all the way to a gas. Which flat part of the curve is longer: melting or boiling? Why would boiling need more energy than melting?</li>
+                        <li>Now heat <b>methane</b>. Compare how much energy (kJ/mol) it takes to boil methane vs. water.</li>
+                        <li>Try <b>ethanol</b> and <b>dimethyl ether</b>. They have the exact same atoms (C₂H₆O), but different IMFs.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 4: COMPARE ===================== -->
+    <section class="step" data-step="3" data-title="Compare">
+        <div class="step-head"><h2>Same temperature, different forces</h2></div>
+        <p class="lead">
+            Put two substances at the <b>same temperature</b>. Their molecules have the same average motion energy, but they don't
+            have the same grip on each other. That's why one can be a liquid while the other is already a gas.
+        </p>
+        <div class="card">
+            <div class="lbl" style="font-weight:700;font-size:.88rem;margin-bottom:.35rem">Interesting pairs</div>
+            <div class="pick" id="presetRow"></div>
+            <p class="small" id="presetNote" style="margin-top:.6rem;color:var(--text-sub)"></p>
+            <div class="control" style="margin-top:.8rem;margin-bottom:.2rem">
+                <label for="cmpTemp">Temperature for both <span class="val" id="cmpTempVal">25 °C</span></label>
+                <input type="range" id="cmpTemp" min="-230" max="320" step="1" value="25">
+            </div>
+            <div class="btn-row">
+                <button class="btn" data-t="-196">Liquid nitrogen (−196 °C)</button>
+                <button class="btn" data-t="-78">Dry ice (−78 °C)</button>
+                <button class="btn" data-t="0">0 °C</button>
+                <button class="btn" data-t="25">Room temp (25 °C)</button>
+                <button class="btn" data-t="100">100 °C</button>
+            </div>
+        </div>
+        <div class="grid2">
+            <div class="card" id="cmpCard0"></div>
+            <div class="card" id="cmpCard1"></div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 5: PROPERTIES ===================== -->
+    <section class="step" data-step="4" data-title="Properties">
+        <div class="step-head"><h2>IMFs give liquids their personality</h2></div>
+        <p class="lead">
+            The same molecular grip that sets melting and boiling points also controls how a liquid <b>evaporates</b>,
+            how it <b>beads up</b>, and how <b>thick</b> it is. Pick some liquids (all at room temperature, 25 °C) and compare.
+        </p>
+        <div class="card">
+            <div class="lbl" style="font-weight:700;font-size:.88rem;margin-bottom:.35rem">Choose up to 4 liquids</div>
+            <div class="pick" id="propPick"></div>
+        </div>
+        <div class="grid3">
+            <div class="card">
+                <h3>Evaporation</h3>
+                <canvas class="demo" id="evapCv"></canvas>
+                <div class="btn-row" style="margin-top:.5rem"><button class="btn" id="evapReset">Refill</button></div>
+                <p class="small" style="margin-top:.5rem">Molecules at the surface that happen to be moving fast enough break free of their neighbors. <b>Weaker IMFs → more molecules escape → faster evaporation</b> and a higher <i>vapor pressure</i>.</p>
+                <div class="rank-list" id="vpBars" style="margin-top:.5rem"></div>
+                <p class="small muted" style="margin-top:.3rem">Vapor pressure at 25 °C (mmHg)</p>
+            </div>
+            <div class="card">
+                <h3>Surface tension</h3>
+                <canvas class="demo" id="dropCv"></canvas>
+                <p class="small" style="margin-top:.5rem">Molecules at the surface are pulled inward by neighbors below them. <b>Stronger IMFs → stronger inward pull → drops bead up</b> instead of spreading flat. (Same-size drops on a waxy surface.)</p>
+                <div class="rank-list" id="stBars" style="margin-top:.5rem"></div>
+                <p class="small muted" style="margin-top:.3rem">Surface tension at 25 °C (mN/m)</p>
+            </div>
+            <div class="card">
+                <h3>Viscosity</h3>
+                <canvas class="demo" id="viscCv"></canvas>
+                <div class="btn-row" style="margin-top:.5rem"><button class="btn primary" id="viscDrop">Drop the balls</button></div>
+                <p class="small" style="margin-top:.5rem">To flow, molecules must slide past each other. <b>Stronger IMFs → more "drag" → thicker liquid</b>, so a ball sinks slower. Glycerol has three –OH groups that tangle up in H-bonds.</p>
+                <div class="rank-list" id="viscBars" style="margin-top:.5rem"></div>
+                <p class="small muted" style="margin-top:.3rem">Viscosity at 25 °C (mPa·s). Fall times are shown on a compressed scale; glycerol is really ~1000× thicker than water.</p>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Summary: stronger IMFs mean…</h3>
+            <div class="tbl-wrap">
+                <table class="summary">
+                    <thead><tr><th>Property</th><th>Stronger IMFs</th><th>Why</th></tr></thead>
+                    <tbody>
+                        <tr><td>Melting point</td><td class="up">Higher ↑</td><td>More motion energy needed for molecules to break out of fixed positions.</td></tr>
+                        <tr><td>Boiling point</td><td class="up">Higher ↑</td><td>More motion energy needed for molecules to escape their neighbors completely.</td></tr>
+                        <tr><td>Heat of vaporization</td><td class="up">Higher ↑</td><td>More energy to pull each mole of molecules apart (longer boiling plateau).</td></tr>
+                        <tr><td>Vapor pressure / evaporation rate</td><td class="down">Lower ↓</td><td>Fewer surface molecules have enough energy to break free.</td></tr>
+                        <tr><td>Surface tension</td><td class="up">Higher ↑</td><td>Surface molecules are pulled inward harder.</td></tr>
+                        <tr><td>Viscosity</td><td class="up">Higher ↑</td><td>Molecules hold on to each other as they try to slide past.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== STEP 6: CHALLENGE ===================== -->
+    <section class="step" data-step="5" data-title="Challenge">
+        <div class="step-head"><h2>Challenge: rank the boiling points</h2><span class="score" id="score">Score: 0 / 0</span></div>
+        <p class="lead">Tap the substances in order from <b>highest</b> boiling point to <b>lowest</b>. Use what you know about size (electrons), polarity, and hydrogen bonding.</p>
+        <div class="card">
+            <div class="rank-choices" id="choices"></div>
+            <div class="btn-row" style="margin-top:.8rem">
+                <button class="btn" id="btnClear">Clear</button>
+                <button class="btn primary" id="btnCheck" disabled>Check</button>
+                <button class="btn" id="btnNext" style="display:none">Next round →</button>
+            </div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </section>
+
+    <div class="nav-row">
+        <button class="btn" id="prevBtn">← Back</button>
+        <button class="btn primary" id="nextBtn">Next →</button>
+    </div>
+</main>
+
+<footer>Data: standard melting/boiling points at 1 atm; ΔH values at the phase-change temperature. The particle view is a 2-D model.</footer>
+
+<script>
+(() => {
+'use strict';
+
+/* ======================================================================
+   DATA
+   ====================================================================== */
+// mp/bp in °C, hf/hv in kJ/mol, vp mmHg @25 °C, st mN/m, visc mPa·s
+const SUBS = {
+    methane:  { name: 'Methane',        formula: 'CH₄',      M: 16.04,  e: 10,  imf: 'ldf', mp: -182.5, bp: -161.5, hf: 0.94, hv: 8.19,  color: '#94a3b8',
+                why: 'Small, nonpolar, only 10 electrons. Only weak London dispersion forces.' },
+    propane:  { name: 'Propane',        formula: 'C₃H₈',     M: 44.10,  e: 26,  imf: 'ldf', mp: -187.7, bp: -42.1,  hf: 3.52, hv: 19.0,  color: '#a8a29e',
+                why: 'Nonpolar. London dispersion only, but with 26 electrons.' },
+    butane:   { name: 'Butane',         formula: 'C₄H₁₀',    M: 58.12,  e: 34,  imf: 'ldf', mp: -138.3, bp: -0.5,   hf: 4.66, hv: 22.4,  color: '#a3a3a3',
+                why: 'Nonpolar. London dispersion only, from a longer chain with 34 electrons.' },
+    pentane:  { name: 'Pentane',        formula: 'C₅H₁₂',    M: 72.15,  e: 42,  imf: 'ldf', mp: -129.7, bp: 36.1,   hf: 8.40, hv: 25.8,  color: '#fbbf24',
+                vp: 514, st: 15.5, visc: 0.22, why: 'Nonpolar 5-carbon chain. London dispersion only.' },
+    hexane:   { name: 'Hexane',         formula: 'C₆H₁₄',    M: 86.18,  e: 50,  imf: 'ldf', mp: -95.3,  bp: 68.7,   hf: 13.1, hv: 28.9,  color: '#facc15',
+                vp: 151, st: 17.9, visc: 0.30, why: 'Nonpolar 6-carbon chain. London dispersion only, but a lot of it.' },
+    octane:   { name: 'Octane',         formula: 'C₈H₁₈',    M: 114.23, e: 66,  imf: 'ldf', mp: -56.8,  bp: 125.6,  hf: 20.7, hv: 34.4,  color: '#eab308',
+                vp: 14, st: 21.1, visc: 0.51, why: 'Nonpolar, but a long 8-carbon chain with 66 electrons. Big London dispersion forces.' },
+    fluorine: { name: 'Fluorine',       formula: 'F₂',       M: 38.00,  e: 18,  imf: 'ldf', mp: -219.6, bp: -188.1, hf: 0.51, hv: 6.62,  color: '#bef264',
+                why: 'Nonpolar (identical atoms) with a small, tight electron cloud.' },
+    chlorine: { name: 'Chlorine',       formula: 'Cl₂',      M: 70.90,  e: 34,  imf: 'ldf', mp: -101.5, bp: -34.0,  hf: 6.40, hv: 20.4,  color: '#a3e635',
+                why: 'Nonpolar, 34 electrons. More London dispersion than F₂.' },
+    bromine:  { name: 'Bromine',        formula: 'Br₂',      M: 159.81, e: 70,  imf: 'ldf', mp: -7.2,   bp: 58.8,   hf: 10.6, hv: 30.0,  color: '#b45309',
+                vp: 214, st: 40.9, visc: 0.94, why: 'Nonpolar, but 70 electrons in a big, easily distorted cloud.' },
+    iodine:   { name: 'Iodine',         formula: 'I₂',       M: 253.81, e: 106, imf: 'ldf', mp: 113.7,  bp: 184.3,  hf: 15.5, hv: 41.6,  color: '#7c3aed',
+                why: 'Nonpolar, yet a solid at room temperature! 106 electrons make huge London dispersion forces.' },
+    hcl:      { name: 'Hydrogen chloride', formula: 'HCl',   M: 36.46,  e: 18,  imf: 'dd',  mp: -114.2, bp: -85.1,  hf: 2.00, hv: 16.2,  color: '#d946ef',
+                why: 'Polar (Cl pulls electrons from H). Dipole–dipole + London dispersion.' },
+    h2s:      { name: 'Hydrogen sulfide', formula: 'H₂S',    M: 34.08,  e: 18,  imf: 'dd',  mp: -85.5,  bp: -60.3,  hf: 2.38, hv: 18.7,  color: '#e879f9',
+                why: 'Bent and polar, but S is not electronegative enough for H-bonding. Dipole–dipole + dispersion.' },
+    dme:      { name: 'Dimethyl ether', formula: 'CH₃OCH₃',  M: 46.07,  e: 26,  imf: 'dd',  mp: -141.5, bp: -24.8,  hf: 4.94, hv: 21.5,  color: '#c084fc',
+                why: 'Polar C–O bonds, but no H is attached to the O, so no H-bonds. Dipole–dipole + dispersion.' },
+    acetone:  { name: 'Acetone',        formula: '(CH₃)₂CO', M: 58.08,  e: 32,  imf: 'dd',  mp: -94.7,  bp: 56.1,   hf: 5.72, hv: 29.1,  color: '#a855f7',
+                vp: 231, st: 23.0, visc: 0.31, why: 'Very polar C=O group, but no O–H. Strong dipole–dipole + dispersion.' },
+    ammonia:  { name: 'Ammonia',        formula: 'NH₃',      M: 17.03,  e: 10,  imf: 'hb',  mp: -77.7,  bp: -33.3,  hf: 5.66, hv: 23.3,  color: '#67e8f9',
+                why: 'H attached to N, so it H-bonds, even though it is as small as methane.' },
+    water:    { name: 'Water',          formula: 'H₂O',      M: 18.02,  e: 10,  imf: 'hb',  mp: 0.0,    bp: 100.0,  hf: 6.01, hv: 40.7,  color: '#38bdf8',
+                vp: 23.8, st: 72.0, visc: 0.89, why: 'Tiny (10 e⁻) but each molecule can make up to 4 hydrogen bonds. Extremely sticky for its size.' },
+    methanol: { name: 'Methanol',       formula: 'CH₃OH',    M: 32.04,  e: 18,  imf: 'hb',  mp: -97.6,  bp: 64.7,   hf: 3.22, hv: 35.2,  color: '#22d3ee',
+                vp: 127, st: 22.1, visc: 0.54, why: 'One –OH group: hydrogen bonding + dipole–dipole + dispersion.' },
+    ethanol:  { name: 'Ethanol',        formula: 'C₂H₅OH',   M: 46.07,  e: 26,  imf: 'hb',  mp: -114.1, bp: 78.4,   hf: 4.93, hv: 38.6,  color: '#06b6d4',
+                vp: 59, st: 22.0, visc: 1.07, why: 'One –OH group (H-bonds) plus a bigger carbon chain than methanol.' },
+    glycerol: { name: 'Glycerol',       formula: 'C₃H₅(OH)₃', M: 92.09, e: 50,  imf: 'hb',  mp: 17.8,   bp: 290.0,  hf: 18.3, hv: 61.0,  color: '#0e7490',
+                vp: 0.0002, st: 63.4, visc: 934, why: 'Three –OH groups per molecule: a web of hydrogen bonds.' },
+};
+for (const k in SUBS) {
+    const s = SUBS[k];
+    s.id = k;
+    s.mpK = s.mp + 273.15;
+    s.bpK = s.bp + 273.15;
+}
+const IMF_NAMES = { ldf: 'London dispersion', dd: 'Dipole–dipole', hb: 'Hydrogen bonding' };
+function imfList(s) {
+    if (s.imf === 'hb') return ['hb', 'dd', 'ldf'];
+    if (s.imf === 'dd') return ['dd', 'ldf'];
+    return ['ldf'];
+}
+function chipsHTML(s) {
+    return '<div class="chips">' + imfList(s).map(t => `<span class="chip ${t}">${IMF_NAMES[t]}</span>`).join('') + '</div>';
+}
+const fmtC = c => `${Math.round(c)} °C`;
+const fmt1 = (v, d = 1) => Number(v).toFixed(d);
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ======================================================================
+   PARTICLE ENGINE
+   Molecules attract via a Lennard-Jones potential. Temperature sets their
+   motion energy (thermostat). Which phase they are in comes from the real
+   melting/boiling points: solid molecules settle into lattice sites, and
+   in a gas the molecules are far enough apart that attractions barely act.
+   ====================================================================== */
+const W = 12, H = 12, N = 48, LAT = 1.12;
+const SITES = (() => {
+    const s = [];
+    const x0 = (W - (7 * LAT + LAT / 2)) / 2;
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 8; c++)
+        s.push({ x: x0 + c * LAT + (r % 2 ? LAT / 2 : 0), y: 0.56 + r * LAT * 0.866, row: r });
+    return s;
+})();
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+class ParticleBox {
+    constructor(canvas) {
+        this.cv = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.p = [];
+        this.sub = null;    // { mpK, bpK, imf, hv, color, polar }
+        this.TK = 298;
+        this.sFrac = 0; this.gFrac = 0;     // targets
+        this.rate = 1.2;                    // fraction of particles that may change phase per second
+        this.changeAcc = 0;
+        this.showLines = true;
+        this.siteOwner = new Array(SITES.length).fill(-1);
+        this.resize();
+    }
+    resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const r = this.cv.getBoundingClientRect();
+        if (r.width < 10) return;
+        this.cv.width = Math.round(r.width * dpr);
+        this.cv.height = Math.round(r.width * dpr);
+        this.scale = this.cv.width / W;
+    }
+    setSubstance(sub) { this.sub = sub; }
+    Tstar() {
+        // reduced temperature: 0.6 at the boiling point
+        let t = 0.6 * this.TK / this.sub.bpK;
+        if (this.TK >= this.sub.mpK) t = Math.max(t, 0.3); // keep liquids fluid in this small 2-D model
+        return Math.max(t, 0.004);
+    }
+    reset(sFrac, gFrac) {
+        this.sFrac = sFrac; this.gFrac = gFrac;
+        const nS = Math.round(sFrac * N), nG = Math.round(gFrac * N), nL = N - nS - nG;
+        this.siteOwner.fill(-1);
+        this.p = [];
+        const T = this.Tstar();
+        const v = () => gauss() * Math.sqrt(T);
+        for (let i = 0; i < nS; i++) {
+            const s = SITES[i];
+            this.p.push({ x: s.x, y: s.y, vx: v(), vy: v(), st: 's', site: i, tk: 1, ang: s.row % 2 ? Math.PI : 0, av: 0 });
+            this.siteOwner[i] = this.p.length - 1;
+        }
+        // liquid sits on top of any solid
+        const baseRow = Math.ceil(nS / 8);
+        for (let i = 0; i < nL; i++) {
+            const r = baseRow + Math.floor(i / 9), c = i % 9;
+            this.p.push({ x: 1.2 + c * 1.18 + Math.random() * 0.1, y: 0.6 + r * 1.05 + Math.random() * 0.1, vx: v(), vy: v(), st: 'l', site: -1, tk: 0, ang: Math.random() * 6.28, av: 0 });
+        }
+        for (let i = 0; i < nG; i++) {
+            let x, y, ok, tries = 0;
+            do {
+                x = 0.8 + Math.random() * (W - 1.6); y = 4 + Math.random() * (H - 4.8);
+                ok = this.p.every(q => (q.x - x) ** 2 + (q.y - y) ** 2 > 1.3);
+            } while (!ok && ++tries < 200);
+            this.p.push({ x, y, vx: v(), vy: v(), st: 'g', site: -1, tk: 0, ang: Math.random() * 6.28, av: 0 });
+        }
+        this.computeForces();
+    }
+    setTarget(TK, sFrac, gFrac) { this.TK = TK; this.sFrac = sFrac; this.gFrac = gFrac; }
+    counts() {
+        let s = 0, g = 0;
+        for (const q of this.p) { if (q.st === 's') s++; else if (q.st === 'g') g++; }
+        return { s, g, l: N - s - g };
+    }
+    phaseChangeOne() {
+        const c = this.counts();
+        const nS = Math.round(this.sFrac * N), nG = Math.round(this.gFrac * N);
+        const P = this.p;
+        if (c.g > nG) {            // condense: lowest gas molecule joins the liquid
+            let best = -1; for (let i = 0; i < N; i++) if (P[i].st === 'g' && (best < 0 || P[i].y < P[best].y)) best = i;
+            P[best].st = 'l'; return true;
+        }
+        if (c.s > nS) {            // melt: the top of the crystal breaks free first
+            let best = -1; for (let i = 0; i < N; i++) if (P[i].st === 's' && (best < 0 || SITES[P[i].site].y > SITES[P[best].site].y + 1e-6 * Math.random())) best = i;
+            this.siteOwner[P[best].site] = -1;
+            P[best].st = 'l'; P[best].site = -1; P[best].tk = 0; return true;
+        }
+        if (c.g < nG) {            // evaporate: highest liquid molecule escapes (or top of solid)
+            let best = -1;
+            for (let i = 0; i < N; i++) if (P[i].st === 'l' && (best < 0 || P[i].y > P[best].y)) best = i;
+            if (best < 0) for (let i = 0; i < N; i++) if (P[i].st === 's' && (best < 0 || P[i].y > P[best].y)) best = i;
+            if (best < 0) return false;
+            if (P[best].st === 's') { this.siteOwner[P[best].site] = -1; P[best].site = -1; P[best].tk = 0; }
+            P[best].st = 'g'; P[best].vy += 1.2 * Math.sqrt(this.Tstar()); return true;
+        }
+        if (c.s < nS) {            // freeze: fill the lowest empty lattice site with the nearest liquid molecule
+            let site = -1; for (let k = 0; k < SITES.length; k++) if (this.siteOwner[k] < 0) { site = k; break; }
+            if (site < 0) return false;
+            let best = -1, bd = 1e9;
+            for (let i = 0; i < N; i++) {
+                if (P[i].st !== 'l') continue;
+                const d = (P[i].x - SITES[site].x) ** 2 + (P[i].y - SITES[site].y) ** 2;
+                if (d < bd) { bd = d; best = i; }
+            }
+            if (best < 0) { // no liquid left: pull from the gas (deposition)
+                for (let i = 0; i < N; i++) if (P[i].st === 'g') { best = i; break; }
+                if (best < 0) return false;
+            }
+            P[best].st = 's'; P[best].site = site; P[best].tk = 0; this.siteOwner[site] = best; return true;
+        }
+        return false;
+    }
+    computeForces() {
+        const P = this.p;
+        for (const q of P) {
+            q.fx = 0; q.fy = q.st === 'g' ? -0.01 : -0.12;
+            if (q.st === 's') {
+                const s = SITES[q.site], k = 70 * q.tk;
+                q.fx += k * (s.x - q.x); q.fy += k * (s.y - q.y);
+            }
+        }
+        for (let i = 0; i < N; i++) {
+            const a = P[i];
+            for (let j = i + 1; j < N; j++) {
+                const b = P[j];
+                const dx = b.x - a.x, dy = b.y - a.y, r2 = dx * dx + dy * dy;
+                if (r2 > 6.25) continue;
+                const ir2 = 1 / Math.max(r2, 0.64), ir6 = ir2 * ir2 * ir2;
+                // in the gas molecules are (really) far apart, so the attraction barely acts
+                const A = (a.st === 'g' || b.st === 'g') ? 0.1 : 1;
+                const f = 24 * ir2 * ir6 * (2 * ir6 - A);
+                a.fx -= f * dx; a.fy -= f * dy; b.fx += f * dx; b.fy += f * dy;
+            }
+        }
+    }
+    step(dt) {
+        if (!this.sub || !this.p.length) return;
+        dt = Math.min(dt, 0.05);
+        // phase changes, rate limited so you can watch them happen
+        this.changeAcc += dt * this.rate * N;
+        let guard = 0;
+        while (this.changeAcc >= 1 && guard++ < 6) {
+            if (!this.phaseChangeOne()) { this.changeAcc = 0; break; }
+            this.changeAcc -= 1;
+        }
+        if (this.changeAcc > 3) this.changeAcc = 3;
+
+        const Tt = this.Tstar();
+        // stronger-gripping substances run more model time per second so that the
+        // same real temperature always looks like the same molecular speed
+        const rdt = dt * 1.6 * Math.sqrt(this.sub.bpK / 373);
+        const n = Math.ceil(rdt / 0.005), h = rdt / n;
+        const P = this.p;
+        for (let s = 0; s < n; s++) {
+            for (const q of P) {
+                q.vx += q.fx * h / 2; q.vy += q.fy * h / 2;
+                const sp = q.vx * q.vx + q.vy * q.vy;
+                if (sp > 64) { const k = 8 / Math.sqrt(sp); q.vx *= k; q.vy *= k; }
+                q.x += q.vx * h; q.y += q.vy * h;
+                if (q.x < 0.5) { q.x = 0.5; q.vx = Math.abs(q.vx); }
+                if (q.x > W - 0.5) { q.x = W - 0.5; q.vx = -Math.abs(q.vx); }
+                if (q.y < 0.5) { q.y = 0.5; q.vy = Math.abs(q.vy); }
+                if (q.y > H - 0.5) { q.y = H - 0.5; q.vy = -Math.abs(q.vy); }
+            }
+            this.computeForces();
+            let ke = 0;
+            for (const q of P) { q.vx += q.fx * h / 2; q.vy += q.fy * h / 2; ke += 0.5 * (q.vx * q.vx + q.vy * q.vy); }
+            const Tc = Math.max(ke / N, 1e-6);
+            const lam = Math.sqrt(clamp(1 + (h / 0.08) * (Tt / Tc - 1), 0.5, 1.5));
+            for (const q of P) { q.vx *= lam; q.vy *= lam; }
+        }
+        for (const q of P) {
+            if (q.st === 's') {
+                q.tk = Math.min(1, q.tk + dt / 0.6);
+                const target = SITES[q.site].row % 2 ? Math.PI : 0;
+                let d = target - q.ang; d = Math.atan2(Math.sin(d), Math.cos(d));
+                q.ang += d * 0.15 + gauss() * 0.25 * Math.sqrt(Tt) * dt * 10;
+            } else {
+                q.av += gauss() * (q.st === 'g' ? 6 : 3) * Math.sqrt(Tt) * dt;
+                q.av *= 0.96;
+                q.ang += q.av * dt * 6;
+            }
+        }
+    }
+    draw() {
+        const ctx = this.ctx, sc = this.scale;
+        if (!sc || !this.sub) return;
+        const Wp = this.cv.width, Hp = this.cv.height;
+        ctx.clearRect(0, 0, Wp, Hp);
+        const X = x => x * sc, Y = y => Hp - y * sc;
+        const sub = this.sub;
+        // attraction lines
+        if (this.showLines) {
+            const col = sub.imf === 'hb' ? cssVar('--hb') : sub.imf === 'dd' ? cssVar('--dd') : cssVar('--ldf');
+            const w = (0.6 + 3.2 * clamp(sub.hv / 45, 0.08, 1.3)) * sc / 40;
+            ctx.strokeStyle = col;
+            ctx.lineCap = 'round';
+            ctx.setLineDash(sub.imf === 'hb' ? [sc * 0.12, sc * 0.1] : []);
+            const P = this.p;
+            for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+                const a = P[i], b = P[j];
+                const dx = b.x - a.x, dy = b.y - a.y, r = Math.hypot(dx, dy);
+                if (r > 1.55) continue;
+                let al = clamp((1.55 - r) / 0.35, 0, 1);
+                if (a.st === 'g' || b.st === 'g') al *= 0.35;
+                ctx.globalAlpha = al * clamp(0.35 + sub.hv / 50, 0.35, 1);
+                ctx.lineWidth = w;
+                ctx.beginPath(); ctx.moveTo(X(a.x), Y(a.y)); ctx.lineTo(X(b.x), Y(b.y)); ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1;
+        }
+        const rad = 0.44 * sc;
+        for (const q of this.p) {
+            const cx = X(q.x), cy = Y(q.y);
+            if (sub.imf === 'ldf') {
+                const g = ctx.createRadialGradient(cx - rad * 0.35, cy - rad * 0.35, rad * 0.1, cx, cy, rad);
+                g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, sub.color); g.addColorStop(1, sub.color);
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.fill();
+            } else {
+                // polar molecule: δ− half (red) and δ+ half (blue)
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(q.ang);
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.arc(0, 0, rad, -Math.PI / 2, Math.PI / 2); ctx.fill();
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath(); ctx.arc(0, 0, rad, Math.PI / 2, Math.PI * 1.5); ctx.fill();
+                ctx.restore();
+            }
+            ctx.lineWidth = Math.max(1, sc / 40);
+            ctx.strokeStyle = 'rgba(15,23,42,0.35)';
+            ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.stroke();
+        }
+    }
+    phaseName() {
+        const c = this.counts();
+        if (c.s === N) return ['Solid', ''];
+        if (c.g === N) return ['Gas', 'gas'];
+        if (c.s > 0 && c.l > 0 && c.g === 0) return ['Melting', 'mixed'];
+        if (c.s > 0) return ['Solid + gas', 'mixed2'];
+        if (c.g > 0 && c.g < N && c.l > 0 && this.gFrac > 0 && this.gFrac < 1) return ['Boiling', 'mixed2'];
+        if (c.l === N || this.gFrac === 0) return ['Liquid', 'liquid'];
+        return ['Boiling', 'mixed2'];
+    }
+}
+
+function equilibriumFracs(sub, TK) {
+    return { s: TK < sub.mpK ? 1 : 0, g: TK > sub.bpK ? 1 : 0 };
+}
+function phaseWord(sub, TK) {
+    if (TK < sub.mpK) return 'solid';
+    if (TK > sub.bpK) return 'gas';
+    return 'liquid';
+}
+function setPill(pill, box) {
+    const [txt, cls] = box.phaseName();
+    pill.textContent = txt;
+    pill.className = 'phase-pill ' + cls;
+}
+
+/* ---------- "Who's winning?" meter ---------- */
+const METER_MIN = 0, METER_MAX = 700; // kelvin
+function meterHTML() {
+    return `<div class="meter"><div class="meter-wrap">
+        <div class="meter-track"><div class="z s"></div><div class="z l"></div><div class="z g"></div></div>
+        <div class="meter-marker"></div></div>
+        <div class="meter-axis"><span>−273 °C</span><span>0 °C</span><span>100 °C</span><span>${METER_MAX - 273} °C</span></div>
+        <div class="meter-cap"><span>◀ IMFs winning (held in place)</span><span>Motion winning (flying free) ▶</span></div></div>`;
+}
+function updateMeter(el, mpK, bpK, TK) {
+    const pct = k => clamp((k - METER_MIN) / (METER_MAX - METER_MIN) * 100, 0, 100);
+    const zs = el.querySelectorAll('.z');
+    const a = pct(mpK), b = pct(bpK);
+    zs[0].style.width = a + '%'; zs[0].textContent = a > 9 ? 'Solid' : '';
+    zs[1].style.width = (b - a) + '%'; zs[1].textContent = (b - a) > 9 ? 'Liquid' : '';
+    zs[2].style.width = (100 - b) + '%'; zs[2].textContent = (100 - b) > 7 ? 'Gas' : '';
+    el.querySelector('.meter-marker').style.left = pct(TK) + '%';
+    // axis label positions are evenly spaced text; good enough as a rough scale
+    const ax = el.querySelectorAll('.meter-axis span');
+    ax.forEach(s => s.style.position = 'absolute');
+    const axis = el.querySelector('.meter-axis'); axis.style.position = 'relative'; axis.style.height = '1rem';
+    const ks = [0, 273.15, 373.15, METER_MAX];
+    ax.forEach((s, i) => { const p = pct(ks[i]); s.style.left = p + '%'; s.style.transform = i === 0 ? 'none' : i === 3 ? 'translateX(-100%)' : 'translateX(-50%)'; });
+}
+
+/* ======================================================================
+   STEP NAV
+   ====================================================================== */
+const steps = [...document.querySelectorAll('.step')];
+const stepper = document.getElementById('stepper');
+let cur = 0;
+steps.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.innerHTML = `<span class="num">${i + 1}</span>${s.dataset.title}`;
+    b.onclick = () => go(i);
+    stepper.appendChild(b);
+});
+function go(i) {
+    cur = clamp(i, 0, steps.length - 1);
+    steps.forEach((s, k) => s.classList.toggle('active', k === cur));
+    [...stepper.children].forEach((b, k) => b.classList.toggle('active', k === cur));
+    stepper.children[cur].scrollIntoView({ block: 'nearest', inline: 'center' });
+    document.getElementById('prevBtn').style.visibility = cur === 0 ? 'hidden' : 'visible';
+    document.getElementById('nextBtn').style.visibility = cur === steps.length - 1 ? 'hidden' : 'visible';
+    try { localStorage.setItem('imfLabStep', String(cur)); } catch (e) {}
+    requestAnimationFrame(resizeAll);
+    window.scrollTo({ top: 0 });
+}
+document.getElementById('prevBtn').onclick = () => go(cur - 1);
+document.getElementById('nextBtn').onclick = () => go(cur + 1);
+
+/* ======================================================================
+   STEP 1: TUG OF WAR
+   ====================================================================== */
+const boxA = new ParticleBox(document.getElementById('simA'));
+const imfSlider = document.getElementById('imfSlider'), tempSlider = document.getElementById('tempSlider');
+const meterA = document.getElementById('meterA'); meterA.innerHTML = meterHTML();
+const customSub = { imf: 'ldf', color: '#94a3b8', hv: 20, mpK: 200, bpK: 300 };
+function updateA(first) {
+    const s = parseFloat(imfSlider.value), tC = parseFloat(tempSlider.value), TK = tC + 273.15;
+    customSub.bpK = 60 + 52 * s;                  // stronger grip → higher boiling point
+    customSub.mpK = 0.62 * customSub.bpK;
+    customSub.hv = 0.088 * customSub.bpK;         // Trouton's rule: ΔHvap ≈ 88 J/mol·K × Tb
+    customSub.color = `hsl(${220 - s * 18}, 70%, ${62 - s * 2}%)`;
+    boxA.setSubstance(customSub);
+    const f = equilibriumFracs(customSub, TK);
+    if (first) { boxA.TK = TK; boxA.reset(f.s, f.g); }
+    boxA.setTarget(TK, f.s, f.g);
+    document.getElementById('imfVal').textContent = s.toFixed(1);
+    document.getElementById('tempVal').textContent = fmtC(tC);
+    document.getElementById('tpillA').textContent = fmtC(tC);
+    updateMeter(meterA, customSub.mpK, customSub.bpK, TK);
+    const ph = phaseWord(customSub, TK);
+    const mpC = customSub.mpK - 273.15, bpC = customSub.bpK - 273.15;
+    let msg;
+    if (ph === 'solid') msg = `The IMFs win. The molecules only <b>vibrate in place</b>. They don't have enough motion energy to slide past each other until <b>${fmtC(mpC)}</b>.`;
+    else if (ph === 'liquid') msg = `It's a close match. Molecules have enough energy to <b>slide past each other</b> (melted at ${fmtC(mpC)}) but the IMFs still <b>keep them together</b>. They won't fully escape until <b>${fmtC(bpC)}</b>.`;
+    else msg = `Motion wins. Molecules move fast enough to <b>escape their neighbors completely</b> (above the boiling point of ${fmtC(bpC)}) and fly around on their own.`;
+    document.getElementById('verdictA').innerHTML = `<b class="big">At ${fmtC(tC)}: ${ph.toUpperCase()}</b><br>${msg}<br><span class="small muted">Melting point ${fmtC(mpC)} · Boiling point ${fmtC(bpC)}</span>`;
+}
+imfSlider.oninput = () => updateA(false);
+tempSlider.oninput = () => updateA(false);
+
+/* ======================================================================
+   STEP 2: BUILD A MOLECULE
+   ====================================================================== */
+const build = { e: 26, pol: 0, hb: 0 };
+function bindSeg(id, key, after) {
+    const seg = document.getElementById(id);
+    seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+        build[key] = parseInt(b.dataset.v, 10);
+        after && after(key);
+        renderBuild();
+    });
+}
+bindSeg('polSeg', 'pol', () => { if (build.pol < 2) build.hb = 0; });
+bindSeg('hbSeg', 'hb', () => { if (build.hb > 0) build.pol = 2; });
+document.getElementById('eSlider').oninput = e => { build.e = parseInt(e.target.value, 10); renderBuild(); };
+function buildModel() {
+    const ldf = 48 * Math.sqrt(build.e) - 30;
+    const dd = [0, 20, 60][build.pol];
+    const hb = [0, 90, 200][build.hb];
+    const bpK = ldf + dd + hb;
+    return { ldf, dd, hb, bpK, mpK: 0.62 * bpK };
+}
+function strongest(s) { return s.imf === 'hb' ? 'var(--hb)' : s.imf === 'dd' ? 'var(--dd)' : 'var(--ldf)'; }
+function renderBuild() {
+    document.getElementById('eVal').textContent = build.e;
+    document.querySelectorAll('#polSeg button').forEach(b => b.classList.toggle('sel', +b.dataset.v === build.pol));
+    document.querySelectorAll('#hbSeg button').forEach(b => b.classList.toggle('sel', +b.dataset.v === build.hb));
+    document.getElementById('hbNote').textContent = build.hb > 0 ? 'H-bonding molecules are always very polar.' : '';
+    const m = buildModel();
+    const tot = m.ldf + m.dd + m.hb, maxTot = 48 * Math.sqrt(120) - 30 + 260;
+    const stack = document.getElementById('buildStack');
+    const seg = (v, c, label) => v > 0 ? `<div style="width:${v / maxTot * 100}%;background:${c}" title="${label}">${v / maxTot > 0.12 ? label : ''}</div>` : '';
+    stack.innerHTML = seg(m.ldf, 'var(--ldf)', 'Dispersion') + seg(m.dd, 'var(--dd)', 'Dipole') + seg(m.hb, 'var(--hb)', 'H-bond');
+    stack.style.width = (tot / maxTot * 100) + '%';
+    const bpC = m.bpK - 273.15, mpC = m.mpK - 273.15;
+    const room = phaseWord(m, 298.15);
+    let closest = null, cd = 1e9;
+    for (const k in SUBS) { const d = Math.abs(SUBS[k].bpK - m.bpK); if (d < cd) { cd = d; closest = SUBS[k]; } }
+    document.getElementById('buildVerdict').innerHTML =
+        `<b class="big">Boiling point ≈ ${fmtC(bpC)}</b> · melting point ≈ ${fmtC(mpC)}<br>At room temperature (25 °C) it would be a <b>${room}</b>. Closest real substance: <b>${closest.name}</b> (${fmtC(closest.bp)}).` +
+        `<br><span class="small muted">A simple model. Real melting points also depend on how neatly molecules pack into a crystal.</span>`;
+    const rows = Object.values(SUBS).map(s => ({ name: `${s.name} (${s.formula})`, bp: s.bp, color: strongest(s) }));
+    rows.push({ name: 'Your molecule', bp: bpC, color: 'var(--primary)', you: true });
+    rows.sort((a, b) => b.bp - a.bp);
+    const lo = -200, hi = Math.max(320, bpC + 10);
+    let html = '', roomDone = false;
+    for (const r of rows) {
+        const cls = [r.you ? 'you' : '', (!roomDone && r.bp < 25) ? 'room' : ''].join(' ');
+        if (!roomDone && r.bp < 25) roomDone = true;
+        html += `<div class="rank-row ${cls}" ${cls.includes('room') ? 'title="Everything below this line boils below room temperature (gases at 25 °C)"' : ''}><span class="nm">${r.name}</span><span><div class="b" style="width:${clamp((r.bp - lo) / (hi - lo) * 100, 1, 100)}%;background:${r.color}"></div></span><span class="v">${Math.round(r.bp)} °C</span></div>`;
+    }
+    document.getElementById('buildRank').innerHTML = html +
+        '<div class="small muted" style="margin-top:.3rem">Dashed line = room temperature (25 °C). Everything below it is a gas in the room.</div>';
+}
+
+/* ======================================================================
+   STEP 3: HEATING CURVE
+   ====================================================================== */
+const HEAT_SUBS = ['water', 'methane', 'ethanol', 'dme', 'ammonia', 'hexane', 'acetone', 'bromine', 'iodine', 'glycerol', 'chlorine', 'propane'];
+const heatSel = document.getElementById('heatSub');
+heatSel.innerHTML = HEAT_SUBS.map(k => `<option value="${k}">${SUBS[k].name} (${SUBS[k].formula})</option>`).join('');
+const boxH = new ParticleBox(document.getElementById('simH'));
+boxH.rate = 6; // the energy model sets the pace
+const heat = { sub: null, H: 0, dir: 0, power: 1, trace: [], prof: null };
+const CS = 0.040, CL = 0.080, CG = 0.035; // kJ/mol·K, typical molar heat capacities
+function buildProfile(s) {
+    const T0 = s.mpK - 40, T1 = s.bpK + 60;
+    const H1 = CS * (s.mpK - T0), H2 = H1 + s.hf, H3 = H2 + CL * (s.bpK - s.mpK), H4 = H3 + s.hv, Hmax = H4 + CG * (T1 - s.bpK);
+    return { T0, T1, H1, H2, H3, H4, Hmax };
+}
+function stateAt(H) {
+    const s = heat.sub, p = heat.prof;
+    if (H <= p.H1) return { TK: p.T0 + H / CS, sF: 1, gF: 0, melt: 0, boil: 0 };
+    if (H <= p.H2) { const f = (H - p.H1) / s.hf; return { TK: s.mpK, sF: 1 - f, gF: 0, melt: f, boil: 0 }; }
+    if (H <= p.H3) return { TK: s.mpK + (H - p.H2) / CL, sF: 0, gF: 0, melt: 1, boil: 0 };
+    if (H <= p.H4) { const f = (H - p.H3) / s.hv; return { TK: s.bpK, sF: 0, gF: f, melt: 1, boil: f }; }
+    return { TK: s.bpK + (H - p.H4) / CG, sF: 0, gF: 1, melt: 1, boil: 1 };
+}
+function resetHeat() {
+    heat.sub = SUBS[heatSel.value];
+    heat.prof = buildProfile(heat.sub);
+    heat.H = 0; heat.dir = 0; heat.trace = [[0, heat.prof.T0]];
+    boxH.setSubstance(heat.sub);
+    const st = stateAt(0);
+    boxH.TK = st.TK; boxH.reset(1, 0);
+    setHeatButtons();
+    document.getElementById('curveTitle').textContent = `Heating curve: ${heat.sub.name}`;
+    document.getElementById('legendH').innerHTML = particleLegend(heat.sub);
+    updateHeatUI();
+}
+function particleLegend(s) {
+    const mol = s.imf === 'ldf'
+        ? `<span><i class="sw" style="background:${s.color}"></i>${s.name} molecule (nonpolar)</span>`
+        : `<span><i class="sw" style="background:linear-gradient(90deg,#3b82f6 50%,#ef4444 50%)"></i>Polar molecule: blue δ+, red δ−</span>`;
+    const line = `<span><i class="sw-line" style="border-color:${strongest(s)};${s.imf === 'hb' ? 'border-top-style:dashed' : ''}"></i>${IMF_NAMES[s.imf]}${s.imf !== 'ldf' ? ' (+ weaker ones)' : ''}</span>`;
+    return mol + line;
+}
+heatSel.onchange = resetHeat;
+function setHeatButtons() {
+    document.getElementById('btnHeat').classList.toggle('on', heat.dir > 0);
+    document.getElementById('btnCool').classList.toggle('on', heat.dir < 0);
+    document.getElementById('btnHold').classList.toggle('on', heat.dir === 0);
+}
+document.getElementById('btnHeat').onclick = () => { heat.dir = 1; setHeatButtons(); };
+document.getElementById('btnCool').onclick = () => { heat.dir = -1; setHeatButtons(); };
+document.getElementById('btnHold').onclick = () => { heat.dir = 0; setHeatButtons(); };
+document.getElementById('btnResetH').onclick = resetHeat;
+document.getElementById('powerSlider').oninput = e => { heat.power = parseFloat(e.target.value); document.getElementById('powerVal').textContent = heat.power + '×'; };
+function tickHeat(dt) {
+    if (!heat.dir) return;
+    const p = heat.prof;
+    const rate = p.Hmax / 40 * heat.power; // full run ≈ 40 s at 1×
+    heat.H = clamp(heat.H + heat.dir * rate * dt, 0, p.Hmax);
+    if ((heat.H === p.Hmax && heat.dir > 0) || (heat.H === 0 && heat.dir < 0)) { heat.dir = 0; setHeatButtons(); }
+    const st = stateAt(heat.H);
+    heat.trace.push([heat.H, st.TK]);
+    if (heat.trace.length > 3000) heat.trace.splice(1, 1);
+}
+function updateHeatUI() {
+    const s = heat.sub, p = heat.prof, st = stateAt(heat.H);
+    boxH.setTarget(st.TK, st.sF, st.gF);
+    document.getElementById('tpillH').textContent = fmtC(st.TK - 273.15);
+    const imfE = s.hf * st.melt + s.hv * st.boil, keE = heat.H - imfE;
+    document.getElementById('eTotal').textContent = fmt1(heat.H) + ' kJ/mol';
+    document.getElementById('eKEv').textContent = fmt1(keE) + ' kJ';
+    document.getElementById('eIMFv').textContent = fmt1(imfE) + ' kJ';
+    document.getElementById('eKE').style.width = (keE / p.Hmax * 100) + '%';
+    document.getElementById('eIMF').style.width = (imfE / p.Hmax * 100) + '%';
+    let msg;
+    const H = heat.H;
+    const verb = heat.dir < 0 ? 'removed' : 'added';
+    if (H <= p.H1 + 1e-9) msg = `<b>Solid warming up.</b> The heat ${verb} changes how fast molecules <b>vibrate</b> in their fixed spots, so the temperature changes. The IMFs hold them in place.`;
+    else if (H < p.H2) msg = heat.dir < 0
+        ? `<b>Freezing at ${fmtC(s.mp)}. Temperature is flat!</b> As molecules lock into place, the IMFs pull them together and <b>release energy</b>. That's why the temperature holds steady.`
+        : `<b>Melting at ${fmtC(s.mp)}. Temperature is flat!</b> The energy is breaking molecules out of their fixed positions by <b>partly overcoming IMFs</b>, not speeding them up. Melting takes <b>${fmt1(s.hf)} kJ/mol</b>.`;
+    else if (H <= p.H3 + 1e-9) msg = `<b>Liquid warming up.</b> The molecules slide around faster and faster. The IMFs still keep them together in a liquid.`;
+    else if (H < p.H4) msg = heat.dir < 0
+        ? `<b>Condensing at ${fmtC(s.bp)}.</b> Gas molecules are captured by IMFs again and give off energy, so the temperature stays flat.`
+        : `<b>Boiling at ${fmtC(s.bp)}. Temperature is flat!</b> All the energy goes into pulling molecules <b>completely away</b> from their neighbors, breaking the rest of the IMFs. This takes <b>${fmt1(s.hv)} kJ/mol</b>, much more than melting.`;
+    else msg = `<b>Gas heating up.</b> The molecules are far apart and barely feel IMFs anymore. Extra energy just makes them fly faster.`;
+    document.getElementById('nowBox').innerHTML = msg + `<div class="small muted" style="margin-top:.35rem">${s.name}: ${chipsHTML(s)}</div>`;
+    drawCurve();
+}
+const curveCv = document.getElementById('curve');
+let curveHoverX = null;
+curveCv.addEventListener('pointermove', e => { const r = curveCv.getBoundingClientRect(); curveHoverX = e.clientX - r.left; drawCurve(); });
+curveCv.addEventListener('pointerleave', () => { curveHoverX = null; drawCurve(); document.getElementById('curveHover').textContent = ''; });
+function drawCurve() {
+    const cv = curveCv, dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+    if (r.width < 10) return;
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const Wc = r.width, Hc = r.height, L = 52, R = 12, T = 14, B = 34;
+    const p = heat.prof, s = heat.sub;
+    const ink = cssVar('--text-muted'), grid = cssVar('--border'), main = cssVar('--text-main');
+    const x = H => L + H / p.Hmax * (Wc - L - R);
+    const y = TK => T + (1 - (TK - p.T0) / (p.T1 - p.T0)) * (Hc - T - B);
+    ctx.clearRect(0, 0, Wc, Hc);
+    ctx.font = '11px ' + cssVar('--font-main');
+    // plateaus shading
+    ctx.fillStyle = cssVar('--hb-soft');
+    ctx.fillRect(x(p.H1), T, x(p.H2) - x(p.H1), Hc - T - B);
+    ctx.fillRect(x(p.H3), T, x(p.H4) - x(p.H3), Hc - T - B);
+    // gridlines + y labels
+    ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.fillStyle = ink; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const marks = [p.T0, s.mpK, s.bpK, p.T1];
+    for (const k of marks) {
+        ctx.beginPath(); ctx.moveTo(L, y(k)); ctx.lineTo(Wc - R, y(k)); ctx.stroke();
+        ctx.fillText(fmtC(k - 273.15), L - 6, y(k));
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Energy added (kJ/mol) →', L + (Wc - L - R) / 2, Hc - 16);
+    for (let i = 0; i <= 4; i++) { const H = p.Hmax * i / 4; ctx.fillText(H.toFixed(0), x(H), Hc - B + 4); }
+    // plateau labels
+    ctx.fillStyle = main; ctx.font = '700 11px ' + cssVar('--font-main');
+    const mw = x(p.H2) - x(p.H1);
+    if (mw > 40) ctx.fillText('melting', (x(p.H1) + x(p.H2)) / 2, y(s.mpK) - 18);
+    ctx.fillText('boiling', (x(p.H3) + x(p.H4)) / 2, y(s.bpK) - 18);
+    ctx.font = '11px ' + cssVar('--font-main');
+    ctx.fillStyle = ink;
+    ctx.fillText('IMFs breaking', (x(p.H3) + x(p.H4)) / 2, y(s.bpK) + 6);
+    // full ghost path
+    ctx.strokeStyle = grid; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x(0), y(p.T0)); ctx.lineTo(x(p.H1), y(s.mpK)); ctx.lineTo(x(p.H2), y(s.mpK)); ctx.lineTo(x(p.H3), y(s.bpK)); ctx.lineTo(x(p.H4), y(s.bpK)); ctx.lineTo(x(p.Hmax), y(p.T1)); ctx.stroke();
+    ctx.setLineDash([]);
+    // traced path
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    heat.trace.forEach(([H, TK], i) => i ? ctx.lineTo(x(H), y(TK)) : ctx.moveTo(x(H), y(TK)));
+    ctx.stroke();
+    // current point
+    const st = stateAt(heat.H);
+    ctx.fillStyle = '#ef4444'; ctx.strokeStyle = cssVar('--card-bg'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x(heat.H), y(st.TK), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // hover crosshair
+    if (curveHoverX != null && curveHoverX >= L && curveHoverX <= Wc - R) {
+        const H = (curveHoverX - L) / (Wc - L - R) * p.Hmax, sh = stateAt(H);
+        ctx.strokeStyle = ink; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(curveHoverX, T); ctx.lineTo(curveHoverX, Hc - B); ctx.stroke();
+        ctx.fillStyle = main; ctx.beginPath(); ctx.arc(curveHoverX, y(sh.TK), 4, 0, Math.PI * 2); ctx.fill();
+        const what = sh.melt > 0 && sh.melt < 1 ? 'melting' : sh.boil > 0 && sh.boil < 1 ? 'boiling' : sh.sF === 1 ? 'solid' : sh.gF === 1 ? 'gas' : 'liquid';
+        document.getElementById('curveHover').textContent = `${fmt1(H)} kJ/mol added → ${fmtC(sh.TK - 273.15)} (${what})`;
+    }
+}
+
+/* ======================================================================
+   STEP 4: COMPARE
+   ====================================================================== */
+const PRESETS = [
+    { a: 'propane', b: 'ethanol', label: 'Same size, different forces', note: 'Propane and ethanol have the same number of electrons (26), so their London dispersion forces are similar. Ethanol\'s –OH group adds hydrogen bonding, and its boiling point is about 120 °C higher.' },
+    { a: 'dme', b: 'ethanol', label: 'Same atoms!', note: 'Both are C₂H₆O, the exact same atoms arranged differently. In ethanol, H is attached to O, so it H-bonds. In dimethyl ether, every H is on a carbon, so no H-bonds. That difference is worth over 100 °C.' },
+    { a: 'h2s', b: 'water', label: 'Water vs. H₂S', note: 'H₂S has more electrons than H₂O and the same bent shape. Without hydrogen bonding, water would boil around −80 °C and Earth would have no liquid oceans.' },
+    { a: 'methane', b: 'water', label: 'Same electrons', note: 'Both have 10 electrons. Methane is nonpolar (dispersion only); water hydrogen bonds. Over 260 °C difference in boiling point.' },
+    { a: 'chlorine', b: 'iodine', label: 'Bigger electron cloud', note: 'Both are nonpolar, so only London dispersion. Iodine has 106 electrons vs. chlorine\'s 34. Its huge, squishy electron cloud makes it a solid at room temperature.' },
+    { a: 'pentane', b: 'octane', label: 'Longer chain', note: 'Longer chains have more electrons and more surface touching their neighbors, so dispersion forces add up.' },
+    { a: 'hcl', b: 'chlorine', label: 'Surprise!', note: 'HCl is polar and Cl₂ isn\'t, yet Cl₂ boils higher! Cl₂ has nearly twice as many electrons. Here the extra London dispersion outweighs HCl\'s dipole. Dispersion forces can win.' },
+];
+const ALL_KEYS = Object.keys(SUBS);
+const cmp = { keys: ['propane', 'ethanol'], boxes: [], TC: 25 };
+const presetRow = document.getElementById('presetRow');
+presetRow.innerHTML = PRESETS.map((p, i) => `<button data-i="${i}">${p.label}</button>`).join('');
+presetRow.querySelectorAll('button').forEach(b => b.onclick = () => applyPreset(+b.dataset.i));
+function applyPreset(i) {
+    const p = PRESETS[i];
+    cmp.keys = [p.a, p.b];
+    presetRow.querySelectorAll('button').forEach((b, k) => b.classList.toggle('sel', k === i));
+    document.getElementById('presetNote').textContent = p.note;
+    buildCmpCards();
+}
+function buildCmpCards() {
+    cmp.keys.forEach((k, i) => {
+        const card = document.getElementById('cmpCard' + i);
+        card.innerHTML = `
+            <select class="cmpSel">${ALL_KEYS.map(x => `<option value="${x}" ${x === k ? 'selected' : ''}>${SUBS[x].name} (${SUBS[x].formula})</option>`).join('')}</select>
+            <div class="sim-wrap" style="margin-top:.6rem"><canvas class="sim"></canvas><div class="phase-pill"></div><div class="temp-pill"></div></div>
+            <div class="legend lg"></div>
+            <div class="info"></div>`;
+        const box = new ParticleBox(card.querySelector('canvas'));
+        cmp.boxes[i] = box;
+        card.querySelector('select').onchange = e => {
+            cmp.keys[i] = e.target.value;
+            presetRow.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
+            document.getElementById('presetNote').textContent = '';
+            buildCmpCards();
+        };
+        const s = SUBS[k];
+        box.setSubstance(s);
+        const TK = cmp.TC + 273.15, f = equilibriumFracs(s, TK);
+        box.TK = TK; box.reset(f.s, f.g);
+        card.querySelector('.lg').innerHTML = particleLegend(s);
+    });
+    updateCmp();
+}
+function updateCmp() {
+    const TK = cmp.TC + 273.15;
+    document.getElementById('cmpTempVal').textContent = fmtC(cmp.TC);
+    const maxHv = 65;
+    cmp.keys.forEach((k, i) => {
+        const s = SUBS[k], card = document.getElementById('cmpCard' + i), box = cmp.boxes[i];
+        const f = equilibriumFracs(s, TK);
+        box.setTarget(TK, f.s, f.g);
+        card.querySelector('.temp-pill').textContent = fmtC(cmp.TC);
+        const ph = phaseWord(s, TK);
+        card.querySelector('.info').innerHTML = `
+            <h3 style="margin-top:.6rem">${s.name} <span class="muted mono" style="font-weight:600">${s.formula}</span></h3>
+            ${chipsHTML(s)}
+            <p class="small" style="margin-top:.4rem;color:var(--text-sub)">${s.why}</p>
+            <div class="facts">
+                <div>Electrons <b>${s.e}</b></div><div>Molar mass <b>${s.M} g/mol</b></div>
+                <div>Melting pt <b>${fmt1(s.mp)} °C</b></div><div>Boiling pt <b>${fmt1(s.bp)} °C</b></div>
+            </div>
+            <div class="grip"><div class="small" style="font-weight:700">Grip: energy to pull 1 mol apart (ΔH<sub>vap</sub>)</div>
+                <div class="row"><div class="track"><div class="bar" style="width:${s.hv / maxHv * 100}%;background:${strongest(s)}"></div></div><span class="mono">${fmt1(s.hv)} kJ</span></div></div>
+            <div class="lbl" style="font-weight:700;font-size:.85rem;margin-top:.6rem">Who's winning at ${fmtC(cmp.TC)}?</div>
+            ${meterHTML()}
+            <div class="verdict" style="border-left-color:var(--${ph})"><b>${ph.toUpperCase()}</b> at ${fmtC(cmp.TC)}: ${ph === 'gas' ? 'motion has beaten the IMFs.' : ph === 'liquid' ? 'motion lets molecules slide, but IMFs keep them together.' : 'IMFs hold the molecules in place.'}</div>`;
+        updateMeter(card.querySelector('.meter'), s.mpK, s.bpK, TK);
+    });
+}
+const cmpTemp = document.getElementById('cmpTemp');
+cmpTemp.oninput = () => { cmp.TC = parseFloat(cmpTemp.value); updateCmp(); };
+document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { cmp.TC = +b.dataset.t; cmpTemp.value = cmp.TC; updateCmp(); });
+
+/* ======================================================================
+   STEP 5: PROPERTIES
+   ====================================================================== */
+const LIQ = ['water', 'ethanol', 'methanol', 'acetone', 'pentane', 'hexane', 'octane', 'bromine', 'glycerol'];
+let propSel = ['water', 'ethanol', 'hexane'];
+let picked = propSel.slice(); // selection order, so the oldest pick is replaced first
+const propPick = document.getElementById('propPick');
+function renderPick() {
+    propPick.innerHTML = LIQ.map(k => `<button data-k="${k}" class="${propSel.includes(k) ? 'sel' : ''}">${SUBS[k].name}</button>`).join('');
+    propPick.querySelectorAll('button').forEach(b => b.onclick = () => {
+        const k = b.dataset.k;
+        if (propSel.includes(k)) { if (propSel.length > 1) { propSel = propSel.filter(x => x !== k); picked = picked.filter(x => x !== k); } }
+        else {
+            if (propSel.length >= 4) { const drop = picked.shift(); propSel = propSel.filter(x => x !== drop); }
+            propSel.push(k); picked.push(k);
+        }
+        // keep a stable order so colors/columns follow the substance
+        propSel.sort((a, b) => LIQ.indexOf(a) - LIQ.indexOf(b));
+        renderPick(); renderPropBars(); resetEvap(); resetVisc();
+    });
+}
+function barList(el, key, unit, logScale) {
+    const vals = propSel.map(k => SUBS[k][key]);
+    const max = Math.max(...vals);
+    const width = v => logScale ? clamp((Math.log10(v) + 4) / (Math.log10(max) + 4) * 100, 2, 100) : clamp(v / max * 100, 1.5, 100);
+    el.innerHTML = propSel.map(k => {
+        const s = SUBS[k], v = s[key];
+        const txt = v < 0.01 ? v.toExponential(0) : v < 10 ? fmt1(v, 2) : Math.round(v);
+        return `<div class="rank-row" style="grid-template-columns:5.5rem minmax(0,1fr) 3.6rem"><span class="nm">${s.name}</span><span><div class="b" style="width:${width(v)}%;background:${strongest(s)}"></div></span><span class="v">${txt}</span></div>`;
+    }).join('');
+}
+function renderPropBars() {
+    barList(document.getElementById('vpBars'), 'vp');
+    barList(document.getElementById('stBars'), 'st');
+    barList(document.getElementById('viscBars'), 'visc', '', true);
+}
+function setupDemo(cv) {
+    const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+    if (r.width < 10) return null;
+    if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+    const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, r.width, r.height);
+    return { ctx, w: r.width, h: r.height };
+}
+// evaporation
+let evap = { level: {}, vap: [] };
+function resetEvap() { evap = { level: {}, vap: [] }; propSel.forEach(k => evap.level[k] = 1); }
+function tickEvap(dt) {
+    const maxVP = Math.max(...propSel.map(k => SUBS[k].vp));
+    propSel.forEach((k, i) => {
+        const rate = 14 * SUBS[k].vp / maxVP;        // escapes per second, proportional to vapor pressure
+        if (evap.level[k] > 0.02 && Math.random() < rate * dt) {
+            evap.vap.push({ i, k, x: Math.random(), y: 0, vy: 0.35 + Math.random() * 0.3, life: 1 });
+            evap.level[k] = Math.max(0, evap.level[k] - 0.004);
+        }
+    });
+    evap.vap.forEach(v => { v.y += v.vy * dt; v.x += (Math.random() - 0.5) * 0.4 * dt; v.life -= dt * 0.45; });
+    evap.vap = evap.vap.filter(v => v.life > 0);
+}
+function drawEvap() {
+    const d = setupDemo(document.getElementById('evapCv')); if (!d) return;
+    const { ctx, w, h } = d, n = propSel.length, colW = w / n;
+    ctx.font = '600 11px ' + cssVar('--font-main'); ctx.textAlign = 'center';
+    propSel.forEach((k, i) => {
+        const s = SUBS[k], bx = i * colW + colW * 0.18, bw = colW * 0.64, top = h * 0.45, bot = h - 26;
+        const lvl = evap.level[k] ?? 1, ly = bot - (bot - top) * 0.75 * lvl;
+        ctx.fillStyle = s.color; ctx.globalAlpha = 0.75;
+        ctx.fillRect(bx, ly, bw, bot - ly);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = cssVar('--text-muted'); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(bx, top); ctx.lineTo(bx, bot); ctx.lineTo(bx + bw, bot); ctx.lineTo(bx + bw, top); ctx.stroke();
+        ctx.fillStyle = cssVar('--text-main'); ctx.fillText(s.name, i * colW + colW / 2, h - 8);
+        evap.vap.filter(v => v.k === k).forEach(v => {
+            ctx.globalAlpha = clamp(v.life, 0, 1); ctx.fillStyle = s.color;
+            ctx.beginPath(); ctx.arc(bx + v.x * bw, ly - v.y * h * 0.9, 3.5, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    });
+}
+document.getElementById('evapReset').onclick = resetEvap;
+// surface tension droplets
+// contact angle grows with surface tension (a model of drops on a waxy surface)
+function dropAngle(s) { return (20 + clamp((s.st - 15) / (72 - 15), 0, 1.1) * 95) * Math.PI / 180; }
+function drawDrops() {
+    const d = setupDemo(document.getElementById('dropCv')); if (!d) return;
+    const { ctx, w, h } = d, n = propSel.length, rowH = h / n, lab = 70, span = w - lab - 10;
+    // same volume for every drop: the largest that fits every drop in its row
+    let A = 1e9;
+    propSel.forEach(k => {
+        const th = dropAngle(SUBS[k]), den = th - Math.sin(th) * Math.cos(th);
+        const halfW = th > Math.PI / 2 ? 1 : Math.sin(th);
+        A = Math.min(A, (0.48 * span / halfW) ** 2 * den, ((rowH - 10) / (1 - Math.cos(th))) ** 2 * den);
+    });
+    ctx.font = '600 11px ' + cssVar('--font-main'); ctx.textBaseline = 'alphabetic';
+    propSel.forEach((k, i) => {
+        const s = SUBS[k], th = dropAngle(s);
+        const R = Math.sqrt(A / (th - Math.sin(th) * Math.cos(th)));
+        const base = (i + 1) * rowH - 4, cx = lab + span / 2, cy = base + R * Math.cos(th);
+        ctx.fillStyle = cssVar('--border'); ctx.fillRect(lab - 4, base, span + 8, 4);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, base - rowH, w, rowH); ctx.clip();
+        ctx.fillStyle = s.color; ctx.globalAlpha = 0.85;
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.5; ctx.fillStyle = '#fff';
+        const topY = cy - R;
+        ctx.beginPath(); ctx.ellipse(cx - Math.min(R * 0.3, 25), Math.max(topY + 5, base - (base - topY) * 0.7), Math.max(2, Math.min(R * 0.1, 7)), 2.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = cssVar('--text-main'); ctx.textAlign = 'left'; ctx.fillText(s.name, 6, base - 2);
+    });
+}
+// viscosity
+let visc = { t: 0, running: false };
+function resetVisc() { visc = { t: 0, running: false }; }
+function fallTime(v) { return Math.max(0.8, 1.0 + 2.4 * Math.log10(v / 0.2)); }
+document.getElementById('viscDrop').onclick = () => { visc = { t: 0, running: true }; };
+function drawVisc(dt) {
+    if (visc.running) visc.t += dt;
+    const d = setupDemo(document.getElementById('viscCv')); if (!d) return;
+    const { ctx, w, h } = d, n = propSel.length, colW = w / n, top = 14, bot = h - 40;
+    ctx.font = '600 11px ' + cssVar('--font-main'); ctx.textAlign = 'center';
+    let allDone = true;
+    propSel.forEach((k, i) => {
+        const s = SUBS[k], tw = Math.min(46, colW * 0.5), tx = i * colW + (colW - tw) / 2;
+        ctx.fillStyle = s.color; ctx.globalAlpha = 0.6; ctx.fillRect(tx, top, tw, bot - top); ctx.globalAlpha = 1;
+        ctx.strokeStyle = cssVar('--text-muted'); ctx.lineWidth = 2; ctx.strokeRect(tx, top, tw, bot - top);
+        const T = fallTime(s.visc), f = clamp(visc.t / T, 0, 1);
+        if (f < 1) allDone = false;
+        const by = top + 9 + f * (bot - top - 18);
+        ctx.fillStyle = cssVar('--text-main');
+        ctx.beginPath(); ctx.arc(tx + tw / 2, by, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText(s.name, tx + tw / 2, h - 22);
+        ctx.fillStyle = cssVar('--text-muted');
+        ctx.fillText(visc.running || visc.t ? (f >= 1 ? `${T.toFixed(1)} s` : `${visc.t.toFixed(1)} s`) : '', tx + tw / 2, h - 7);
+    });
+    if (allDone && visc.running) visc.running = false;
+}
+
+/* ======================================================================
+   STEP 6: CHALLENGE
+   ====================================================================== */
+const ROUNDS = [
+    { k: ['propane', 'dme', 'ethanol'], why: 'All three have 26 electrons, so dispersion forces are about equal. Dimethyl ether adds dipole–dipole forces; ethanol adds hydrogen bonding (H on O), the strongest of the three.' },
+    { k: ['chlorine', 'bromine', 'iodine'], why: 'All nonpolar, so only London dispersion. More electrons (34 → 70 → 106) means a bigger, more easily distorted electron cloud and stronger attractions.' },
+    { k: ['methane', 'ammonia', 'water'], why: 'All have 10 electrons. Methane has only dispersion. NH₃ and H₂O both hydrogen bond, but water has two H\'s and two lone pairs, so it forms more H-bonds per molecule.' },
+    { k: ['pentane', 'hexane', 'octane'], why: 'Same type of molecule (nonpolar chains). Longer chain = more electrons and more contact area = stronger dispersion forces.' },
+    { k: ['fluorine', 'hcl', 'chlorine'], why: 'Tricky one! HCl is polar, so it beats F₂ (same 18 electrons). But Cl₂, with 34 electrons, has enough dispersion force to beat HCl\'s dipole. Size matters a lot.' },
+    { k: ['methanol', 'ethanol', 'glycerol'], why: 'All H-bond. Ethanol beats methanol with a bigger chain (more dispersion). Glycerol has three –OH groups, so each molecule makes many H-bonds.' },
+    { k: ['butane', 'acetone', 'water'], why: 'Butane (34 e⁻) and acetone (32 e⁻) are about the same size, but acetone\'s polar C=O adds dipole–dipole forces. Water\'s H-bonding puts it on top despite being tiny.' },
+    { k: ['methane', 'h2s', 'water'], why: 'Methane: dispersion only. H₂S: polar, with more electrons. H₂O: hydrogen bonding, far stronger than either.' },
+];
+const ch = { order: [], round: null, queue: [], score: 0, total: 0, checked: false };
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function nextRound() {
+    if (!ch.queue.length) ch.queue = shuffle(ROUNDS.slice());
+    ch.round = ch.queue.pop();
+    ch.shown = shuffle(ch.round.k.slice());
+    ch.order = []; ch.checked = false;
+    renderChallenge();
+}
+function renderChallenge() {
+    const el = document.getElementById('choices');
+    const correct = ch.round.k.slice().sort((a, b) => SUBS[b].bp - SUBS[a].bp);
+    el.innerHTML = ch.shown.map(k => {
+        const s = SUBS[k], pos = ch.order.indexOf(k);
+        let cls = pos >= 0 ? 'picked' : '';
+        if (ch.checked) cls = correct.indexOf(k) === pos ? 'right' : 'wrong';
+        return `<button class="choice ${cls}" data-k="${k}">
+            ${pos >= 0 ? `<span class="order">${pos + 1}</span>` : ''}
+            <div class="f">${s.formula}</div><div style="font-weight:700">${s.name}</div>
+            <div class="small muted">${s.e} electrons · ${s.M} g/mol</div>
+            ${ch.checked ? `<div style="margin-top:.4rem">${chipsHTML(s)}</div><div class="mono small" style="margin-top:.3rem">bp ${fmt1(s.bp)} °C</div>` : ''}
+        </button>`;
+    }).join('');
+    el.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+        if (ch.checked) return;
+        const k = b.dataset.k, i = ch.order.indexOf(k);
+        if (i >= 0) ch.order.splice(i, 1); else ch.order.push(k);
+        renderChallenge();
+    });
+    document.getElementById('btnCheck').disabled = ch.order.length !== 3 || ch.checked;
+    document.getElementById('btnNext').style.display = ch.checked ? '' : 'none';
+    document.getElementById('btnClear').style.display = ch.checked ? 'none' : '';
+    document.getElementById('score').textContent = `Score: ${ch.score} / ${ch.total}`;
+    const fb = document.getElementById('feedback');
+    if (!ch.checked) { fb.innerHTML = ch.order.length ? '' : '<p class="small muted">Tap the highest boiling point first.</p>'; return; }
+    const ok = ch.order.every((k, i) => k === correct[i]);
+    fb.innerHTML = `<div class="verdict" style="border-left-color:${ok ? 'var(--ok)' : 'var(--bad)'}">
+        <b class="big">${ok ? 'Correct!' : 'Not quite.'}</b> Highest to lowest: ${correct.map(k => `<b>${SUBS[k].formula}</b> (${Math.round(SUBS[k].bp)} °C)`).join(' &gt; ')}<br>${ch.round.why}</div>`;
+}
+document.getElementById('btnClear').onclick = () => { ch.order = []; renderChallenge(); };
+document.getElementById('btnCheck').onclick = () => {
+    const correct = ch.round.k.slice().sort((a, b) => SUBS[b].bp - SUBS[a].bp);
+    ch.checked = true; ch.total++;
+    if (ch.order.every((k, i) => k === correct[i])) ch.score++;
+    renderChallenge();
+};
+document.getElementById('btnNext').onclick = nextRound;
+
+/* ======================================================================
+   MAIN LOOP
+   ====================================================================== */
+function resizeAll() {
+    boxA.resize(); boxH.resize(); cmp.boxes.forEach(b => b.resize());
+    if (cur === 2) drawCurve();
+}
+window.addEventListener('resize', resizeAll);
+const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+darkMQ.addEventListener && darkMQ.addEventListener('change', () => { if (cur === 2) drawCurve(); });
+
+let last = performance.now();
+function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (cur === 0) { boxA.step(dt); boxA.draw(); setPill(document.getElementById('pillA'), boxA); }
+    else if (cur === 2) {
+        const before = heat.H;
+        tickHeat(dt);
+        if (heat.H !== before) updateHeatUI();
+        boxH.step(dt); boxH.draw(); setPill(document.getElementById('pillH'), boxH);
+    } else if (cur === 3) {
+        cmp.boxes.forEach((b, i) => { b.step(dt); b.draw(); setPill(document.getElementById('cmpCard' + i).querySelector('.phase-pill'), b); });
+    } else if (cur === 4) {
+        tickEvap(dt); drawEvap(); drawDrops(); drawVisc(dt);
+    }
+    requestAnimationFrame(frame);
+}
+
+// init
+updateA(true);
+renderBuild();
+resetHeat();
+applyPreset(0);
+renderPick(); renderPropBars(); resetEvap();
+nextRound();
+let start = 0;
+try { start = parseInt(localStorage.getItem('imfLabStep') || '0', 10) || 0; } catch (e) {}
+go(start);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
