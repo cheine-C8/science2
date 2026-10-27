@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spooky Taboo</title>
-    <meta name="description" content="A Halloween team word game for the whole class: describe the spooky word without saying the forbidden words. Projector-friendly, with Halloween and Spooky Science decks.">
+    <meta name="description" content="A Halloween team word game for the whole class: describe the spooky word without saying the forbidden words. Projector-friendly, with Halloween, Spooky Science, Civics, Math and Language Arts decks.">
     <link rel="icon" type="image/png" href="../favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -424,7 +424,10 @@
                     <div class="panel" style="margin-bottom:1.25rem">
                         <h2>Card decks</h2>
                         <label class="check"><input type="checkbox" id="deck-halloween" checked><span><b>🎃 Halloween</b><small>Monsters, costumes, candy and spooky movies.</small></span></label>
-                        <label class="check"><input type="checkbox" id="deck-science" checked><span><b>🧪 Spooky Science</b><small>Chemistry, physics and creepy biology.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-science"><span><b>🧪 Spooky Science</b><small>Chemistry, physics and creepy biology.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-civics"><span><b>🏛️ Civics</b><small>Constitution, branches of government, elections and rights.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-math"><span><b>➗ Math</b><small>Geometry, fractions, algebra and statistics vocabulary.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-la"><span><b>📚 Language Arts</b><small>Grammar, figurative language, story elements and genres.</small></span></label>
                         <label class="check"><input type="checkbox" id="deck-custom"><span><b>✏️ Your own cards</b><small>One card per line: <i>Word: taboo, taboo, taboo</i></small></span></label>
                         <textarea id="custom-cards" placeholder="Density: mass, volume, float, sink, heavy&#10;Valence Electrons: outer, shell, bond, octet"></textarea>
                         <div class="hint" id="deck-count" style="text-align:left;margin-top:.4rem"></div>
@@ -667,7 +670,57 @@ Flashlight|light|battery|dark|beam|torch
 Haunted Hallway|hall|ghost|school|walk|scary
 Cobweb|spider|dusty|corner|old|web
 Owl|bird|night|hoot|wise|eyes
-Tarantula|spider|hairy|big|legs|venom`;
+Tarantula|spider|hairy|big|legs|venom
+Dracula|vampire|count|Transylvania|blood|fangs
+Haunted Attic|upstairs|dusty|ghost|roof|boxes
+Ghost Ship|boat|sea|haunted|pirate|sail
+Trick|prank|joke|fool|treat|magic
+Treat|candy|reward|trick|dog|sweet
+Costume Party|dress up|celebrate|friends|music|contest
+Costume Contest|best|prize|judge|dress up|win
+Pumpkin Patch|farm|field|pick|orange|vine
+Pumpkin Pie|Thanksgiving|dessert|crust|whipped cream|slice
+Pumpkin Seeds|roast|snack|salt|inside|guts
+Carving|knife|pumpkin|cut|face|scoop
+Chocolate|candy|brown|Hershey|cocoa|sweet
+Lollipop|stick|lick|sucker|candy|round
+Gummy Worms|candy|chewy|sour|bears|squishy
+Peanut Butter Cup|Reese's|chocolate|orange|candy|nut
+Hot Cocoa|chocolate|drink|marshmallow|warm|mug
+Ghost Town|abandoned|empty|western|old|city
+Abandoned|empty|left|alone|building|old
+Shovel|dig|dirt|grave|snow|tool
+Lantern|light|carry|candle|camp|glow
+Moonlight|night|glow|light|shine|sky
+Howl|wolf|moon|werewolf|sound|dog
+Cackle|witch|laugh|evil|loud|ha
+Shriek|scream|high|loud|scared|yell
+Ghost Costume|sheet|holes|white|boo|eyes
+Invisible|see|hidden|man|cloak|disappear
+Spider|eight legs|web|bug|creepy|arachnid
+Ghost Pepper|spicy|hot|chili|sauce|burn
+Halloween Party|celebrate|costume|October|friends|music
+Spell Book|magic|witch|pages|read|potion
+Magic Trick|magician|rabbit|hat|card|disappear
+Magician|magic|trick|rabbit|hat|wand
+Bat Cave|Batman|Robin|hideout|dark|Gotham
+Creepy Crawly|bug|insect|spider|worm|gross
+Scooby-Doo|dog|mystery|Shaggy|cartoon|van
+Addams Family|Wednesday|Gomez|creepy|snap|Thing
+Coraline|button|eyes|door|movie|other mother
+Hotel Transylvania|Dracula|movie|monsters|vacation|Adam Sandler
+Stranger Things|Netflix|Eleven|upside down|Hawkins|Demogorgon
+Harry Potter|wizard|Hogwarts|wand|scar|magic
+Day of the Dead|Mexico|Día de los Muertos|skull|altar|November
+Sugar Skull|Day of the Dead|Mexico|decorated|calavera|bones
+Marigold|flower|orange|Day of the Dead|yellow|petals
+Fall Festival|autumn|fair|games|school|carnival
+Haunted Trail|woods|path|walk|scary|actors
+Fright|scare|fear|afraid|terror|startle
+Creepy|scary|weird|uncomfortable|spooky|eerie
+Eerie|creepy|strange|spooky|quiet|weird
+Shiver|cold|shake|scared|tremble|spine
+Werewolf Movie|wolf|full moon|film|transform|howl`;
 
         const SCIENCE = `Echolocation|bat|sound|echo|hear|dolphin
 Bioluminescence|glow|light|firefly|jellyfish|ocean
@@ -774,9 +827,236 @@ Scorpion|tail|sting|desert|claws|venom
 Phase Change|solid|liquid|gas|melt|state
 Sound Wave|hear|ear|vibration|loud|echo
 Electricity|power|current|plug|shock|outlet
-Circuit|wire|battery|loop|electricity|bulb`;
+Circuit|wire|battery|loop|electricity|bulb
+Vampire Squid|ocean|deep|ink|tentacles|cephalopod
+Anglerfish|deep sea|light|lure|teeth|ugly
+Blood Type|A|B|O|donate|positive
+Immune System|white blood cells|sick|defend|antibodies|germs
+Vaccine|shot|immune|flu|needle|prevent
+Germs|bacteria|virus|sick|wash|hands
+Hand Sanitizer|germs|alcohol|gel|clean|wash
+Carbon Dating|age|fossil|C-14|radioactive|old
+Half-Life|decay|radioactive|time|isotope|video game
+Isotope|neutrons|element|atom|same|different
+Nuclear Fission|split|atom|energy|bomb|uranium
+Alchemy|gold|lead|potion|ancient|chemistry
+Mercury|planet|thermometer|liquid|metal|Hg
+Gold|metal|Au|yellow|jewelry|expensive
+Iron|Fe|metal|rust|magnet|steel
+Rust|iron|orange|oxidation|metal|old
+Combustion|fire|burn|oxygen|fuel|flame
+Fireworks|explosion|July 4th|colors|sky|boom
+Flame Test|color|metal|fire|lab|identify
+Exothermic|heat|release|reaction|hot|endothermic
+Endothermic|cold|absorb|heat|reaction|ice pack
+Solution|dissolve|mix|solvent|solute|water
+Mixture|combine|separate|salad|cereal|substance
+Kinetic Energy|motion|moving|speed|mass|potential
+Potential Energy|stored|height|kinetic|gravity|spring
+Momentum|mass|velocity|moving|hard to stop|product
+Volcano|lava|eruption|mountain|magma|explode
+Earthquake|shake|ground|plates|Richter|fault
+Tornado|wind|funnel|twister|storm|Kansas
+Photosynthesis|plants|sunlight|chlorophyll|glucose|oxygen`;
 
-        const DECK_NAMES = { halloween: '🎃 Halloween', science: '🧪 Spooky Science', custom: '✏️ Custom' };
+        const CIVICS = `Constitution|document|1787|founders|law|amendments
+Bill of Rights|ten|amendments|freedoms|Constitution|first
+First Amendment|speech|religion|press|freedom|assembly
+Second Amendment|guns|bear arms|militia|right|weapons
+Amendment|change|Constitution|add|27|Bill of Rights
+Declaration of Independence|1776|Jefferson|July 4th|Britain|signed
+Preamble|We the People|introduction|Constitution|beginning|purpose
+Democracy|vote|people|government|rule|Greece
+Republic|representatives|vote|elect|government|democracy
+Federalism|national|state|power|divide|government
+Checks and Balances|branches|power|veto|limit|separation
+Separation of Powers|three|branches|divide|government|checks
+Legislative Branch|Congress|laws|make|Senate|House
+Executive Branch|president|enforce|laws|cabinet|White House
+Judicial Branch|courts|judges|Supreme Court|interpret|laws
+Congress|Senate|House|laws|Capitol|legislative
+Senate|100|senators|two|Congress|state
+House of Representatives|435|Congress|population|Speaker|members
+Supreme Court|nine|justices|highest|judges|ruling
+President|leader|White House|elect|commander|executive
+Vice President|second|Senate|tie|running mate|backup
+Veto|reject|president|bill|no|override
+Bill|law|Congress|propose|pass|money
+Impeachment|remove|president|charges|House|Senate
+Election|vote|candidate|ballot|win|November
+Electoral College|electors|270|president|states|votes
+Ballot|vote|paper|election|box|candidates
+Voting|ballot|election|choose|polls|18
+Campaign|candidate|election|ads|run|votes
+Political Party|Democrat|Republican|group|election|candidate
+Citizen|country|member|rights|naturalized|born
+Naturalization|citizen|immigrant|oath|test|become
+Jury|trial|twelve|verdict|court|guilty
+Trial|court|judge|jury|guilty|lawyer
+Due Process|fair|law|rights|procedure|trial
+Rights|freedoms|Bill of Rights|entitled|guaranteed|human
+Taxes|money|government|IRS|pay|April
+Mayor|city|leader|elect|town|local
+Governor|state|leader|executive|elect|capital
+Town Hall|meeting|community|local|government|building
+Petition|signatures|request|change|sign|list
+Protest|march|signs|rally|against|demonstrate
+Lobbyist|influence|Congress|interest|group|persuade
+Filibuster|Senate|talk|delay|block|speech
+Census|count|population|ten years|survey|people
+Capitol|building|Congress|Washington|dome|DC
+White House|president|Washington|home|DC|Oval Office
+Pledge of Allegiance|flag|recite|morning|indivisible|stand
+Flag|stars|stripes|red|wave|fifty
+Founding Fathers|Washington|Jefferson|Franklin|Constitution|1776
+George Washington|first|president|dollar|general|cherry tree
+Abraham Lincoln|president|Civil War|Gettysburg|penny|slavery
+Civil Rights|equality|MLK|movement|discrimination|1960s
+Suffrage|vote|women|19th|right|Susan B. Anthony
+Term Limits|two|years|president|limit|serve
+Cabinet|advisors|secretaries|president|departments|kitchen
+Treaty|agreement|countries|sign|peace|Senate
+Ambassador|diplomat|country|represent|embassy|foreign
+Immigration|move|country|border|citizen|new
+Freedom of Speech|First Amendment|say|express|opinion|talk
+Search Warrant|police|judge|Fourth Amendment|house|permission
+Miranda Rights|remain silent|police|arrest|lawyer|read
+Popular Vote|people|majority|Electoral College|count|win
+Majority|more than half|most|51|vote|win
+Compromise|agree|give|middle|both|deal`;
+
+        const MATH = `Pi|3.14|circle|pie|circumference|diameter
+Circle|round|radius|pi|shape|circumference
+Triangle|three|sides|angles|shape|pyramid
+Square|four|sides|equal|shape|rectangle
+Rectangle|four|sides|shape|square|length
+Hexagon|six|sides|shape|honeycomb|bee
+Pentagon|five|sides|shape|building|military
+Octagon|eight|sides|stop sign|shape|octopus
+Right Angle|90|degrees|corner|L|perpendicular
+Acute Angle|small|less|90|degrees|cute
+Obtuse Angle|large|more|90|degrees|wide
+Parallel|lines|never|meet|same direction|railroad
+Perpendicular|90|right angle|lines|cross|intersect
+Radius|circle|center|half|diameter|edge
+Diameter|circle|across|twice|radius|center
+Circumference|circle|around|perimeter|pi|distance
+Area|space|inside|square|length|width
+Perimeter|around|edge|distance|add|sides
+Volume|space|three|cubic|fill|inside
+Fraction|numerator|denominator|part|half|divide
+Numerator|top|fraction|denominator|number|above
+Denominator|bottom|fraction|numerator|number|below
+Decimal|point|tenth|fraction|number|place
+Percent|100|discount|out of|sign|grade
+Ratio|compare|colon|proportion|to|fraction
+Equation|equal|solve|variable|math|algebra
+Variable|letter|x|unknown|algebra|change
+Exponent|power|squared|small|raise|base
+Square Root|radical|opposite|nine|three|symbol
+Prime Number|divisible|one|itself|factor|seven
+Even Number|two|divisible|odd|pair|four
+Odd Number|even|two|divisible|three|strange
+Negative Number|minus|below|zero|less|positive
+Zero|nothing|none|number|empty|circle
+Infinity|forever|never|ends|sideways|eight
+Average|mean|add|divide|middle|typical
+Median|middle|order|numbers|mean|highway
+Mode|most|often|frequent|repeat|data
+Probability|chance|likely|odds|coin|dice
+Graph|chart|plot|axis|data|line
+Slope|steep|rise|run|line|hill
+Coordinate Plane|x-axis|y-axis|grid|points|graph
+Origin|zero|center|start|graph|begin
+Pythagorean Theorem|a squared|triangle|hypotenuse|right|c
+Hypotenuse|triangle|longest|side|right|Pythagorean
+Symmetry|mirror|same|half|line|balanced
+Calculator|buttons|compute|numbers|TI|device
+Protractor|angles|measure|degrees|half circle|tool
+Ruler|measure|inches|centimeters|straight|king
+Multiply|times|product|x|repeated|addition
+Divide|split|share|quotient|groups|equal
+Sum|add|total|plus|together|answer
+Difference|subtract|minus|change|answer|between
+Quotient|divide|answer|division|result|remainder
+Remainder|left over|divide|extra|R|division
+Dozen|twelve|eggs|donuts|box|bakers
+Million|thousand|six zeros|big|number|billion
+Estimate|guess|close|round|about|approximate
+Rounding|nearest|up|down|estimate|five
+Polygon|shape|sides|many|closed|triangle
+Cube|six|faces|square|dice|3D
+Sphere|ball|round|3D|globe|circle
+Pyramid|triangle|Egypt|base|point|faces`;
+
+        const LANGUAGE_ARTS = `Noun|person|place|thing|word|name
+Verb|action|word|run|doing|tense
+Adjective|describe|noun|word|color|modify
+Adverb|verb|describe|ly|how|quickly
+Pronoun|he|she|they|replace|noun
+Preposition|location|under|over|word|position
+Conjunction|and|but|or|join|FANBOYS
+Interjection|wow|exclamation|ouch|emotion|word
+Synonym|same|meaning|word|similar|antonym
+Antonym|opposite|word|meaning|synonym|different
+Homophone|sound|same|spelled|different|their there
+Simile|like|as|compare|metaphor|figurative
+Metaphor|compare|simile|figurative|is|without like
+Personification|human|object|figurative|alive|qualities
+Onomatopoeia|sound|word|buzz|boom|pow
+Alliteration|same|letter|sound|beginning|repeat
+Hyperbole|exaggerate|overstatement|million|extreme|figurative
+Idiom|expression|saying|literal|phrase|meaning
+Rhyme|sound|same|poem|end|cat hat
+Haiku|poem|Japanese|5-7-5|syllables|short
+Sonnet|fourteen|lines|Shakespeare|poem|love
+Stanza|poem|paragraph|lines|verse|group
+Syllable|sound|part|word|clap|beat
+Narrator|tells|story|voice|point of view|first person
+Point of View|first person|third person|narrator|perspective|I
+Protagonist|main|character|hero|antagonist|story
+Antagonist|villain|bad guy|against|protagonist|enemy
+Plot|story|events|climax|beginning|end
+Climax|turning point|exciting|peak|story|plot
+Setting|time|place|where|when|story
+Theme|lesson|message|main idea|story|moral
+Conflict|problem|struggle|versus|fight|story
+Foreshadowing|hint|future|clue|later|predict
+Flashback|past|memory|earlier|story|scene
+Suspense|tension|waiting|nervous|edge|mystery
+Irony|opposite|expect|sarcasm|twist|unexpected
+Mood|feeling|reader|atmosphere|emotion|tone
+Tone|author|attitude|feeling|voice|mood
+Dialogue|talk|conversation|quotation marks|characters|speak
+Quotation Marks|talk|dialogue|punctuation|speech|commas
+Comma|pause|punctuation|list|separate|mark
+Apostrophe|possession|contraction|punctuation|comma|it's
+Exclamation Point|excited|punctuation|end|loud|yell
+Question Mark|ask|punctuation|end|curly|sentence
+Paragraph|sentences|indent|topic|group|essay
+Thesis Statement|essay|main|argument|claim|introduction
+Essay|write|paragraphs|thesis|paper|five
+Evidence|support|quote|proof|text|claim
+Summary|main points|short|retell|brief|sum up
+Biography|life|person|written|story|autobiography
+Autobiography|myself|life|written|own|memoir
+Fiction|made up|not real|story|novel|imagination
+Nonfiction|real|true|facts|fiction|information
+Mystery|detective|clue|solve|crime|whodunit
+Fairy Tale|once upon a time|princess|magic|happily ever after|Grimm
+Fable|moral|animals|lesson|Aesop|story
+Myth|gods|Greek|legend|story|ancient
+Legend|story|hero|myth|old|tale
+Dictionary|words|definitions|look up|Webster|alphabetical
+Thesaurus|synonyms|words|dinosaur|dictionary|antonyms
+Edgar Allan Poe|Raven|poet|Tell-Tale Heart|creepy|nevermore
+Shakespeare|Romeo|Juliet|playwright|Hamlet|England
+Rough Draft|first|write|edit|revise|final
+Prefix|beginning|word|un|re|suffix
+Suffix|end|word|ing|ed|prefix
+Cliffhanger|ending|suspense|next|episode|hang`;
+
+        const DECK_NAMES = { halloween: '🎃 Halloween', science: '🧪 Spooky Science', civics: '🏛️ Civics', math: '➗ Math', la: '📚 Language Arts', custom: '✏️ Custom' };
 
         function parseDeck(text, deck) {
             return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
@@ -792,7 +1072,11 @@ Circuit|wire|battery|loop|electricity|bulb`;
                 return { w: m[1].trim(), t, deck: 'custom' };
             }).filter(c => c.w);
         }
-        const DECKS = { halloween: parseDeck(HALLOWEEN, 'halloween'), science: parseDeck(SCIENCE, 'science') };
+        const DECKS = {
+            halloween: parseDeck(HALLOWEEN, 'halloween'), science: parseDeck(SCIENCE, 'science'),
+            civics: parseDeck(CIVICS, 'civics'), math: parseDeck(MATH, 'math'), la: parseDeck(LANGUAGE_ARTS, 'la')
+        };
+        const DECK_IDS = Object.keys(DECKS).concat('custom');
 
         // ================= TEAMS =================
         const TEAM_PRESETS = [
@@ -806,7 +1090,7 @@ Circuit|wire|battery|loop|electricity|bulb`;
         const TURN_OPTIONS = [45, 60, 75, 90];
         const ROUND_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
         const OVERHEAD_SEC = 35; // seat swap + review per turn
-        const SAVE_KEY = 'spookyTaboo.v1';
+        const SAVE_KEY = 'spookyTaboo.v2';
 
         // ================= STORAGE =================
         function load() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } }
@@ -818,7 +1102,7 @@ Circuit|wire|battery|loop|electricity|bulb`;
         let setup = Object.assign({
             students: 25, teamCount: 5, names: TEAM_PRESETS.map(t => t.name),
             turnSec: 60, rounds: 4,
-            decks: { halloween: true, science: true, custom: false }, customText: '',
+            decks: { halloween: true, science: false, civics: false, math: false, la: false, custom: false }, customText: '',
             skipPenalty: false, cursed: true
         }, saved && saved.setup ? saved.setup : {});
         let game = saved && saved.game ? saved.game : null;
@@ -877,8 +1161,7 @@ Circuit|wire|battery|loop|electricity|bulb`;
         }
         function cardPool() {
             let pool = [];
-            if (setup.decks.halloween) pool = pool.concat(DECKS.halloween);
-            if (setup.decks.science) pool = pool.concat(DECKS.science);
+            Object.keys(DECKS).forEach(d => { if (setup.decks[d]) pool = pool.concat(DECKS[d]); });
             if (setup.decks.custom) pool = pool.concat(parseCustom(setup.customText));
             return pool;
         }
@@ -916,9 +1199,7 @@ Circuit|wire|battery|loop|electricity|bulb`;
                 `<div class="team-row" style="--team:${t.color}"><span class="emoji">${t.emoji}</span><input data-i="${i}" maxlength="18" value="${esc(t.name)}" aria-label="Team ${i + 1} name"></div>`
             ).join('');
             $('in-students').value = setup.students;
-            $('deck-halloween').checked = setup.decks.halloween;
-            $('deck-science').checked = setup.decks.science;
-            $('deck-custom').checked = setup.decks.custom;
+            DECK_IDS.forEach(d => { $('deck-' + d).checked = !!setup.decks[d]; });
             $('custom-cards').value = setup.customText;
             $('custom-cards').style.display = setup.decks.custom ? '' : 'none';
             $('rule-skip').checked = setup.skipPenalty;
@@ -975,7 +1256,7 @@ Circuit|wire|battery|loop|electricity|bulb`;
             const v = parseInt(e.target.value, 10);
             if (v >= 2 && v <= 60) { setup.students = v; renderEstimate(); save(); }
         });
-        ['halloween', 'science', 'custom'].forEach(d => {
+        DECK_IDS.forEach(d => {
             $('deck-' + d).addEventListener('change', e => {
                 setup.decks[d] = e.target.checked;
                 $('custom-cards').style.display = setup.decks.custom ? '' : 'none';
