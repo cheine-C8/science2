@@ -425,9 +425,9 @@
                         <h2>Card decks</h2>
                         <label class="check"><input type="checkbox" id="deck-halloween" checked><span><b>🎃 Halloween</b><small>Monsters, costumes, candy and spooky movies.</small></span></label>
                         <label class="check"><input type="checkbox" id="deck-science"><span><b>🧪 Spooky Science</b><small>Chemistry, physics and creepy biology.</small></span></label>
-                        <label class="check"><input type="checkbox" id="deck-civics"><span><b>🏛️ Civics</b><small>Constitution, branches of government, elections and rights.</small></span></label>
-                        <label class="check"><input type="checkbox" id="deck-math"><span><b>➗ Math</b><small>Geometry, fractions, algebra and statistics vocabulary.</small></span></label>
-                        <label class="check"><input type="checkbox" id="deck-la"><span><b>📚 Language Arts</b><small>Grammar, figurative language, story elements and genres.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-civics"><span><b>🏛️ Civics</b><small>Constitution, government, rights and the founding era.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-math"><span><b>➗ Math</b><small>8th grade: linear equations, functions, transformations, angles and data.</small></span></label>
+                        <label class="check"><input type="checkbox" id="deck-la"><span><b>📚 Language Arts</b><small>8th grade: verbals, figurative language, argument writing and story elements.</small></span></label>
                         <label class="check"><input type="checkbox" id="deck-custom"><span><b>✏️ Your own cards</b><small>One card per line: <i>Word: taboo, taboo, taboo</i></small></span></label>
                         <textarea id="custom-cards" placeholder="Density: mass, volume, float, sink, heavy&#10;Valence Electrons: outer, shell, bond, octet"></textarea>
                         <div class="hint" id="deck-count" style="text-align:left;margin-top:.4rem"></div>
@@ -618,7 +618,7 @@ Scream|yell|loud|scared|horror|mouth
 Horror Movie|scary|film|watch|blood|jump scare
 Jump Scare|surprise|frighten|movie|startle|out of nowhere
 Creepy Clown|scary|red nose|makeup|balloon|circus
-Haunted Doll|ghost|creepy|Chucky|toy|Annabelle
+Haunted Doll|possessed|creepy|porcelain|toy|eyes
 Monster Mash|song|dance|graveyard|Halloween|Frankenstein
 Thriller|Michael Jackson|dance|song|zombie|music video
 Ghostbusters|ghost|movie|who you gonna call|proton pack|slime
@@ -923,13 +923,25 @@ Search Warrant|police|judge|Fourth Amendment|house|permission
 Miranda Rights|remain silent|police|arrest|lawyer|read
 Popular Vote|people|majority|Electoral College|count|win
 Majority|more than half|most|51|vote|win
-Compromise|agree|give|middle|both|deal`;
+Compromise|agree|give|middle|both|deal
+Articles of Confederation|first|weak|government|states|Constitution
+Great Compromise|Connecticut|Senate|House|representation|states
+Federalist Papers|Hamilton|Madison|essays|ratify|Constitution
+Ratify|approve|vote|states|Constitution|official
+Boston Tea Party|protest|harbor|British|taxes|dump
+Taxation Without Representation|slogan|Britain|colonists|vote|unfair
+Revolutionary War|1776|Britain|independence|colonies|Washington
+Loyalist|king|Britain|Tory|colonist|patriot
+Patriot|colonist|independence|rebel|loyalist|American
+Emancipation Proclamation|Lincoln|slaves|free|1863|Civil War
+Civil War|North|South|Union|Confederate|Lincoln
+Popular Sovereignty|people|power|rule|vote|government
+Rule of Law|everyone|equal|above|follow|justice
+Limited Government|power|restricted|Constitution|rights|controlled`;
 
         const MATH = `Pi|3.14|circle|pie|circumference|diameter
 Circle|round|radius|pi|shape|circumference
 Triangle|three|sides|angles|shape|pyramid
-Square|four|sides|equal|shape|rectangle
-Rectangle|four|sides|shape|square|length
 Hexagon|six|sides|shape|honeycomb|bee
 Pentagon|five|sides|shape|building|military
 Octagon|eight|sides|stop sign|shape|octopus
@@ -955,10 +967,7 @@ Variable|letter|x|unknown|algebra|change
 Exponent|power|squared|small|raise|base
 Square Root|radical|opposite|nine|three|symbol
 Prime Number|divisible|one|itself|factor|seven
-Even Number|two|divisible|odd|pair|four
-Odd Number|even|two|divisible|three|strange
 Negative Number|minus|below|zero|less|positive
-Zero|nothing|none|number|empty|circle
 Infinity|forever|never|ends|sideways|eight
 Average|mean|add|divide|middle|typical
 Median|middle|order|numbers|mean|highway
@@ -971,27 +980,50 @@ Origin|zero|center|start|graph|begin
 Pythagorean Theorem|a squared|triangle|hypotenuse|right|c
 Hypotenuse|triangle|longest|side|right|Pythagorean
 Symmetry|mirror|same|half|line|balanced
-Calculator|buttons|compute|numbers|TI|device
 Protractor|angles|measure|degrees|half circle|tool
-Ruler|measure|inches|centimeters|straight|king
-Multiply|times|product|x|repeated|addition
-Divide|split|share|quotient|groups|equal
-Sum|add|total|plus|together|answer
-Difference|subtract|minus|change|answer|between
 Quotient|divide|answer|division|result|remainder
-Remainder|left over|divide|extra|R|division
-Dozen|twelve|eggs|donuts|box|bakers
-Million|thousand|six zeros|big|number|billion
-Estimate|guess|close|round|about|approximate
-Rounding|nearest|up|down|estimate|five
 Polygon|shape|sides|many|closed|triangle
 Cube|six|faces|square|dice|3D
 Sphere|ball|round|3D|globe|circle
-Pyramid|triangle|Egypt|base|point|faces`;
+Pyramid|triangle|Egypt|base|point|faces
+Linear Equation|line|straight|y = mx + b|slope|graph
+Function|input|output|machine|f of x|rule
+Y-Intercept|y-axis|cross|b|start|line
+Slope-Intercept Form|y = mx + b|m|line|equation|b
+System of Equations|two|lines|intersect|solve|solution
+Inequality|greater than|less than|symbol|not equal|alligator
+Integer|whole|number|negative|positive|decimal
+Rational Number|fraction|ratio|decimal|repeat|integer
+Irrational Number|pi|never ends|decimal|square root|repeat
+Absolute Value|distance|zero|positive|bars|number line
+Scientific Notation|power of ten|big|small|exponent|times
+Perfect Square|four|nine|sixteen|squared|root
+Cube Root|third|three|volume|eight|radical
+Congruent|same|shape|size|equal|identical
+Similar Figures|same shape|different size|scale|proportional|dilation
+Transformation|move|translate|rotate|reflect|shape
+Translation|slide|move|shift|transformation|language
+Rotation|turn|spin|degrees|around|transformation
+Dilation|enlarge|shrink|scale factor|size|eye
+Scale Factor|multiply|bigger|smaller|map|dilation
+Scatter Plot|dots|data|graph|correlation|points
+Line of Best Fit|trend|scatter plot|data|straight|predict
+Correlation|relationship|positive|negative|scatter plot|trend
+Outlier|far|away|data|different|unusual
+Cylinder|can|circles|3D|soup|tube
+Cone|ice cream|traffic|point|3D|circle
+Vertical Angles|opposite|equal|intersect|X|lines
+Complementary Angles|90|add|two|right|compliment
+Supplementary Angles|180|straight|add|two|line
+Transversal|cross|parallel lines|angles|intersect|line
+Coefficient|number|variable|in front|multiply|term
+Like Terms|combine|same|variable|add|simplify
+Distributive Property|multiply|parentheses|outside|each|inside
+Order of Operations|PEMDAS|parentheses|first|exponents|rules
+Unit Rate|per|one|price|miles|speed
+Proportional|equal|ratio|constant|double|relationship`;
 
-        const LANGUAGE_ARTS = `Noun|person|place|thing|word|name
-Verb|action|word|run|doing|tense
-Adjective|describe|noun|word|color|modify
+        const LANGUAGE_ARTS = `Adjective|describe|noun|word|color|modify
 Adverb|verb|describe|ly|how|quickly
 Pronoun|he|she|they|replace|noun
 Preposition|location|under|over|word|position
@@ -1007,11 +1039,9 @@ Onomatopoeia|sound|word|buzz|boom|pow
 Alliteration|same|letter|sound|beginning|repeat
 Hyperbole|exaggerate|overstatement|million|extreme|figurative
 Idiom|expression|saying|literal|phrase|meaning
-Rhyme|sound|same|poem|end|cat hat
 Haiku|poem|Japanese|5-7-5|syllables|short
 Sonnet|fourteen|lines|Shakespeare|poem|love
 Stanza|poem|paragraph|lines|verse|group
-Syllable|sound|part|word|clap|beat
 Narrator|tells|story|voice|point of view|first person
 Point of View|first person|third person|narrator|perspective|I
 Protagonist|main|character|hero|antagonist|story
@@ -1031,8 +1061,6 @@ Dialogue|talk|conversation|quotation marks|characters|speak
 Quotation Marks|talk|dialogue|punctuation|speech|commas
 Comma|pause|punctuation|list|separate|mark
 Apostrophe|possession|contraction|punctuation|comma|it's
-Exclamation Point|excited|punctuation|end|loud|yell
-Question Mark|ask|punctuation|end|curly|sentence
 Paragraph|sentences|indent|topic|group|essay
 Thesis Statement|essay|main|argument|claim|introduction
 Essay|write|paragraphs|thesis|paper|five
@@ -1043,18 +1071,41 @@ Autobiography|myself|life|written|own|memoir
 Fiction|made up|not real|story|novel|imagination
 Nonfiction|real|true|facts|fiction|information
 Mystery|detective|clue|solve|crime|whodunit
-Fairy Tale|once upon a time|princess|magic|happily ever after|Grimm
 Fable|moral|animals|lesson|Aesop|story
 Myth|gods|Greek|legend|story|ancient
 Legend|story|hero|myth|old|tale
-Dictionary|words|definitions|look up|Webster|alphabetical
 Thesaurus|synonyms|words|dinosaur|dictionary|antonyms
 Edgar Allan Poe|Raven|poet|Tell-Tale Heart|creepy|nevermore
 Shakespeare|Romeo|Juliet|playwright|Hamlet|England
 Rough Draft|first|write|edit|revise|final
 Prefix|beginning|word|un|re|suffix
 Suffix|end|word|ing|ed|prefix
-Cliffhanger|ending|suspense|next|episode|hang`;
+Cliffhanger|ending|suspense|next|episode|hang
+Gerund|ing|verb|noun|swimming|verbal
+Infinitive|to|verb|base|form|verbal
+Active Voice|subject|action|passive|does|verb
+Passive Voice|was|by|subject|active|verb
+Ellipsis|three dots|dot dot dot|pause|omit|trailing
+Semicolon|punctuation|join|independent|clause|comma
+Allusion|reference|famous|hint|Bible|mention
+Symbolism|represent|stands for|meaning|object|deeper
+Imagery|senses|picture|describe|vivid|see
+Inference|clues|conclude|guess|read between the lines|evidence
+Dramatic Irony|audience|knows|character|doesn't|horror movie
+Characterization|traits|describe|direct|indirect|personality
+Connotation|feeling|meaning|positive|negative|denotation
+Denotation|dictionary|definition|literal|meaning|connotation
+Oxymoron|contradiction|opposite|jumbo shrimp|two words|figurative
+Pun|joke|play on words|dad joke|double meaning|funny
+Counterclaim|opposing|argument|other side|rebuttal|claim
+Paraphrase|own words|reword|summarize|restate|quote
+Plagiarism|copy|cheating|steal|credit|words
+Citation|source|credit|MLA|reference|quote
+Central Idea|main|point|theme|summary|text
+Analogy|compare|similar|relationship|like|metaphor
+Satire|mock|humor|criticize|exaggerate|The Onion
+Exposition|beginning|introduce|characters|setting|plot
+Resolution|ending|solved|conflict|wrap up|plot`;
 
         const DECK_NAMES = { halloween: '🎃 Halloween', science: '🧪 Spooky Science', civics: '🏛️ Civics', math: '➗ Math', la: '📚 Language Arts', custom: '✏️ Custom' };
 
