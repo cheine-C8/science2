@@ -77,7 +77,7 @@
     that stroke. Click away or Ctrl+Enter commits, Escape cancels. The select
     tool moves text, its handle scales the font size, and double-click re-opens
     the editor. Undo 'update' actions carry text/size as well as geometry.
-  • Minimap (#minimap, bottom-left): drawMinimap() runs from redrawMain(),
+  • Minimap (#minimap, top-left): drawMinimap() runs from redrawMain(),
     throttled, showing content bounds ∪ viewport with pen strokes sampled to
     ~40 points. Click/drag jumps the view; double-click = fitToContent().
     Toggle (map button in zoom controls) persists in localStorage. Hidden on
@@ -305,7 +305,7 @@
     <div id="widget-layer"></div>
 
     <!-- Widget rail: one button per widget type. data-widget must match a key in DEFS (widget script).
-         On desktop it's a vertical bar on the left; on small screens it's hidden behind #rail-toggle. -->
+         On desktop it's a vertical bar on the left, below the minimap, auto-shrinking to compact or 2 columns to fit (fitRail() in widgets.js); on small screens it's hidden behind #rail-toggle. -->
     <button id="rail-toggle"><i data-lucide="layout-grid"></i>Widgets</button>
     <div id="widget-rail">
         <button data-widget="clock" data-label="Clock"><i data-lucide="clock"></i></button>

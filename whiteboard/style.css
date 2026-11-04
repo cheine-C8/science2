@@ -115,10 +115,13 @@ body.eink #fireworks-canvas { display: none; }
 #text-editor.open { display: block; }
 
 /* ─── MINIMAP ─── */
+/* Top-left corner. (It always rendered here: the generic `canvas { inset: 0 }` rule above
+   overrode the old `bottom:` value. Now stated explicitly, with a 16px gutter.) */
 #minimap {
     position: fixed;
     left: 16px;
-    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    top: calc(1rem + env(safe-area-inset-top));
+    bottom: auto; right: auto;
     width: 200px;
     height: 130px;
     z-index: 50;
@@ -257,11 +260,17 @@ body.eink #text-editor { background: #fff; border-color: #000; }
 }
 
 /* Widget rail */
+/* Desktop: the rail lives in the left column BELOW the minimap (top-left), vertically
+   centred in the remaining space. --rail-top is set by fitRail() in widgets.js to clear the
+   minimap (or just 16px when the minimap is off). If the full rail doesn't fit, fitRail()
+   adds .compact (smaller buttons), then .two-col (2-column grid). */
 #widget-rail {
     position: fixed;
     left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: var(--rail-top, 16px);
+    bottom: 16px;
+    height: max-content;
+    margin-block: auto;
     z-index: 50;
     display: flex;
     flex-direction: column;
@@ -300,6 +309,15 @@ body.eink #text-editor { background: #fff; border-color: #000; }
 }
 #widget-rail button:hover::after { opacity: 1; }
 #widget-rail .rail-sep { height: 1px; background: #e2e8f0; margin: 4px 6px; }
+#widget-rail.fitting button { transition: none; }   /* fitRail() measures sizes instantly */
+#widget-rail.tight { margin-block: 0 auto; }        /* doesn't fit even 2-col: hug the minimap, spill down */
+#widget-rail.compact button { width: 34px; height: 34px; }
+#widget-rail.compact button svg { width: 18px; height: 18px; }
+#widget-rail.compact .rail-sep { margin: 3px 5px; }
+#widget-rail.two-col { display: grid; grid-template-columns: repeat(2, max-content); }
+#widget-rail.two-col .rail-sep { grid-column: 1 / -1; }
+/* "Close all widgets" asks for a second tap instead of confirm() (dialogs can be blocked) */
+#widget-rail button.armed { background: #fee2e2; color: #dc2626; }
 
 /* Traffic light */
 .tl-lamp {
@@ -420,7 +438,7 @@ button { -webkit-tap-highlight-color: transparent; }
     #rail-toggle svg { width: 18px; height: 18px; }
     #widget-rail {
         display: none; top: calc(3.5rem + env(safe-area-inset-top)); left: calc(0.5rem + env(safe-area-inset-left));
-        right: 0.5rem; transform: none; flex-direction: row; flex-wrap: nowrap;
+        right: 0.5rem; bottom: auto; height: auto; margin: 0; flex-direction: row; flex-wrap: nowrap;
         max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: hidden;
         scrollbar-width: none; -webkit-overflow-scrolling: touch;
     }

@@ -742,13 +742,54 @@
         }
     }
     window.addEventListener('resize', clampAll);
+
+    // Desktop rail sizing: keep the rail out of the minimap (top-left). --rail-top starts the
+    // rail just below the minimap when it's showing; then step down normal → .compact →
+    // .two-col until the rail fits between that line and the bottom of the screen. Small
+    // screens use the collapsible horizontal rail instead (CSS), so this does nothing there.
+    function fitRail() {
+        rail.classList.remove('compact', 'two-col', 'tight');
+        if (isSmall()) { rail.style.removeProperty('--rail-top'); return; }
+        rail.classList.add('fitting');  // no button size transitions while measuring
+        try { fitRailSteps(); } finally { rail.classList.remove('fitting'); }
+    }
+    function fitRailSteps() {
+        const mm = document.getElementById('minimap');
+        const mmShown = mm && getComputedStyle(mm).display !== 'none';
+        const top = mmShown ? mm.getBoundingClientRect().bottom + 12 : 16;
+        rail.style.setProperty('--rail-top', top + 'px');
+        const avail = window.innerHeight - 16 - top;
+        if (rail.offsetHeight <= avail) return;
+        rail.classList.add('compact');
+        if (rail.offsetHeight <= avail) return;
+        rail.classList.remove('compact'); rail.classList.add('two-col');
+        if (rail.offsetHeight > avail) rail.classList.add('compact');
+        if (rail.offsetHeight > avail) rail.classList.add('tight');
+    }
+    window.addEventListener('resize', fitRail);
+    // The minimap toggle (board.js) flips body.minimap-off — refit when that changes
+    new MutationObserver(fitRail).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    requestAnimationFrame(fitRail);
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 150));
 
     // Rail buttons
     document.querySelectorAll('#widget-rail button[data-widget]').forEach(b => b.onclick = () => { addWidget(b.dataset.widget); if (isSmall()) rail.classList.remove('open'); clampAll(); });
-    document.getElementById('btn-widgets-clear').onclick = () => {
+    // Close all: first tap arms the button (turns red, 3 s), second tap closes everything.
+    // Not confirm(): some browsers (kiosk/e-ink, or after "block dialogs") silently return false.
+    const clearBtn = document.getElementById('btn-widgets-clear');
+    let clearArmTimer = null;
+    const disarm = () => { clearTimeout(clearArmTimer); clearBtn.classList.remove('armed'); clearBtn.dataset.label = 'Close all widgets'; };
+    clearBtn.onclick = () => {
         if (!widgets.size) return;
-        if (confirm('Close all widgets?')) [...widgets.keys()].forEach(removeWidget);
+        if (!clearBtn.classList.contains('armed')) {
+            clearBtn.classList.add('armed'); clearBtn.dataset.label = 'Tap again to close all';
+            clearArmTimer = setTimeout(disarm, 3000);
+            return;
+        }
+        disarm();
+        // One widget's cleanup throwing mustn't leave the rest open
+        for (const id of [...widgets.keys()]) { try { removeWidget(id); } catch (e) { console.error(e); widgets.get(id)?.el.remove(); widgets.delete(id); } }
+        save();
     };
 
     // Restore from last session (same shape as what save() writes)
