@@ -402,6 +402,21 @@ button { -webkit-tap-highlight-color: transparent; }
 #toolbar > * { flex-shrink: 0; }
 
 #rail-toggle { display: none; }
+/* Desktop: the rail's X collapses it to the "Widgets" button, parked where the rail starts.
+   Scoped to wide screens so it can't fight the small-screen dropdown rules below. */
+@media (min-width: 821px) {
+    body.rail-hidden #widget-rail { display: none; }
+    body.rail-hidden #rail-toggle {
+        display: flex; position: fixed; z-index: 51;
+        left: 16px; top: var(--rail-top, 16px);
+        align-items: center; gap: 6px; padding: 8px 12px;
+        background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+        border: 1px solid rgba(0,0,0,.06); border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,.12);
+        font-size: 13px; font-weight: 600; color: #475569;
+    }
+    body.rail-hidden #rail-toggle svg { width: 18px; height: 18px; }
+}
 
 /* Touch devices: bigger targets, no hover tooltips */
 @media (pointer: coarse) {

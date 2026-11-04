@@ -726,8 +726,15 @@
 
     // Collapsible rail on small screens
     const rail = document.getElementById('widget-rail'), railToggle = document.getElementById('rail-toggle');
-    railToggle.onclick = () => rail.classList.toggle('open');
     const isSmall = () => window.matchMedia('(max-width: 820px)').matches;
+    // Desktop show/hide (body.rail-hidden, remembered); small screens keep the dropdown (.open)
+    const setRailHidden = h => {
+        document.body.classList.toggle('rail-hidden', h);
+        try { localStorage.setItem('whiteboard.railHidden', h ? '1' : '0'); } catch (e) { }
+    };
+    try { if (localStorage.getItem('whiteboard.railHidden') === '1') document.body.classList.add('rail-hidden'); } catch (e) { }
+    railToggle.onclick = () => { if (isSmall()) rail.classList.toggle('open'); else setRailHidden(false); };
+    document.getElementById('btn-rail-hide').onclick = () => { if (isSmall()) rail.classList.remove('open'); else setRailHidden(true); };
 
     // Keep widgets on screen when the viewport changes (rotation, keyboard, window resize)
     // Pull every widget back inside the viewport (rotation, keyboard, window resize, tiny screens).
@@ -749,7 +756,7 @@
     // screens use the collapsible horizontal rail instead (CSS), so this does nothing there.
     function fitRail() {
         rail.classList.remove('compact', 'two-col', 'tight');
-        if (isSmall()) { rail.style.removeProperty('--rail-top'); return; }
+        if (isSmall()) { document.documentElement.style.removeProperty('--rail-top'); return; }
         rail.classList.add('fitting');  // no button size transitions while measuring
         try { fitRailSteps(); } finally { rail.classList.remove('fitting'); }
     }
@@ -757,7 +764,7 @@
         const mm = document.getElementById('minimap');
         const mmShown = mm && getComputedStyle(mm).display !== 'none';
         const top = mmShown ? mm.getBoundingClientRect().bottom + 12 : 16;
-        rail.style.setProperty('--rail-top', top + 'px');
+        document.documentElement.style.setProperty('--rail-top', top + 'px');  // on :root so #rail-toggle uses it too
         const avail = window.innerHeight - 16 - top;
         if (rail.offsetHeight <= avail) return;
         rail.classList.add('compact');

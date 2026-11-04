@@ -305,7 +305,8 @@
     <div id="widget-layer"></div>
 
     <!-- Widget rail: one button per widget type. data-widget must match a key in DEFS (widget script).
-         On desktop it's a vertical bar on the left, below the minimap, auto-shrinking to compact or 2 columns to fit (fitRail() in widgets.js); on small screens it's hidden behind #rail-toggle. -->
+         On desktop it's a vertical bar on the left, below the minimap, auto-shrinking to compact or 2 columns to fit (fitRail() in widgets.js); on small screens it's hidden behind #rail-toggle.
+         The X at the bottom hides the rail; #rail-toggle ("Widgets") brings it back (desktop: body.rail-hidden, saved). -->
     <button id="rail-toggle"><i data-lucide="layout-grid"></i>Widgets</button>
     <div id="widget-rail">
         <button data-widget="clock" data-label="Clock"><i data-lucide="clock"></i></button>
@@ -324,7 +325,10 @@
         <button data-widget="qr" data-label="QR code"><i data-lucide="qr-code"></i></button>
         <button data-widget="cat" data-label="Wandering cat"><i data-lucide="cat"></i></button>
         <div class="rail-sep"></div>
-        <button id="btn-widgets-clear" data-label="Close all widgets"><i data-lucide="x-circle"></i></button>
+        <button id="btn-widgets-clear" data-label="Close all widgets"><i data-lucide="copy-x"></i></button>
+        <div class="rail-sep"></div>
+        <!-- Hides the rail itself (desktop: collapses to the "Widgets" button; small screens: closes the dropdown) -->
+        <button id="btn-rail-hide" data-label="Hide widget bar"><i data-lucide="x"></i></button>
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
