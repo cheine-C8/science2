@@ -114,6 +114,19 @@ body.eink #fireworks-canvas { display: none; }
 }
 #text-editor.open { display: block; }
 
+/* Lock toggle on a selected image */
+#obj-lock {
+    position: fixed; z-index: 45; display: none;
+    width: 36px; height: 36px; align-items: center; justify-content: center;
+    border-radius: 10px; background: #fff; color: #2563eb;
+    border: 1px solid rgba(0,0,0,.1); box-shadow: 0 4px 14px rgba(0,0,0,.15);
+}
+#obj-lock svg { width: 18px; height: 18px; }
+#obj-lock .ic-locked, #obj-lock.locked .ic-unlocked { display: none; }
+#obj-lock.locked .ic-locked { display: block; }
+#obj-lock.locked { background: #1e293b; color: #fff; }
+body.eink #obj-lock { box-shadow: none; border: 2px solid #000; }
+
 /* ─── MINIMAP ─── */
 /* Top-left corner. (It always rendered here: the generic `canvas { inset: 0 }` rule above
    overrode the old `bottom:` value. Now stated explicitly, with a 16px gutter.) */

@@ -107,6 +107,11 @@
     so it can be repositioned immediately. Pasting into a widget's own text
     field is untouched — the paste handler only intercepts when the clipboard
     actually contains image data.
+  • Locking images: select an image → lock button at its top-right. A locked image
+    (`locked: true` on its stroke doc) is drawn UNDER all ink (destination-over after
+    the ink pass), so both erasers only remove pen strokes on top of it. It can't be
+    moved, resized, deleted, stroke-erased or cleared until unlocked. See LOCKED IMAGES
+    in board.js.
   • The ">>" button in the zoom controls jumps to blank space: slides right
     along the current row (whatever world-y band is on screen; y = 0 by
     default) so the screen's left edge sits JUMP_GAP px past the right-most
@@ -158,6 +163,8 @@
         <!-- In-place editor for the text tool. Positioned in screen px over the world point being
              edited, font-size scaled by view.zoom. Hidden unless a text is being typed/edited. -->
         <textarea id="text-editor" spellcheck="false" rows="1"></textarea>
+        <!-- Lock toggle for the selected image (select tool). Positioned by drawSelectionBox(). -->
+        <button id="obj-lock"><i data-lucide="lock-open" class="ic-unlocked"></i><i data-lucide="lock" class="ic-locked"></i></button>
     </div>
 
     <!-- Minimap: bird's-eye view of everything on the board + the current viewport (blue box).

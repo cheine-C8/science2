@@ -299,6 +299,27 @@ function drawEntity(ctx, stroke) {
     }
 }
 
+// ─── LOCKED IMAGES ────────────────────────────────────────────────────────────
+// An image with `locked: true` (synced field) acts like a worksheet under the ink:
+//   • drawn BENEATH every other stroke, via destination-over after the ink pass, so eraser
+//     strokes (destination-out) only punch through ink and never through the image
+//   • ignored by the stroke eraser, Delete key and "clear board"
+//   • can be selected (to unlock) but not moved or resized
+// Toggle with the lock button that appears on a selected image (select tool).
+const isLockedImage = s => s.type === 'image' && !!s.locked;
+// ctx must already carry the world transform. Paints locked images behind what's on ctx.
+function drawLockedImages(ctx) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    for (let i = strokes.length - 1; i >= 0; i--) {          // reverse: destination-over stacks under
+        const s = strokes[i];
+        if (!isLockedImage(s)) continue;
+        const img = imageCache.get(s.id);
+        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, s.points[0].x, s.points[0].y, s.w, s.h);
+    }
+    ctx.restore();
+}
+
 // ─── TEXT helpers ─────────────────────────────────────────────────────────────
 const TEXT_LINE_HEIGHT = 1.25;
 const textFont = size => `${size}px 'Segoe UI', system-ui, sans-serif`;
@@ -322,7 +343,8 @@ function rebuildOffscreen() {
     offCtx.save();
     offCtx.translate(view.x, view.y);
     offCtx.scale(view.zoom, view.zoom);
-    for (const stroke of strokes) drawEntity(offCtx, stroke);
+    for (const stroke of strokes) if (!isLockedImage(stroke)) drawEntity(offCtx, stroke);
+    drawLockedImages(offCtx);   // after the ink, painted UNDER it — see LOCKED IMAGES below
     offCtx.restore();
     offscreenDirty = false;
     offscreenView = { x: view.x, y: view.y, zoom: view.zoom };
@@ -431,33 +453,65 @@ function strokeHitTest(stroke, cx, cy, radius) {
 }
 
 // Topmost image/text stroke whose bounding box contains world point (wx, wy). Used by the select tool.
+// Locked images are drawn beneath everything, so they're checked last.
 function getObjectAt(wx, wy) {
-    for (let i = strokes.length - 1; i >= 0; i--) {
-        const s = strokes[i];
-        if (s.type !== 'image' && s.type !== 'text') continue;
-        const p = s.points[0];
-        if (wx >= p.x && wx <= p.x + s.w && wy >= p.y && wy <= p.y + s.h) return s;
+    for (const wantLocked of [false, true]) {
+        for (let i = strokes.length - 1; i >= 0; i--) {
+            const s = strokes[i];
+            if (s.type !== 'image' && s.type !== 'text') continue;
+            if (isLockedImage(s) !== wantLocked) continue;
+            const p = s.points[0];
+            if (wx >= p.x && wx <= p.x + s.w && wy >= p.y && wy <= p.y + s.h) return s;
+        }
     }
     return null;
 }
 
 // Selection outline + resize handle for the currently-selected image, drawn on the overlay
 // in SCREEN space (same convention as the live pen stroke drawn during a gesture).
+// Images also get the #obj-lock button (screen-positioned DOM) at the box's top-right corner.
+// Locked images: grey solid outline, no resize handle.
+const lockBtn = document.getElementById('obj-lock');
 function drawSelectionBox() {
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-    if (!selectedObjectId) return;
+    lockBtn.style.display = 'none';
+    if (!selectedObjectId || ui.tool !== 'select') return;
     const s = strokes.find(x => x.id === selectedObjectId && (x.type === 'image' || x.type === 'text'));
     if (!s) { selectedObjectId = null; return; }
     const x0 = s.points[0].x * view.zoom + view.x, y0 = s.points[0].y * view.zoom + view.y;
     const w0 = s.w * view.zoom, h0 = s.h * view.zoom;
+    const locked = isLockedImage(s);
     overlayCtx.save();
-    overlayCtx.strokeStyle = '#2563eb'; overlayCtx.lineWidth = 2; overlayCtx.setLineDash([6, 4]);
+    overlayCtx.strokeStyle = locked ? '#64748b' : '#2563eb'; overlayCtx.lineWidth = 2;
+    if (!locked) overlayCtx.setLineDash([6, 4]);
     overlayCtx.strokeRect(x0, y0, w0, h0);
     overlayCtx.setLineDash([]);
-    overlayCtx.fillStyle = '#2563eb';
-    overlayCtx.fillRect(x0 + w0 - 9, y0 + h0 - 9, 18, 18);
+    if (!locked) {
+        overlayCtx.fillStyle = '#2563eb';
+        overlayCtx.fillRect(x0 + w0 - 9, y0 + h0 - 9, 18, 18);
+    }
     overlayCtx.restore();
+    if (s.type === 'image' && isEditor) {
+        lockBtn.style.display = 'flex';
+        lockBtn.classList.toggle('locked', locked);
+        lockBtn.title = locked ? 'Unlock image (erasing and moving affect it again)' : 'Lock image (erasing ink won\'t touch it; can\'t be moved)';
+        // Top-right corner, nudged inside the screen if the image runs off the edge
+        const bx = Math.min(window.innerWidth - 44, Math.max(4, x0 + w0 - 36));
+        const by = Math.min(window.innerHeight - 44, Math.max(4, y0 - 40));
+        lockBtn.style.left = bx + 'px'; lockBtn.style.top = by + 'px';
+    }
 }
+lockBtn.addEventListener('pointerdown', e => e.stopPropagation());
+lockBtn.onclick = () => {
+    const s = strokes.find(x => x.id === selectedObjectId && x.type === 'image');
+    if (!s || !isEditor) return;
+    undoStack.push({ type: 'update', id: s.id, before: { points: [{ ...s.points[0] }], w: s.w, h: s.h, locked: !!s.locked } });
+    s.locked = !s.locked;
+    writeObjectDoc(s);
+    offscreenDirty = true; isDirty = true;
+    showToast(s.locked ? 'Image locked — erasing won\'t affect it' : 'Image unlocked');
+    drawSelectionBox();
+};
 
 // Small transient notice (e.g. "image too large to sync") — doesn't block input like alert().
 function showToast(msg) {
@@ -554,7 +608,7 @@ overlayCanvas.addEventListener('pointerdown', e => {
             // Resize handle takes priority when an image is already selected
             if (selectedObjectId) {
                 const sel = strokes.find(s => s.id === selectedObjectId && (s.type === 'image' || s.type === 'text'));
-                if (sel) {
+                if (sel && !isLockedImage(sel)) {
                     const hx = sel.points[0].x * view.zoom + view.x + sel.w * view.zoom;
                     const hy = sel.points[0].y * view.zoom + view.y + sel.h * view.zoom;
                     const dx = e.clientX - hx, dy = e.clientY - hy;
@@ -565,7 +619,9 @@ overlayCanvas.addEventListener('pointerdown', e => {
             }
             if (!objectDrag) {
                 const hit = getObjectAt(wp.x, wp.y);
-                if (hit) {
+                if (hit && isLockedImage(hit)) {
+                    selectedObjectId = hit.id;    // selectable (to unlock), but pinned in place
+                } else if (hit) {
                     selectedObjectId = hit.id;
                     objectDrag = { id: hit.id, mode: 'move', orig: { x: hit.points[0].x, y: hit.points[0].y, w: hit.w, h: hit.h, size: hit.size }, startWx: wp.x, startWy: wp.y };
                 } else {
@@ -581,7 +637,7 @@ overlayCanvas.addEventListener('pointerdown', e => {
 // delete + undo entry). erasedThisGesture stops re-deleting during one drag.
 function eraseStrokesAtPoint(wx, wy) {
     const radius = (ui.thickness * 8) / view.zoom; // eraser radius in world space
-    const toErase = strokes.filter(s => !erasedThisGesture.has(s.id) && strokeHitTest(s, wx, wy, radius));
+    const toErase = strokes.filter(s => !isLockedImage(s) && !erasedThisGesture.has(s.id) && strokeHitTest(s, wx, wy, radius));
     if (toErase.length === 0) return;
 
     const ids = toErase.map(s => s.id);
@@ -696,6 +752,7 @@ overlayCanvas.addEventListener('pointermove', e => {
                     lastPt = pt;
                 }
                 mainCtx.stroke();
+                drawLockedImages(mainCtx);  // the live destination-out just punched them too — refill underneath
                 mainCtx.restore();
             } else {
                 // Pen: batch coalesced points into single path, skip micro-moves
@@ -776,7 +833,7 @@ function writeObjectDoc(s) {
     };
     const payload = s.type === 'text'
         ? { ...base, text: s.text, color: s.color, size: s.size }
-        : { ...base, src: s.src };
+        : { ...base, src: s.src, locked: !!s.locked };
     setTimeout(() => {
         setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id), payload)
             .catch(e => console.error('Firebase write error:', e));
@@ -1040,6 +1097,7 @@ async function undo() {
             s.points = [{ ...b.points[0] }]; s.w = b.w; s.h = b.h;
             if (b.size !== undefined) s.size = b.size;
             if (b.text !== undefined) s.text = b.text;
+            if (b.locked !== undefined) s.locked = b.locked;
             writeObjectDoc(s);
         }
     }
@@ -1296,7 +1354,7 @@ function switchTool(t) {
     if (!isEditor && t !== 'pan') t = 'pan'; // view-only accounts can pan/zoom but never pick an edit tool
     abortCurrentStroke();
     if (editing && t !== 'text') commitTextEdit();
-    if (ui.tool === 'select' && t !== 'select') { selectedObjectId = null; objectDrag = null; }
+    if (ui.tool === 'select' && t !== 'select') { selectedObjectId = null; objectDrag = null; lockBtn.style.display = 'none'; }
     ui.tool = t; updateUI();
 }
 
@@ -1363,10 +1421,11 @@ document.getElementById('btn-undo').onclick = undo;
 document.getElementById('btn-clear').onclick = async () => {
     if (!isEditor) return;
     abortCurrentStroke();
-    const all = [...strokes];
+    // Locked images survive a clear (that's what locking is for) — unlock them to remove.
+    const all = strokes.filter(s => !isLockedImage(s));
     undoStack.push({ type: 'delete', strokes: all });
     all.forEach(s => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { }));
-    strokes = []; offscreenDirty = true; isDirty = true;
+    strokes = strokes.filter(isLockedImage); offscreenDirty = true; isDirty = true;
 };
 
 // Keyboard: Ctrl/Cmd+Z undo; hold Space to pan temporarily (ignored while typing in a widget).
@@ -1377,6 +1436,7 @@ window.addEventListener('keydown', e => {
         && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
         e.preventDefault();
         const s = strokes.find(x => x.id === selectedObjectId);
+        if (s && isLockedImage(s)) { showToast('Unlock the image to delete it'); return; }
         if (s) {
             strokes = strokes.filter(x => x.id !== s.id);
             undoStack.push({ type: 'delete', strokes: [s] });
