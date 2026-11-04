@@ -1072,11 +1072,13 @@ document.getElementById('btn-zoom-in').onclick = () => applyZoomDelta(1.25);
 document.getElementById('btn-zoom-out').onclick = () => applyZoomDelta(0.8);
 document.getElementById('btn-zoom-reset').onclick = () => { view.zoom = 1; view.x = 0; view.y = 0; offscreenDirty = true; isDirty = true; updateZoomUI(); };
 
-// Jump to blank space: move right along the top row (world y = 0) so the left edge of the
-// screen sits just past the right-most thing currently drawn in the top row of what you
-// can see (JUMP_GAP world px after it). If the new view still contains something, keep
-// nudging right until it's clear. If nothing is in view, step one full screen. This keeps
-// pages tight — no wasted half-screens between them.
+// Jump to blank space: move right along the CURRENT row (the band of world y the screen
+// covers right now — y = 0 until you've used "return") so the left edge of the screen sits
+// just past the right-most thing in that band (JUMP_GAP world px after it). If the new view
+// still contains something, keep nudging right until it's clear. If nothing is in view, step
+// one full screen. This keeps pages tight — no wasted half-screens between them.
+// Vertical position is left alone, so ">>" and "return" (below) compose like a typewriter:
+// fill pages left→right, hit return to start a new row under everything, repeat.
 const JUMP_GAP = 40;
 function strokeBounds(s) {
     const p0 = s.points[0];
@@ -1089,13 +1091,14 @@ function strokeBounds(s) {
 function jumpToBlankSpace() {
     abortCurrentStroke();
     const pageW = window.innerWidth / view.zoom, pageH = window.innerHeight / view.zoom;
-    // Right-most content edge inside the top-row band [x0, x0+pageW), or null if empty
+    const top = -view.y / view.zoom;                // world y of the screen's top edge (current row)
+    // Right-most content edge inside the current-row band [x0, x0+pageW) × [top, top+pageH), or null if empty
     const rightmostIn = x0 => {
         let mx = null;
         for (const s of strokes) {
             if (s.type === 'eraser' || !s.points.length) continue;
             const b = strokeBounds(s);
-            if (b.maxX > x0 && b.minX < x0 + pageW && b.maxY > 0 && b.minY < pageH) mx = Math.max(mx ?? -Infinity, b.maxX);
+            if (b.maxX > x0 && b.minX < x0 + pageW && b.maxY > top && b.minY < top + pageH) mx = Math.max(mx ?? -Infinity, b.maxX);
         }
         return mx;
     };
@@ -1108,11 +1111,28 @@ function jumpToBlankSpace() {
         if (m2 === null) break;
         left = m2 + JUMP_GAP;
     }
-    view.x = -left * view.zoom;
-    view.y = 0;
+    view.x = -left * view.zoom;                     // view.y unchanged: stay on this row
     offscreenDirty = true; isDirty = true; updateZoomUI();
 }
 document.getElementById('btn-blank').onclick = jumpToBlankSpace;
+
+// Carriage return: go back to the left edge (world x = 0) and drop to a fresh row just below
+// EVERYTHING on the board (lowest content edge across all x, plus JUMP_GAP). Zoom is kept.
+// Empty board → plain origin (0,0). Pair with ">>" to keep laying out pages in rows.
+function carriageReturn() {
+    abortCurrentStroke();
+    let maxY = null;
+    for (const s of strokes) {
+        if (s.type === 'eraser' || !s.points.length) continue;
+        const b = strokeBounds(s);
+        maxY = Math.max(maxY ?? -Infinity, b.maxY);
+    }
+    const top = maxY === null ? 0 : Math.max(0, maxY + JUMP_GAP);
+    view.x = 0;
+    view.y = -top * view.zoom;
+    offscreenDirty = true; isDirty = true; updateZoomUI();
+}
+document.getElementById('btn-return').onclick = carriageReturn;
 
 // ─── MINIMAP ──────────────────────────────────────────────────────────────────
 // A 200×130 canvas showing the union of all content + the current viewport, redrawn from

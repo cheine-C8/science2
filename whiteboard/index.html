@@ -108,9 +108,13 @@
     field is untouched — the paste handler only intercepts when the clipboard
     actually contains image data.
   • The ">>" button in the zoom controls jumps to blank space: slides right
-    along the top row (world y = 0) so the screen's left edge sits JUMP_GAP px
-    past the right-most thing visible, nudging further until the view is
-    clear. Nothing in view → step one full screen. See jumpToBlankSpace().
+    along the current row (whatever world-y band is on screen; y = 0 by
+    default) so the screen's left edge sits JUMP_GAP px past the right-most
+    thing visible, nudging further until the view is clear. Nothing in view →
+    step one full screen. See jumpToBlankSpace().
+  • The return button (↵) under it is a carriage return: x = 0, top edge
+    JUMP_GAP px below the lowest content anywhere on the board, zoom kept.
+    Empty board → origin. See carriageReturn().
 
   DEVICE MODES
   • ui.touchMode ('draw'|'pan'): what a single finger does. Saved in localStorage.
@@ -272,11 +276,14 @@
     </div>
 
     <!-- Zoom Controls: +/- zoom around screen center; the % button resets to 100% at origin.
-         The top button jumps to the next empty "page" to the right of everything drawn, on the top row (y=0). -->
+         The top button jumps to the next empty "page" to the right on the current row; the return button
+         below it goes back to x=0 on a new row beneath all existing content (typewriter-style). -->
     <div id="zoom-controls"
         class="fixed bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex flex-col items-center gap-1 z-50">
         <button id="btn-blank" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
-            title="Jump to blank space (next empty screen to the right, top row)"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
+            title="Jump to blank space (next empty screen to the right, current row)"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
+        <button id="btn-return" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
+            title="Return (back to the left edge, on a new row below everything)"><i data-lucide="corner-down-left" class="w-5 h-5"></i></button>
         <button id="btn-minimap" class="text-blue-600 bg-blue-50 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
             title="Toggle minimap"><i data-lucide="map" class="w-5 h-5"></i></button>
         <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
