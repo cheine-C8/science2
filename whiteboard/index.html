@@ -152,8 +152,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="config.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
+         Bump it (all four together) whenever you change any of those files. -->
+    <script src="config.js?v=20261113a"></script>
+    <link rel="stylesheet" href="style.css?v=20261113a">
 </head>
 
 <body>
@@ -340,10 +342,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js"></script>
+    <script type="module" src="board.js?v=20261113a"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js"></script>
+    <script src="widgets.js?v=20261113a"></script>
 </body>
 
 </html>
