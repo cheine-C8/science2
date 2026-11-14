@@ -593,21 +593,6 @@
             }
         },
 
-        // Rainbow: purely decorative — shows rainbow.png (Christian's hand-drawn rainbow from
-        // the board, background made transparent). Scales to fit the widget, keeping its shape.
-        // pointer-events:none + draggable=false so the browser's native image drag never
-        // fights the widget's own drag/resize.
-        rainbow: {
-            title: 'Rainbow', icon: 'rainbow', w: 340, h: 270,
-            mount(body) {
-                const img = el('img', 'flex-1 w-full min-h-0 object-contain select-none pointer-events-none');
-                img.src = 'rainbow.png';
-                img.alt = 'Hand-drawn rainbow between two clouds';
-                img.draggable = false;
-                body.append(img);
-            }
-        },
-
         // Noise meter: microphone RMS level (0–100 rough scale) drawn as a bar; a dashed line marks
         // the adjustable 'too loud' threshold. Mic is released when stopped or the widget closes.
         noise: {

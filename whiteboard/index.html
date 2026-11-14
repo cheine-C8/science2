@@ -154,8 +154,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261113a"></script>
-    <link rel="stylesheet" href="style.css?v=20261113a">
+    <script src="config.js?v=20261114a"></script>
+    <link rel="stylesheet" href="style.css?v=20261114a">
 </head>
 
 <body>
@@ -333,7 +333,9 @@
         <button data-widget="noise" data-label="Noise meter"><i data-lucide="volume-2"></i></button>
         <button data-widget="qr" data-label="QR code"><i data-lucide="qr-code"></i></button>
         <button data-widget="cat" data-label="Wandering cat"><i data-lucide="cat"></i></button>
-        <button data-widget="rainbow" data-label="Rainbow"><i data-lucide="rainbow"></i></button>
+        <!-- Stickers: NOT widgets. data-sticker is an image file in this folder; clicking drops it onto the
+             board itself as a normal synced image object (board.js, "STICKERS"). Editors only. -->
+        <button data-sticker="rainbow.png" data-label="Rainbow sticker"><i data-lucide="rainbow"></i></button>
         <div class="rail-sep"></div>
         <button id="btn-widgets-clear" data-label="Close all widgets"><i data-lucide="copy-x"></i></button>
         <div class="rail-sep"></div>
@@ -342,10 +344,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261113a"></script>
+    <script type="module" src="board.js?v=20261114a"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261113a"></script>
+    <script src="widgets.js?v=20261114a"></script>
 </body>
 
 </html>

@@ -936,6 +936,14 @@ function loadImageBlob(blob) {
     });
 }
 
+function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result); fr.onerror = () => reject(fr.error);
+        fr.readAsDataURL(blob);
+    });
+}
+
 // Downscale + re-encode until the data URL fits under `budget` chars, trying progressively
 // smaller max dimensions and JPEG qualities. Returns the smallest attempt (flagged
 // oversized:true) if nothing fits, so the caller can still show it locally.
@@ -971,7 +979,11 @@ async function insertImageBlob(blob, screenX, screenY) {
     const worldW = screenW / view.zoom, worldH = screenH / view.zoom;
     const center = getCanvasPoint(screenX, screenY);
 
-    const { dataURL, oversized } = compressImageToDataURL(img);
+    // Small PNGs are stored as-is so transparency survives (stickers, cut-out clip art);
+    // everything else goes through the JPEG compressor, which flattens transparency.
+    let dataURL, oversized = false;
+    if (blob.type === 'image/png' && blob.size <= 500000) dataURL = await blobToDataURL(blob);
+    else ({ dataURL, oversized } = compressImageToDataURL(img));
     const id = crypto.randomUUID();
     const stroke = {
         id, type: 'image', src: dataURL, timestamp: Date.now(),
@@ -993,6 +1005,22 @@ window.addEventListener('paste', e => {
     e.preventDefault();
     const blob = imageItem.getAsFile(); if (!blob) return;
     insertImageBlob(blob, window.innerWidth / 2, window.innerHeight / 2);
+});
+
+// ─── STICKERS ─────────────────────────────────────────────────────────────────
+// Rail buttons with data-sticker="<file>.png" drop that image onto the middle of the screen
+// as an ordinary image object: no frame, pans/zooms with the board, synced to every device,
+// and moved/resized/locked/deleted with the Select tool like a pasted picture.
+// To add another sticker: put a transparent PNG (under ~500 KB) in this folder and add a
+// <button data-sticker="file.png" ...> to #widget-rail in index.html. No JS needed.
+document.querySelectorAll('#widget-rail button[data-sticker]').forEach(btn => btn.onclick = async () => {
+    if (!isEditor) { showToast('Sign in to add stickers to the board.'); return; }
+    try {
+        const res = await fetch(btn.dataset.sticker);
+        if (!res.ok) throw new Error(res.status);
+        await insertImageBlob(await res.blob(), window.innerWidth / 2, window.innerHeight / 2);
+    } catch (e) { console.error('Sticker failed:', e); showToast('Could not load that sticker.'); }
+    document.getElementById('widget-rail').classList.remove('open'); // small screens: close the dropdown
 });
 
 // Drag-and-drop an image file onto the board, dropped at the cursor position.
