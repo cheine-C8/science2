@@ -1482,6 +1482,26 @@ window.addEventListener('keyup', e => {
     if (e.code === 'Space') { spacePressed = false; switchTool(previousTool); }
 });
 
+// ─── FOCUS MODE ───────────────────────────────────────────────────────────────
+// Hides every menu (CSS: body.focus-mode, end of style.css) so the board fills the screen.
+// Toggle: #btn-focus in the zoom panel, the faint corner button, or F; Esc only exits.
+// Deliberately NOT saved to localStorage — a reload must never come up with no menus.
+// The current tool/color stay as they were, so you can keep drawing with the menus gone.
+function setFocusMode(on) {
+    document.body.classList.toggle('focus-mode', on);
+    if (on) showToast('Menus hidden — press F or use the corner button to bring them back');
+}
+document.getElementById('btn-focus').onclick = () => setFocusMode(true);
+document.getElementById('btn-focus-exit').onclick = () => setFocusMode(false);
+window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = document.activeElement;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable) return;
+    const on = document.body.classList.contains('focus-mode');
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); setFocusMode(!on); }
+    else if (e.key === 'Escape' && on) setFocusMode(false);
+});
+
 // Mobile Safari/Chrome: stop the *page* from zooming so pinch/double-tap only affect the board.
 // iOS Safari: block pinch-zoom of the page itself and double-tap zoom on toolbars
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));

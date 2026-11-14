@@ -488,3 +488,23 @@ button { -webkit-tap-highlight-color: transparent; }
     .widget { max-width: calc(100vw - 16px); max-height: calc(100dvh - 110px); }
     #eraser-options { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 }
+
+/* ─── FOCUS MODE ──────────────────────────────────────────────────
+   body.focus-mode hides every menu so the board fills the screen (widgets stay).
+   Kept after the mobile block on purpose: these must win over every display rule above. */
+#btn-focus-exit { display: none; }
+body.focus-mode #toolbar, body.focus-mode #zoom-controls, body.focus-mode #status-pill,
+body.focus-mode #minimap, body.focus-mode #widget-rail, body.focus-mode #rail-toggle,
+body.focus-mode #eraser-options { display: none !important; }
+body.focus-mode #btn-focus-exit {
+    display: flex; position: fixed; z-index: 51;
+    right: calc(12px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom));
+    width: 40px; height: 40px; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.95); border: 1px solid rgba(0,0,0,.08); border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); color: #475569;
+    opacity: .35; transition: opacity .15s;
+}
+body.focus-mode #btn-focus-exit:hover, body.focus-mode #btn-focus-exit:focus-visible { opacity: 1; }
+body.focus-mode #btn-focus-exit svg { width: 20px; height: 20px; }
+@media (pointer: coarse) { body.focus-mode #btn-focus-exit { opacity: .6; width: 46px; height: 46px; } }
+body.eink.focus-mode #btn-focus-exit { opacity: 1; box-shadow: none; border: 2px solid #000; color: #000; }

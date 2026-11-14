@@ -154,8 +154,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261114a"></script>
-    <link rel="stylesheet" href="style.css?v=20261114a">
+    <script src="config.js?v=20261114b"></script>
+    <link rel="stylesheet" href="style.css?v=20261114b">
 </head>
 
 <body>
@@ -295,6 +295,8 @@
             title="Return (back to the left edge, on a new row below everything)"><i data-lucide="corner-down-left" class="w-5 h-5"></i></button>
         <button id="btn-minimap" class="text-blue-600 bg-blue-50 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
             title="Toggle minimap"><i data-lucide="map" class="w-5 h-5"></i></button>
+        <button id="btn-focus" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
+            title="Focus mode — hide all menus (F)"><i data-lucide="maximize" class="w-5 h-5"></i></button>
         <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
         <button id="btn-zoom-in" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"><i
                 data-lucide="plus" class="w-5 h-5"></i></button>
@@ -306,6 +308,12 @@
                 data-lucide="minus" class="w-5 h-5"></i></button>
     </div>
 
+
+    <!-- Focus mode: body.focus-mode (toggled by #btn-focus, the F key, or this button; Esc also exits)
+         hides every menu so the whole screen is board. Open widgets stay. This faint corner button is
+         the only chrome left and brings the menus back. Not saved — a reload always shows the menus.
+         CSS is at the very end of style.css; JS is "FOCUS MODE" in board.js. -->
+    <button id="btn-focus-exit" title="Show menus (F or Esc)"><i data-lucide="minimize"></i></button>
 
     <!-- Fireworks overlay: transparent full-screen canvas used only when a countdown timer finishes. -->
     <canvas id="fireworks-canvas"></canvas>
@@ -344,10 +352,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261114a"></script>
+    <script type="module" src="board.js?v=20261114b"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261114a"></script>
+    <script src="widgets.js?v=20261114b"></script>
 </body>
 
 </html>
