@@ -154,8 +154,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261114c"></script>
-    <link rel="stylesheet" href="style.css?v=20261114c">
+    <script src="config.js?v=20261114d"></script>
+    <link rel="stylesheet" href="style.css?v=20261114d">
 </head>
 
 <body>
@@ -221,10 +221,11 @@
             class="tool-btn text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
             title="Text (click to type; Ctrl+Enter or click away to finish)"><i data-lucide="type" class="w-5 h-5"></i></button>
         <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
+        <!-- Move tool = select + pan in one (ui.tool 'select'): drag a picture/text to move it,
+             drag anywhere else to pan. View-only visitors and the Space key use the internal 'pan'
+             tool, which lights up this same button. -->
         <button id="btn-select" class="tool-btn text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
-            title="Select (move/resize/delete pasted images)"><i data-lucide="mouse-pointer-2" class="w-5 h-5"></i></button>
-        <button id="btn-pan" class="tool-btn text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
-            title="Pan"><i data-lucide="hand" class="w-5 h-5"></i></button>
+            title="Move: drag the board to pan; drag a picture or text to move it (click to select, corner to resize, Delete to remove)"><i data-lucide="move" class="w-5 h-5"></i></button>
         <button id="btn-touch"
             class="text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
             title="Finger: draw / pan (pen always draws)"><i data-lucide="pointer" class="w-5 h-5"></i></button>
@@ -360,10 +361,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261114c"></script>
+    <script type="module" src="board.js?v=20261114d"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261114c"></script>
+    <script src="widgets.js?v=20261114d"></script>
 </body>
 
 </html>

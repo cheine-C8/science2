@@ -14,6 +14,9 @@ lucide.createIcons();
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 // ui: what the toolbar currently says. tool ∈ pen|eraser|arrow|rect|circle|text|select|pan.
+// 'select' is the combined Move tool (toolbar button #btn-select): drag an image/text to move it,
+// drag anything else to pan. 'pan' has no button of its own any more — it is what view-only
+// visitors get and what holding Space switches to; #btn-select lights up for both.
 // touchMode/eink are persisted in localStorage so they survive reloads.
 const ui = { tool: 'pen', thickness: 3, color: '#000000', eraseMode: 'stroke', showGrid: true, touchMode: localStorage.getItem('whiteboard.touchMode') || 'draw', eink: localStorage.getItem('whiteboard.eink') === '1' };
 // view: the camera. screen = world * zoom + (x, y). Persisted in localStorage (see saveView)
@@ -56,6 +59,10 @@ let erasedThisGesture = new Set(); // ids erased so we don't double-erase
 const imageCache = new Map();
 let selectedObjectId = null;
 let objectDrag = null; // { id, mode: 'move'|'resize', orig:{x,y,w,h}, startWx, startWy }
+// Move tool: a press that did NOT grab an unlocked object starts a pan, and is remembered here.
+// If it ends without moving (a tap/click) it sets the selection to `id` (a locked image, or null
+// = deselect). So a drag across empty space or a locked background pans and keeps the selection.
+let selectTap = null;   // { id, x, y } in client px
 // Text tool: `editing` is non-null while the #text-editor textarea is open.
 // { id, x, y, size, color, isNew, before } — `before` is the original stroke when editing an existing one.
 let editing = null;
@@ -553,13 +560,21 @@ overlayCanvas.addEventListener('pointerdown', e => {
     overlayCanvas.setPointerCapture(e.pointerId);
     activePointers.set(e.pointerId, e);
 
-    // Finger-pans mode: a single finger pans, any tool; stylus/mouse still draw
-    if (e.pointerType === 'touch' && ui.touchMode === 'pan' && activePointers.size === 1) {
+    // Finger-pans mode: a single finger pans, whatever drawing tool is active; stylus/mouse still draw.
+    // Exception: the Move tool handles the finger itself (finger on a picture/text moves it,
+    // finger anywhere else pans), so objects can be moved by touch in this mode too.
+    if (e.pointerType === 'touch' && ui.touchMode === 'pan' && ui.tool !== 'select' && activePointers.size === 1) {
         isPanning = true; lastPt = { x: e.clientX, y: e.clientY }; return;
     }
 
     if (activePointers.size === 2) {
-        abortCurrentStroke(); isPanning = false;
+        abortCurrentStroke(); isPanning = false; selectTap = null;
+        // A second finger while moving/resizing an object: put it back and pinch instead.
+        if (objectDrag) {
+            const s = strokes.find(x => x.id === objectDrag.id);
+            if (s) { s.points[0] = { x: objectDrag.orig.x, y: objectDrag.orig.y }; s.w = objectDrag.orig.w; s.h = objectDrag.orig.h; if (s.type === 'text') { s.size = objectDrag.orig.size; measureText(s); } }
+            objectDrag = null; offscreenDirty = true; isDirty = true;
+        }
         const pts = Array.from(activePointers.values());
         initialPinchDistance = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
         initialPinchCenter = { x: (pts[0].clientX + pts[1].clientX) / 2, y: (pts[0].clientY + pts[1].clientY) / 2 };
@@ -619,13 +634,15 @@ overlayCanvas.addEventListener('pointerdown', e => {
             }
             if (!objectDrag) {
                 const hit = getObjectAt(wp.x, wp.y);
-                if (hit && isLockedImage(hit)) {
-                    selectedObjectId = hit.id;    // selectable (to unlock), but pinned in place
-                } else if (hit) {
+                if (hit && !isLockedImage(hit)) {
                     selectedObjectId = hit.id;
                     objectDrag = { id: hit.id, mode: 'move', orig: { x: hit.points[0].x, y: hit.points[0].y, w: hit.w, h: hit.h, size: hit.size }, startWx: wp.x, startWy: wp.y };
                 } else {
-                    selectedObjectId = null;
+                    // Empty space, ink, or a locked image (pinned in place): this drag pans the board.
+                    // If it turns out to be a tap, pointerup selects the locked image / deselects.
+                    isPanning = true; lastPt = { x: e.clientX, y: e.clientY };
+                    selectTap = { id: hit ? hit.id : null, x: e.clientX, y: e.clientY };
+                    overlayCanvas.style.cursor = 'grabbing';
                 }
             }
             drawSelectionBox();
@@ -668,6 +685,13 @@ function eraseStrokesAtPoint(wx, wy) {
 // (stylus can report 240Hz), so curves don't look chunky at 60fps.
 overlayCanvas.addEventListener('pointermove', e => {
     if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, e);
+
+    // Move tool, mouse just hovering: the cursor says what a drag here would do
+    if (ui.tool === 'select' && e.pointerType === 'mouse' && activePointers.size === 0) {
+        const wp = getCanvasPoint(e.clientX, e.clientY), hit = getObjectAt(wp.x, wp.y);
+        overlayCanvas.style.cursor = hit && !isLockedImage(hit) ? 'move' : 'grab';
+        return;
+    }
 
     // Select tool: dragging an image (move or resize)
     if (objectDrag) {
@@ -1053,6 +1077,11 @@ overlayCanvas.addEventListener('pointerup', e => {
 
     if (activePointers.size < 2) initialPinchDistance = null;
     if (activePointers.size === 0) {
+        // Move tool: a press that never really moved was a tap → select the locked image / deselect
+        if (selectTap && ui.tool === 'select' && Math.hypot(e.clientX - selectTap.x, e.clientY - selectTap.y) < 6) {
+            selectedObjectId = selectTap.id; drawSelectionBox();
+        }
+        selectTap = null;
         if (ui.tool === 'eraser' && ui.eraseMode === 'stroke') {
             isDrawing = false;
             overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
@@ -1072,7 +1101,7 @@ function endRightErase() {
 overlayCanvas.addEventListener('pointercancel', e => {
     activePointers.delete(e.pointerId);
     overlayCanvas.releasePointerCapture(e.pointerId);
-    if (activePointers.size === 0) { abortCurrentStroke(); isPanning = false; endRightErase(); updateCursor(); }
+    if (activePointers.size === 0) { abortCurrentStroke(); isPanning = false; selectTap = null; endRightErase(); updateCursor(); if (ui.tool === 'select') drawSelectionBox(); }
 });
 
 // Wheel zoom around the cursor: keep the world point under the mouse fixed while scaling.
@@ -1345,7 +1374,7 @@ applyMinimap();
 function updateCursor() {
     if (ui.tool === 'pan') overlayCanvas.style.cursor = isPanning ? 'grabbing' : 'grab';
     else if (ui.tool === 'eraser') overlayCanvas.style.cursor = 'cell';
-    else if (ui.tool === 'select') overlayCanvas.style.cursor = 'default';
+    else if (ui.tool === 'select') overlayCanvas.style.cursor = isPanning ? 'grabbing' : 'grab';
     else if (ui.tool === 'text') overlayCanvas.style.cursor = 'text';
     else overlayCanvas.style.cursor = 'crosshair';
 }
@@ -1355,7 +1384,7 @@ function updateUI() {
         b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md');
         b.classList.add('text-gray-600', 'hover:bg-gray-100');
     });
-    const ab = document.getElementById(`btn-${ui.tool}`);
+    const ab = document.getElementById(`btn-${ui.tool === 'pan' ? 'select' : ui.tool}`); // 'pan' shares the Move button
     if (ab) { ab.classList.remove('text-gray-600', 'hover:bg-gray-100'); ab.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md'); }
 
     const gridBtn = document.getElementById('btn-grid');
@@ -1400,7 +1429,6 @@ overlayCanvas.addEventListener('dblclick', e => {
     const hit = getObjectAt(wp.x, wp.y);
     if (hit && hit.type === 'text') { e.preventDefault(); openTextEditor(hit); }
 });
-document.getElementById('btn-pan').onclick = () => switchTool('pan');
 document.getElementById('btn-grid').onclick = () => { ui.showGrid = !ui.showGrid; isDirty = true; updateUI(); };
 // Touch mode toggle (only visible on touch devices): finger draws vs finger pans.
 function updateTouchBtn() {
@@ -1495,11 +1523,12 @@ window.addEventListener('keydown', e => {
         return;
     }
     if (e.code === 'Space' && !spacePressed && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+        if (ui.tool === 'select' || ui.tool === 'pan') return; // already pans by dragging; don't drop the selection
         spacePressed = true; previousTool = ui.tool; switchTool('pan');
     }
 });
 window.addEventListener('keyup', e => {
-    if (e.code === 'Space') { spacePressed = false; switchTool(previousTool); }
+    if (e.code === 'Space' && spacePressed) { spacePressed = false; switchTool(previousTool); }
 });
 
 // ─── FOCUS MODE ───────────────────────────────────────────────────────────────
