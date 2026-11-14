@@ -25,6 +25,7 @@ body.view-only #toolbar #btn-select,
 body.view-only #toolbar #btn-undo,
 body.view-only #toolbar #btn-clear,
 body.view-only #toolbar .color-btn,
+body.view-only #toolbar #color-picker,
 body.view-only #toolbar #thickness-slider {
     opacity: 0.35;
     pointer-events: none;
@@ -70,6 +71,15 @@ canvas {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px white, 0 0 0 4px #3b82f6;
 }
+/* Custom color picker: a rainbow dot at the end of the swatches; the real <input type="color">
+   sits invisibly on top of it so a click/tap opens the browser's native picker. */
+#color-picker {
+    position: relative; display: block; width: 20px; height: 20px; border-radius: 9999px;
+    overflow: hidden; cursor: pointer; flex-shrink: 0; border: 1px solid rgba(0,0,0,.1);
+    background: conic-gradient(#ef4444, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ec4899, #ef4444);
+}
+#color-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+body.eink #color-picker { border: 2px solid #000; }
 
 /* body.eink is toggled by the book button in the toolbar (manual toggle only). */
 /* ─── E-INK MODE (Boox etc.): no blur, shadows, transitions or grid → fewer repaints ── */
@@ -435,6 +445,7 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (pointer: coarse) {
     #toolbar button, #zoom-controls button { padding: 12px; }
     .color-btn { width: 26px; height: 26px; padding: 0; }
+    #color-picker { width: 26px; height: 26px; }
     #thickness-slider { height: 6px; }
     #widget-rail button::after { display: none; }
     .widget-head button { width: 34px; height: 34px; }

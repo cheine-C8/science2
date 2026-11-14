@@ -1432,18 +1432,38 @@ if (!('ontouchstart' in window) && !navigator.maxTouchPoints) document.getElemen
 document.getElementById('btn-erase-stroke').onclick = () => { ui.eraseMode = 'stroke'; updateUI(); };
 document.getElementById('btn-erase-partial').onclick = () => { ui.eraseMode = 'partial'; updateUI(); };
 
+// Choosing a color (preset swatch or custom): recolors the text being typed / the selected text
+// object, and switches to the pen if the current tool can't use a color.
+function applyColor(color) {
+    ui.color = color;
+    if (editing) { editing.color = ui.color; textEditor.style.color = ui.color; if (!editing.isNew) { const s = strokes.find(x => x.id === editing.id); if (s) { s.color = ui.color; writeObjectDoc(s); } } }
+    else if (ui.tool === 'select' && selectedObjectId) {
+        const s = strokes.find(x => x.id === selectedObjectId);
+        if (s && s.type === 'text') { s.color = ui.color; writeObjectDoc(s); offscreenDirty = true; isDirty = true; }
+    }
+    if (!['pen', 'arrow', 'rect', 'circle', 'text', 'select'].includes(ui.tool)) switchTool('pen');
+    updateUI();
+}
 document.querySelectorAll('.color-btn').forEach(btn => {
-    btn.onclick = e => {
-        ui.color = e.target.dataset.color;
-        if (editing) { editing.color = ui.color; textEditor.style.color = ui.color; if (!editing.isNew) { const s = strokes.find(x => x.id === editing.id); if (s) { s.color = ui.color; writeObjectDoc(s); } } }
-        else if (ui.tool === 'select' && selectedObjectId) {
-            const s = strokes.find(x => x.id === selectedObjectId);
-            if (s && s.type === 'text') { s.color = ui.color; writeObjectDoc(s); offscreenDirty = true; isDirty = true; }
-        }
-        if (!['pen', 'arrow', 'rect', 'circle', 'text', 'select'].includes(ui.tool)) switchTool('pen');
-        updateUI();
-    };
+    btn.onclick = e => { if (e.currentTarget.dataset.color) applyColor(e.currentTarget.dataset.color); };
 });
+
+// ─── CUSTOM COLOR ─────────────────────────────────────────────────────────────
+// #color-input (native picker behind the rainbow dot) → the picked color becomes the
+// #color-custom swatch, which then behaves like any preset. Last pick is remembered per device.
+// 'input' fires continuously while dragging inside the picker, so it only previews the swatch;
+// 'change' (picker closed / color committed) is what actually applies it.
+{
+    const input = document.getElementById('color-input'), swatch = document.getElementById('color-custom');
+    const showSwatch = c => { swatch.dataset.color = c; swatch.style.background = c; swatch.style.display = ''; input.value = c; };
+    try { const saved = localStorage.getItem('wb-custom-color'); if (/^#[0-9a-f]{6}$/i.test(saved || '')) showSwatch(saved); } catch (e) { }
+    input.addEventListener('input', () => showSwatch(input.value));
+    input.addEventListener('change', () => {
+        showSwatch(input.value);
+        try { localStorage.setItem('wb-custom-color', input.value); } catch (e) { }
+        applyColor(input.value);
+    });
+}
 document.getElementById('thickness-slider').oninput = e => { ui.thickness = parseInt(e.target.value); };
 document.getElementById('btn-undo').onclick = undo;
 document.getElementById('btn-clear').onclick = async () => {

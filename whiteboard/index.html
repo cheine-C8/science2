@@ -154,8 +154,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261114b"></script>
-    <link rel="stylesheet" href="style.css?v=20261114b">
+    <script src="config.js?v=20261114c"></script>
+    <link rel="stylesheet" href="style.css?v=20261114c">
 </head>
 
 <body>
@@ -260,6 +260,14 @@
             <button
                 class="color-btn w-5 h-5 rounded-full bg-purple-500 border border-black/10 transition-all duration-200"
                 data-color="#a855f7"></button>
+            <!-- Custom color: the rainbow dot opens the browser's color picker. The chosen color then
+                 appears as its own swatch (#color-custom) so it can be re-selected with one click;
+                 it is remembered per device in localStorage ('wb-custom-color'). JS: "CUSTOM COLOR". -->
+            <button id="color-custom" style="display:none"
+                class="color-btn w-5 h-5 rounded-full border border-black/10 transition-all duration-200"
+                data-color="" title="Your custom color"></button>
+            <label id="color-picker" title="Pick a custom color"><input type="color" id="color-input" value="#ec4899"
+                    aria-label="Pick a custom color"></label>
         </div>
         <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
 
@@ -352,10 +360,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261114b"></script>
+    <script type="module" src="board.js?v=20261114c"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261114b"></script>
+    <script src="widgets.js?v=20261114c"></script>
 </body>
 
 </html>
