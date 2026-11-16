@@ -1283,6 +1283,15 @@ function carriageReturn() {
 }
 document.getElementById('btn-return').onclick = carriageReturn;
 
+// Home: back to the board's starting corner — world (0,0) at the top-left of the screen.
+// Zoom is kept (the % button is the one that also resets zoom to 100%).
+function goHome() {
+    abortCurrentStroke();
+    view.x = 0; view.y = 0;
+    offscreenDirty = true; isDirty = true; updateZoomUI();
+}
+document.getElementById('btn-home').onclick = goHome;
+
 // ─── MINIMAP ──────────────────────────────────────────────────────────────────
 // A 200×130 canvas showing the union of all content + the current viewport, redrawn from
 // redrawMain() (throttled — it's a full pass over `strokes`, so pen strokes are sampled

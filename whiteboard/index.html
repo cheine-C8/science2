@@ -1,4 +1,4 @@
-<!-- updated 2026-11-15 — added Table widget. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
+<!-- updated 2026-11-15 — added Table widget, Home button, smart widget placement. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
 <!--
 ═══════════════════════════════════════════════════════════════════════════════
   INFINITE WHITEBOARD + CLASSROOM WIDGETS  —  static web app (no build step)
@@ -125,6 +125,10 @@
   • The return button (↵) under it is a carriage return: x = 0, top edge
     JUMP_GAP px below the lowest content anywhere on the board, zoom kept.
     Empty board → origin. See carriageReturn().
+  • The house button under that is Home: world (0,0) back at the screen's top-left,
+    zoom kept. See goHome().
+  • New widgets choose their own spot: below the minimap, right of the rail, in the
+    first gap that doesn't cover another widget or a menu. See findSpot() in widgets.js.
 
   DEVICE MODES
   • ui.touchMode ('draw'|'pan'): what a single finger does. Saved in localStorage.
@@ -159,8 +163,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261115b"></script>
-    <link rel="stylesheet" href="style.css?v=20261115b">
+    <script src="config.js?v=20261115c"></script>
+    <link rel="stylesheet" href="style.css?v=20261115c">
 </head>
 
 <body>
@@ -300,13 +304,16 @@
 
     <!-- Zoom Controls: +/- zoom around screen center; the % button resets to 100% at origin.
          The top button jumps to the next empty "page" to the right on the current row; the return button
-         below it goes back to x=0 on a new row beneath all existing content (typewriter-style). -->
+         below it goes back to x=0 on a new row beneath all existing content (typewriter-style);
+         the house button goes back to 0,0 (the board's starting corner), keeping the zoom. -->
     <div id="zoom-controls"
         class="fixed bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex flex-col items-center gap-1 z-50">
         <button id="btn-blank" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
             title="Jump to blank space (next empty screen to the right, current row)"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
         <button id="btn-return" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
             title="Return (back to the left edge, on a new row below everything)"><i data-lucide="corner-down-left" class="w-5 h-5"></i></button>
+        <button id="btn-home" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
+            title="Home (back to the start of the board, 0,0 — zoom is kept)"><i data-lucide="house" class="w-5 h-5"></i></button>
         <button id="btn-minimap" class="text-blue-600 bg-blue-50 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
             title="Toggle minimap"><i data-lucide="map" class="w-5 h-5"></i></button>
         <button id="btn-focus" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
@@ -369,10 +376,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261115b"></script>
+    <script type="module" src="board.js?v=20261115c"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261115b"></script>
+    <script src="widgets.js?v=20261115c"></script>
 </body>
 
 </html>

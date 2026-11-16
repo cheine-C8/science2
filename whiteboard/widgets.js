@@ -725,17 +725,65 @@
     // ─── Widget frame: drag, resize, focus, close ────────────────────
     // Builds the chrome around any DEFS entry: header (drag handle + close), body, resize grip.
     // opts may carry {id, x, y, w, h, state} when restoring from localStorage.
-    // New widgets cascade diagonally so several opened in a row don't stack exactly on top.
+    // New widgets are placed by findSpot() so they open clear of the menus and of each other.
+
+    // Where should a NEW width×height widget open? (Restored widgets keep their saved spot.)
+    // The usable area starts below the minimap and right of the widget rail. It is scanned
+    // left→right, top→bottom in 20px steps and the first spot that touches nothing wins —
+    // "nothing" = other open widgets (with a small gap) and whichever menus are showing
+    // (status pill, zoom controls, toolbar, eraser options, "Widgets" button). If the screen
+    // is too full for a clear spot, the spot covering the least is used, and covering a
+    // widget counts for more than covering a menu. Hidden menus (focus mode, minimap off,
+    // small screens) are skipped automatically, so the space they leave is used.
+    function findSpot(width, height) {
+        const GAP = 12, STEP = 20;
+        const rectOf = id => {
+            const e = document.getElementById(id);
+            if (!e || getComputedStyle(e).display === 'none') return null;
+            const r = e.getBoundingClientRect();
+            return r.width && r.height ? r : null;
+        };
+        const mm = rectOf('minimap'), railR = isSmall() ? null : rectOf('widget-rail');
+        const left = railR ? railR.right + GAP : 8;
+        const top = mm ? mm.bottom + GAP : 16;
+        const maxX = window.innerWidth - width - 8, maxY = window.innerHeight - height - 100;
+        // [rect, weight] — a widget is worse to cover than a menu
+        const blocks = [];
+        for (const w of widgets.values()) blocks.push([w.el.getBoundingClientRect(), 4]);
+        for (const id of ['status-pill', 'zoom-controls', 'toolbar', 'eraser-options', 'rail-toggle']) { const r = rectOf(id); if (r) blocks.push([r, 1]); }
+        const cost = (x, y) => {
+            // Area shared with each block: really covering it costs 50× more than merely
+            // sitting inside its GAP margin, so a crowded screen gives up the gaps first.
+            const shared = (r, g) => {
+                const ox = Math.min(x + width + g, r.right) - Math.max(x - g, r.left);
+                const oy = Math.min(y + height + g, r.bottom) - Math.max(y - g, r.top);
+                return ox > 0 && oy > 0 ? ox * oy : 0;
+            };
+            let c = 0;
+            for (const [r, weight] of blocks) c += (shared(r, GAP) + 50 * shared(r, 0)) * weight;
+            return c;
+        };
+        let best = null;
+        for (let y = top; y <= maxY; y += STEP) {
+            for (let x = left; x <= maxX; x += STEP) {
+                const c = cost(x, y);
+                if (c === 0) return { x, y };
+                if (!best || c < best.c) best = { x, y, c };
+            }
+        }
+        // Tiny screen (no room to scan at all): as close to the preferred corner as fits
+        return best || { x: Math.max(8, Math.min(left, maxX)), y: Math.max(0, Math.min(top, maxY)) };
+    }
+
     function addWidget(type, opts = {}) {
         const def = DEFS[type]; if (!def) return;
         const id = opts.id || crypto.randomUUID();
         const state = opts.state || {};
         const w = el('div', 'widget');
         const width = Math.min(opts.w || def.w, window.innerWidth - 16), height = Math.min(opts.h || def.h, window.innerHeight - 110);
-        // Cascade new widgets so they don't stack exactly on top of each other
-        const n = widgets.size;
-        const x = opts.x ?? Math.min(window.innerWidth - width - 20, 90 + (n % 6) * 30);
-        const y = opts.y ?? Math.min(window.innerHeight - height - 100, 80 + (n % 6) * 30);
+        // Restored widgets come with x/y; new ones get a free spot (see findSpot above)
+        const spot = (opts.x == null || opts.y == null) ? findSpot(width, height) : null;
+        const x = opts.x ?? spot.x, y = opts.y ?? spot.y;
         Object.assign(w.style, { left: x + 'px', top: y + 'px', width: width + 'px', height: height + 'px', zIndex: ++zTop });
 
         const head = el('div', 'widget-head');
