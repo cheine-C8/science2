@@ -753,7 +753,7 @@
         // [rect, weight] — a widget is worse to cover than a menu
         const blocks = [];
         for (const w of widgets.values()) if (w.el !== skip) blocks.push([w.el.getBoundingClientRect(), 4]);
-        for (const id of ['status-pill', 'zoom-controls', 'toolbar', 'eraser-options', 'rail-toggle']) { const r = rectOf(id); if (r) blocks.push([r, 1]); }
+        for (const id of ['status-pill', 'zoom-controls', 'toolbar', 'eraser-options', 'rail-toggle', 'toolbar-show', 'zoom-show', 'status-show']) { const r = rectOf(id); if (r) blocks.push([r, 1]); }
         const cost = (x, y) => {
             // Area shared with each block: really covering it costs 50× more than merely
             // sitting inside its GAP margin, so a crowded screen gives up the gaps first.

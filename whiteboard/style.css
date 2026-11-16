@@ -499,13 +499,45 @@ button { -webkit-tap-highlight-color: transparent; }
     #eraser-options { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 }
 
+/* ─── HIDEABLE MENUS ──────────────────────────────────────────────
+   body.toolbar-hidden / zoom-hidden / status-hidden hide one menu each (the rail and minimap
+   have their own older classes: rail-hidden, minimap-off). While a menu is hidden its
+   .menu-show button sits where the menu was and brings it back. Kept after the mobile block
+   so these win over the display rules above; focus mode (below) hides the show buttons too. */
+body.toolbar-hidden #toolbar, body.toolbar-hidden #eraser-options,
+body.zoom-hidden #zoom-controls, body.status-hidden #status-pill { display: none !important; }
+.menu-show {
+    display: none; position: fixed; z-index: 50;
+    width: 40px; height: 40px; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.95); border: 1px solid rgba(0,0,0,.08); border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); color: #475569;
+    opacity: .45; transition: opacity .15s;
+}
+.menu-show:hover, .menu-show:focus-visible { opacity: 1; }
+.menu-show svg { width: 20px; height: 20px; }
+body.toolbar-hidden #toolbar-show, body.zoom-hidden #zoom-show, body.status-hidden #status-show { display: flex; }
+#toolbar-show { left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom)); }
+#zoom-show { right: calc(1.5rem + env(safe-area-inset-right)); bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
+#status-show { right: 1rem; top: calc(1rem + env(safe-area-inset-top)); }
+@media (pointer: coarse) { .menu-show { opacity: .7; width: 46px; height: 46px; } }
+@media (max-width: 820px) {
+    /* the zoom panel lives under the status pill on small screens — so does its show button */
+    #zoom-show { top: calc(3.5rem + env(safe-area-inset-top)); right: 0.5rem; bottom: auto; }
+    #status-show { top: calc(0.5rem + env(safe-area-inset-top)); right: 0.5rem; }
+    @media (max-height: 500px) {
+        #zoom-show { top: calc(0.5rem + env(safe-area-inset-top)); right: 7rem; }
+        body.status-hidden #status-show { display: none; }   /* the pill is never shown here anyway */
+    }
+}
+body.eink .menu-show { opacity: 1; box-shadow: none; border: 2px solid #000; color: #000; background: #fff; }
+
 /* ─── FOCUS MODE ──────────────────────────────────────────────────
    body.focus-mode hides every menu so the board fills the screen (widgets stay).
    Kept after the mobile block on purpose: these must win over every display rule above. */
 #btn-focus-exit { display: none; }
 body.focus-mode #toolbar, body.focus-mode #zoom-controls, body.focus-mode #status-pill,
 body.focus-mode #minimap, body.focus-mode #widget-rail, body.focus-mode #rail-toggle,
-body.focus-mode #eraser-options { display: none !important; }
+body.focus-mode #eraser-options, body.focus-mode .menu-show { display: none !important; }
 body.focus-mode #btn-focus-exit {
     display: flex; position: fixed; z-index: 51;
     right: calc(12px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom));

@@ -1,4 +1,4 @@
-<!-- updated 2026-11-15 — added Table widget, Home button, smart widget placement. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
+<!-- updated 2026-11-15 — added Table widget, Home button, smart widget placement, per-menu hide buttons. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
 <!--
 ═══════════════════════════════════════════════════════════════════════════════
   INFINITE WHITEBOARD + CLASSROOM WIDGETS  —  static web app (no build step)
@@ -164,8 +164,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261115e"></script>
-    <link rel="stylesheet" href="style.css?v=20261115e">
+    <script src="config.js?v=20261115f"></script>
+    <link rel="stylesheet" href="style.css?v=20261115f">
 </head>
 
 <body>
@@ -194,6 +194,9 @@
         <button id="btn-myboard" title="Leave this shared board"
             class="hidden text-sm font-medium text-blue-600 hover:text-blue-800 border-l border-gray-200 pl-2 ml-1">My
             board</button>
+        <!-- Hides this pill (see HIDEABLE MENUS). #status-show brings it back. Kept last via CSS order. -->
+        <button id="btn-status-hide" title="Hide" style="order: 99"
+            class="text-gray-400 hover:text-gray-700 border-l border-gray-200 pl-2 ml-1"><i data-lucide="x" class="w-4 h-4"></i></button>
         <button id="btn-signin"
             class="text-sm font-medium text-blue-600 hover:text-blue-800 border-l border-gray-200 pl-2 ml-1">Sign
             in</button>
@@ -217,6 +220,11 @@
          On small screens this scrolls horizontally (see MOBILE CSS). -->
     <div id="toolbar"
         class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-1.5 flex items-center gap-1 z-50">
+        <!-- Hides this toolbar (see HIDEABLE MENUS). First in the row so it is reachable without
+             scrolling the toolbar on narrow screens. #toolbar-show brings it back. -->
+        <button id="btn-toolbar-hide" class="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all duration-200"
+            title="Hide toolbar"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+        <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
         <button id="btn-pen" class="tool-btn active text-gray-600 p-2 rounded-lg transition-all duration-200"
             title="Pen"><i data-lucide="pen" class="w-5 h-5"></i></button>
         <button id="btn-eraser"
@@ -333,7 +341,22 @@
         <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
         <button id="btn-zoom-out" class="text-gray-600 p-2.5 rounded-xl hover:bg-gray-100 transition-all"><i
                 data-lucide="minus" class="w-5 h-5"></i></button>
+        <div class="w-8 h-[1px] bg-gray-200 my-0.5"></div>
+        <!-- Hides this panel (see HIDEABLE MENUS). #zoom-show brings it back. -->
+        <button id="btn-zoom-hide" class="text-gray-400 hover:text-gray-700 p-2.5 rounded-xl hover:bg-gray-100 transition-all"
+            title="Hide these controls"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
+
+    <!-- HIDEABLE MENUS: every menu can be hidden on its own. Each has a hide button inside it and a
+         small faint "show" button (.menu-show) that appears in its place while it is hidden:
+           toolbar → body.toolbar-hidden → #toolbar-show     zoom/navigation panel → body.zoom-hidden → #zoom-show
+           status pill → body.status-hidden → #status-show   widget rail → body.rail-hidden → #rail-toggle (widgets.js)
+           minimap → body.minimap-off, toggled by the map button in the zoom panel
+         Each choice is remembered per device. CSS: "HIDEABLE MENUS" in style.css; JS: same heading in board.js.
+         Focus mode (F) is still the one-press way to hide everything at once. -->
+    <button id="toolbar-show" class="menu-show" title="Show toolbar"><i data-lucide="pen"></i></button>
+    <button id="zoom-show" class="menu-show" title="Show zoom and navigation controls"><i data-lucide="zoom-in"></i></button>
+    <button id="status-show" class="menu-show" title="Show connection / sign-in"><i data-lucide="cloud"></i></button>
 
 
     <!-- Focus mode: body.focus-mode (toggled by #btn-focus, the F key, or this button; Esc also exits)
@@ -382,10 +405,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261115e"></script>
+    <script type="module" src="board.js?v=20261115f"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261115e"></script>
+    <script src="widgets.js?v=20261115f"></script>
 </body>
 
 </html>

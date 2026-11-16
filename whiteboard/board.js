@@ -1632,6 +1632,30 @@ window.addEventListener('keyup', e => {
     if (e.code === 'Space' && spacePressed) { spacePressed = false; switchTool(previousTool); }
 });
 
+// ─── HIDEABLE MENUS ───────────────────────────────────────────────────────────
+// Each menu can be hidden on its own: [body class, hide button inside the menu, show button
+// that appears in its place]. CSS does the hiding ("HIDEABLE MENUS", end of style.css); this
+// only flips the class and remembers it per device (localStorage 'whiteboard.hidden.<class>').
+// The widget rail (widgets.js, body.rail-hidden) and the minimap (body.minimap-off) work the
+// same way and predate this. Unlike focus mode these ARE saved — each hidden menu leaves its
+// own show button on screen, so a reload can never strand you without a way back.
+// To make another menu hideable: add a row here, the two buttons in index.html, and the
+// class to the two selector lists in style.css.
+for (const [cls, hideId, showId] of [
+    ['toolbar-hidden', 'btn-toolbar-hide', 'toolbar-show'],
+    ['zoom-hidden', 'btn-zoom-hide', 'zoom-show'],
+    ['status-hidden', 'btn-status-hide', 'status-show'],
+]) {
+    const key = 'whiteboard.hidden.' + cls;
+    const set = hidden => {
+        document.body.classList.toggle(cls, hidden);
+        try { localStorage.setItem(key, hidden ? '1' : '0'); } catch { }
+    };
+    try { if (localStorage.getItem(key) === '1') document.body.classList.add(cls); } catch { }
+    document.getElementById(hideId).onclick = () => set(true);
+    document.getElementById(showId).onclick = () => set(false);
+}
+
 // ─── FOCUS MODE ───────────────────────────────────────────────────────────────
 // Hides every menu (CSS: body.focus-mode, end of style.css) so the board fills the screen.
 // Toggle: #btn-focus in the zoom panel, the faint corner button, or F; Esc only exits.
