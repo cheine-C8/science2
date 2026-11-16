@@ -1,30 +1,31 @@
 # Firestore rules for the whiteboard
 
-These go in the Firebase console: **Firestore Database → Rules** (project `whiteboard-23ad5`).
-They are not deployed from this repo — paste them in and click **Publish**.
+These go in the Firebase console: **Databases & Storage -> Firestore -> Rules**
+(project `whiteboard-23ad5`). They are not deployed from this repo - paste them in and Publish.
+
+Reads are open to any session (the app signs visitors in anonymously) so that view-only
+share links (`?view=main`, `?view={uid}`) work. Writes are always owner-only.
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // MAIN board: only the main-board accounts can view or draw.
+    // MAIN board: viewable by link, only the main-board accounts can draw.
     // Keep this email list in sync with MAIN_BOARD_EDITORS in board.js.
     match /artifacts/{appId}/public/data/{document=**} {
-      allow read, write: if request.auth != null
-                   && request.auth.token.email_verified == true
-                   && request.auth.token.email in ['christian.heine@gmail.com', 'cheine@mtps.us'];
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['christian.heine@gmail.com', 'cheine@mtps.us'];
     }
 
-    // PERSONAL boards: each signed-in Google account can read and write only its own.
+    // PERSONAL boards: viewable by link, only the owning account can draw.
     match /artifacts/{appId}/users/{userId}/strokes/{strokeId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId
-                         && request.auth.token.email_verified == true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
     }
   }
 }
 ```
-
-To limit personal boards to school accounts only, add this line to the personal-board rule:
-`&& request.auth.token.email.matches('.*@mtps[.]us')`

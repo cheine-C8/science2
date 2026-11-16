@@ -119,6 +119,10 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : window.WHITEBOARD_CON
 //     read or write, completely independent of the main board:
 //       artifacts/{appId}/users/{uid}/strokes/{strokeId}
 //   * Anonymous visitors (not signed in) see an empty read-only board until they sign in.
+//   * SHARE LINKS: opening the page with ?view=main or ?view={uid} shows that board
+//     READ-ONLY to whoever opens it, signed in or not (sharedBoard below). The "Share"
+//     button in the status pill copies the link for the board you're on. Nobody can ever
+//     draw through a share link — isEditor is forced false while sharedBoard is set.
 // This is enforced here for UX, and by Firestore rules for real (see FIRESTORE_RULES.md).
 // Never build a strokes path by hand — always go through strokesCol() / strokeDoc(id) so
 // every read and write lands on whichever board the current user belongs to.
@@ -130,7 +134,15 @@ let isEditor = false;       // may the current user draw on the board they're lo
 let onPersonalBoard = false; // true = signed-in non-main account, on their own board
 let unsubStrokes = null;
 
+// 'main', a Firebase uid, or null (normal mode). Read once from the URL at load.
+const sharedBoard = (() => {
+    const v = new URLSearchParams(location.search).get('view');
+    return v && (v === 'main' || /^[A-Za-z0-9]{6,128}$/.test(v)) ? v : null;
+})();
+
 function strokesCol() {
+    if (sharedBoard && sharedBoard !== 'main') return collection(db, 'artifacts', appId, 'users', sharedBoard, 'strokes');
+    if (sharedBoard === 'main') return collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
     return onPersonalBoard
         ? collection(db, 'artifacts', appId, 'users', user.uid, 'strokes')
         : collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
@@ -153,7 +165,14 @@ function updateAuthUI() {
     const signinBtn = document.getElementById('btn-signin');
     const signoutBtn = document.getElementById('btn-signout');
     const label = document.getElementById('auth-label');
-    if (user && !user.isAnonymous) {
+    // Share = copy a view-only link to my board; My board = leave a share link.
+    document.getElementById('btn-share').classList.toggle('hidden', !isEditor);
+    document.getElementById('btn-myboard').classList.toggle('hidden', !sharedBoard);
+    if (sharedBoard) {
+        signinBtn.classList.add('hidden');
+        signoutBtn.classList.add('hidden');
+        label.textContent = '';
+    } else if (user && !user.isAnonymous) {
         signinBtn.classList.add('hidden');
         signoutBtn.classList.remove('hidden');
         label.textContent = onPersonalBoard ? `${user.email} — your board` : (isEditor ? `Editing as ${user.email}` : `${user.email} (view only)`);
@@ -165,6 +184,12 @@ function updateAuthUI() {
     if (ui.tool !== 'pan') switchTool(ui.tool); // re-run the isEditor gate on whatever tool is active
 }
 
+document.getElementById('btn-share').onclick = async () => {
+    const link = location.origin + location.pathname + '?view=' + (onPersonalBoard ? user.uid : 'main');
+    try { await navigator.clipboard.writeText(link); showToast('View-only link copied — anyone with it can see this board but not draw on it.'); }
+    catch (e) { window.prompt('Copy this view-only link:', link); }
+};
+document.getElementById('btn-myboard').onclick = () => { location.href = location.pathname; };
 document.getElementById('btn-signin').onclick = async () => {
     try { await signInWithPopup(auth, googleProvider); }
     catch (e) { console.error('Sign-in failed:', e); showToast('Sign-in failed — see console.'); }
@@ -194,6 +219,7 @@ onAuthStateChanged(auth, u => {
     const onMainAsEditor = signedIn && MAIN_BOARD_EDITORS.includes(u.email.toLowerCase());
     onPersonalBoard = signedIn && !onMainAsEditor;
     isEditor = onMainAsEditor || onPersonalBoard;
+    if (sharedBoard) { isEditor = false; onPersonalBoard = false; } // share links are always read-only
     // Switching account can switch board, so drop everything that belonged to the old one
     // (otherwise Undo could re-create the previous board's strokes on the new board).
     strokes = [];
@@ -202,13 +228,13 @@ onAuthStateChanged(auth, u => {
     offscreenDirty = true;
     isDirty = true;
     updateAuthUI();
-    if (u && !isEditor) {
+    if (u && !isEditor && !sharedBoard) {
         // Not signed in with Google (anonymous session): show an empty, read-only board.
         // We deliberately do NOT subscribe to the main board here, so visitors never see it.
         if (unsubStrokes) { unsubStrokes(); unsubStrokes = null; }
         updateStatus('online', 'Sign in to get your own board');
     } else if (u) {
-        updateStatus('online', onPersonalBoard ? `Your board — ${u.email}` : `Editing as ${u.email}`);
+        updateStatus('online', sharedBoard ? 'Shared board (view only)' : (onPersonalBoard ? `Your board — ${u.email}` : `Editing as ${u.email}`));
         if (unsubStrokes) unsubStrokes();
         const q = strokesCol();
         unsubStrokes = onSnapshot(q, snap => {
@@ -1591,7 +1617,7 @@ window.addEventListener('keydown', e => {
         if (s) {
             strokes = strokes.filter(x => x.id !== s.id);
             undoStack.push({ type: 'delete', strokes: [s] });
-            if (user) deleteDoc(strokeDoc(s.id)).catch(() => { });
+            if (isEditor) deleteDoc(strokeDoc(s.id)).catch(() => { });
             offscreenDirty = true; isDirty = true;
         }
         selectedObjectId = null; drawSelectionBox();
