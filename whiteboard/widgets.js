@@ -17,7 +17,7 @@
     const layer = document.getElementById('widget-layer');
     const STORAGE_KEY = 'whiteboard.widgets.v1';
     const widgets = new Map();          // id -> { el, type, state, cleanup }  (every open widget)
-    // Persistence: on any change, `save()` debounces a write of [{id,type,x,y,w,h,state}] to localStorage.
+    // Persistence: on any change, `save()` debounces a write of [{id,type,x,y,w,h,ghost,state}] to localStorage.
     // On load, the same list is replayed through addWidget().
     let zTop = 100;
     let saveTimer = null;
@@ -28,7 +28,7 @@
             const out = [];
             for (const [id, w] of widgets) {
                 const r = w.el;
-                out.push({ id, type: w.type, x: r.offsetLeft, y: r.offsetTop, w: r.offsetWidth, h: r.offsetHeight, state: w.state });
+                out.push({ id, type: w.type, x: r.offsetLeft, y: r.offsetTop, w: r.offsetWidth, h: r.offsetHeight, ghost: r.classList.contains('ghost'), state: w.state });
             }
             try { localStorage.setItem(STORAGE_KEY, JSON.stringify(out)); } catch (e) { }
         }, 150);
@@ -727,7 +727,11 @@
 
     // ─── Widget frame: drag, resize, focus, close ────────────────────
     // Builds the chrome around any DEFS entry: header (drag handle + close), body, resize grip.
-    // opts may carry {id, x, y, w, h, state} when restoring from localStorage.
+    // opts may carry {id, x, y, w, h, ghost, state} when restoring from localStorage.
+    // COLORS: the frame's background comes from CSS variables that board.js sets on <body> when a
+    // solid board color is chosen (style.css, "WIDGET THEME"), so widgets match the board.
+    // GHOST MODE: the ghost button in every header toggles .ghost on that widget — its background
+    // goes see-through so the board shows behind it. Per widget, saved with it.
     // New widgets are placed by findSpot() so they open clear of the menus and of each other.
 
     // Where should a NEW width×height widget open? (Restored widgets keep their saved spot.)
@@ -791,8 +795,11 @@
 
         const head = el('div', 'widget-head');
         head.append(icon(def.icon), el('span', '', def.title), el('span', 'spacer'));
+        const ghostBtn = el('button', 'ghost-btn'); ghostBtn.title = 'Ghost mode: see the board through this widget'; ghostBtn.append(icon('ghost'));
         const closeBtn = el('button', 'close'); closeBtn.title = 'Close'; closeBtn.append(icon('x'));
-        head.append(closeBtn);
+        head.append(ghostBtn, closeBtn);
+        if (opts.ghost) w.classList.add('ghost');
+        ghostBtn.onclick = () => { w.classList.toggle('ghost'); save(); };
         const body = el('div', 'widget-body');
         const grip = el('div', 'widget-resize');
         w.append(head, body, grip);

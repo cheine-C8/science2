@@ -37,6 +37,7 @@ try {
 //           'image'   → bg.value is a key of BG_IMAGES (files in backgrounds/); fills the screen, does not pan
 //           'custom'  → the user's own picture, a downscaled JPEG data-URL in localStorage 'whiteboard.bgImage'
 //   bg.dark → true when the backdrop is dark: the dot grid turns light and a black pen flips to white.
+// Widgets follow SOLID colors only (syncWidgetTheme below); over paper/pictures they stay white.
 // To add a color: append to BG_COLORS. To add a picture: drop a file in backgrounds/ and add a row
 // to BG_IMAGES. To add a paper pattern: add a row to BG_PATTERNS (layers are CSS gradients; `tile`
 // is the repeat size in world px at 100% zoom).
@@ -98,6 +99,19 @@ function bgBaseColor() {
     if (bg.type === 'pattern') return BG_PATTERNS[bg.value].color;
     if (bg.type === 'image') return BG_IMAGES[bg.value].color;
     return bg.dark ? '#1e293b' : BG_DEFAULT_COLOR;
+}
+// Tells the widget CSS (style.css, "WIDGET THEME") about the board, via <body>:
+//   --widget-rgb + body.widgets-dark → widgets take a solid board color (not the default one,
+//                                      not paper/pictures) and switch to light text if it is dark
+//   body.board-dark                  → the board itself is dark, so see-through "ghost" widgets
+//                                      need light text even when they would otherwise be white
+// E-ink mode turns all of it off (widgets are forced white there). Call after bg or ui.eink changes.
+function syncWidgetTheme() {
+    const solid = !ui.eink && bg.type === 'color' && bg.value.toLowerCase() !== BG_DEFAULT_COLOR;
+    if (solid) { const n = parseInt(bg.value.slice(1), 16); document.body.style.setProperty('--widget-rgb', `${n >> 16 & 255} ${n >> 8 & 255} ${n & 255}`); }
+    else document.body.style.removeProperty('--widget-rgb');
+    document.body.classList.toggle('widgets-dark', solid && bg.dark);
+    document.body.classList.toggle('board-dark', !ui.eink && bg.dark);
 }
 // Writes the whole backdrop onto `el` as stacked CSS backgrounds, topmost first:
 // dot grid (optional) → pattern layers → picture. Called every redraw for the board (zoom/x/y =
@@ -1634,6 +1648,7 @@ function applyEink() {
     document.body.classList.toggle('eink', ui.eink);
     const b = document.getElementById('btn-eink');
     b.classList.toggle('text-blue-600', ui.eink); b.classList.toggle('bg-blue-50', ui.eink);
+    syncWidgetTheme();
     resize(); // re-evaluates pixel ratio (and marks dirty, which repaints the chosen background when e-ink goes off)
 }
 document.getElementById('btn-eink').onclick = () => {
@@ -1697,6 +1712,7 @@ document.querySelectorAll('.color-btn').forEach(btn => {
         if (bg.dark && !wasDark && ui.color === '#000000') { ui.color = '#ffffff'; showToast('Dark background — pen switched to white'); }
         else if (!bg.dark && wasDark && ui.color === '#ffffff') ui.color = '#000000';
         if (editing) { editing.color = ui.color; textEditor.style.color = ui.color; }
+        syncWidgetTheme();
         isDirty = true; markActive(); updateUI();
     }
     // Thumbnails are painted with the same function as the board, by briefly swapping `bg`.
