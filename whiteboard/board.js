@@ -111,14 +111,31 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : window.WHITEBOARD_CONFIG.appId;
 
-// Only these Google accounts may edit the board. Everyone else (including anonymous
-// visitors) gets a read-only view — enforced here for UX, and by Firestore rules for real.
-const ALLOWED_EDITORS = ['christian.heine@gmail.com', 'cheine@mtps.us'];
+// ---- WHICH BOARD AM I ON? ---------------------------------------------------------------
+// There is one MAIN board plus one PERSONAL board per Google account:
+//   * The accounts in MAIN_BOARD_EDITORS all share (and can edit) the main board:
+//       artifacts/{appId}/public/data/strokes/{strokeId}
+//   * Every other signed-in Google account gets its own private board that only it can
+//     read or write, completely independent of the main board:
+//       artifacts/{appId}/users/{uid}/strokes/{strokeId}
+//   * Anonymous visitors (not signed in) see the main board read-only.
+// This is enforced here for UX, and by Firestore rules for real (see FIRESTORE_RULES.md).
+// Never build a strokes path by hand — always go through strokesCol() / strokeDoc(id) so
+// every read and write lands on whichever board the current user belongs to.
+const MAIN_BOARD_EDITORS = ['christian.heine@gmail.com', 'cheine@mtps.us'];
 const googleProvider = new GoogleAuthProvider();
 
 let user = null;
-let isEditor = false;
+let isEditor = false;       // may the current user draw on the board they're looking at?
+let onPersonalBoard = false; // true = signed-in non-main account, on their own board
 let unsubStrokes = null;
+
+function strokesCol() {
+    return onPersonalBoard
+        ? collection(db, 'artifacts', appId, 'users', user.uid, 'strokes')
+        : collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
+}
+function strokeDoc(id) { return doc(strokesCol(), id); }
 
 function updateStatus(state, msg) {
     document.getElementById('status-text').innerText = msg;
@@ -130,7 +147,7 @@ function updateStatus(state, msg) {
 }
 
 // Toggles the sign-in/sign-out button and grays out every edit control (via body.view-only,
-// see style.css) whenever the signed-in account isn't one of ALLOWED_EDITORS.
+// see style.css) for anonymous (not signed in) visitors, who only get a read-only view of the main board.
 function updateAuthUI() {
     document.body.classList.toggle('view-only', !isEditor);
     const signinBtn = document.getElementById('btn-signin');
@@ -139,7 +156,7 @@ function updateAuthUI() {
     if (user && !user.isAnonymous) {
         signinBtn.classList.add('hidden');
         signoutBtn.classList.remove('hidden');
-        label.textContent = isEditor ? `Editing as ${user.email}` : `${user.email} (not authorized)`;
+        label.textContent = onPersonalBoard ? `${user.email} — your board` : (isEditor ? `Editing as ${user.email}` : `${user.email} (view only)`);
     } else {
         signinBtn.classList.remove('hidden');
         signoutBtn.classList.add('hidden');
@@ -173,12 +190,22 @@ if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
 // documents small; they're expanded back to {x,y} objects here).
 onAuthStateChanged(auth, u => {
     user = u;
-    isEditor = !!(u && !u.isAnonymous && u.email && u.emailVerified && ALLOWED_EDITORS.includes(u.email.toLowerCase()));
+    const signedIn = !!(u && !u.isAnonymous && u.email && u.emailVerified);
+    const onMainAsEditor = signedIn && MAIN_BOARD_EDITORS.includes(u.email.toLowerCase());
+    onPersonalBoard = signedIn && !onMainAsEditor;
+    isEditor = onMainAsEditor || onPersonalBoard;
+    // Switching account can switch board, so drop everything that belonged to the old one
+    // (otherwise Undo could re-create the previous board's strokes on the new board).
+    strokes = [];
+    undoStack = [];
+    selectedObjectId = null;
+    offscreenDirty = true;
+    isDirty = true;
     updateAuthUI();
     if (u) {
-        updateStatus('online', isEditor ? `Editing as ${u.email}` : (u.isAnonymous ? 'Live (view only)' : `${u.email} (view only)`));
+        updateStatus('online', onPersonalBoard ? `Your board — ${u.email}` : (isEditor ? `Editing as ${u.email}` : (u.isAnonymous ? 'Live (view only)' : `${u.email} (view only)`)));
         if (unsubStrokes) unsubStrokes();
-        const q = collection(db, 'artifacts', appId, 'public', 'data', 'strokes');
+        const q = strokesCol();
         unsubStrokes = onSnapshot(q, snap => {
             strokes = snap.docs.map(d => {
                 const data = d.data();
@@ -670,7 +697,7 @@ function eraseStrokesAtPoint(wx, wy) {
 
     // Firestore delete
     if (isEditor) {
-        ids.forEach(id => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', id)).catch(() => { }));
+        ids.forEach(id => deleteDoc(strokeDoc(id)).catch(() => { }));
     }
 }
 
@@ -835,7 +862,7 @@ async function commitStroke(keepDrawing = false) {
             };
             // Defer write with setTimeout to prevent blocking drawing thread (readded optimization)
             setTimeout(() => {
-                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id), payload)
+                setDoc(strokeDoc(s.id), payload)
                     .catch(e => console.error("Firebase write error:", e));
             }, 0);
         }
@@ -859,7 +886,7 @@ function writeObjectDoc(s) {
         ? { ...base, text: s.text, color: s.color, size: s.size }
         : { ...base, src: s.src, locked: !!s.locked };
     setTimeout(() => {
-        setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id), payload)
+        setDoc(strokeDoc(s.id), payload)
             .catch(e => console.error('Firebase write error:', e));
     }, 0);
 }
@@ -917,7 +944,7 @@ function commitTextEdit() {
             if (!text.trim()) {
                 strokes = strokes.filter(x => x.id !== s.id);
                 undoStack.push({ type: 'delete', strokes: [s] });
-                if (isEditor) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { });
+                if (isEditor) deleteDoc(strokeDoc(s.id)).catch(() => { });
             } else if (text !== s.text) {
                 s.text = text; measureText(s);
                 undoStack.push({ type: 'update', id: s.id, before: ed.before, after: { text: s.text, size: s.size, w: s.w, h: s.h, points: [{ ...s.points[0] }] } });
@@ -1160,7 +1187,7 @@ async function undo() {
         // Remove the added strokes
         const ids = action.strokes.map(s => s.id);
         strokes = strokes.filter(s => !ids.includes(s.id));
-        if (isEditor) ids.forEach(id => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', id)).catch(() => { }));
+        if (isEditor) ids.forEach(id => deleteDoc(strokeDoc(id)).catch(() => { }));
     } else if (action.type === 'delete') {
         // Re-add the deleted strokes
         for (const s of action.strokes) {
@@ -1176,7 +1203,7 @@ async function undo() {
                     type: s.type, color: s.color, thickness: s.thickness,
                     points: JSON.stringify(s.points.map(p => [+p.x.toFixed(1), +p.y.toFixed(1)])), timestamp: s.timestamp || Date.now()
                 };
-                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id), payload).catch(() => { });
+                setDoc(strokeDoc(s.id), payload).catch(() => { });
             }
         }
         strokes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
@@ -1543,7 +1570,7 @@ document.getElementById('btn-clear').onclick = async () => {
     // Locked images survive a clear (that's what locking is for) — unlock them to remove.
     const all = strokes.filter(s => !isLockedImage(s));
     undoStack.push({ type: 'delete', strokes: all });
-    all.forEach(s => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { }));
+    all.forEach(s => deleteDoc(strokeDoc(s.id)).catch(() => { }));
     strokes = strokes.filter(isLockedImage); offscreenDirty = true; isDirty = true;
 };
 
@@ -1559,7 +1586,7 @@ window.addEventListener('keydown', e => {
         if (s) {
             strokes = strokes.filter(x => x.id !== s.id);
             undoStack.push({ type: 'delete', strokes: [s] });
-            if (user) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'strokes', s.id)).catch(() => { });
+            if (user) deleteDoc(strokeDoc(s.id)).catch(() => { });
             offscreenDirty = true; isDirty = true;
         }
         selectedObjectId = null; drawSelectionBox();

@@ -15,8 +15,9 @@ window.WHITEBOARD_CONFIG = {
         appId: "1:1097713600229:web:b2beebee9d7a165a12360c",
     },
 
-    // Firestore path is artifacts/{appId}/public/data/strokes/{strokeId}.
-    // Change this to give a class or room its own separate board.
+    // Main board lives at artifacts/{appId}/public/data/strokes/{strokeId};
+    // each other signed-in account's personal board at artifacts/{appId}/users/{uid}/strokes.
+    // Change this to give a class or room its own separate set of boards.
     appId: 'default-whiteboard',
 
     // Default bell schedule for the Period timer widget: [name, start, end], 24h.
