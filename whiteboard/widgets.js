@@ -120,7 +120,8 @@
     //   state  – plain object that is persisted automatically; put anything the widget
     //            should remember on it (timer length, names list, chosen lamp...). Call
     //            save() after changing it.
-    //   ctx    – { widget: the outer element, onResize(cb): run cb when the user resizes }
+    //   ctx    – { widget: the outer element, onResize(cb): run cb when the user resizes,
+    //              close(): close this widget (same as its X button) }
     //   return – optional function run when the widget is closed (stop timers, mic, rAF)
     // Widgets must stopPropagation() on keydown/keyup inside text inputs so the board's
     // Space-to-pan and Ctrl+Z shortcuts don't fire while typing.
@@ -651,15 +652,24 @@
         // through a 'wb:insert-svg' event; board.js stores it as an ordinary image object, so it
         // syncs, pans/zooms, and is moved/resized/locked/deleted with the Move tool like a
         // sticker. Lock it and you can write in the cells and erase without disturbing the grid.
-        // The widget stays open so several tables can be dropped in a row.
+        // The widget closes itself once the table is on the board (ctx.close, called back by
+        // board.js only on success — so it stays open if you're not signed in). Because closing
+        // discards widget state, the last rows/columns/size are kept separately in localStorage
+        // ('whiteboard.tableDefaults') and used the next time the widget is opened.
         table: {
             title: 'Table', icon: 'table', w: 250, h: 350,
             mount(body, state, ctx) {
                 const MAX_ROWS = 30, MAX_COLS = 15;
                 // Cell size in screen px at the moment of insertion: [label, cell width, cell height]
                 const SIZES = { s: ['Small', 80, 40], m: ['Medium', 130, 60], l: ['Large', 200, 90] };
-                state.rows = state.rows ?? 4; state.cols = state.cols ?? 3;
-                if (!SIZES[state.size]) state.size = 'm';
+                const LAST_KEY = 'whiteboard.tableDefaults';
+                let last = {};
+                try { last = JSON.parse(localStorage.getItem(LAST_KEY) || '{}') || {}; } catch (e) { }
+                const clamp = (v, max, dflt) => Math.max(1, Math.min(max, Math.round(v) || dflt));
+                state.rows = clamp(state.rows ?? last.rows, MAX_ROWS, 4);
+                state.cols = clamp(state.cols ?? last.cols, MAX_COLS, 3);
+                state.size = SIZES[state.size] ? state.size : (SIZES[last.size] ? last.size : 'm');
+                const remember = () => { try { localStorage.setItem(LAST_KEY, JSON.stringify({ rows: state.rows, cols: state.cols, size: state.size })); } catch (e) { } };
 
                 // Outer border is inset by half its width so it isn't clipped at the image edge.
                 const buildSvg = () => {
@@ -680,7 +690,7 @@
                     const minus = el('button', 'wbtn small', '−'), plus = el('button', 'wbtn small', '+');
                     const input = el('input', 'w-12 text-center font-bold border border-gray-200 rounded-lg py-0.5');
                     input.type = 'number'; input.min = 1; input.max = max; input.value = state[key];
-                    const set = v => { state[key] = Math.max(1, Math.min(max, Math.round(v) || 1)); input.value = state[key]; render(); save(); };
+                    const set = v => { state[key] = Math.max(1, Math.min(max, Math.round(v) || 1)); input.value = state[key]; render(); save(); remember(); };
                     minus.onclick = () => set(state[key] - 1); plus.onclick = () => set(state[key] + 1);
                     input.onchange = () => set(+input.value);
                     input.addEventListener('keydown', e => e.stopPropagation()); input.addEventListener('keyup', e => e.stopPropagation());
@@ -692,7 +702,7 @@
                 sizeRow.append(el('span', 'text-sm font-semibold text-gray-600 flex-1', 'Size'));
                 for (const [k, [label]] of Object.entries(SIZES)) {
                     const b = el('button', 'wbtn small', label); b.dataset.k = k;
-                    b.onclick = () => { state.size = k; render(); save(); };
+                    b.onclick = () => { state.size = k; render(); save(); remember(); };
                     sizeRow.append(b);
                 }
                 const preview = el('div', 'flex-1 min-h-0 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 p-2 mb-2');
@@ -700,7 +710,7 @@
                 Object.assign(img.style, { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' });
                 preview.append(img);
                 const add = el('button', 'wbtn primary', 'Add to board');
-                add.onclick = () => window.dispatchEvent(new CustomEvent('wb:insert-svg', { detail: buildSvg() }));
+                add.onclick = () => window.dispatchEvent(new CustomEvent('wb:insert-svg', { detail: { ...buildSvg(), done: ctx.close } }));
                 body.append(stepper('Rows', 'rows', MAX_ROWS), stepper('Columns', 'cols', MAX_COLS), sizeRow, preview, add);
 
                 const render = () => {
@@ -738,7 +748,7 @@
         layer.append(w);
 
         const resizeCbs = [];
-        const ctx = { widget: w, onResize: cb => resizeCbs.push(cb) };
+        const ctx = { widget: w, onResize: cb => resizeCbs.push(cb), close: () => removeWidget(id) };
         const cleanup = def.mount(body, state, ctx);
         lucide.createIcons({ nodes: w.querySelectorAll('[data-lucide]') });   // resolves the <i data-lucide> tags we just added
 

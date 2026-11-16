@@ -1052,13 +1052,15 @@ document.querySelectorAll('#widget-rail button[data-sticker]').forEach(btn => bt
 // window event:  new CustomEvent('wb:insert-svg', { detail: { svg, w, h } })
 //   svg  – complete <svg> markup (must carry width/height so it decodes at a known size)
 //   w, h – size in SCREEN px right now; divided by view.zoom so it looks that size at any zoom
+//   done – optional callback, run once the object is actually on the board (the Table widget
+//          uses it to close itself; not called if the visitor isn't an editor or the SVG fails)
 // The SVG is stored as the image object's src (a data: URL of a few hundred bytes), so it
 // stays sharp at every zoom and needs no compression. From then on it is an ordinary image
 // object: synced, undoable, and moved/resized/locked/deleted with the Move tool.
 // The Table widget is the only sender today; any future "drop a shape/template" widget can reuse it.
 window.addEventListener('wb:insert-svg', e => {
     if (!isEditor) { showToast('Sign in to add a table to the board.'); return; }
-    const { svg, w, h } = e.detail || {};
+    const { svg, w, h, done } = e.detail || {};
     if (!svg || !(w > 0) || !(h > 0)) return;
     const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     const img = new Image();
@@ -1074,6 +1076,7 @@ window.addEventListener('wb:insert-svg', e => {
             w: worldW, h: worldH
         }, false);
         switchTool('select'); selectedObjectId = id; drawSelectionBox();
+        if (typeof done === 'function') done();
     };
     img.src = src;
 });
