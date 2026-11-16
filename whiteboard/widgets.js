@@ -414,28 +414,49 @@
         // Work symbols: Silence / Whisper / Partner / Group / Ask — one active at a time.
         symbols: {
             title: 'Work symbols', icon: 'users', w: 300, h: 150,
+            // TWO VIEWS in one widget:
+            //   picker (state.picking)  – the row of 5 symbols to choose from
+            //   display                 – only the chosen symbol, as big as the box allows, in its own color
+            // Choosing a symbol closes the picker and "pops out" the symbol; tapping the big symbol
+            // opens the picker again. A brand-new widget starts on the picker.
             mount(body, state, ctx) {
+                if (state.picking == null) state.picking = !state.mode;
                 state.mode = state.mode ?? 'silence';
-                const SYMS = [['silence', 'mic-off', 'Silence'], ['whisper', 'ear', 'Whisper'], ['partner', 'user-round', 'Partner'], ['group', 'users', 'Group work'], ['ask', 'hand', 'Ask']];
-                const grid = el('div', 'grid grid-cols-5 gap-1 flex-1 items-stretch min-h-0');
+                // [key, lucide icon, label, display color]
+                const SYMS = [['silence', 'mic-off', 'Silence', '#dc2626'], ['whisper', 'ear', 'Whisper', '#ea580c'], ['partner', 'user-round', 'Partner', '#2563eb'], ['group', 'users', 'Group work', '#16a34a'], ['ask', 'hand', 'Ask', '#9333ea']];
+                const grid = el('div', 'sym-grid');
                 SYMS.forEach(([k, ic, lb]) => {
                     const b = el('button', 'sym-btn'); b.dataset.k = k; b.append(icon(ic), el('span', '', lb));
-                    b.onclick = () => { state.mode = k; render(); save(); };
+                    b.onclick = () => { state.mode = k; state.picking = false; render(); save(); };
                     grid.append(b);
                 });
-                body.append(grid);
-                const render = () => grid.querySelectorAll('.sym-btn').forEach(b => b.classList.toggle('on', b.dataset.k === state.mode));
-                render();
-                // Scale with the box: icon size (--sym, used by .sym-btn in style.css) is limited by
-                // both the column width and the height, so the 5 symbols always fill the widget
-                // without overflowing; the label is sized from it. ResizeObserver catches every size
-                // change (corner drag, fit-to-content, screen rotation); onResize is the fallback.
-                const fit = () => {
-                    const w = grid.clientWidth / SYMS.length, h = grid.clientHeight;
-                    if (!w || !h) return;
-                    grid.style.setProperty('--sym', Math.max(16, Math.min(w * 0.5, h * 0.45)) + 'px');
+                const big = el('button', 'sym-big'); big.title = 'Tap to change';
+                big.onclick = () => { state.picking = true; render(); save(); };
+                body.append(grid, big);
+                const render = () => {
+                    grid.querySelectorAll('.sym-btn').forEach(b => b.classList.toggle('on', b.dataset.k === state.mode));
+                    grid.style.display = state.picking ? '' : 'none';
+                    big.style.display = state.picking ? 'none' : '';
+                    if (!state.picking) {
+                        const [, ic, lb, color] = SYMS.find(s => s[0] === state.mode) || SYMS[0];
+                        big.replaceChildren(icon(ic), el('span', '', lb));
+                        big.style.color = color;
+                        lucide.createIcons({ nodes: big.querySelectorAll('[data-lucide]') });
+                    }
+                    fit();
                 };
-                if (window.ResizeObserver) { const ro = new ResizeObserver(fit); ro.observe(grid); return () => ro.disconnect(); }
+                // Scale with the box: --sym (icon size, used by .sym-btn / .sym-big in style.css) is
+                // limited by both width and height so nothing overflows; labels are sized from it.
+                // ResizeObserver catches every size change (corner drag, fit-to-content, rotation);
+                // onResize is the fallback for browsers without it.
+                const fit = () => {
+                    const w = body.clientWidth - 24, h = body.clientHeight - 24;   // minus .widget-body padding
+                    if (w <= 0 || h <= 0) return;
+                    grid.style.setProperty('--sym', Math.max(16, Math.min(w / SYMS.length * 0.5, h * 0.45)) + 'px');
+                    big.style.setProperty('--sym', Math.max(24, Math.min(w * 0.5, h * 0.6)) + 'px');
+                };
+                render();
+                if (window.ResizeObserver) { const ro = new ResizeObserver(fit); ro.observe(body); return () => ro.disconnect(); }
                 setTimeout(fit, 80); ctx.onResize(fit);
             }
         },
