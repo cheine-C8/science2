@@ -118,7 +118,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : window.WHITEBOARD_CON
 //   * Every other signed-in Google account gets its own private board that only it can
 //     read or write, completely independent of the main board:
 //       artifacts/{appId}/users/{uid}/strokes/{strokeId}
-//   * Anonymous visitors (not signed in) see the main board read-only.
+//   * Anonymous visitors (not signed in) see an empty read-only board until they sign in.
 // This is enforced here for UX, and by Firestore rules for real (see FIRESTORE_RULES.md).
 // Never build a strokes path by hand — always go through strokesCol() / strokeDoc(id) so
 // every read and write lands on whichever board the current user belongs to.
@@ -147,7 +147,7 @@ function updateStatus(state, msg) {
 }
 
 // Toggles the sign-in/sign-out button and grays out every edit control (via body.view-only,
-// see style.css) for anonymous (not signed in) visitors, who only get a read-only view of the main board.
+// see style.css) for anonymous (not signed in) visitors, who only get an empty read-only board.
 function updateAuthUI() {
     document.body.classList.toggle('view-only', !isEditor);
     const signinBtn = document.getElementById('btn-signin');
@@ -202,8 +202,13 @@ onAuthStateChanged(auth, u => {
     offscreenDirty = true;
     isDirty = true;
     updateAuthUI();
-    if (u) {
-        updateStatus('online', onPersonalBoard ? `Your board — ${u.email}` : (isEditor ? `Editing as ${u.email}` : (u.isAnonymous ? 'Live (view only)' : `${u.email} (view only)`)));
+    if (u && !isEditor) {
+        // Not signed in with Google (anonymous session): show an empty, read-only board.
+        // We deliberately do NOT subscribe to the main board here, so visitors never see it.
+        if (unsubStrokes) { unsubStrokes(); unsubStrokes = null; }
+        updateStatus('online', 'Sign in to get your own board');
+    } else if (u) {
+        updateStatus('online', onPersonalBoard ? `Your board — ${u.email}` : `Editing as ${u.email}`);
         if (unsubStrokes) unsubStrokes();
         const q = strokesCol();
         unsubStrokes = onSnapshot(q, snap => {

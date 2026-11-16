@@ -8,11 +8,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // MAIN board: anyone can view, only the main-board accounts can draw.
+    // MAIN board: only the main-board accounts can view or draw.
     // Keep this email list in sync with MAIN_BOARD_EDITORS in board.js.
-    match /artifacts/{appId}/public/data/strokes/{strokeId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null
+    match /artifacts/{appId}/public/data/{document=**} {
+      allow read, write: if request.auth != null
                    && request.auth.token.email_verified == true
                    && request.auth.token.email in ['christian.heine@gmail.com', 'cheine@mtps.us'];
     }
