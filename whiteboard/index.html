@@ -140,7 +140,8 @@
     1. Add a button in #widget-rail (index.html):  <button data-widget="foo" data-label="Foo">
     2. In widgets.js add DEFS.foo = { title, icon (lucide name), w, h, mount(body, state, ctx) }
     That's it — drag, resize, close, focus, persistence and mobile clamping are
-    handled by addWidget().
+    handled by addWidget(). w/h only need to be roughly right: a newly opened
+    widget grows to fit its content so no control starts out hidden (FIT TO CONTENT).
 
   ADDING A DRAWING TOOL (board.js + index.html)
     Add a button with id="btn-<tool>" in index.html, handle it in pointerdown/pointermove,
@@ -163,8 +164,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261115c"></script>
-    <link rel="stylesheet" href="style.css?v=20261115c">
+    <script src="config.js?v=20261115d"></script>
+    <link rel="stylesheet" href="style.css?v=20261115d">
 </head>
 
 <body>
@@ -376,10 +377,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261115c"></script>
+    <script type="module" src="board.js?v=20261115d"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261115c"></script>
+    <script src="widgets.js?v=20261115d"></script>
 </body>
 
 </html>

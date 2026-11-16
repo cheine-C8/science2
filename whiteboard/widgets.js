@@ -155,7 +155,7 @@
         // Timer: countdown with presets + custom minutes. Uses an absolute endAt timestamp so it
         // stays accurate even if the tab is throttled. Fireworks + bell when it reaches zero.
         timer: {
-            title: 'Timer', icon: 'timer', w: 320, h: 260,
+            title: 'Timer', icon: 'timer', w: 320, h: 310,
             mount(body, state, ctx) {
                 state.total = state.total ?? 5 * 60 * 1000;   // ms configured
                 state.remaining = state.remaining ?? state.total;
@@ -395,7 +395,7 @@
 
         // Traffic light: tap a lamp to light it (tap again to turn all off). Persists which is on.
         traffic: {
-            title: 'Traffic light', icon: 'traffic-cone', w: 160, h: 320,
+            title: 'Traffic light', icon: 'traffic-cone', w: 180, h: 390,
             mount(body, state, ctx) {
                 state.on = state.on ?? 'green';
                 const box = el('div', 'flex-1 flex flex-col justify-around gap-2 rounded-2xl bg-slate-800 p-3');
@@ -705,9 +705,12 @@
                     b.onclick = () => { state.size = k; render(); save(); remember(); };
                     sizeRow.append(b);
                 }
-                const preview = el('div', 'flex-1 min-h-0 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 p-2 mb-2');
+                // The preview image is absolutely positioned so a tall table can't stretch the
+                // widget (it would otherwise count toward the fit-to-content height).
+                const preview = el('div', 'flex-1 relative rounded-xl bg-slate-50 border border-slate-200 mb-2');
+                preview.style.minHeight = '110px';
                 const img = el('img'); img.alt = 'Table preview'; img.draggable = false;
-                Object.assign(img.style, { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' });
+                Object.assign(img.style, { position: 'absolute', left: '8px', top: '8px', width: 'calc(100% - 16px)', height: 'calc(100% - 16px)', objectFit: 'contain' });
                 preview.append(img);
                 const add = el('button', 'wbtn primary', 'Add to board');
                 add.onclick = () => window.dispatchEvent(new CustomEvent('wb:insert-svg', { detail: { ...buildSvg(), done: ctx.close } }));
@@ -735,7 +738,7 @@
     // is too full for a clear spot, the spot covering the least is used, and covering a
     // widget counts for more than covering a menu. Hidden menus (focus mode, minimap off,
     // small screens) are skipped automatically, so the space they leave is used.
-    function findSpot(width, height) {
+    function findSpot(width, height, skip) {   // skip = a widget element to ignore (itself)
         const GAP = 12, STEP = 20;
         const rectOf = id => {
             const e = document.getElementById(id);
@@ -749,7 +752,7 @@
         const maxX = window.innerWidth - width - 8, maxY = window.innerHeight - height - 100;
         // [rect, weight] — a widget is worse to cover than a menu
         const blocks = [];
-        for (const w of widgets.values()) blocks.push([w.el.getBoundingClientRect(), 4]);
+        for (const w of widgets.values()) if (w.el !== skip) blocks.push([w.el.getBoundingClientRect(), 4]);
         for (const id of ['status-pill', 'zoom-controls', 'toolbar', 'eraser-options', 'rail-toggle']) { const r = rectOf(id); if (r) blocks.push([r, 1]); }
         const cost = (x, y) => {
             // Area shared with each block: really covering it costs 50× more than merely
@@ -833,6 +836,32 @@
         closeBtn.onclick = () => removeWidget(id);
         widgets.set(id, { el: w, type, state, cleanup });
         focus(); save();
+
+        // FIT TO CONTENT (new widgets only): the w/h in DEFS are only a starting guess — real
+        // content height depends on the device (touch screens get bigger buttons, fonts differ),
+        // so a widget could open with its last row of controls cut off and need scrolling.
+        // Once layout has settled (two frames: the Tailwind CDN adds styles for new class names
+        // asynchronously) the widget grows to its natural content height, capped at the
+        // screen, and is then re-placed with its real size. It stays invisible for those two
+        // frames so it doesn't visibly jump. Restored widgets keep the size the user left them.
+        if (spot) {
+            w.style.visibility = 'hidden';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (!widgets.has(id)) return;
+                const maxH = window.innerHeight - 110;
+                // Natural height = what the widget would be with height:auto (flexible areas
+                // collapse to their content/min size). Never shrink below the DEFS height.
+                const cur = w.offsetHeight;
+                w.style.height = 'auto';
+                const natural = w.offsetHeight;
+                w.style.height = Math.min(maxH, Math.max(cur, natural)) + 'px';
+                if (w.offsetHeight !== cur) resizeCbs.forEach(cb => cb());
+                const s2 = findSpot(w.offsetWidth, w.offsetHeight, w);
+                w.style.left = s2.x + 'px'; w.style.top = s2.y + 'px';
+                w.style.visibility = '';
+                save();
+            }));
+        }
         return w;
     }
 
