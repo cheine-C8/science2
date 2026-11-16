@@ -1,4 +1,4 @@
-<!-- updated 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
+<!-- updated 2026-11-15 — added Table widget. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
 <!--
 ═══════════════════════════════════════════════════════════════════════════════
   INFINITE WHITEBOARD + CLASSROOM WIDGETS  —  static web app (no build step)
@@ -83,6 +83,11 @@
     Toggle (map button in zoom controls) persists in localStorage. Hidden on
     screens ≤820px wide.
     Everything else (pen/eraser/shapes/pan/widgets) is untouched by this.
+  • Tables: the Table widget (rows / columns / size) builds an empty grid as a tiny
+    SVG and fires a 'wb:insert-svg' window event; board.js ("SVG OBJECTS") stores it
+    as a normal type:'image' stroke whose src is the SVG data: URL. So a table is
+    just an image object — move/resize/lock/delete it with the Move tool. Locked,
+    it sits under the ink, so cells can be written in and erased.
   • Firestore path: artifacts/{appId}/public/data/strokes/{strokeId}.
     Every stroke is one document. onSnapshot keeps the local `strokes` array
     equal to the collection; local edits are optimistic (applied immediately,
@@ -154,8 +159,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261114d"></script>
-    <link rel="stylesheet" href="style.css?v=20261114d">
+    <script src="config.js?v=20261115a"></script>
+    <link rel="stylesheet" href="style.css?v=20261115a">
 </head>
 
 <body>
@@ -344,6 +349,9 @@
         <button data-widget="text" data-label="Text box"><i data-lucide="type"></i></button>
         <button data-widget="names" data-label="Random name"><i data-lucide="shuffle"></i></button>
         <button data-widget="dice" data-label="Dice"><i data-lucide="dices"></i></button>
+        <!-- Table maker: a widget (rows / columns / size) whose "Add to board" button drops an empty
+             grid onto the board itself as a synced image object (widgets.js DEFS.table → board.js "SVG OBJECTS"). -->
+        <button data-widget="table" data-label="Table"><i data-lucide="table"></i></button>
         <div class="rail-sep"></div>
         <button data-widget="traffic" data-label="Traffic light"><i data-lucide="traffic-cone"></i></button>
         <button data-widget="symbols" data-label="Work symbols"><i data-lucide="users"></i></button>
@@ -361,10 +369,10 @@
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261114d"></script>
+    <script type="module" src="board.js?v=20261115a"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261114d"></script>
+    <script src="widgets.js?v=20261115a"></script>
 </body>
 
 </html>

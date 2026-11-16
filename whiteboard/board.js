@@ -1047,6 +1047,37 @@ document.querySelectorAll('#widget-rail button[data-sticker]').forEach(btn => bt
     document.getElementById('widget-rail').classList.remove('open'); // small screens: close the dropdown
 });
 
+// ─── SVG OBJECTS (Table widget) ───────────────────────────────────────────────
+// widgets.js can't see this module, so it asks for things to be put on the board with a
+// window event:  new CustomEvent('wb:insert-svg', { detail: { svg, w, h } })
+//   svg  – complete <svg> markup (must carry width/height so it decodes at a known size)
+//   w, h – size in SCREEN px right now; divided by view.zoom so it looks that size at any zoom
+// The SVG is stored as the image object's src (a data: URL of a few hundred bytes), so it
+// stays sharp at every zoom and needs no compression. From then on it is an ordinary image
+// object: synced, undoable, and moved/resized/locked/deleted with the Move tool.
+// The Table widget is the only sender today; any future "drop a shape/template" widget can reuse it.
+window.addEventListener('wb:insert-svg', e => {
+    if (!isEditor) { showToast('Sign in to add a table to the board.'); return; }
+    const { svg, w, h } = e.detail || {};
+    if (!svg || !(w > 0) || !(h > 0)) return;
+    const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    const img = new Image();
+    img.onerror = () => showToast('Could not add that to the board.');
+    img.onload = () => {
+        const worldW = w / view.zoom, worldH = h / view.zoom;
+        const center = getCanvasPoint(window.innerWidth / 2, window.innerHeight / 2);
+        const id = crypto.randomUUID();
+        imageCache.set(id, img);
+        commitImageStroke({
+            id, type: 'image', src, timestamp: Date.now(),
+            points: [{ x: center.x - worldW / 2, y: center.y - worldH / 2 }],
+            w: worldW, h: worldH
+        }, false);
+        switchTool('select'); selectedObjectId = id; drawSelectionBox();
+    };
+    img.src = src;
+});
+
 // Drag-and-drop an image file onto the board, dropped at the cursor position.
 container.addEventListener('dragover', e => { if ([...(e.dataTransfer?.items || [])].some(i => i.type.startsWith('image/'))) e.preventDefault(); });
 container.addEventListener('drop', e => {

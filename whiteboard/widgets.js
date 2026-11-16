@@ -644,6 +644,71 @@
                 };
                 return stop;
             }
+        },
+
+        // Table maker: pick rows, columns and a cell size, then "Add to board" drops an empty
+        // grid ONTO THE BOARD (not inside this widget). The grid is a tiny SVG handed to board.js
+        // through a 'wb:insert-svg' event; board.js stores it as an ordinary image object, so it
+        // syncs, pans/zooms, and is moved/resized/locked/deleted with the Move tool like a
+        // sticker. Lock it and you can write in the cells and erase without disturbing the grid.
+        // The widget stays open so several tables can be dropped in a row.
+        table: {
+            title: 'Table', icon: 'table', w: 250, h: 350,
+            mount(body, state, ctx) {
+                const MAX_ROWS = 30, MAX_COLS = 15;
+                // Cell size in screen px at the moment of insertion: [label, cell width, cell height]
+                const SIZES = { s: ['Small', 80, 40], m: ['Medium', 130, 60], l: ['Large', 200, 90] };
+                state.rows = state.rows ?? 4; state.cols = state.cols ?? 3;
+                if (!SIZES[state.size]) state.size = 'm';
+
+                // Outer border is inset by half its width so it isn't clipped at the image edge.
+                const buildSvg = () => {
+                    const [, cw, ch] = SIZES[state.size];
+                    const W = state.cols * cw, H = state.rows * ch;
+                    let d = '';
+                    for (let c = 1; c < state.cols; c++) d += `M${c * cw} 0V${H}`;
+                    for (let r = 1; r < state.rows; r++) d += `M0 ${r * ch}H${W}`;
+                    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`
+                        + `<rect x="1.5" y="1.5" width="${W - 3}" height="${H - 3}" fill="none" stroke="#000" stroke-width="3"/>`
+                        + (d ? `<path d="${d}" fill="none" stroke="#000" stroke-width="2"/>` : '') + `</svg>`;
+                    return { svg, w: W, h: H };
+                };
+
+                // − [n] + stepper bound to state[key]
+                const stepper = (label, key, max) => {
+                    const row = el('div', 'flex items-center gap-1 mb-1');
+                    const minus = el('button', 'wbtn small', '−'), plus = el('button', 'wbtn small', '+');
+                    const input = el('input', 'w-12 text-center font-bold border border-gray-200 rounded-lg py-0.5');
+                    input.type = 'number'; input.min = 1; input.max = max; input.value = state[key];
+                    const set = v => { state[key] = Math.max(1, Math.min(max, Math.round(v) || 1)); input.value = state[key]; render(); save(); };
+                    minus.onclick = () => set(state[key] - 1); plus.onclick = () => set(state[key] + 1);
+                    input.onchange = () => set(+input.value);
+                    input.addEventListener('keydown', e => e.stopPropagation()); input.addEventListener('keyup', e => e.stopPropagation());
+                    row.append(el('span', 'text-sm font-semibold text-gray-600 flex-1', label), minus, input, plus);
+                    return row;
+                };
+
+                const sizeRow = el('div', 'flex items-center gap-1 mb-2');
+                sizeRow.append(el('span', 'text-sm font-semibold text-gray-600 flex-1', 'Size'));
+                for (const [k, [label]] of Object.entries(SIZES)) {
+                    const b = el('button', 'wbtn small', label); b.dataset.k = k;
+                    b.onclick = () => { state.size = k; render(); save(); };
+                    sizeRow.append(b);
+                }
+                const preview = el('div', 'flex-1 min-h-0 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 p-2 mb-2');
+                const img = el('img'); img.alt = 'Table preview'; img.draggable = false;
+                Object.assign(img.style, { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' });
+                preview.append(img);
+                const add = el('button', 'wbtn primary', 'Add to board');
+                add.onclick = () => window.dispatchEvent(new CustomEvent('wb:insert-svg', { detail: buildSvg() }));
+                body.append(stepper('Rows', 'rows', MAX_ROWS), stepper('Columns', 'cols', MAX_COLS), sizeRow, preview, add);
+
+                const render = () => {
+                    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(buildSvg().svg);
+                    sizeRow.querySelectorAll('button').forEach(b => b.classList.toggle('primary', b.dataset.k === state.size));
+                };
+                render();
+            }
         }
     };
 
