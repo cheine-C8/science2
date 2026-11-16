@@ -1,6 +1,6 @@
 // board.js — THE BOARD: state, canvas setup, Firebase sync, drawing helpers,
 // render loop, pointer input (pen/touch/mouse/pinch), undo, toolbar wiring,
-// touch & e-ink modes, minimap, keyboard shortcuts.
+// touch & e-ink modes, backgrounds, minimap, keyboard shortcuts.
 // Loaded from index.html as <script type="module" src="board.js">. Reads
 // window.WHITEBOARD_CONFIG (config.js) for the Firebase config and app id.
 // See the architecture overview at the top of index.html.
@@ -26,6 +26,95 @@ try {
     const v = JSON.parse(localStorage.getItem('whiteboard.view'));
     if (v && [v.x, v.y, v.zoom].every(Number.isFinite) && v.zoom >= 0.1 && v.zoom <= 10) Object.assign(view, v);
 } catch { }
+
+// ─── BACKGROUND (data + state; the picker UI is wired in "BACKGROUNDS" further down) ──────────
+// The board's backdrop is pure CSS on #canvas-container — the canvases are transparent, so ink,
+// images and the eraser (destination-out) are unaffected by whatever is behind them.
+// It is a PER-DEVICE display setting (localStorage 'whiteboard.bg'), not synced: it is not part
+// of the board's Firestore data, so each screen picks its own.
+//   bg.type 'color'   → bg.value is a hex color
+//           'pattern' → bg.value is a key of BG_PATTERNS; tiles pan/zoom with the board like the dot grid
+//           'image'   → bg.value is a key of BG_IMAGES (files in backgrounds/); fills the screen, does not pan
+//           'custom'  → the user's own picture, a downscaled JPEG data-URL in localStorage 'whiteboard.bgImage'
+//   bg.dark → true when the backdrop is dark: the dot grid turns light and a black pen flips to white.
+// To add a color: append to BG_COLORS. To add a picture: drop a file in backgrounds/ and add a row
+// to BG_IMAGES. To add a paper pattern: add a row to BG_PATTERNS (layers are CSS gradients; `tile`
+// is the repeat size in world px at 100% zoom).
+const BG_DEFAULT_COLOR = '#f8fafc';
+const BG_COLORS = [
+    ['#f8fafc', 'Default'], ['#ffffff', 'White'], ['#fdf6e3', 'Cream'], ['#fef9c3', 'Yellow'],
+    ['#fce7f3', 'Pink'], ['#e0f2fe', 'Sky blue'], ['#dcfce7', 'Mint'], ['#ede9fe', 'Lavender'],
+    ['#e5e7eb', 'Gray'], ['#1f4d3a', 'Chalkboard green'], ['#1e293b', 'Navy'], ['#111111', 'Black'],
+];
+const BG_PATTERNS = {
+    graph: { label: 'Graph paper', color: '#ffffff', dark: false, layers: [
+        { img: 'linear-gradient(#93c5fd 1px, transparent 1px)', tile: 200 },
+        { img: 'linear-gradient(90deg, #93c5fd 1px, transparent 1px)', tile: 200 },
+        { img: 'linear-gradient(#dbeafe 1px, transparent 1px)', tile: 40 },
+        { img: 'linear-gradient(90deg, #dbeafe 1px, transparent 1px)', tile: 40 } ] },
+    lined: { label: 'Lined paper', color: '#fffef7', dark: false, layers: [
+        { img: 'linear-gradient(#a5c8f0 1px, transparent 1px)', tile: 48 } ] },
+    blueprint: { label: 'Blueprint', color: '#1e4f8f', dark: true, layers: [
+        { img: 'linear-gradient(rgba(255,255,255,.38) 1px, transparent 1px)', tile: 200 },
+        { img: 'linear-gradient(90deg, rgba(255,255,255,.38) 1px, transparent 1px)', tile: 200 },
+        { img: 'linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px)', tile: 40 },
+        { img: 'linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px)', tile: 40 } ] },
+};
+// color = what shows while the file loads (and what the dark/light decision is based on).
+const BG_IMAGES = {
+    sky: { label: 'Sky', file: 'backgrounds/sky.svg', color: '#bfe1fb', dark: false },
+    meadow: { label: 'Meadow', file: 'backgrounds/meadow.svg', color: '#cfeafb', dark: false },
+    mountains: { label: 'Mountains', file: 'backgrounds/mountains.svg', color: '#eef4fc', dark: false },
+    sunset: { label: 'Sunset', file: 'backgrounds/sunset.svg', color: '#ffb37a', dark: false },
+    corkboard: { label: 'Cork board', file: 'backgrounds/corkboard.svg', color: '#c99a62', dark: false },
+    chalkboard: { label: 'Chalkboard', file: 'backgrounds/chalkboard.svg', color: '#255a44', dark: true },
+    ocean: { label: 'Under the sea', file: 'backgrounds/ocean.svg', color: '#1a6f9c', dark: true },
+    night: { label: 'Night sky', file: 'backgrounds/night-sky.svg', color: '#141a45', dark: true },
+};
+function bgHexIsDark(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.45;
+}
+// Anything unreadable or unknown falls back to the default color, so a bad saved value can never break startup.
+function loadBg() {
+    const fallback = { type: 'color', value: BG_DEFAULT_COLOR, dark: false };
+    try {
+        const b = JSON.parse(localStorage.getItem('whiteboard.bg'));
+        if (!b) return fallback;
+        if (b.type === 'color' && /^#[0-9a-f]{6}$/i.test(b.value)) return { type: 'color', value: b.value, dark: bgHexIsDark(b.value) };
+        if (b.type === 'pattern' && BG_PATTERNS[b.value]) return { type: 'pattern', value: b.value, dark: BG_PATTERNS[b.value].dark };
+        if (b.type === 'image' && BG_IMAGES[b.value]) return { type: 'image', value: b.value, dark: BG_IMAGES[b.value].dark };
+        if (b.type === 'custom' && localStorage.getItem('whiteboard.bgImage')) return { type: 'custom', value: '', dark: !!b.dark };
+    } catch { }
+    return fallback;
+}
+let bg = loadBg();
+let bgCustomUrl = null;   // the uploaded picture's data-URL (kept in memory so redraws don't re-read localStorage)
+try { bgCustomUrl = localStorage.getItem('whiteboard.bgImage'); } catch { }
+if (bg.dark) ui.color = '#ffffff';   // black ink would be invisible on a dark backdrop
+// The solid color under everything (also what shows behind a pattern, or while a picture loads).
+function bgBaseColor() {
+    if (bg.type === 'color') return bg.value;
+    if (bg.type === 'pattern') return BG_PATTERNS[bg.value].color;
+    if (bg.type === 'image') return BG_IMAGES[bg.value].color;
+    return bg.dark ? '#1e293b' : BG_DEFAULT_COLOR;
+}
+// Writes the whole backdrop onto `el` as stacked CSS backgrounds, topmost first:
+// dot grid (optional) → pattern layers → picture. Called every redraw for the board (zoom/x/y =
+// the view) and once per thumbnail in the picker (fixed zoom, no grid).
+function paintBackground(el, zoom, x, y, withGrid) {
+    const img = [], size = [], pos = [], rep = [];
+    const tile = (css, t) => { img.push(css); size.push(`${t * zoom}px ${t * zoom}px`); pos.push(`${x}px ${y}px`); rep.push('repeat'); };
+    if (withGrid) tile(`radial-gradient(${bg.dark ? 'rgba(255,255,255,.3)' : (bg.type === 'color' ? '#cbd5e1' : 'rgba(71,85,105,.35)')} 1px, transparent 1px)`, 40);
+    if (bg.type === 'pattern') for (const l of BG_PATTERNS[bg.value].layers) tile(l.img, l.tile);
+    const url = bg.type === 'image' ? BG_IMAGES[bg.value].file : bg.type === 'custom' ? bgCustomUrl : null;
+    if (url) { img.push(`url("${url}")`); size.push('cover'); pos.push('center'); rep.push('no-repeat'); }
+    el.style.backgroundColor = bgBaseColor();
+    el.style.backgroundImage = img.length ? img.join(', ') : 'none';
+    el.style.backgroundSize = size.join(', ');
+    el.style.backgroundPosition = pos.join(', ');
+    el.style.backgroundRepeat = rep.join(', ');
+}
 
 let strokes = [];          // ground truth from Firestore
 let undoStack = [];        // array of {type:'add'|'delete', strokes:[...]} for undo
@@ -415,7 +504,7 @@ function rebuildOffscreen() {
     offscreenView = { x: view.x, y: view.y, zoom: view.zoom };
 }
 
-// Blit offscreen → main, then update the CSS dot grid to follow the view.
+// Blit offscreen → main, then update the CSS backdrop/dot grid to follow the view.
 function redrawMain() {
     if (offscreenDirty) rebuildOffscreen();
 
@@ -427,14 +516,9 @@ function redrawMain() {
     mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
     mainCtx.drawImage(offscreen, 0, 0, window.innerWidth, window.innerHeight);
 
-    // Grid
-    if (ui.showGrid && !ui.eink) {
-        container.style.backgroundSize = `${40 * view.zoom}px ${40 * view.zoom}px`;
-        container.style.backgroundPosition = `${view.x}px ${view.y}px`;
-        container.style.backgroundImage = 'radial-gradient(#cbd5e1 1px, transparent 1px)';
-    } else {
-        container.style.backgroundImage = 'none';
-    }
+    // Backdrop + dot grid (see BACKGROUND near the top). E-ink mode stays plain white: the CSS
+    // forces background-image off, and the block below owns background-color while it is on.
+    if (!ui.eink) paintBackground(container, view.zoom, view.x, view.y, ui.showGrid);
 
     // E-ink browsers (Boox) only refresh the panel when the page's layers change.
     // With the grid off nothing outside the canvas changes, so the committed stroke on
@@ -1550,7 +1634,7 @@ function applyEink() {
     document.body.classList.toggle('eink', ui.eink);
     const b = document.getElementById('btn-eink');
     b.classList.toggle('text-blue-600', ui.eink); b.classList.toggle('bg-blue-50', ui.eink);
-    resize(); // re-evaluates pixel ratio
+    resize(); // re-evaluates pixel ratio (and marks dirty, which repaints the chosen background when e-ink goes off)
 }
 document.getElementById('btn-eink').onclick = () => {
     ui.eink = !ui.eink; localStorage.setItem('whiteboard.eink', ui.eink ? '1' : '0'); applyEink();
@@ -1592,6 +1676,96 @@ document.querySelectorAll('.color-btn').forEach(btn => {
         try { localStorage.setItem('wb-custom-color', input.value); } catch (e) { }
         applyColor(input.value);
     });
+}
+// ─── BACKGROUNDS ──────────────────────────────────────────────────────────────
+// The picker (#bg-panel, opened by #btn-bg in the toolbar). Swatches and thumbnails are built
+// here from BG_COLORS / BG_PATTERNS / BG_IMAGES (top of this file) so those lists are the only
+// place to edit. State, storage format and the painting itself are documented up there too.
+{
+    const panel = document.getElementById('bg-panel'), btn = document.getElementById('btn-bg');
+    const colorInput = document.getElementById('bg-color-input'), fileInput = document.getElementById('bg-file');
+    const markActive = () => {
+        panel.querySelectorAll('[data-bg]').forEach(b => b.classList.toggle('active', b.dataset.bg === bg.type + ':' + bg.value));
+        document.getElementById('bg-custom-thumb').style.display = bgCustomUrl ? '' : 'none';
+    };
+    // The one way to change the background: validates nothing (callers pass known values), saves, repaints.
+    function setBackground(next) {
+        const wasDark = bg.dark;
+        bg = next;
+        try { localStorage.setItem('whiteboard.bg', JSON.stringify(bg)); } catch { }
+        // Keep the default pen readable: black ↔ white follows the backdrop. Any other color is left alone.
+        if (bg.dark && !wasDark && ui.color === '#000000') { ui.color = '#ffffff'; showToast('Dark background — pen switched to white'); }
+        else if (!bg.dark && wasDark && ui.color === '#ffffff') ui.color = '#000000';
+        if (editing) { editing.color = ui.color; textEditor.style.color = ui.color; }
+        isDirty = true; markActive(); updateUI();
+    }
+    // Thumbnails are painted with the same function as the board, by briefly swapping `bg`.
+    const thumb = (parent, key, label, temp) => {
+        const b = document.createElement('button');
+        b.className = 'bg-thumb'; b.dataset.bg = key; b.title = label; b.setAttribute('aria-label', label);
+        const keep = bg; bg = temp; paintBackground(b, 0.2, 0, 0, false); bg = keep;
+        b.onclick = () => setBackground(temp);
+        parent.appendChild(b);
+        return b;
+    };
+    const colors = document.getElementById('bg-colors');
+    for (const [hex, label] of BG_COLORS) thumb(colors, 'color:' + hex, label, { type: 'color', value: hex, dark: bgHexIsDark(hex) }).classList.add('bg-swatch');
+    colors.appendChild(document.getElementById('bg-color-picker'));   // rainbow dot goes last, like the pen colors
+    const patterns = document.getElementById('bg-patterns');
+    for (const [k, p] of Object.entries(BG_PATTERNS)) thumb(patterns, 'pattern:' + k, p.label, { type: 'pattern', value: k, dark: p.dark });
+    const images = document.getElementById('bg-images');
+    for (const [k, p] of Object.entries(BG_IMAGES)) thumb(images, 'image:' + k, p.label, { type: 'image', value: k, dark: p.dark });
+
+    // Any color: applies live while dragging in the native picker.
+    const pick = () => setBackground({ type: 'color', value: colorInput.value, dark: bgHexIsDark(colorInput.value) });
+    colorInput.addEventListener('input', pick); colorInput.addEventListener('change', pick);
+
+    // Your own picture: downscaled to ≤1920px JPEG so it fits in localStorage (≈5 MB per site).
+    // Its average brightness decides light/dark. Re-selectable later via #bg-custom-thumb.
+    const customThumb = document.getElementById('bg-custom-thumb');
+    const paintCustomThumb = () => { if (bgCustomUrl) customThumb.style.backgroundImage = `url("${bgCustomUrl}")`; };
+    let customDark = bg.type === 'custom' ? bg.dark : false;
+    try { const d = localStorage.getItem('whiteboard.bgImageDark'); if (d !== null) customDark = d === '1'; } catch { }
+    customThumb.onclick = () => setBackground({ type: 'custom', value: '', dark: customDark });
+    document.getElementById('bg-upload').onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+        const file = fileInput.files[0]; fileInput.value = '';
+        if (!file) return;
+        const url = URL.createObjectURL(file), im = new Image();
+        im.onerror = () => { URL.revokeObjectURL(url); showToast("Couldn't open that picture"); };
+        im.onload = () => {
+            URL.revokeObjectURL(url);
+            const k = Math.min(1, 1920 / Math.max(im.naturalWidth, im.naturalHeight));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+            const x = c.getContext('2d');
+            x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);   // transparent PNGs get a white base (JPEG has no alpha)
+            x.drawImage(im, 0, 0, c.width, c.height);
+            const t = document.createElement('canvas'); t.width = t.height = 16;
+            const tx = t.getContext('2d'); tx.drawImage(c, 0, 0, 16, 16);
+            const px = tx.getImageData(0, 0, 16, 16).data;
+            let lum = 0; for (let i = 0; i < px.length; i += 4) lum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+            customDark = lum / (px.length / 4) / 255 < 0.45;
+            bgCustomUrl = c.toDataURL('image/jpeg', 0.82);
+            try { localStorage.setItem('whiteboard.bgImage', bgCustomUrl); localStorage.setItem('whiteboard.bgImageDark', customDark ? '1' : '0'); }
+            catch { showToast("Picture is too big to remember — it will be gone after a reload"); }
+            paintCustomThumb();
+            setBackground({ type: 'custom', value: '', dark: customDark });
+        };
+        im.src = url;
+    };
+    paintCustomThumb();
+
+    // Open/close: the toolbar button toggles; ✕, Esc, or a press on the board closes.
+    const setOpen = open => {
+        panel.classList.toggle('hidden', !open);
+        btn.classList.toggle('text-blue-600', open); btn.classList.toggle('bg-blue-50', open);
+    };
+    btn.onclick = () => setOpen(panel.classList.contains('hidden'));
+    document.getElementById('bg-close').onclick = () => setOpen(false);
+    container.addEventListener('pointerdown', () => setOpen(false), true);
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+    markActive();
 }
 document.getElementById('thickness-slider').oninput = e => { ui.thickness = parseInt(e.target.value); };
 document.getElementById('btn-undo').onclick = undo;

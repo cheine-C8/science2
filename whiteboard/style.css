@@ -30,7 +30,8 @@ body.view-only #toolbar #thickness-slider {
     pointer-events: none;
 }
 
-/* The board. The dot grid is a CSS background on this container; JS moves/scales it with the view. */
+/* The board. Its backdrop (color / paper pattern / picture) and the dot grid are CSS backgrounds on
+   this container, written by paintBackground() in board.js; the values here are just the first paint. */
 #canvas-container {
     position: absolute;
     inset: 0;
@@ -79,6 +80,38 @@ canvas {
 }
 #color-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
 body.eink #color-picker { border: 2px solid #000; }
+
+/* ─── BACKGROUND PICKER (#bg-panel, opened by #btn-bg) ─────────────
+   Floats above the toolbar. Thumbnails are painted by JS with the real background CSS. */
+#bg-panel {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 6rem; z-index: 51;
+    width: min(340px, calc(100vw - 16px)); max-height: calc(100dvh - 8rem); overflow-y: auto;
+    background: rgba(255,255,255,.97); backdrop-filter: blur(12px); border: 1px solid rgba(0,0,0,.08);
+    border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.16); padding: 10px 12px 12px;
+}
+#bg-panel.hidden { display: none; }
+#bg-panel .bg-head { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 14px; color: #0f172a; }
+#bg-panel #bg-close { padding: 6px; border-radius: 8px; color: #64748b; }
+#bg-panel #bg-close:hover { background: #f1f5f9; }
+#bg-panel .bg-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #64748b; margin: 10px 0 6px; }
+#bg-panel .bg-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#bg-panel .bg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.bg-thumb {
+    aspect-ratio: 16 / 10; border-radius: 8px; border: 1px solid rgba(0,0,0,.15); cursor: pointer;
+    background-size: cover; background-position: center; transition: transform .1s;
+}
+.bg-thumb:hover { transform: scale(1.05); }
+.bg-thumb.bg-swatch { aspect-ratio: auto; width: 28px; height: 28px; border-radius: 9999px; }
+.bg-thumb.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b82f6; }
+.bg-thumb.bg-upload { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 600; border-style: dashed; }
+#bg-color-picker {
+    position: relative; display: block; width: 28px; height: 28px; border-radius: 9999px; overflow: hidden;
+    cursor: pointer; flex-shrink: 0; border: 1px solid rgba(0,0,0,.1);
+    background: conic-gradient(#ef4444, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ec4899, #ef4444);
+}
+#bg-color-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+body.eink #bg-panel { backdrop-filter: none; box-shadow: none; background: #fff; border: 2px solid #000; }
+body.eink .bg-thumb.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000; }
 
 /* body.eink is toggled by the book button in the toolbar (manual toggle only). */
 /* ─── E-INK MODE (Boox etc.): no blur, shadows, transitions or grid → fewer repaints ── */
@@ -489,14 +522,15 @@ button { -webkit-tap-highlight-color: transparent; }
     @media (max-height: 500px) {
         #toolbar { bottom: calc(0.5rem + env(safe-area-inset-bottom)); padding: 4px; }
         #toolbar button { padding: 8px; }
-        #eraser-options { bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+        #eraser-options, #bg-panel { bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+        #bg-panel { max-height: calc(100dvh - 4.5rem); }
         #zoom-controls { top: calc(0.5rem + env(safe-area-inset-top)); right: 7rem; }
         #status-pill { display: none; }
         #widget-rail { top: calc(3.25rem + env(safe-area-inset-top)); }
         .widget { max-height: calc(100dvh - 90px); }
     }
     .widget { max-width: calc(100vw - 16px); max-height: calc(100dvh - 110px); }
-    #eraser-options { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+    #eraser-options, #bg-panel { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 }
 
 /* ─── HIDEABLE MENUS ──────────────────────────────────────────────
@@ -504,7 +538,7 @@ button { -webkit-tap-highlight-color: transparent; }
    have their own older classes: rail-hidden, minimap-off). While a menu is hidden its
    .menu-show button sits where the menu was and brings it back. Kept after the mobile block
    so these win over the display rules above; focus mode (below) hides the show buttons too. */
-body.toolbar-hidden #toolbar, body.toolbar-hidden #eraser-options,
+body.toolbar-hidden #toolbar, body.toolbar-hidden #eraser-options, body.toolbar-hidden #bg-panel,
 body.zoom-hidden #zoom-controls, body.status-hidden #status-pill { display: none !important; }
 .menu-show {
     display: none; position: fixed; z-index: 50;
@@ -537,7 +571,7 @@ body.eink .menu-show { opacity: 1; box-shadow: none; border: 2px solid #000; col
 #btn-focus-exit { display: none; }
 body.focus-mode #toolbar, body.focus-mode #zoom-controls, body.focus-mode #status-pill,
 body.focus-mode #minimap, body.focus-mode #widget-rail, body.focus-mode #rail-toggle,
-body.focus-mode #eraser-options, body.focus-mode .menu-show { display: none !important; }
+body.focus-mode #eraser-options, body.focus-mode #bg-panel, body.focus-mode .menu-show { display: none !important; }
 body.focus-mode #btn-focus-exit {
     display: flex; position: fixed; z-index: 51;
     right: calc(12px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom));

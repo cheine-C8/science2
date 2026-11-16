@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaf2fb"/><stop offset="1" stop-color="#f8fbff"/></linearGradient></defs>
+<rect width="1600" height="900" fill="url(#g)"/><path d="M0 900V560L220 380L420 540L640 300L900 560L1120 400L1380 600L1600 470V900Z" fill="#c9d6ea"/><path d="M640 300L575 371L620 392L650 362L690 396L710 372Z M220 380L170 421L215 430L240 410L262 414Z M1120 400L1068 438L1110 452L1135 430L1165 445Z" fill="#fff"/><path d="M0 900V690L260 540L520 720L800 560L1080 730L1320 600L1600 720V900Z" fill="#a9bddb"/><path d="M0 900V800Q400 730 800 800T1600 780V900Z" fill="#8fa9cf"/>
+</svg>
