@@ -840,13 +840,14 @@
         // FIT TO CONTENT (new widgets only): the w/h in DEFS are only a starting guess — real
         // content height depends on the device (touch screens get bigger buttons, fonts differ),
         // so a widget could open with its last row of controls cut off and need scrolling.
-        // Once layout has settled (two frames: the Tailwind CDN adds styles for new class names
-        // asynchronously) the widget grows to its natural content height, capped at the
-        // screen, and is then re-placed with its real size. It stays invisible for those two
-        // frames so it doesn't visibly jump. Restored widgets keep the size the user left them.
+        // Once layout has settled (a 60 ms timer: the Tailwind CDN adds styles for new class names
+        // asynchronously; a timer rather than requestAnimationFrame because rAF never fires in a
+        // background/hidden tab, which would leave the widget invisible) the widget grows to its natural content height, capped at the
+        // screen, and is then re-placed with its real size. It stays invisible for that
+        // moment so it doesn't visibly jump. Restored widgets keep the size the user left them.
         if (spot) {
             w.style.visibility = 'hidden';
-            requestAnimationFrame(() => requestAnimationFrame(() => {
+            setTimeout(() => {
                 if (!widgets.has(id)) return;
                 const maxH = window.innerHeight - 110;
                 // Natural height = what the widget would be with height:auto (flexible areas
@@ -860,7 +861,7 @@
                 w.style.left = s2.x + 'px'; w.style.top = s2.y + 'px';
                 w.style.visibility = '';
                 save();
-            }));
+            }, 60);
         }
         return w;
     }
