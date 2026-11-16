@@ -417,7 +417,7 @@
             mount(body, state, ctx) {
                 state.mode = state.mode ?? 'silence';
                 const SYMS = [['silence', 'mic-off', 'Silence'], ['whisper', 'ear', 'Whisper'], ['partner', 'user-round', 'Partner'], ['group', 'users', 'Group work'], ['ask', 'hand', 'Ask']];
-                const grid = el('div', 'grid grid-cols-5 gap-1 flex-1 items-center');
+                const grid = el('div', 'grid grid-cols-5 gap-1 flex-1 items-stretch min-h-0');
                 SYMS.forEach(([k, ic, lb]) => {
                     const b = el('button', 'sym-btn'); b.dataset.k = k; b.append(icon(ic), el('span', '', lb));
                     b.onclick = () => { state.mode = k; render(); save(); };
@@ -426,6 +426,17 @@
                 body.append(grid);
                 const render = () => grid.querySelectorAll('.sym-btn').forEach(b => b.classList.toggle('on', b.dataset.k === state.mode));
                 render();
+                // Scale with the box: icon size (--sym, used by .sym-btn in style.css) is limited by
+                // both the column width and the height, so the 5 symbols always fill the widget
+                // without overflowing; the label is sized from it. ResizeObserver catches every size
+                // change (corner drag, fit-to-content, screen rotation); onResize is the fallback.
+                const fit = () => {
+                    const w = grid.clientWidth / SYMS.length, h = grid.clientHeight;
+                    if (!w || !h) return;
+                    grid.style.setProperty('--sym', Math.max(16, Math.min(w * 0.5, h * 0.45)) + 'px');
+                };
+                if (window.ResizeObserver) { const ro = new ResizeObserver(fit); ro.observe(grid); return () => ro.disconnect(); }
+                setTimeout(fit, 80); ctx.onResize(fit);
             }
         },
 
