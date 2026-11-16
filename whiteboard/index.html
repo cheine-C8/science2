@@ -1,4 +1,4 @@
-<!-- updated 2026-11-16 — added board backgrounds (colors, paper patterns, pictures, your own upload; backgrounds/ folder); widgets match solid board colors; per-widget ghost (see-through) mode. 2026-11-15 — added Table widget, Home button, smart widget placement, per-menu hide buttons. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
+<!-- updated 2026-11-16 — added board backgrounds (colors, paper patterns, pictures, your own upload; backgrounds/ folder); choose which widgets the bar shows; widgets match solid board colors; per-widget ghost (see-through) mode. 2026-11-15 — added Table widget, Home button, smart widget placement, per-menu hide buttons. 2026-09-15 — split into index.html / style.css / config.js / board.js / widgets.js (no behavior change) -->
 <!--
 ═══════════════════════════════════════════════════════════════════════════════
   INFINITE WHITEBOARD + CLASSROOM WIDGETS  —  static web app (no build step)
@@ -164,8 +164,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- ?v=… on config.js / style.css / widgets.js / board.js busts the browser cache (GitHub Pages caches ~10 min).
          Bump it (all four together) whenever you change any of those files. -->
-    <script src="config.js?v=20261116b"></script>
-    <link rel="stylesheet" href="style.css?v=20261116b">
+    <script src="config.js?v=20261116c"></script>
+    <link rel="stylesheet" href="style.css?v=20261116c">
 </head>
 
 <body>
@@ -427,15 +427,18 @@
         <div class="rail-sep"></div>
         <button id="btn-widgets-clear" data-label="Close all widgets"><i data-lucide="copy-x"></i></button>
         <div class="rail-sep"></div>
+        <!-- Choose which buttons this bar shows (widgets.js, "CHOOSE WIDGETS"): turns on an edit mode where
+             tapping a widget button hides/unhides it instead of opening it. Saved per device. -->
+        <button id="btn-rail-edit" data-label="Choose which widgets show here"><i data-lucide="list-checks"></i></button>
         <!-- Hides the rail itself (desktop: collapses to the "Widgets" button; small screens: closes the dropdown) -->
         <button id="btn-rail-hide" data-label="Hide widget bar"><i data-lucide="x"></i></button>
     </div>
 
     <!-- ════════════════════════════ BOARD SCRIPT (ES module) — see board.js ════════════════════════════ -->
-    <script type="module" src="board.js?v=20261116b"></script>
+    <script type="module" src="board.js?v=20261116c"></script>
 
     <!-- ════════════════════════════ WIDGET SCRIPT (plain script, runs before the module) — see widgets.js ════════════════════════════ -->
-    <script src="widgets.js?v=20261116b"></script>
+    <script src="widgets.js?v=20261116c"></script>
 </body>
 
 </html>

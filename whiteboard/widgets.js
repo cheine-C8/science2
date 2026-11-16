@@ -894,7 +894,49 @@
     };
     try { if (localStorage.getItem('whiteboard.railHidden') === '1') document.body.classList.add('rail-hidden'); } catch (e) { }
     railToggle.onclick = () => { if (isSmall()) rail.classList.toggle('open'); else setRailHidden(false); };
-    document.getElementById('btn-rail-hide').onclick = () => { if (isSmall()) rail.classList.remove('open'); else setRailHidden(true); };
+    document.getElementById('btn-rail-hide').onclick = () => { setRailEditing(false); if (isSmall()) rail.classList.remove('open'); else setRailHidden(true); };
+
+    // ─── CHOOSE WIDGETS ──────────────────────────────────────────────
+    // The rail doesn't have to show every button. #btn-rail-edit toggles an edit mode
+    // (#widget-rail.editing): every widget/sticker button is shown, the switched-off ones dimmed,
+    // and a tap flips a button on/off instead of opening its widget. Tap the (now blue ✓) edit
+    // button again to finish. Switched-off buttons carry .rail-off (hidden by CSS outside edit
+    // mode); their keys are saved per device in localStorage 'whiteboard.railOff'.
+    // Key = the data-widget value, or 'sticker:<file>' for stickers — so a NEW button added to
+    // index.html shows by default. Widgets already open on the board are not affected.
+    // A separator is hidden when the group above it has no visible buttons.
+    const RAIL_OFF_KEY = 'whiteboard.railOff';
+    const railEditBtn = document.getElementById('btn-rail-edit');
+    const railItems = [...rail.querySelectorAll('button[data-widget], button[data-sticker]')];
+    const railKey = b => b.dataset.widget || 'sticker:' + b.dataset.sticker;
+    let railOff = new Set();
+    try { railOff = new Set(JSON.parse(localStorage.getItem(RAIL_OFF_KEY) || '[]')); } catch (e) { }
+    function applyRailOff() {
+        railItems.forEach(b => b.classList.toggle('rail-off', railOff.has(railKey(b))));
+        let groupHasButton = false;
+        for (const c of rail.children) {
+            if (c.classList.contains('rail-sep')) { c.classList.toggle('rail-off', !groupHasButton); groupHasButton = false; }
+            else if (!c.classList.contains('rail-off')) groupHasButton = true;
+        }
+        if (typeof fitRail === 'function') fitRail();
+    }
+    const setRailEditing = on => {
+        rail.classList.toggle('editing', on);
+        railEditBtn.dataset.label = on ? 'Done choosing' : 'Choose which widgets show here';
+        fitRail();
+    };
+    railEditBtn.onclick = () => setRailEditing(!rail.classList.contains('editing'));
+    // Capture phase: runs before the buttons' own click handlers (open widget / drop sticker).
+    rail.addEventListener('click', e => {
+        if (!rail.classList.contains('editing')) return;
+        const b = e.target.closest('button[data-widget], button[data-sticker]');
+        if (!b) return;
+        e.stopPropagation(); e.preventDefault();
+        const k = railKey(b);
+        if (railOff.has(k)) railOff.delete(k); else railOff.add(k);
+        try { localStorage.setItem(RAIL_OFF_KEY, JSON.stringify([...railOff])); } catch (err) { }
+        applyRailOff();
+    }, true);
 
     // Keep widgets on screen when the viewport changes (rotation, keyboard, window resize)
     // Pull every widget back inside the viewport (rotation, keyboard, window resize, tiny screens).
@@ -936,6 +978,7 @@
     window.addEventListener('resize', fitRail);
     // The minimap toggle (board.js) flips body.minimap-off — refit when that changes
     new MutationObserver(fitRail).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    applyRailOff();
     requestAnimationFrame(fitRail);
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 150));
 

@@ -404,6 +404,18 @@ body.eink .widget.ghost { background: transparent !important; }
 #widget-rail.compact .rail-sep { margin: 3px 5px; }
 #widget-rail.two-col { display: grid; grid-template-columns: repeat(2, max-content); }
 #widget-rail.two-col .rail-sep { grid-column: 1 / -1; }
+/* CHOOSE WIDGETS (widgets.js): .rail-off = switched off by the user. Hidden normally; in edit
+   mode (#widget-rail.editing) everything shows, off ones dimmed, on ones get a ✓ badge. */
+#widget-rail .rail-off { display: none; }
+#widget-rail.editing button.rail-off { display: flex; opacity: .3; }
+#widget-rail.editing .rail-sep.rail-off { display: block; }
+#widget-rail.editing :is(button[data-widget], button[data-sticker]) { outline: 1.5px dashed #94a3b8; outline-offset: -3px; }
+#widget-rail.editing :is(button[data-widget], button[data-sticker]):not(.rail-off)::before {
+    content: '✓'; position: absolute; top: 1px; right: 1px; width: 14px; height: 14px; border-radius: 9999px;
+    background: #2563eb; color: #fff; font-size: 10px; font-weight: 700; line-height: 14px; text-align: center;
+}
+#widget-rail.editing #btn-rail-edit { background: #2563eb; color: #fff; }
+body.eink #widget-rail.editing #btn-rail-edit, body.eink #widget-rail.editing button:not(.rail-off)::before { background: #000; }
 /* "Close all widgets" asks for a second tap instead of confirm() (dialogs can be blocked) */
 #widget-rail button.armed { background: #fee2e2; color: #dc2626; }
 
