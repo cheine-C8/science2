@@ -576,53 +576,120 @@
             }
         },
 
-        // Wandering cat: purely decorative. rAF loop moves an inline SVG around its box and
-        // flips it to face its direction. Walk / Run / Sleep states, synthesized meow.
+        // Wandering cats: purely decorative. The widget is only the CONTROL PANEL — the cats
+        // themselves are .board-cat elements placed straight in #widget-layer, so they roam the
+        // whole screen (under the widgets, over the board). They are pointer-events:none, so you
+        // can always draw "through" a cat. One rAF loop moves every cat, bounces it off the
+        // screen edges, flips it to face its direction and lets it sit down now and then.
+        // The purple cat is always there; the orange and gray ones are optional (state.extra).
+        // Walk / Run / Sleep applies to all cats (state.mode). Closing the widget removes them.
+        // Meow: the original synthesized meow, unchanged for the purple cat; extra cats answer a
+        // beat later at their own pitch.
         cat: {
-            title: 'Wandering cat', icon: 'cat', w: 300, h: 220,
+            title: 'Wandering cats', icon: 'cat', w: 250, h: 150,
             mount(body, state, ctx) {
-                const yard = el('div', 'flex-1 relative overflow-hidden rounded-xl bg-slate-100 border border-slate-200 min-h-[90px]');
-                const cat = el('div', 'absolute w-16 h-16 transition-transform duration-100 ease-linear');
-                cat.innerHTML = `<svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500 fill-current">
+                state.extra = state.extra || {};
+                state.mode = state.mode || 'walk';
+                // [key, label, color, size px, meow pitch ×, speed ×]
+                const KINDS = [['purple', 'Purple', '#6366f1', 64, 1, 1], ['orange', 'Orange', '#f97316', 54, 1.3, 1.25], ['gray', 'Gray', '#64748b', 76, 0.75, 0.8]];
+                const SVG = `<svg viewBox="0 0 100 100" fill="currentColor">
                     <path d="M22,50 Q10,40 16,25 Q22,10 32,20 Q26,30 28,40" class="cat-tail"/>
                     <ellipse cx="50" cy="58" rx="22" ry="16"/><circle cx="72" cy="45" r="14"/>
                     <polygon points="63,35 66,18 72,32"/><polygon points="76,32 82,18 85,35"/>
                     <rect x="34" y="66" width="7" height="14" rx="3" class="cat-leg"/><rect x="44" y="68" width="7" height="14" rx="3" class="cat-leg"/>
                     <rect x="54" y="68" width="7" height="14" rx="3" class="cat-leg"/><rect x="63" y="66" width="7" height="14" rx="3" class="cat-leg"/>
                     <circle cx="77" cy="42" r="2" fill="#fff"/><circle cx="68" cy="42" r="2" fill="#fff"/></svg>`;
-                yard.append(cat);
+                const cats = new Map();   // key → { el, flip, x, y, vx, vy, size, pitch, speed, restUntil }
+                const addCat = ([key, , color, size, pitch, speed]) => {
+                    if (cats.has(key)) return;
+                    const c = el('div', 'board-cat'); c.style.color = color; c.style.width = c.style.height = size + 'px';
+                    const flip = el('div', 'board-cat-flip'); flip.innerHTML = SVG; c.append(flip);
+                    layer.append(c);
+                    const a = Math.random() * Math.PI * 2;
+                    cats.set(key, {
+                        el: c, flip, size, pitch, speed, restUntil: 0,
+                        x: Math.random() * Math.max(1, window.innerWidth - size), y: Math.random() * Math.max(1, window.innerHeight - size),
+                        vx: Math.cos(a) * 1.2 || 1.2, vy: Math.sin(a) * 0.6
+                    });
+                    c.classList.toggle('cat-sleep', state.mode === 'sleep');
+                };
+                const removeCat = key => { const c = cats.get(key); if (c) { c.el.remove(); cats.delete(key); } };
+
+                // Controls: which cats are out, the shared walk/run/sleep mode, meow
+                const pick = el('div', 'cat-picks');
+                KINDS.forEach(kind => {
+                    const [key, label, color] = kind;
+                    const b = el('button', 'cat-pick'); b.title = key === 'purple' ? 'Purple cat (always out)' : label + ' cat: tap to let out / call back';
+                    b.style.color = color; b.innerHTML = SVG;
+                    if (key === 'purple') b.classList.add('on', 'always');
+                    else {
+                        b.classList.toggle('on', !!state.extra[key]);
+                        b.onclick = () => {
+                            state.extra[key] = !state.extra[key]; b.classList.toggle('on', state.extra[key]);
+                            if (state.extra[key]) addCat(kind); else removeCat(key);
+                            save();
+                        };
+                    }
+                    pick.append(b);
+                });
                 const row = el('div', 'flex gap-2 justify-center mt-2');
-                const stateBtn = el('button', 'wbtn small', 'Walk'), meow = el('button', 'wbtn small primary', 'Meow');
-                row.append(stateBtn, meow); body.append(yard, row);
-                let x = 10, y = 20, vx = 1.2, vy = 0.3, mode = 'walk', raf;
+                const cap = m => m[0].toUpperCase() + m.slice(1);
+                const stateBtn = el('button', 'wbtn small', cap(state.mode)), meow = el('button', 'wbtn small primary', 'Meow');
+                row.append(stateBtn, meow); body.append(pick, row);
                 const modes = ['walk', 'run', 'sleep'];
-                stateBtn.onclick = () => { mode = modes[(modes.indexOf(mode) + 1) % 3]; stateBtn.textContent = mode[0].toUpperCase() + mode.slice(1); cat.classList.toggle('cat-sleep', mode === 'sleep'); };
-                meow.onclick = () => {
+                stateBtn.onclick = () => {
+                    state.mode = modes[(modes.indexOf(state.mode) + 1) % 3]; stateBtn.textContent = cap(state.mode);
+                    for (const c of cats.values()) c.el.classList.toggle('cat-sleep', state.mode === 'sleep');
+                    save();
+                };
+                // The meow itself is the original (triangle wave 320→580→420 Hz); `pitch` only shifts it for the extra cats.
+                const playMeow = (pitch, delay) => {
                     try {
                         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
                         if (audioCtx.state === 'suspended') audioCtx.resume();
-                        const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+                        const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime + delay;
                         o.type = 'triangle';
-                        o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(580, t + 0.15); o.frequency.exponentialRampToValueAtTime(420, t + 0.45);
+                        o.frequency.setValueAtTime(320 * pitch, t); o.frequency.exponentialRampToValueAtTime(580 * pitch, t + 0.15); o.frequency.exponentialRampToValueAtTime(420 * pitch, t + 0.45);
                         g.gain.setValueAtTime(0.01, t); g.gain.linearRampToValueAtTime(0.25, t + 0.08); g.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
                         o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + 0.55);
                     } catch (e) { }
-                    meow.textContent = 'Meow! 🐱'; setTimeout(() => meow.textContent = 'Meow', 800);
                 };
-                const step = () => {
-                    if (mode !== 'sleep') {
-                        const sp = mode === 'run' ? 2.6 : 1;
-                        x += vx * sp; y += vy * sp;
-                        const mw = yard.clientWidth - 64, mh = yard.clientHeight - 64;
-                        if (x <= 0 || x >= mw) { vx = -vx; x = Math.max(0, Math.min(mw, x)); }
-                        if (y <= 0 || y >= mh) { vy = -vy; y = Math.max(0, Math.min(mh, y)); }
-                        if (Math.random() < 0.01) vy = (Math.random() - 0.5) * 0.8;
-                        cat.style.transform = `translate(${x}px, ${y}px) scaleX(${vx < 0 ? -1 : 1})`;
+                const timers = [];
+                meow.onclick = () => {
+                    let n = 0;
+                    for (const c of cats.values()) {
+                        const delay = n++ * 0.3;
+                        playMeow(c.pitch, delay);
+                        timers.push(setTimeout(() => { c.el.classList.add('meowing'); timers.push(setTimeout(() => c.el.classList.remove('meowing'), 800)); }, delay * 1000));
+                    }
+                    meow.textContent = 'Meow! 🐱'; timers.push(setTimeout(() => meow.textContent = 'Meow', 800));
+                };
+
+                KINDS.forEach(kind => { if (kind[0] === 'purple' || state.extra[kind[0]]) addCat(kind); });
+                let raf;
+                const step = now => {
+                    if (state.mode !== 'sleep') {
+                        const sp = state.mode === 'run' ? 2.6 : 1;
+                        for (const c of cats.values()) {
+                            const mw = Math.max(0, window.innerWidth - c.size), mh = Math.max(0, window.innerHeight - c.size);
+                            const resting = now < c.restUntil;
+                            c.el.classList.toggle('cat-sleep', resting);
+                            if (!resting) {
+                                c.x += c.vx * sp * c.speed; c.y += c.vy * sp * c.speed;
+                                if (c.x <= 0 || c.x >= mw) { c.vx = c.x <= 0 ? Math.abs(c.vx) : -Math.abs(c.vx); c.x = Math.max(0, Math.min(mw, c.x)); }
+                                if (c.y <= 0 || c.y >= mh) { c.vy = c.y <= 0 ? Math.abs(c.vy) : -Math.abs(c.vy); c.y = Math.max(0, Math.min(mh, c.y)); }
+                                if (Math.random() < 0.01) c.vy = (Math.random() - 0.5) * 1.6;       // drift up/down
+                                if (Math.random() < 0.002) c.vx = -c.vx;                              // turn around
+                                if (state.mode === 'walk' && Math.random() < 0.0015) c.restUntil = now + 2000 + Math.random() * 4000;   // sit a while
+                            }
+                            c.el.style.transform = `translate(${c.x}px, ${c.y}px)`;
+                            c.flip.style.transform = `scaleX(${c.vx < 0 ? -1 : 1})`;
+                        }
                     }
                     raf = requestAnimationFrame(step);
                 };
-                step();
-                return () => cancelAnimationFrame(raf);
+                raf = requestAnimationFrame(step);
+                return () => { cancelAnimationFrame(raf); timers.forEach(clearTimeout); for (const k of [...cats.keys()]) removeCat(k); };
             }
         },
 

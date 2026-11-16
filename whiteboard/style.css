@@ -481,6 +481,24 @@ body.eink .sym-big { color: #000 !important; }
 .sym-btn svg { width: var(--sym, 22px); height: var(--sym, 22px); flex-shrink: 0; }
 
 /* Cat */
+/* Wandering cats (widgets.js DEFS.cat): .board-cat roams the whole screen inside #widget-layer,
+   under the widgets (their z-index starts at 100). Never catches the pointer, so it can't block
+   drawing. .board-cat-flip is the part mirrored to face the walking direction (the "Meow!" bubble
+   sits outside it so its text is never mirrored). .cat-pick = the cat buttons in the control widget. */
+.board-cat { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; will-change: transform; }
+.board-cat-flip, .board-cat svg { width: 100%; height: 100%; display: block; }
+.board-cat::after {
+    content: 'Meow!'; position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%) scale(.4);
+    background: #fff; color: #0f172a; border: 1.5px solid currentColor; border-radius: 10px; padding: 1px 7px;
+    font-size: 12px; font-weight: 700; white-space: nowrap; opacity: 0; transition: opacity .12s, transform .12s;
+}
+.board-cat.meowing::after { opacity: 1; transform: translateX(-50%) scale(1); }
+.cat-pick { flex-shrink: 0; width: 52px; height: 52px; padding: 4px; border-radius: 12px; border: 2px solid transparent; opacity: .3; transition: opacity .15s, background .15s; }
+.cat-pick svg { width: 100%; height: 100%; }
+.cat-pick .cat-tail, .cat-pick .cat-leg { animation: none; }
+.cat-pick.on { opacity: 1; background: rgba(148, 163, 184, 0.16); border-color: currentColor; }
+.cat-pick.always { cursor: default; }
+.cat-picks { flex: 1; display: flex; gap: 8px; justify-content: center; align-items: center; }
 @keyframes cat-tail { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
 @keyframes cat-legs { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
 @keyframes cat-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
