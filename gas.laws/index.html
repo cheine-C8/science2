@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balloon, Float, or Tank?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: friendly classroom demo, clear and a little summery
+   IDEA: a poolside afternoon turning into night; three containers side by side on the deck
+   PICTURE: three live scenes with moving gas particles, sky shifting from night to sun with temperature
+   COLOUR and TYPE: pool aqua dominant, coral float support, sun yellow accent; Fredoka + Nunito Sans
+   LAYOUT: title + temperature control band, three cards in a row (stack on phones), each with scene, readouts, two charts */
+:root{color-scheme:light dark;--bg:light-dark(#f2fbfd,#081a24);--ink:light-dark(#0d2a36,#e6f6fb);--mut:light-dark(#4b6772,#9fbcc6);--card:light-dark(#ffffff,#0f2633);--line:light-dark(#cfe6ec,#1f4050);--aqua:#0f9fbf;--aqua2:light-dark(#0b7f99,#4cc9e6);--coral:#ff6b5b;--sun:#ffc533;--slack:light-dark(#0b7f99,#4cc9e6);--taut:#e5483a}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Nunito Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2,.big{font-family:Fredoka,"Nunito Sans",sans-serif;font-weight:600}
+.band{padding:10px max(2vw,12px)}
+.wrap{max-width:1400px;margin:0 auto}
+header.band{background:var(--aqua);color:#fff}
+h1{font-size:clamp(20px,2.2vw,28px);line-height:1.1;margin:0 0 6px;text-wrap:balance}
+.ctl{display:grid;grid-template-columns:auto minmax(160px,1fr) auto;gap:6px 18px;align-items:center}
+.temp{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.temp .big{font-size:clamp(24px,2.6vw,32px);line-height:1}
+.temp .k{font-size:16px;opacity:.9}
+input[type=range]{width:100%;height:36px;accent-color:var(--sun)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font:700 14px "Nunito Sans",sans-serif;min-height:36px;padding:4px 12px;border-radius:999px;border:2px solid currentColor;background:transparent;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+button.on{background:#fff;color:var(--aqua);border-color:#fff}
+header button{color:#fff}
+.seg{display:inline-flex;border:2px solid #fff;border-radius:999px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+main.band{padding-top:10px;padding-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.stage{position:relative;height:clamp(140px,calc(100vh - 470px),300px)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px;flex:1}
+.hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+h2{font-size:20px;margin:0;line-height:1.1}
+.sub{color:var(--mut);font-size:13px}
+dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0}
+dl div{background:var(--bg);border-radius:8px;padding:4px 6px}
+dt{font-size:11px;color:var(--mut);line-height:1.2}
+dd{margin:0;font:600 15px Fredoka,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+dd small{display:block;font:400 11px "Nunito Sans",sans-serif;color:var(--mut)}
+dd.fixed{color:var(--taut)}
+.law{font-weight:700;font-size:14px;border-radius:8px;padding:4px 8px;color:#fff;margin:0}
+.law.charles{background:var(--aqua2)}.law.gay{background:var(--taut)}
+.why{margin:0;font-size:13px;line-height:1.35;min-height:2.7em}
+.air{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+.air button{min-height:30px;padding:2px 10px;font-size:13px;color:var(--ink);border-color:var(--line)}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ch{font-size:12px;color:var(--mut);margin:0}
+.fig{position:relative;height:84px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.note{color:var(--mut);font-size:12px;margin:6px 0 0;text-align:center}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.ctl{grid-template-columns:minmax(0,1fr)}.stage{height:220px}}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+  <h1>Balloon, pool float, or steel tank: where does the heat go?</h1>
+  <div class="ctl">
+    <div class="temp"><span class="big" id="tc">20 °C</span><span class="k" id="tk">293 K</span></div>
+    <input type="range" id="t" min="250" max="360" step="1" value="293" aria-label="Temperature in kelvin">
+    <div class="btns">
+      <button data-t="288">Cool night 15 °C</button>
+      <button data-t="323">Hot sun 50 °C</button>
+      <button id="play">▶ Day and night</button>
+      <span class="seg" role="group" aria-label="Pressure units"><button id="uatm" class="on">atm</button><button id="umm">mmHg</button></span>
+    </div>
+  </div>
+</div></header>
+
+<main class="band"><div class="wrap">
+  <div class="grid" id="grid"></div>
+  <p class="note">PV = nRT, R = 0.08206 L·atm/(mol·K). K = °C + 273. Outside air = 1 atm = 760 mmHg. Drawings exaggerate size changes; the numbers are real.</p>
+</div></main>
+
+<script>
+{
+const R = 0.08206;
+const objs = [
+  {id:'balloon', name:'Balloon', sub:'Thin, stretchy rubber', n0:0.50, Ps:1.03},
+  {id:'float', name:'Pool float', sub:'Vinyl, tight at 40 L', n0:1.60, Ps:1.02, Vmax:40},
+  {id:'tank', name:'Rigid container', sub:'Steel, always 10 L', n0:0.42, Vfix:10}
+];
+objs.forEach(o => { o.n = o.n0; o.parts = []; o.hits = []; });
+
+function calc(o, T){
+  if (o.id === 'balloon') return {P:o.Ps, V:o.n*R*T/o.Ps, taut:false};
+  if (o.id === 'tank') return {P:o.n*R*T/o.Vfix, V:o.Vfix, taut:true};
+  const Vf = o.n*R*T/o.Ps;
+  return Vf < o.Vmax ? {P:o.Ps, V:Vf, taut:false} : {P:o.n*R*T/o.Vmax, V:o.Vmax, taut:true};
+}
+
+let T = 293, unit = 'atm', playing = false, t0 = 0;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+const fmtP = p => unit === 'atm' ? p.toFixed(3) + ' atm' : Math.round(p*760) + ' mmHg';
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+const mix = (a,b,s) => a + (b-a)*s;
+const rgb = (c1,c2,s) => `rgb(${c1.map((v,i)=>Math.round(mix(v,c2[i],s))).join(',')})`;
+
+$('grid').innerHTML = objs.map(o => `
+<article class="card">
+  <div class="stage"><canvas id="c-${o.id}"></canvas></div>
+  <div class="body">
+    <div class="hd"><h2>${o.name}</h2><span class="sub">${o.sub}</span></div>
+    <dl>
+      <div><dt>P</dt><dd id="p-${o.id}"></dd></div>
+      <div><dt>V</dt><dd id="v-${o.id}"></dd></div>
+      <div><dt>T</dt><dd id="k-${o.id}"></dd></div>
+      <div><dt>n</dt><dd id="n-${o.id}"></dd></div>
+    </dl>
+    <p class="law" id="l-${o.id}"></p>
+    <p class="why" id="w-${o.id}"></p>
+    <div class="air">Air: <button data-o="${o.id}" data-f="0.9">− Let out</button><button data-o="${o.id}" data-f="1.1">+ Pump in</button><button data-o="${o.id}" data-f="0">Reset</button></div>
+    <div class="charts"><div><p class="ch">Pressure vs. temperature</p><div class="fig"><svg id="gp-${o.id}"></svg></div></div><div><p class="ch">Volume vs. temperature</p><div class="fig"><svg id="gv-${o.id}"></svg></div></div></div>
+  </div>
+</article>`).join('');
+
+function chart(o, which){
+  const s = $(`g${which}-${o.id}`), W = s.clientWidth, H = s.clientHeight;
+  if (!W) return;
+  const L = 44, Rr = 6, Tp = 6, B = 16, conv = v => which === 'p' && unit === 'mmHg' ? v*760 : v;
+  const pts = [];
+  for (let k = 250; k <= 360; k += 2){ const c = calc(o,k); pts.push([k, conv(which==='p'?c.P:c.V)]); }
+  let lo = Math.min(...pts.map(p=>p[1])), hi = Math.max(...pts.map(p=>p[1]));
+  if (which === 'p'){ lo = Math.min(lo, conv(0.97)); }
+  if (hi - lo < hi*0.04){ const m = (hi+lo)/2; lo = m*0.9; hi = m*1.1; }
+  const pad = (hi-lo)*0.08; lo -= pad; hi += pad;
+  const x = k => L + (k-250)/110*(W-L-Rr), y = v => Tp + (1-(v-lo)/(hi-lo))*(H-Tp-B);
+  const c = calc(o,T), cur = conv(which==='p'?c.P:c.V);
+  const lab = v => which==='p' ? (unit==='atm' ? v.toFixed(2) : Math.round(v)) : v.toFixed(0) + ' L';
+  const col = which==='p' ? 'var(--taut)' : 'var(--aqua2)';
+  let g = `<line x1="${L}" x2="${W-Rr}" y1="${H-B}" y2="${H-B}" stroke="var(--line)"/>`;
+  if (which === 'p'){ const yo = y(conv(1)); g += `<line x1="${L}" x2="${W-Rr}" y1="${yo}" y2="${yo}" stroke="var(--mut)" stroke-dasharray="3 4"/><text x="${W-Rr}" y="${yo-4}" text-anchor="end" font-size="10" fill="var(--mut)">outside</text>`; }
+  g += `<polyline fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round" points="${pts.map(p=>x(p[0]).toFixed(1)+','+y(p[1]).toFixed(1)).join(' ')}"/>`;
+  g += `<circle cx="${x(T)}" cy="${y(cur)}" r="5" fill="${col}" stroke="var(--card)" stroke-width="2"/>`;
+  g += `<text x="${L-6}" y="${Tp+10}" text-anchor="end" font-size="11" fill="var(--mut)">${lab(hi)}</text><text x="${L-6}" y="${H-B}" text-anchor="end" font-size="11" fill="var(--mut)">${lab(lo)}</text>`;
+  g += `<text x="${L}" y="${H-4}" font-size="10" fill="var(--mut)">−23 °C</text><text x="${W-Rr}" y="${H-4}" text-anchor="end" font-size="10" fill="var(--mut)">87 °C</text>`;
+  s.innerHTML = g;
+}
+
+function text(){
+  $('tc').textContent = `${T-273} °C`; $('tk').textContent = `${T} K`; $('t').value = T;
+  objs.forEach(o => {
+    const c = calc(o,T);
+    {const f=fmtP(c.P).split(' ');$(`p-${o.id}`).innerHTML = f[0] + '<small>' + f[1] + '</small>';}
+    $(`v-${o.id}`).innerHTML = c.V.toFixed(1) + '<small>' + (o.id==='tank' || (o.id==='float' && c.taut) ? 'L, locked' : 'L') + '</small>';
+    $(`v-${o.id}`).className = o.id==='tank' || (o.id==='float' && c.taut) ? 'fixed' : '';
+    $(`k-${o.id}`).innerHTML = `${T} K<small>${T-273} °C</small>`;
+    $(`n-${o.id}`).innerHTML = o.n.toFixed(2) + '<small>mol</small>';
+    const l = $(`l-${o.id}`), w = $(`w-${o.id}`);
+    if (o.id === 'balloon'){
+      l.className = 'law charles'; l.textContent = "Charles's Law: P same, V changes";
+      w.textContent = 'Rubber stretches easily, so pressure stays near outside air. Faster particles push it outward and it grows.';
+    } else if (o.id === 'tank'){
+      l.className = 'law gay'; l.textContent = "Gay-Lussac's Law: V same, P changes";
+      w.textContent = 'Walls can\'t move, so volume is stuck. Faster particles hit harder and more often, so pressure rises.';
+    } else {
+      const Tt = Math.round(o.Vmax*o.Ps/(o.n*R));
+      if (!c.taut){
+        l.className = 'law charles'; l.textContent = "Loose: Charles's Law (V changes)";
+        w.textContent = `Still has slack, so it stretches like a balloon. It goes tight at about ${Tt-273} °C.`;
+      } else {
+        l.className = 'law gay'; l.textContent = "Tight: Gay-Lussac's Law (P changes)";
+        w.textContent = `Stretched tight since about ${Tt-273} °C. Volume can't grow, so pressure rises: the rock-hard afternoon float.`;
+      }
+    }
+    chart(o,'p'); chart(o,'v');
+  });
+}
+
+/* ----- scenes ----- */
+const cv = {};
+objs.forEach(o => {
+  const c = $(`c-${o.id}`); cv[o.id] = {c, ctx:c.getContext('2d'), W:0, H:0};
+  const ro = new ResizeObserver(() => {
+    const d = devicePixelRatio || 1, r = c.getBoundingClientRect();
+    Object.assign(cv[o.id], {W:r.width, H:r.height}); c.width = r.width*d; c.height = r.height*d;
+    cv[o.id].ctx.setTransform(d,0,0,d,0,0); o.parts = []; chart(o,'p'); chart(o,'v');
+  });
+  ro.observe(c);
+});
+
+function shape(o, W, H){
+  const c = calc(o,T), m = Math.min(W,H);
+  if (o.id === 'balloon'){
+    const r = clamp(m*0.28*(0.45 + 0.55*c.V/12), m*0.1, m*0.42);
+    const cx = W/2, cy = H*0.44;
+    return {c, kind:'b', cx, cy, rx:r*0.88, ry:r, inside:(x,y)=>((x-cx)/(r*0.8))**2+((y-cy)/(r*0.92))**2<1};
+  }
+  if (o.id === 'float'){
+    const f = c.V/o.Vmax, s = 0.55 + 0.45*clamp((f-0.75)/0.25,0,1), slack = clamp((1-f)/0.2,0,1);
+    const rx = Math.min(W*0.44, H*1.0)*s, ry = rx*0.42*(1-0.25*slack), cx = W/2, cy = H*0.6, ix = rx*0.42, iy = ry*0.38;
+    return {c, kind:'f', cx, cy, rx, ry, ix, iy, slack, inside:(x,y)=>((x-cx)/(rx*0.9))**2+((y-cy)/(ry*0.86))**2<1 && ((x-cx)/(ix*1.2))**2+((y-cy)/(iy*1.35))**2>1};
+  }
+  const w = Math.min(W*0.45, 180), h = H*0.5, x0 = (W-w)/2, y0 = H*0.3;
+  return {c, kind:'t', x0, y0, w, h, inside:(x,y)=>x>x0+10&&x<x0+w-10&&y>y0+10&&y<y0+h-10};
+}
+
+function rnd(sh, W, H){ for (let i=0;i<200;i++){ const x=Math.random()*W, y=Math.random()*H; if (sh.inside(x,y)) return [x,y]; } return [W/2,H/2]; }
+
+function gauge(ctx, x, y, P){
+  const a0 = Math.PI*0.8, a1 = Math.PI*2.2, f = clamp((P-0.9)/0.5,0,1), a = mix(a0,a1,f);
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(x,y,24,0,7); ctx.fill();
+  ctx.strokeStyle = '#0d2a36'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = '#e5483a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x,y,19,mix(a0,a1,0.2),a1); ctx.stroke();
+  ctx.strokeStyle = '#0d2a36'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+Math.cos(a)*18, y+Math.sin(a)*18); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = '700 12px "Nunito Sans",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(fmtP(P), x+30, y+4);
+}
+
+function draw(o, dt){
+  const {ctx, W, H} = cv[o.id]; if (!W) return;
+  const sh = shape(o, W, H), day = clamp((T-280)/45,0,1);
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, rgb([10,24,48],[92,196,240],day)); g.addColorStop(1, rgb([30,58,95],[214,242,252],day));
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha = day; ctx.fillStyle = '#ffc533'; ctx.beginPath(); ctx.arc(W-36,34,16,0,7); ctx.fill();
+  ctx.globalAlpha = 1-day; ctx.fillStyle = '#f4f1d0'; ctx.beginPath(); ctx.arc(W-36,34,12,0,7); ctx.fill();
+  ctx.fillStyle = rgb([10,24,48],[92,196,240],day); ctx.beginPath(); ctx.arc(W-31,30,11,0,7); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.fillStyle = o.id==='float' ? rgb([8,70,96],[24,170,205],day) : rgb([70,60,45],[214,193,150],day);
+  ctx.fillRect(0,H*0.82,W,H*0.18);
+
+  const P = sh.c.P;
+  if (sh.kind === 'b'){
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sh.cx, sh.cy+sh.ry); ctx.quadraticCurveTo(sh.cx-14, H*0.75, sh.cx+4, H*0.86); ctx.stroke();
+    const bg = ctx.createRadialGradient(sh.cx-sh.rx*0.35, sh.cy-sh.ry*0.4, 4, sh.cx, sh.cy, sh.ry);
+    bg.addColorStop(0,'rgba(255,150,170,.85)'); bg.addColorStop(1,'rgba(214,40,80,.75)');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(sh.cx, sh.cy, sh.rx, sh.ry, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#b8204a'; ctx.beginPath(); ctx.moveTo(sh.cx-6, sh.cy+sh.ry+6); ctx.lineTo(sh.cx+6, sh.cy+sh.ry+6); ctx.lineTo(sh.cx, sh.cy+sh.ry-2); ctx.fill();
+  } else if (sh.kind === 'f'){
+    const ten = clamp((P-o.Ps)/0.1,0,1);
+    ctx.beginPath();
+    for (let i=0;i<=120;i++){ const a=i/120*Math.PI*2, w = 1 + sh.slack*0.05*Math.sin(a*11);
+      const x=sh.cx+Math.cos(a)*sh.rx*w, y=sh.cy+Math.sin(a)*sh.ry*w; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.moveTo(sh.cx+sh.ix, sh.cy);
+    ctx.ellipse(sh.cx, sh.cy, sh.ix, sh.iy, 0, 0, Math.PI*2, true);
+    const fg = ctx.createLinearGradient(0, sh.cy-sh.ry, 0, sh.cy+sh.ry);
+    fg.addColorStop(0,'rgba(255,150,130,.9)'); fg.addColorStop(1,'rgba(230,80,64,.85)');
+    ctx.fillStyle = fg; ctx.fill('evenodd');
+    ctx.strokeStyle = ten>0 ? `rgba(255,${Math.round(255-200*ten)},${Math.round(255-220*ten)},1)` : 'rgba(255,255,255,.7)';
+    ctx.lineWidth = 2 + ten*4; ctx.stroke();
+  } else {
+    const ten = clamp((P-1)/0.25,0,1);
+    const tg = ctx.createLinearGradient(sh.x0,0,sh.x0+sh.w,0);
+    tg.addColorStop(0,'rgba(120,135,145,.9)'); tg.addColorStop(.5,'rgba(205,215,222,.75)'); tg.addColorStop(1,'rgba(110,125,135,.9)');
+    ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(sh.x0, sh.y0, sh.w, sh.h, 16); ctx.fill();
+    ctx.strokeStyle = rgb([60,72,80],[229,72,58],ten); ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = '#5b6b75'; ctx.fillRect(sh.x0+sh.w/2-6, sh.y0-16, 12, 16);
+  }
+
+  const want = clamp(Math.round(34*o.n/o.n0), 8, 90), sp = 70*Math.sqrt(T/300), hot = clamp((T-250)/110,0,1);
+  while (o.parts.length < want){ const [x,y] = rnd(sh,W,H), a = Math.random()*7; o.parts.push({x,y,a}); }
+  o.parts.length = want;
+  ctx.fillStyle = rgb([80,160,255],[255,140,40],hot);
+  for (const p of o.parts){
+    if (!sh.inside(p.x,p.y)){ [p.x,p.y] = rnd(sh,W,H); }
+    if (!reduce){
+      const nx = p.x + Math.cos(p.a)*sp*dt, ny = p.y + Math.sin(p.a)*sp*dt;
+      if (sh.inside(nx,ny)){ p.x = nx; p.y = ny; }
+      else { o.hits.push({x:nx,y:ny,l:1}); p.a = Math.PI + p.a + (Math.random()-0.5)*1.2; }
+    }
+    ctx.beginPath(); ctx.arc(p.x,p.y,3.2,0,7); ctx.fill();
+  }
+  for (const h of o.hits){ h.l -= dt*3; ctx.fillStyle = `rgba(255,255,255,${Math.max(0,h.l)*0.8})`; ctx.beginPath(); ctx.arc(h.x,h.y,5,0,7); ctx.fill(); }
+  o.hits = o.hits.filter(h => h.l > 0).slice(-80);
+  gauge(ctx, 32, 32, P);
+}
+
+let last = performance.now(), frame = 0;
+function loop(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  if (playing){ t0 += dt; const nt = Math.round(308 - 20*Math.cos(t0*2*Math.PI/14)); if (nt !== T){ T = nt; if (++frame % 2 === 0) text(); } }
+  objs.forEach(o => draw(o, dt));
+  requestAnimationFrame(loop);
+}
+
+$('t').addEventListener('input', e => { T = +e.target.value; stop(); text(); });
+document.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => { T = +b.dataset.t; stop(); text(); }));
+function stop(){ playing = false; $('play').textContent = '▶ Day and night'; $('play').classList.remove('on'); }
+$('play').addEventListener('click', () => {
+  if (playing) return stop();
+  playing = true; t0 = Math.acos(clamp((308-T)/20,-1,1))*14/(2*Math.PI);
+  $('play').textContent = '❚❚ Pause'; $('play').classList.add('on');
+});
+$('uatm').addEventListener('click', () => { unit='atm'; $('uatm').classList.add('on'); $('umm').classList.remove('on'); text(); });
+$('umm').addEventListener('click', () => { unit='mmHg'; $('umm').classList.add('on'); $('uatm').classList.remove('on'); text(); });
+document.querySelectorAll('[data-o]').forEach(b => b.addEventListener('click', () => {
+  const o = objs.find(x => x.id === b.dataset.o), f = +b.dataset.f;
+  o.n = f ? clamp(o.n*f, o.n0*0.5, o.n0*2) : o.n0; text();
+}));
+
+text();
+requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
